@@ -1,32 +1,64 @@
-import { TeamPickerSection, useSelectedTeam, useTeamAccent, useTeams } from '@/features/teams'
+import { useNavigate } from '@tanstack/react-router'
+
+import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
+import { ApiError } from '@/lib/api'
 
 /**
- * Startsidan. I dag lagväljaren; matchlistan kommer i #19.
+ * Förstagångsbesökarens vy: välj lag.
  *
- * Accentfärgen sätts som CSS-variabel på sidans yttersta element i stället för på varje
- * komponent. Då kan headern, korten och knapparna läsa samma värde utan att någon av dem
- * behöver veta något om lag.
+ * Har föräldern redan valt ett lag kommer hen aldrig hit — routern skickar vidare till
+ * `/lag/<slug>` innan sidan renderas.
  */
 export function StartPage() {
-  const accent = useTeamAccent()
-  const { selectedSlug } = useSelectedTeam()
-  const { data: teams } = useTeams()
+  const navigate = useNavigate()
+  const { selectTeam } = useSelectedTeam()
+  const { data: teams, isPending, error, refetch, isFetching } = useTeams()
 
-  const selectedTeam = teams?.find((team) => team.slug === selectedSlug)
+  function handleSelect(slug: string) {
+    selectTeam(slug)
+    void navigate({ to: '/lag/$slug', params: { slug } })
+  }
 
   return (
-    <main style={accent ? ({ '--team-accent': accent } as React.CSSProperties) : undefined}>
+    <main>
       <header className="app-header">
         <h1>Kärra Matcher</h1>
-        <p className="app-header__subtitle">
-          {selectedTeam
-            ? `${selectedTeam.ageGroup} ${selectedTeam.name}`
-            : 'Välj lag för att se matcherna'}
-        </p>
+        <p className="app-header__subtitle">Välj lag för att se matcherna</p>
       </header>
 
-      <h2 id="valj-lag">Lag</h2>
-      <TeamPickerSection />
+      <h2>Lag</h2>
+
+      {isPending && (
+        <p className="state" role="status">
+          Hämtar lagen…
+        </p>
+      )}
+
+      {error && (
+        <div className="state state--error" role="alert">
+          <p>
+            {error instanceof ApiError && error.offline
+              ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+              : 'Kunde inte hämta lagen just nu.'}
+          </p>
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              void refetch()
+            }}
+            disabled={isFetching}
+          >
+            {isFetching ? 'Försöker…' : 'Försök igen'}
+          </button>
+        </div>
+      )}
+
+      {teams && teams.length === 0 && <p className="state">Inga lag är upplagda än.</p>}
+
+      {teams && teams.length > 0 && (
+        <TeamPicker teams={teams} selectedSlug={null} onSelect={handleSelect} />
+      )}
     </main>
   )
 }
