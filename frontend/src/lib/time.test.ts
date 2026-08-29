@@ -153,10 +153,15 @@ describe('relativeDayLabel', () => {
     expect(relativeDayLabel(kickoff, idag)).toBe(expected)
   })
 
-  it('går över till datum när veckodagen blir tvetydig', () => {
-    // Sju dagar bort säger "på söndag" inget om vilken söndag som menas.
-    expect(relativeDayLabel('2026-11-01T13:00:00Z', idag)).toBe('1 november')
-    expect(relativeDayLabel('2026-11-15T13:00:00Z', idag)).toBe('15 november')
+  it('anger avstånd i dagar när veckodagen blir tvetydig', () => {
+    // Sju dagar bort säger "på söndag" inget om vilken söndag som menas. Etiketten ska
+    // svara på hur snart, inte upprepa datumet som ändå står bredvid på kortet.
+    expect(relativeDayLabel('2026-11-01T13:00:00Z', idag)).toBe('Om 7 dagar')
+    expect(relativeDayLabel('2026-11-15T13:00:00Z', idag)).toBe('Om 21 dagar')
+  })
+
+  it('anger avstånd bakåt för en match längre tillbaka än igår', () => {
+    expect(relativeDayLabel('2026-10-20T13:00:00Z', idag)).toBe('För 5 dagar sedan')
   })
 
   it('fungerar över skiftet utan att tappa ett dygn', () => {
