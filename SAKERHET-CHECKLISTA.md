@@ -32,8 +32,8 @@
 |---|----------|:------:|
 | 2.1 | Policy-baserad auktorisering — inga hårdkodade rollkontroller i controllers | ⬜ |
 | 2.2 | **Objektnivå-auktorisering på varje resurs (mot IDOR)** | ⬜ |
-| 2.3 | **§KM.2** Ingen endpoint tar emot eller returnerar spelarstatistik — verifierat med arkitekturtest | ⬜ |
-| 2.4 | **§KM.2** Ingen entitet, tabell eller migration för barnstatistik finns i backend | ⬜ |
+| 2.3 | **§KM.2** Ingen endpoint tar emot eller returnerar spelarstatistik — verifierat med arkitekturtest | ✅ |
+| 2.4 | **§KM.2** Ingen entitet, tabell eller migration för barnstatistik finns i backend | ✅ |
 | 2.5 | Resurs som tillhör annan användare svarar `404`, inte `403` | ⬜ |
 | 2.6 | Tränarroll är bunden till **sitt lag** — kan inte ändra andra lags matcher | ⬜ |
 | 2.7 | **§KM.7** `AttendanceEnabled` kontrolleras serverside; avstängd flagga ger `404` | ⬜ |
@@ -163,8 +163,8 @@
 | # | Kontroll | Status |
 |---|----------|:------:|
 | 12.1 | Säkerhetsrelaterade enhetstester (auktorisering, validering) gröna | ⬜ |
-| 12.2 | Arkitekturtester (NetArchTest) skyddar lagergränserna | ⬜ |
-| 12.3 | **§KM.2** Arkitekturtest bevisar att ingen spelarstatistik-endpoint existerar | ⬜ |
+| 12.2 | Arkitekturtester skyddar lagergränserna och hindrar entiteter i controllersignaturer | ✅ |
+| 12.3 | **§KM.2** Arkitekturtest bevisar att ingen spelarstatistik-endpoint existerar | ✅ |
 | 12.4 | **§KM.5** Tidszonstest över sommartidsskiftet i oktober är grönt | ⬜ |
 | 12.5 | E2E-test av de fem kritiska flödena i `SPEC.md` §9 | ⬜ |
 | 12.6 | A11y-genomgång: tangentbord, skärmläsare, kontrast, fokus (WCAG 2.1 AA) | ⬜ |
