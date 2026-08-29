@@ -24,6 +24,7 @@ tränarnas schemaverktyg.
 | [`docs/MVP-PLAN.md`](./docs/MVP-PLAN.md) | Milstolpar M0–M8 och vad som hör till MVP respektive backlog |
 | [`STANDARDER-VID-BEHOV.md`](./STANDARDER-VID-BEHOV.md) | Element som införs först när triggern uppfylls (YAGNI) |
 | [`SAKERHET-CHECKLISTA.md`](./SAKERHET-CHECKLISTA.md) | Auditerbar releasegrind — bockas av före varje produktionssläpp |
+| [`docs/DATABAS-BACKUP.md`](./docs/DATABAS-BACKUP.md) | **Läses när något gått fel.** Backuprutin och återställning, steg för steg |
 
 ## Teknik
 
@@ -55,7 +56,10 @@ KarraMatcher/
 ├─ SAKERHET-CHECKLISTA.md     releasegrind
 ├─ docs/
 │   ├─ PROJEKT-HANDOFF.md     levande status
-│   └─ MVP-PLAN.md            milstolpar
+│   ├─ MVP-PLAN.md            milstolpar
+│   └─ DATABAS-BACKUP.md      backuprutin och återställning
+├─ scripts/
+│   └─ Backup-Database.ps1    dump och bevisad återställning
 ├─ backend/                   .NET-lösningen
 └─ frontend/                  React + Vite (PWA)
 ```
@@ -195,6 +199,23 @@ Två val i imagen som är medvetna:
 - **Ingen `HEALTHCHECK` i imagen.** Render gör sin egen HTTP-kontroll mot `/health`.
   En `HEALTHCHECK` i imagen skulle bero på verktyg som inte finns i den slimmade
   runtime-imagen och rapportera unhealthy utan att någon märkte det.
+
+## Databasbackup
+
+Två lager: Neons kontinuerliga historik (PITR) för de vanliga olyckorna, och logiska dumpar
+för det osannolika fallet att Neon-projektet självt försvinner.
+
+```powershell
+./scripts/Backup-Database.ps1                 # dump
+./scripts/Backup-Database.ps1 -VerifyRestore  # dump + bevisad återställning
+```
+
+Skriptet kräver bara Docker — PostgreSQLs klientverktyg körs i containrar. Det rör aldrig
+källdatabasen, och anslutningssträngen läses ur `dotnet user-secrets`.
+
+Rutinen, och vad du gör när något faktiskt gått fel, står i
+[`docs/DATABAS-BACKUP.md`](./docs/DATABAS-BACKUP.md). Dumparna hamnar utanför repot och
+checkas aldrig in — en dump innehåller barns förnamn så snart en trupp lagts upp (§KM.1).
 
 ## Arbetssätt
 

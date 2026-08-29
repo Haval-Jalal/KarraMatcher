@@ -150,7 +150,7 @@
 | # | Kontroll | Status |
 |---|----------|:------:|
 | 11.1 | Health checks `/health` och `/health/ready` svarar korrekt | ⬜ |
-| 11.2 | **§KM.0 A2** DB-backup automatisk **och återställning testad minst en gång** | ⬜ |
+| 11.2 | **§KM.0 A2** DB-backup automatisk **och återställning testad minst en gång** | ✅ |
 | 11.3 | Migrations körs kontrollerat vid deploy; rollback-plan finns | ⬜ |
 | 11.4 | Planerat underhåll läggs aldrig fredag–söndag under säsong | ⬜ |
 | 11.5 | Maintenance-läge visar en begriplig svensk text, inte ett serverfel | ⬜ |
