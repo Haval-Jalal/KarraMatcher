@@ -156,7 +156,7 @@
 | 11.5 | Maintenance-läge visar en begriplig svensk text, inte ett serverfel | ⬜ |
 | 11.6 | **§KM.11** Databasen ligger på Neon — inte på en gratisnivå som upphör efter 30 dagar | ⬜ |
 | 11.7 | **§KM.11** Kallstart maskerad: publika GET-svar besvaras av Vercels edge utan att väcka backend | ⬜ |
-| 11.8 | **§KM.11** Uppetidsverktyg pingar `/health` och larmar när backend inte svarar | ⬜ |
+| 11.8 | **§KM.11** Uppetidsverktyg pingar `/health` och larmar när backend inte svarar | ✅ |
 | 11.9 | Docker-containern kör som **non-root** och exponerar bara port 8080 | ⬜ |
 
 ## 12. Testning & verifiering (före release)

@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** M0 pågår — 13 av 15 issues klara. Repot är publikt
+- **Fas:** M0 pågår — 14 av 15 issues klara. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M0 — Grund (pågår)
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -34,12 +34,14 @@
 | Säkerhetschecklista (releasegrind) | [`SAKERHET-CHECKLISTA.md`](../SAKERHET-CHECKLISTA.md) |
 | Plan / roadmap | [`MVP-PLAN.md`](./MVP-PLAN.md) |
 | Backup och återställning | [`DATABAS-BACKUP.md`](./DATABAS-BACKUP.md) — läses när något gått fel |
+| Driftövervakning | [`DRIFTOVERVAKNING.md`](./DRIFTOVERVAKNING.md) — pingschema och timbudget |
 | Ursprungsmallar | Förvaras utanför repot |
 | Förstudieplan (artefakt) | https://claude.ai/code/artifact/9fc04494-e56d-4510-acf7-28231d64955a |
 | Backend i drift (Render) | Live sedan 2026-08-29. URL:en finns på exakt ett ställe: [`frontend/vercel.json`](../frontend/vercel.json) (§KM.11) |
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#14` Databasbackup med bevisad återställning; PITR 6 h bekräftad — 2026-08-29
 - `#13` Edge-cache-mekanism med ETag och säker standard — 2026-08-29
 - `#10` Arkitekturtester: lagergränser, entiteter i controllers, §KM.2-skyddet — 2026-08-29
 - `#12` `vercel.json` med `/api`-rewrite; frontend i drift på Vercel — 2026-08-29
@@ -61,14 +63,13 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#14` Databasbackup och testad återställning | Haval | `feature/database-backup` | In Review — övningen genomförd, PITR bekräftad till 6 h |
-| `#13` Edge-cache-headers | Haval | *mergad* | Öppen med flit: sista kriteriet kräver första publika endpointen (M1) |
+| `#15` Uppetidsverktyg som pingar `/health` | Haval | `feature/uptime-monitoring` | In Review — jobben uppsatta, larmet verifierat 2026-08-30 |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#15` Uppetidsverktyg** som pingar `/health`. Sista fristående issuet i M0.
-2. **I M1, med första publika endpointen:** markera den med `.WithEdgeCache(...)` och verifiera på riktigt att andra anropet ger `x-vercel-cache: HIT` utan att Render väcks. Det är sista kriteriet i `#13`.
+1. **`#15` slutförs** — de fyra cron-jobben sätts upp och larmet provas genom att faktiskt suspendera tjänsten. Då är M0 stängd.
+2. **`#92` i M1:** markera första publika endpointen med `.WithEdgeCache(...)` och verifiera att andra anropet ger `x-vercel-cache: HIT` utan att Render väcks. Övertaget kriterium från `#13`.
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 
@@ -93,6 +94,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | 2026-08-29 | **Branch protection skjuts upp** | Ensam utvecklare, och `.githooks/pre-push` räcker | Kan slås på när som helst nu när repot är publikt |
 | 2026-08-29 | **`mallar/` borttagen ur hela historiken** | Mappen innehöll en affärsplan för en orelaterad produkt och hörde inte hemma i det här repot | Historiken är omskriven och force-pushad. Se känd risk nedan om gamla objekt |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
+| 2026-08-29 | **Uppetidspingen fönstras i stället för att gå dygnet runt** | Render free ger 750 instanstimmar per månad och arbetsyta, och suspenderar **alla** fria tjänster resten av månaden när de tar slut. En ping var femte minut dygnet runt förbrukar 744 timmar i en 31-dagarsmånad — sex timmars marginal. Det är ett dåligt byte för en app hundra familjer förlitar sig på | Pingas var 5:e minut fredag 15:00 till söndag 22:59, plus en daglig kontroll 14:50. ~251 h/månad, ~499 h marginal. Priset: en tränare som redigerar en vardagskväll kan möta ~1 minuts kallstart, och avbrott utanför helgen upptäcks inom ett dygn. Rutinen står i `docs/DRIFTOVERVAKNING.md` |
 | 2026-08-29 | **Databasdumpar tas manuellt, aldrig i CI** | En schemalagd GitHub Actions-körning hade varit lätt att skriva, men artefakter i ett publikt repo går att ladda ner av vem som helst med länken. Så snart en tränare lägger upp truppen ligger barns förnamn i databasen (§KM.1) | Neons PITR är det automatiska lagret. Den logiska dumpen tas av en människa, till en katalog utanför repot. `.gitignore` blockerar `*.dump` som skyddsnät |
 | 2026-08-29 | **Cachning är opt-in, inte opt-out** | Standarden för varje svar är `private, no-store`; en endpoint blir publikt cachebar först genom att uttryckligen säga det. Motsatt standard hade gjort en glömd markering till ett dataläckage i stället för till en missad optimering | Varje publik endpoint i M1 måste komma ihåg `.WithEdgeCache(...)`, annars väcks Render i onödan. Priset är medvetet: att glömma kostar prestanda, aldrig integritet |
 | 2026-08-29 | **Arkitekturtesterna skrivs för hand — NetArchTest väljs bort** | Paketet som issue #10 namnger har inte släppts sedan maj 2021 och **deklarerar ingen licens i paketmetadatan** (GitHub-repot uppger MIT, nuspec:en är tom). Efter MediatR-överraskningen är ett olicensierat, övergivet beroende inte värt bekvämligheten. Alternativen — eNhancedEdition (MIT) och ArchUnitNET (Apache-2.0) — hade fungerat, men behövdes inte | Noll ny licensyta. De befintliga handskrivna reglerna täckte redan två av issuets tre krav; det tredje blev ~60 rader reflektion. Priset: vi underhåller detektorerna själva, vilket motiverar självtesterna som bevisar att varje regel faktiskt faller |
@@ -128,6 +130,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | **Ingen branch protection på GitHub** | `main` är oskyddad på GitHub-sidan. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tills vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Repot är numera publikt, så riktig branch protection är gratis och kan slås på när som helst |
 | **Gamla objekt kvar på GitHub efter historikomskrivning** | Att skriva om historik raderar inte gamla objekt hos GitHub — de nås via sina SHA:n tills GitHub kör städning, och SHA:na syns i commitlistorna på mergade PR:ar. Verifierat: den borttagna filen gick att hämta via `?ref=<gammal SHA>` även efter omskrivningen | **Accepterad risk** (beslut 2026-08-29) — innehållet granskades och bedömdes okritiskt. **Lärdom:** kontrollera vad en mapp innehåller *innan* den checkas in; en omskrivning i efterhand är aldrig fullständig utan att be GitHub köra `gc` |
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
+| **Renders timbudget kan släcka appen** | 750 fria instanstimmar per månad och arbetsyta. När de tar slut suspenderas alla fria tjänster till den 1:a nästa månad — appen nere i upp till 30 dagar | Fönstrad ping håller förbrukningen kring 251 h/månad. **Ingen andra fri Render-tjänst får läggas till utan att räkna om budgeten.** Kontrollera förbrukningen i Renders dashboard inför säsongsstart |
 | **Neons retentionsfönster är 6 timmar** | Bekräftat 2026-08-29 — det är taket på fri nivå. En trasig migration som driftsätts fredag kväll och upptäcks lördag morgon ligger redan utanför fönstret, och det är precis då appen används | Den logiska dumpen är därmed det egentliga skyddsnätet, inte en reserv. Tas före **varje** migration mot produktion och efter att säsongens schema lagts in. Rutinen står i `docs/DATABAS-BACKUP.md`. Längre fönster kräver betald Neon-plan — omprövas om datamängden växer |
 | **Vercel kanske inte edge-cachar en extern rewrite** | Hela kallstartsmotmedlet i §KM.11 bygger på att Vercels edge cachar svar den proxar vidare till Render. Det är antaget, inte verifierat — det finns ingen publik endpoint att pröva med än | Verifieras i M1 med första publika endpointen: två anrop i rad, andra ska ge `x-vercel-cache: HIT`. Håller det inte behövs en annan lösning, och då tidigt snarare än sent |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |
