@@ -61,7 +61,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#14` Databasbackup och testad återställning | Haval | `feature/database-backup` | In Review — övningen genomförd, Neons PITR-inställning ska bekräftas |
+| `#14` Databasbackup och testad återställning | Haval | `feature/database-backup` | In Review — övningen genomförd, PITR bekräftad till 6 h |
 | `#13` Edge-cache-headers | Haval | *mergad* | Öppen med flit: sista kriteriet kräver första publika endpointen (M1) |
 
 ## ➡️ Nästa steg
@@ -128,6 +128,6 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | **Ingen branch protection på GitHub** | `main` är oskyddad på GitHub-sidan. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tills vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Repot är numera publikt, så riktig branch protection är gratis och kan slås på när som helst |
 | **Gamla objekt kvar på GitHub efter historikomskrivning** | Att skriva om historik raderar inte gamla objekt hos GitHub — de nås via sina SHA:n tills GitHub kör städning, och SHA:na syns i commitlistorna på mergade PR:ar. Verifierat: den borttagna filen gick att hämta via `?ref=<gammal SHA>` även efter omskrivningen | **Accepterad risk** (beslut 2026-08-29) — innehållet granskades och bedömdes okritiskt. **Lärdom:** kontrollera vad en mapp innehåller *innan* den checkas in; en omskrivning i efterhand är aldrig fullständig utan att be GitHub köra `gc` |
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
-| **Neons retentionsfönster är kortare än en säsong** | PITR räcker för gårdagens misstag, inte för ett fel som upptäcks i november och begicks i september. Fönstrets längd på fri nivå är inte bekräftad | Den logiska dumpen är svaret: tas före varje migration och efter att säsongens schema lagts in. Rutinen står i `docs/DATABAS-BACKUP.md` |
+| **Neons retentionsfönster är 6 timmar** | Bekräftat 2026-08-29 — det är taket på fri nivå. En trasig migration som driftsätts fredag kväll och upptäcks lördag morgon ligger redan utanför fönstret, och det är precis då appen används | Den logiska dumpen är därmed det egentliga skyddsnätet, inte en reserv. Tas före **varje** migration mot produktion och efter att säsongens schema lagts in. Rutinen står i `docs/DATABAS-BACKUP.md`. Längre fönster kräver betald Neon-plan — omprövas om datamängden växer |
 | **Vercel kanske inte edge-cachar en extern rewrite** | Hela kallstartsmotmedlet i §KM.11 bygger på att Vercels edge cachar svar den proxar vidare till Render. Det är antaget, inte verifierat — det finns ingen publik endpoint att pröva med än | Verifieras i M1 med första publika endpointen: två anrop i rad, andra ska ge `x-vercel-cache: HIT`. Håller det inte behövs en annan lösning, och då tidigt snarare än sent |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |

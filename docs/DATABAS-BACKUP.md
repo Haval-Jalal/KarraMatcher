@@ -19,13 +19,25 @@ se [Genomförd återställningsövning](#genomförd-återställningsövning).
 
 ## Två lager
 
-| Lager | Vad | Täcker |
-|---|---|---|
-| **Neons historik (PITR)** | Automatisk, kontinuerlig. Återställning till valfri tidpunkt inom retentionsfönstret | Felaktig `DELETE`, trasig migration, en tränare som råkar rensa säsongen |
-| **Logisk dump** | `pg_dump` via [`scripts/Backup-Database.ps1`](../scripts/Backup-Database.ps1). Körs manuellt | Att Neon-projektet i sig försvinner, kontot låses, eller att vi vill byta leverantör |
+| Lager | Vad | Fönster | Täcker |
+|---|---|---|---|
+| **Neons historik (PITR)** | Automatisk, kontinuerlig | **6 timmar** | Ett misstag som upptäcks *samma förmiddag* |
+| **Logisk dump** | `pg_dump` via [`scripts/Backup-Database.ps1`](../scripts/Backup-Database.ps1). Körs manuellt | Så länge du sparar filerna | Allt annat: Neon-projektet borta, kontot låst, byte av leverantör — och varje fel som upptäcks efter sex timmar |
 
-Det första lagret är snabbt och räcker nästan alltid. Det andra är det som gör oss oberoende av
-Neon över huvud taget.
+### Sex timmar är kortare än det låter
+
+Retentionen är **påslagen och satt till 6 timmar**, vilket är taket på Neons fria nivå
+(bekräftat 2026-08-29). Alternativen är 0, 1, 2 eller 6 timmar; längre kräver betald plan.
+
+Läs den siffran som det den är:
+
+- En trasig migration som driftsätts **fredag kväll** och upptäcks **lördag morgon** ligger
+  redan utanför fönstret. Det är dessutom exakt när appen används som mest.
+- Säsongens schema som skrivs in i augusti och visar sig korrupt i november är långt utanför.
+- Sover backenden gör den det tyst — ingen upptäcker ett datafel förrän någon öppnar appen.
+
+**Därför är den manuella dumpen inte en reserv till reserven, utan det egentliga skyddsnätet.**
+PITR täcker den olycka du märker direkt. Dumpen täcker resten.
 
 ### Varför dumpen inte tas automatiskt i CI
 
@@ -46,7 +58,7 @@ katalog utanför repot.
 
 | När | Vad |
 |---|---|
-| **Före varje migration mot produktion** | `./scripts/Backup-Database.ps1` — en dump som går att falla tillbaka på |
+| **Före varje migration mot produktion** | `./scripts/Backup-Database.ps1`. **Inte förhandlingsbart** — PITR-fönstret på 6 timmar hinner löpa ut innan ett migrationsfel nödvändigtvis upptäcks |
 | **Kvartalsvis, och före säsongsstart** | `./scripts/Backup-Database.ps1 -VerifyRestore` — hela övningen. Skriv in datum och resultat längst ned i det här dokumentet |
 | **Efter att säsongens schema lagts in** | En dump. Det är årets mest kostsamma data att skriva in igen |
 
@@ -89,6 +101,8 @@ Det här är det vanliga fallet och det snabbaste.
 1. Logga in på [Neon-konsolen](https://console.neon.tech) och välj projektet.
 2. Gå till **Branches** → **New branch**.
 3. Välj **Create from a point in time** och ange tidpunkten **strax före** felet.
+   Ligger tidpunkten mer än **sex timmar** bakåt finns den inte kvar — hoppa till
+   [Läge 2](#läge-2--neon-projektet-är-borta) och använd senaste dumpen i stället.
 4. Ge branchen ett namn som säger vad det är, t.ex. `restore-2026-08-29-fel-migration`.
 5. Skapa branchen. Den får en egen anslutningssträng.
 6. **Verifiera innan du byter.** Anslut mot den nya branchen och kontrollera att datan ser rätt ut:
