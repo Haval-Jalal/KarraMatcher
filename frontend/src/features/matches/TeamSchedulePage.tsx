@@ -51,7 +51,6 @@ export function TeamSchedulePage() {
         </>
       )}
 
-      <h2 className="match-list__title">Matcher</h2>
       <MatchListSection slug={slug} />
     </main>
   )

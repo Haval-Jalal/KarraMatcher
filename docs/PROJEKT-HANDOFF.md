@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 5 av 14 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 6 av 14 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#20` Nästa match-kort med relativ dag — 2026-08-30
 - `#19` Matchlista med månadsrubriker och hopfällbar historik, på egen adress per lag — 2026-08-30
 - `#18` Lagväljare med lagfärgen som tema, API-klient och Vite-dev-proxy — 2026-08-30
 - `#27` Tidszonshantering i frontenden, med ESLint-regel som håller konverteringen på ett ställe — 2026-08-30
@@ -69,12 +70,12 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#19` Matchlista | Haval | `feature/match-list` | In Review |
+| `#20` Nästa match-kort | Haval | `feature/next-match-card` | In Review |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#20` nästa match-kort** — grupperingen i `groupMatches` och `relativeDayLabel` finns; kortet är komposition ovanpå det.
+1. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).

@@ -166,9 +166,12 @@ export function matchDayPosition(
 }
 
 /**
- * Läsbar dagsetikett för "nästa match"-kortet: `Idag`, `Imorgon`, `På lördag`, annars
- * datumet. Veckodag används bara inom en vecka — längre fram säger "på lördag" inget om
- * vilken lördag som menas.
+ * Läsbar dagsetikett för "nästa match"-kortet: `Idag`, `Imorgon`, `På lördag`, `Om 12 dagar`.
+ *
+ * Veckodag används bara inom en vecka — längre fram säger "på lördag" inget om vilken
+ * lördag som menas. Bortom det anges avståndet i dagar och inte datumet, eftersom kortet
+ * redan visar hela datumet strax intill. Etiketten ska svara på *hur snart*, inte upprepa
+ * *när*.
  */
 export function relativeDayLabel(
   value: string | Date,
@@ -184,5 +187,9 @@ export function relativeDayLabel(
     return `På ${weekdayOnly.format(toInstant(value))}`
   }
 
-  return capitalize(formatDayAndMonth(value))
+  if (difference > 6) {
+    return `Om ${String(difference)} dagar`
+  }
+
+  return `För ${String(Math.abs(difference))} dagar sedan`
 }

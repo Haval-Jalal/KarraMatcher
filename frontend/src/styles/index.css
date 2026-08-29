@@ -179,6 +179,66 @@ h2 {
   color: var(--text-muted);
 }
 
+/* ---- Nasta match ---------------------------------------------------------- */
+
+/*
+ * Kortet ar sidans tyngsta element med flit: det ar den enda information de flesta
+ * foraldrar oppnar appen for. Accenten far bara batten och ramen, aldrig texten -- av
+ * samma skal som lagbrickan i valjaren.
+ */
+.next-match {
+  border: 2px solid var(--team-accent);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  padding: 16px;
+  margin: 20px 0 8px;
+}
+
+.next-match__label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+}
+
+.next-match__when {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.next-match__relative {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.next-match__time {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.next-match__date {
+  margin: 2px 0 10px;
+  color: var(--text-muted);
+}
+
+.next-match__opponent {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-strong);
+}
+
+.next-match__venue {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 /* ---- Matchlistan ---------------------------------------------------------- */
 
 .match-list__title {

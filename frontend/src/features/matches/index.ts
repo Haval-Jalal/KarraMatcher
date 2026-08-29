@@ -1,4 +1,6 @@
 export { MatchList } from './MatchList'
+export { NextMatchCard } from './NextMatchCard'
+export { selectNextMatch } from './selectNextMatch'
 export { TeamSchedulePage } from './TeamSchedulePage'
 export { MatchListSection } from './MatchListSection'
 export { groupMatches } from './groupMatches'
