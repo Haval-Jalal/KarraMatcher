@@ -99,8 +99,12 @@ dotnet format --verify-no-changes     # inga formatdiffar
 cd ../frontend
 npm run typecheck                     # tsc -b, inga fel
 npm test                              # alla gröna
-npm run lint
+npm run lint                          # ESLint, --max-warnings 0
+npm run format:check                  # Prettier
 ```
+
+`npm run format` skriver om filerna. Markdown är undantaget — dokumentationen är
+handformaterad och delas med rotens dokument, som ligger utanför Prettiers räckvidd.
 
 ## Backendens uppbyggnad
 

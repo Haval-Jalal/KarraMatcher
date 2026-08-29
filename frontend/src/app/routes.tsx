@@ -1,9 +1,4 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-} from '@tanstack/react-router'
+import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router'
 
 import { NotFound } from '@/components/NotFound'
 import { StartPage } from '@/features/start/StartPage'
