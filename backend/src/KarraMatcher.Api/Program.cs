@@ -16,6 +16,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddKarraHealthChecks();
+builder.Services.AddKarraRateLimiting(builder.Configuration);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -26,12 +27,18 @@ var app = builder.Build();
 // Migrationer och startdata körs bara när konfigurationen ber om det.
 await app.Services.InitializeDatabaseAsync();
 
-// Correlation-ID först, så att även felhanterarens egna loggrader får med det.
+// Forwarded headers först av allt: allt nedanför behöver klientens riktiga IP,
+// inte Vercels edge-adress (§KM.11).
+app.UseForwardedHeaders();
+
+// Correlation-ID därefter, så att även felhanterarens egna loggrader får med det.
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 
 // Loggar en rad per request i stället för flera — kompakt och lätt att följa.
 app.UseSerilogRequestLogging();
+
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
