@@ -1,4 +1,6 @@
+using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Infrastructure.Persistence;
+using KarraMatcher.Infrastructure.Persistence.Repositories;
 using KarraMatcher.Infrastructure.Persistence.Seed;
 
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +42,7 @@ public static class DependencyInjection
             }));
 
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<ITeamRepository, TeamRepository>();
 
         // Databaskontrollen taggas "ready". Därmed faller /health/ready när databasen
         // är onåbar, medan /health fortsätter svara — se §KM.11 och issue #8.
