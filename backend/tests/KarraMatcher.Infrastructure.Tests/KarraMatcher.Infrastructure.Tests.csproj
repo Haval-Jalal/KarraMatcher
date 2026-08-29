@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KarraMatcher.Infrastructure\KarraMatcher.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\KarraMatcher.Domain\KarraMatcher.Domain.csproj" />
   </ItemGroup>
 
 </Project>

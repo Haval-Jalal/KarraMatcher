@@ -88,6 +88,15 @@ Databasen är **Neon Postgres** i EU-region. API:t vägrar starta utan anslutnin
 — det är avsiktligt, så att en felkonfigurerad miljö upptäcks direkt i stället för
 vid första databasanropet.
 
+Lokalt körs migrationer och startdata automatiskt vid uppstart, styrt av
+`appsettings.Development.json`. I drift är båda avstängda som standard och slås på
+med `Database__ApplyMigrationsOnStartup` och `Database__SeedOnStartup` — att ändra ett
+databasschema ska inte ske av bara farten för att någon startade appen mot fel databas.
+
+**Startdata:** föreningen Kärra, åldersgruppen P2016 säsongen 2026, fyra lag, sju
+spelplatser med koordinater och 25 matcher. Seeden är idempotent — den körs vid varje
+driftsättning utan att dubblera något.
+
 **Frontend**
 
 ```bash
