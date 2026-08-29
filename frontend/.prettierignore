@@ -1,0 +1,8 @@
+dist
+coverage
+node_modules
+package-lock.json
+
+# Dokumentationen är handformaterad och delas med rotens dokument,
+# som ligger utanför Prettiers räckvidd. Låt den vara konsekvent.
+*.md
