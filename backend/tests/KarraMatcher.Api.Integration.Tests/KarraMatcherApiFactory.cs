@@ -31,6 +31,12 @@ public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
             "ConnectionStrings:Default",
             "Host=test;Database=test;Username=test;Password=test");
 
+        // Testerna styr sin egen databaslivscykel. Utan det här skulle
+        // appsettings.Development.json slå på migrationer, som in-memory-providern
+        // inte stödjer — testerna körs i Development-miljön.
+        builder.UseSetting(DatabaseInitializer.MigrateKey, "false");
+        builder.UseSetting(DatabaseInitializer.SeedKey, "false");
+
         builder.ConfigureServices(services =>
         {
             // EF tillater bara en provider per context. Npgsql-registreringen maste

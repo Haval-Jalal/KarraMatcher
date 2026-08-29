@@ -1,6 +1,7 @@
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Application;
 using KarraMatcher.Infrastructure;
+using KarraMatcher.Infrastructure.Persistence;
 
 using Serilog;
 
@@ -21,6 +22,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Migrationer och startdata körs bara när konfigurationen ber om det.
+await app.Services.InitializeDatabaseAsync();
 
 // Correlation-ID först, så att även felhanterarens egna loggrader får med det.
 app.UseMiddleware<CorrelationIdMiddleware>();

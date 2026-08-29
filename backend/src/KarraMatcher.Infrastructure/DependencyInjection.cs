@@ -1,4 +1,5 @@
 using KarraMatcher.Infrastructure.Persistence;
+using KarraMatcher.Infrastructure.Persistence.Seed;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +38,8 @@ public static class DependencyInjection
                 npgsql.EnableRetryOnFailure(maxRetryCount: 3, TimeSpan.FromSeconds(5), null);
                 npgsql.MigrationsAssembly(typeof(DependencyInjection).Assembly.FullName);
             }));
+
+        services.AddScoped<DatabaseSeeder>();
 
         // Databaskontrollen taggas "ready". Därmed faller /health/ready när databasen
         // är onåbar, medan /health fortsätter svara — se §KM.11 och issue #8.
