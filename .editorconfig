@@ -28,6 +28,14 @@ csharp_style_var_when_type_is_apparent = true:suggestion
 dotnet_style_readonly_field = true:warning
 dotnet_style_require_accessibility_modifiers = always:warning
 # Naming-reglerna provas i ordning - forsta traffen vinner.
+# Privata konstanter skrivs PascalCase, precis som publika.
+dotnet_naming_rule.private_const_pascal.severity = warning
+dotnet_naming_rule.private_const_pascal.symbols = private_const_fields
+dotnet_naming_rule.private_const_pascal.style = pascal
+dotnet_naming_symbols.private_const_fields.applicable_kinds = field
+dotnet_naming_symbols.private_const_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_const_fields.required_modifiers = const
+
 # Privata static readonly-falt ar konstanter i praktiken och skrivs PascalCase.
 dotnet_naming_rule.private_static_readonly_pascal.severity = warning
 dotnet_naming_rule.private_static_readonly_pascal.symbols = private_static_readonly_fields
@@ -51,3 +59,14 @@ dotnet_diagnostic.CS8600.severity = error
 dotnet_diagnostic.CS8602.severity = error
 dotnet_diagnostic.CS8603.severity = error
 dotnet_diagnostic.CS8618.severity = error
+
+# --- EF Core-genererade migrationer ---
+# Genererad kod ska inte hallas till samma stilregler som handskriven. Vi rattar
+# inte i migrationer for hand - och en migration som redan kort i en delad miljo
+# far aldrig redigeras alls (CLAUDE.md, Databas & migrations).
+[**/Persistence/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.IDE0300.severity = none
+dotnet_analyzer_diagnostic.severity = none
