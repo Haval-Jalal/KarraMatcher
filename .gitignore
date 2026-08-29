@@ -44,3 +44,8 @@ desktop.ini
 
 # --- Claude Code (maskinlokalt) ---
 .claude/settings.local.json
+
+# Databasdumpar. Skriptet lagger dem utanfor repot, men aldrig ar for kort tid
+# for att lita pa det - en dump innehaller barns fornamn (KM.1).
+*.dump
+*.sql.gz
