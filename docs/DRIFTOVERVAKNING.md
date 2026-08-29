@@ -25,7 +25,7 @@ En månad med 31 dagar är 744 timmar. En ping dygnet runt håller tjänsten vak
 | Strategi | Timmar per månad | Marginal till 750 |
 |---|---|---|
 | Ping var 5:e minut, dygnet runt | **744** (31-dagarsmånad) | **6 timmar** |
-| Fönstrad ping (vår lösning) | **~368** | **~382 timmar** |
+| Fönstrad ping (vår lösning) | **~251** | **~499 timmar** |
 
 Sex timmars marginal betyder att en enda extra fri tjänst, en serie omdeployer eller en
 trafiktopp kan släcka hela appen i upp till trettio dagar. Det är ett dåligt byte för en
@@ -39,11 +39,11 @@ Tjänsten hålls vaken när appen används, och tillåts sova när den inte gör
 
 | När | Intervall | Varför |
 |---|---|---|
-| **Fredag 15:00 – söndag 23:59** | var 5:e minut | Matchhelgen. Ingen förälder ska möta en kallstart lördag morgon |
-| **Övrig tid** | varje timme | Räcker för att upptäcka avbrott. Tjänsten är vaken ~15 min per timme |
+| **Fredag 15:00 – söndag 22:59** | var 5:e minut | Matchhelgen. Ingen förälder ska möta en kallstart lördag morgon |
+| **Varje dag 14:50** | tre anrop på sex minuter | Daglig hjärtslagskontroll — och det som gör att fredagsfönstret startar varmt |
 
-**Räkningen:** 57 timmar i fönstret plus 111 timmar × 25 % utanför = ~85 timmar i veckan,
-alltså **~368 timmar i månaden**. Marginalen till taket är ~382 timmar.
+**Räkningen:** 56 timmar i helgfönstret plus ~1,4 timmar för vardagarnas kontroll =
+~58 timmar i veckan, alltså **~251 timmar i månaden**. Marginalen till taket är ~499 timmar.
 
 ### Vad det kostar
 
@@ -52,8 +52,10 @@ tjänsten vaknar. Det är **en person som gör en planerad sak**, inte hundra f�
 snabbt vill se en matchtid. UI:t ska säga ifrån på svenska vid långsamt svar (§KM.11), inte
 visa en spinner som ser trasig ut.
 
-Utanför fönstret upptäcks ett avbrott inom en timme i stället för inom fem minuter. Under
-helgen, när det spelar roll, är det fortfarande fem minuter.
+Utanför helgen upptäcks ett avbrott vid nästa dagliga kontroll, alltså inom ett dygn. Under
+helgen, när det spelar roll, är det fem minuter. Det är en medveten avvägning: en app som
+ingen öppnar på en tisdagsnatt har inte samma brådska som en som hundra föräldrar väntar på
+en lördagsmorgon.
 
 ### Edge-cachen bär det vanliga fallet
 
@@ -69,6 +71,17 @@ mellan en förälder och en kallstart.
 schemaläggning per veckodag och timme, och avisering både när ett jobb börjar fallera och när
 det fungerar igen. EU-baserad tjänst.
 
+### Tre gränser som formar hela upplägget
+
+| Gräns | Konsekvens för oss |
+|---|---|
+| **30 sekunders timeout, går inte att höja** | Render tar upp till en minut att vakna. Ett anrop mot en sovande tjänst kan alltså timea ut även när allt fungerar |
+| **Jobb stängs av automatiskt efter fler än 25 misslyckanden i rad** | Ett jobb som alltid möter en kallstart slutar tyst att existera |
+| 64 kB maximalt svar | Ofarligt här — `/health` svarar med ordet `Healthy` |
+
+Den första gränsen är den som avgör utformningen nedan, och den är lätt att gå bort sig på:
+**ett jobb som pingar en sovande tjänst kommer att larma fastän ingenting är fel.**
+
 ### Varför inte GitHub Actions
 
 En schemalagd workflow hade varit gratis och legat i repot. Två saker gör den olämplig:
@@ -81,47 +94,64 @@ egenskap för något som ska hålla en tjänst vaken.
 
 ## Sätta upp
 
-Fyra jobb. Alla pekar på `/health` — **aldrig** på en tung endpoint, och aldrig på
-`/health/ready`, som går ner i databasen och skulle belasta Neon i onödan.
+Alla jobb pekar på `/health` — **aldrig** på en tung endpoint, och aldrig på `/health/ready`,
+som går ner i databasen och skulle belasta Neon i onödan:
+
+```
+https://karramatcher-api.onrender.com/health
+```
 
 Adressen är backendens Render-URL direkt, inte Vercel-domänen. `/health` ligger utanför
 `/api`-rewriten och proxas inte.
 
-### Jobb 1–3: matchhelgen, var 5:e minut
+### Mönstret: väck först, larma sedan
 
-cron-job.org schemalägger som en korsprodukt av veckodagar och timmar, så helgfönstret
-behöver tre jobb för att få rätt start- och sluttid:
+Ett enda jobb som både väcker tjänsten och larmar när den inte svarar går inte att få tyst.
+Väckningen tar upp till en minut, timeouten är 30 sekunder, och resultatet blir ett larm i
+timmen som ingen orkar läsa.
 
-| Jobb | Veckodag | Timmar | Minuter |
-|---|---|---|---|
-| `karra-halsa-fredag` | Fredag | 15–23 | var 5:e |
-| `karra-halsa-lordag` | Lördag | 0–23 | var 5:e |
-| `karra-halsa-sondag` | Söndag | 0–22 | var 5:e |
+Därför delas jobbet i två:
 
-### Jobb 4: övrig tid, varje timme
+- **Uppvärmningsjobbet** anropar tjänsten och **har notiser avstängda**. Att det ibland timear
+  ut är väntat och ointressant — anropet väcker Render ändå.
+- **Hälsokollen** kommer några minuter senare, när tjänsten redan är vaken, och **har notiser
+  påslagna**. Svarar den inte då är något verkligen fel.
 
-| Jobb | Veckodag | Timmar | Minuter |
-|---|---|---|---|
-| `karra-halsa-baslinje` | Alla | 0–23 | `0` |
+Uppvärmningen gör **två** anrop, inte ett. Det andra lyckas nästan alltid, vilket nollställer
+räknaren för misslyckanden i rad — annars stängs jobbet av automatiskt efter 25 dygn.
 
-Det överlappar helgjobben, vilket är ofarligt — tjänsten är redan vaken då.
+### De fem jobben
 
-### Steg för steg
+| # | Title | Veckodag | Timmar | Minuter | Notiser |
+|---|---|---|---|---|---|
+| 1 | `karra-uppvarmning` | Alla | 14 | 50 och 53 | **AV** |
+| 2 | `karra-halsokoll` | Alla | 14 | 56 | **PÅ** |
+| 3 | `karra-helg-fredag` | Endast fredag | 15–23 | var 5:e | **PÅ** |
+| 4 | `karra-helg-lordag` | Endast lördag | 0–23 | var 5:e | **PÅ** |
+| 5 | `karra-helg-sondag` | Endast söndag | 0–22 | var 5:e | **PÅ** |
 
-1. Skapa konto på [cron-job.org](https://cron-job.org) och verifiera e-postadressen.
-   **Använd en adress du faktiskt läser** — det är den som larmet går till.
-2. **Create cronjob**.
-3. **Title:** enligt tabellen ovan. **URL:** backendens `/health`.
-4. Under **Schedule**, välj **Custom** och kryssa i veckodagar, timmar och minuter enligt
-   tabellen.
-5. Under **Notifications**, slå på avisering vid **failure** och vid **success after
-   failure**. Det andra är lika viktigt — utan det vet du inte när något är löst.
-6. Sätt **Request timeout** till minst **60 sekunder**. En tjänst som håller på att vakna tar
-   ungefär en minut, och en kortare timeout ger falsklarm varje gång den startar.
-7. Spara. Upprepa för alla fyra jobben.
+Jobb 1 och 2 är den dagliga hjärtslagskontrollen. De fyller dessutom en andra funktion:
+klockan 14:50 på fredagen värms tjänsten upp, så att helgfönstret som startar 15:00 möter en
+**vaken** tjänst i stället för en kallstart. Utan det hade veckans första helgping larmat.
 
-> **Timeouten är inte en detalj.** Med standardvärdet larmar baslinjejobbet varje gång
-> tjänsten vaknar, och larm som ljuger slutar man läsa.
+Jobb 3–5 håller tjänsten vaken hela matchhelgen. Efter det första anropet är den varm, så
+alla efterföljande svarar på bråkdelen av en sekund — ett larm därifrån är alltid äkta.
+
+Helgen hänger ihop av sig själv: fredagens fönster löper in i lördagen, och lördagens in i
+söndagen. Tjänsten hinner aldrig somna däremellan.
+
+### Steg för steg, per jobb
+
+1. **Create cronjob**.
+2. **Title** och **URL** enligt tabellen ovan.
+3. Under **Execution schedule**, välj **Custom** och kryssa i veckodagar, timmar och minuter.
+4. Under **Notifications**: slå på både *failure* och *success after failure* — utom på jobb 1,
+   där **allt ska vara avstängt**.
+5. Låt **Request timeout** stå på maxvärdet. Det är 30 sekunder och går inte att höja.
+6. **Create**.
+
+> Slår du på notiser för jobb 1 får du ett falsklarm varje gång tjänsten vaknar. Det är hela
+> anledningen till att jobbet finns.
 
 ---
 
@@ -130,8 +160,8 @@ Det överlappar helgjobben, vilket är ofarligt — tjänsten är redan vaken d�
 Ett larm som aldrig prövats är en förhoppning, inte ett larm.
 
 1. Gå till Renders dashboard → tjänsten → **Suspend Service**.
-2. Vänta tills nästa körning av `karra-halsa-baslinje` (som mest en timme). Under helgen går
-   det på fem minuter.
+2. Vänta till nästa körning av **`karra-halsokoll`** (kl 14:56). Vill du inte vänta ett dygn:
+   gör testet under helgen, då går något av helgjobben inom fem minuter.
 3. **Kontrollera att mejlet faktiskt kom fram** — inklusive skräpposten. Kom det inte fram är
    larmkanalen inte verifierad, oavsett vad cron-job.org visar i sitt gränssnitt.
 4. **Resume Service** i Render.
@@ -145,9 +175,9 @@ Ett larm som aldrig prövats är en förhoppning, inte ett larm.
 Fotbollssäsongen sträcker sig ungefär april till oktober. Under vintern finns inga matcher,
 och helgfönstret fyller ingen funktion.
 
-**Pausa jobb 1–3** i cron-job.org när säsongen är slut. Låt `karra-halsa-baslinje` gå — den
-kostar ~120 timmar i månaden och är det som säger till om något gått sönder medan ingen
-tittade.
+**Pausa jobb 3–5** i cron-job.org när säsongen är slut. Låt `karra-uppvarmning` och
+`karra-halsokoll` gå — tillsammans kostar de under 10 timmar i månaden och är det som säger
+till om något gått sönder medan ingen tittade.
 
 Aktivera dem igen inför säsongsstart, i samma veva som säsongens schema läggs in och en dump
 tas ([`DATABAS-BACKUP.md`](./DATABAS-BACKUP.md)).
