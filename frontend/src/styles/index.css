@@ -1,109 +1,189 @@
+/*
+ * Basen för appens utseende. Mobil först, ljust och mörkt läge.
+ *
+ * Identiteten ärvs från den handbyggda föregångaren: lagfärgen som accent, kortbaserad
+ * layout och stora träffytor. Systemtypsnitt tills vidare — Barlow hämtas i #26, där
+ * PWA-tillgångarna paketeras och typsnitten kan ligga lokalt i stället för att kosta en
+ * extern förfrågan på dålig täckning.
+ */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --surface: #ffffff;
+  --surface-raised: #f7f7f8;
+  --text: #2b2b30;
+  --text-strong: #0d0d10;
+  --text-muted: #5d5d66;
+  --border: #d9d9de;
+  --focus: #1e3f8a;
+  --danger: #a4262c;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Sätts av appen när ett lag valts. Gråtonen gäller innan dess. */
+  --team-accent: #8a8a92;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  --radius: 12px;
+  --tap-target: 44px;
+
+  --sans: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  font: 16px/1.5 var(--sans);
   color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  background: var(--surface);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    --surface: #16161a;
+    --surface-raised: #1f1f25;
+    --text: #d8d8dd;
+    --text-strong: #f5f5f7;
+    --text-muted: #9a9aa4;
+    --border: #34343c;
+    --focus: #8fb0ff;
+    --danger: #ff8f96;
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: var(--surface);
+  color: var(--text);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+#root {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: 100svh;
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--text-strong);
+  margin: 0 0 4px;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+
+/* Accentremsan under rubriken — det tydligaste stället lagfärgen syns. */
+.app-header {
+  border-bottom: 4px solid var(--team-accent);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
 }
-p {
+
+.app-header__subtitle {
+  color: var(--text-muted);
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+h2 {
+  font-size: 18px;
+  color: var(--text-strong);
+  margin: 0 0 12px;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* Synlig fokusmarkering överallt — WCAG 2.4.7. Aldrig outline: none. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---- Lagväljaren ---------------------------------------------------------- */
+
+.team-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.team-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-target);
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.team-picker__option[aria-pressed='true'] {
+  border-color: var(--team-color);
+  border-width: 3px;
+  padding: 9px 11px; /* Kompenserar den tjockare ramen så knappen inte hoppar. */
+}
+
+/*
+ * Lagfärgen som bricka, aldrig som bakgrund bakom text. Vit (#D9D9D9) och Svart (#161616)
+ * går inte att hålla WCAG-kontrast mot i ljust respektive mörkt läge — med brickan står
+ * texten alltid mot sidans bakgrund i stället. Ringen gör att båda syns i båda lägena.
+ */
+.team-picker__swatch {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--team-color);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.team-picker__name {
+  flex: 1 1 auto;
+}
+
+/* Bocken är den andra signalen: valet får inte bäras av färg ensamt (WCAG 1.4.1). */
+.team-picker__check {
+  flex: 0 0 auto;
+  width: 1em;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+/* ---- Tillstånd ------------------------------------------------------------ */
+
+.state {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.state--error {
+  color: var(--danger);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.button {
+  min-height: var(--tap-target);
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

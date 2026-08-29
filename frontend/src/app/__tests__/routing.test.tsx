@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import {
   createMemoryHistory,
   createRootRoute,
@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest'
 
 import { NotFound } from '@/components/NotFound'
 import { StartPage } from '@/features/start/StartPage'
+import { renderWithProviders } from '@/test/renderWithProviders'
 
 /**
  * Bygger samma routeträd som appen, men med ett minneshistorik så att vi kan
@@ -35,7 +36,8 @@ function renderAt(path: string) {
   })
 
   // Routern är typad mot appens egna träd; här bygger vi ett eget för testet.
-  render(<RouterProvider router={router as never} />)
+  // Providerkedjan behövs eftersom startsidan hämtar lagen.
+  renderWithProviders(<RouterProvider router={router as never} />)
 }
 
 describe('routing', () => {
