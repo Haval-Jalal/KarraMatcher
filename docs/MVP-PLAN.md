@@ -78,7 +78,7 @@ rewriten, inte direkt mot Render), har schemat i databasen, och CI är grön.
 
 ## M3 — Tränaradmin
 
-*Blockerad av öppna frågor #1 och #2 — förankra med tränarna först.*
+*Avblockerad 2026-08-29: tränarna vill ha appen, och klubbens officiella verktyg används inte.*
 
 - [ ] Skapa, ändra, ta bort och ställa in match — med audit-logg
 - [ ] Tränarroll bunden till eget lag; `Admin` för alla lag
