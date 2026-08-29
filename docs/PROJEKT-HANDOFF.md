@@ -63,7 +63,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#15` Uppetidsverktyg som pingar `/health` | Haval | `feature/uptime-monitoring` | In Review — strategi och rutin klara, jobben ska sättas upp i cron-job.org |
+| `#15` Uppetidsverktyg som pingar `/health` | Haval | `feature/uptime-monitoring` | In Review — jobben uppsatta, larmet verifierat 2026-08-30 |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*

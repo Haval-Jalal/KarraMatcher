@@ -186,8 +186,37 @@ tas ([`DATABAS-BACKUP.md`](./DATABAS-BACKUP.md)).
 
 ## Genomförda larmtester
 
+**2026-08-30, 00:24 — larmet verifierat på riktigt.**
+
+Tjänsten suspenderades i Renders dashboard medan `/health` mättes utifrån var 15:e sekund:
+
+```
+00:24:04  200        senast uppe
+00:24:19  503   ┐
+   ...           |   nedtid: 1 min 45 s
+00:25:49  503   ┘
+00:26:04  200        tillbaka
+```
+
+**Larmmejlet kom 00:25**, alltså inom en dryg minut från att tjänsten gick ner. Det var
+`karra-helg-sondag` som fångade felet — den går var femte minut, och körningen kring 00:25
+låg inuti nedtidsfönstret.
+
+### Lärdom om själva testet
+
+Nedtiden blev bara 105 sekunder, och helgjobben går var femte minut. Fönstret rymde alltså
+**en enda** möjlig körning. Den träffade — men hade den inte gjort det hade utfallet varit
+tvetydigt: uteblivet mejl kan lika gärna betyda "larmet är trasigt" som "ingen körning hann
+med".
+
+**Låt tjänsten ligga nere i minst sex minuter nästa gång**, så att minst en körning garanterat
+träffar. Under vardagar, när bara `karra-halsokoll` går klockan 14:56, gäller i stället att
+testet måste omfatta den tidpunkten.
+
+### Tabell
+
 En rad per test. Testa om larmet någon gång byter kanal eller e-postadress.
 
 | Datum | Utförd av | Resultat |
 |---|---|---|
-| *(fyll i vid första testet)* | | |
+| 2026-08-30 | Haval | ✅ Larm inom 1 min. Nedtid verifierad utifrån: 00:24:19–00:25:49 |
