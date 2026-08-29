@@ -1,10 +1,12 @@
 import { ApiError } from '@/lib/api'
 
 import { MatchList } from './MatchList'
+import { NextMatchCard } from './NextMatchCard'
 import { useTeamMatches } from './useTeamMatches'
 
 /**
- * Containern runt matchlistan. Hämtar schemat och hanterar varje tillstånd.
+ * Containern runt schemat: nästa match-kortet och matchlistan. Hämtar en gång och äger
+ * ordningen dem emellan, så att kortet alltid hamnar överst.
  *
  * Fyra utfall kräver olika text, eftersom de kräver olika saker av läsaren: nätet är
  * nere, laget finns inte, servern strular, eller allt fungerar. "Något gick fel" hade
@@ -53,5 +55,11 @@ export function MatchListSection({ slug }: { slug: string }) {
     )
   }
 
-  return <MatchList matches={data.matches} />
+  return (
+    <>
+      <NextMatchCard matches={data.matches} />
+      <h2 className="match-list__title">Matcher</h2>
+      <MatchList matches={data.matches} />
+    </>
+  )
 }
