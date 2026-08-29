@@ -25,6 +25,7 @@ tränarnas schemaverktyg.
 | [`STANDARDER-VID-BEHOV.md`](./STANDARDER-VID-BEHOV.md) | Element som införs först när triggern uppfylls (YAGNI) |
 | [`SAKERHET-CHECKLISTA.md`](./SAKERHET-CHECKLISTA.md) | Auditerbar releasegrind — bockas av före varje produktionssläpp |
 | [`docs/DATABAS-BACKUP.md`](./docs/DATABAS-BACKUP.md) | **Läses när något gått fel.** Backuprutin och återställning, steg för steg |
+| [`docs/DRIFTOVERVAKNING.md`](./docs/DRIFTOVERVAKNING.md) | Uppetidsövervakning, pingschema och Renders timbudget |
 
 ## Teknik
 
@@ -57,7 +58,8 @@ KarraMatcher/
 ├─ docs/
 │   ├─ PROJEKT-HANDOFF.md     levande status
 │   ├─ MVP-PLAN.md            milstolpar
-│   └─ DATABAS-BACKUP.md      backuprutin och återställning
+│   ├─ DATABAS-BACKUP.md      backuprutin och återställning
+│   └─ DRIFTOVERVAKNING.md    uppetidsövervakning
 ├─ scripts/
 │   └─ Backup-Database.ps1    dump och bevisad återställning
 ├─ backend/                   .NET-lösningen
