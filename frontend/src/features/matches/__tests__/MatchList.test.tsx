@@ -142,3 +142,97 @@ describe('MatchList — tidigare matcher', () => {
     expect(screen.queryByRole('button', { name: /tidigare/ })).not.toBeInTheDocument()
   })
 })
+
+describe('MatchList — matchen som redan visas i kortet', () => {
+  it('utesluter kortets match ur listan', () => {
+    render(
+      <MatchList
+        matches={[
+          testMatch('i-kortet', '2026-09-20T12:00:00Z'),
+          testMatch('nasta', '2026-09-27T12:00:00Z'),
+        ]}
+        now={now}
+        excludeId="i-kortet"
+      />,
+    )
+
+    expect(screen.queryByText(/Motstandare i-kortet/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Motstandare nasta/)).toBeInTheDocument()
+  })
+
+  it('visar fortfarande en inställd match som kortet hoppade över', () => {
+    // Kortet hoppar över inställda matcher, så den som visas där är inte alltid listans
+    // första. Att i stället ta bort första posten hade dolt just den inställda matchen —
+    // som är den föräldrar behöver se.
+    render(
+      <MatchList
+        matches={[
+          testMatch('installd', '2026-09-18T12:00:00Z', { status: 'Cancelled' }),
+          testMatch('i-kortet', '2026-09-20T12:00:00Z'),
+        ]}
+        now={now}
+        excludeId="i-kortet"
+      />,
+    )
+
+    expect(screen.getByText(/Motstandare installd/)).toBeInTheDocument()
+    expect(screen.getByText('Inställd')).toBeInTheDocument()
+    expect(screen.queryByText(/Motstandare i-kortet/)).not.toBeInTheDocument()
+  })
+
+  it('renderar ingen tom Idag-rubrik när dagens enda match ligger i kortet', () => {
+    render(
+      <MatchList
+        matches={[
+          testMatch('idag', '2026-09-15T16:00:00Z'),
+          testMatch('sen', '2026-09-27T12:00:00Z'),
+        ]}
+        now={now}
+        excludeId="idag"
+      />,
+    )
+
+    expect(screen.queryByRole('heading', { name: 'Idag' })).not.toBeInTheDocument()
+  })
+
+  it('säger att inga fler matcher finns när kortets match var den enda', () => {
+    render(
+      <MatchList
+        matches={[testMatch('enda', '2026-09-20T12:00:00Z')]}
+        now={now}
+        excludeId="enda"
+      />,
+    )
+
+    expect(screen.getByText('Inga fler matcher är inlagda.')).toBeInTheDocument()
+  })
+
+  it('säger inte att säsongen är slut när ett kort visar en kommande match', () => {
+    // Kortet står kvar ovanför. "Säsongen är slut" hade motsagt det som syns strax ovan.
+    render(
+      <MatchList
+        matches={[
+          testMatch('spelad', '2026-08-15T12:00:00Z'),
+          testMatch('i-kortet', '2026-09-20T12:00:00Z'),
+        ]}
+        now={now}
+        excludeId="i-kortet"
+      />,
+    )
+
+    expect(screen.queryByText(/Säsongen är slut/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Visa 1 tidigare match/ })).toBeInTheDocument()
+  })
+
+  it('visar hela listan när inget kort finns', () => {
+    render(
+      <MatchList
+        matches={[testMatch('a', '2026-09-20T12:00:00Z'), testMatch('b', '2026-09-27T12:00:00Z')]}
+        now={now}
+      />,
+    )
+
+    expect(screen.getByText(/Motstandare a/)).toBeInTheDocument()
+    expect(screen.getByText(/Motstandare b/)).toBeInTheDocument()
+  })
+})
