@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KarraMatcher.Api/KarraMatcher.Api.csproj" />
+    <Project Path="src/KarraMatcher.Application/KarraMatcher.Application.csproj" />
+    <Project Path="src/KarraMatcher.Domain/KarraMatcher.Domain.csproj" />
+    <Project Path="src/KarraMatcher.Infrastructure/KarraMatcher.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KarraMatcher.Api.Integration.Tests/KarraMatcher.Api.Integration.Tests.csproj" />
+    <Project Path="tests/KarraMatcher.Application.Tests/KarraMatcher.Application.Tests.csproj" />
+    <Project Path="tests/KarraMatcher.Architecture.Tests/KarraMatcher.Architecture.Tests.csproj" />
+    <Project Path="tests/KarraMatcher.Domain.Tests/KarraMatcher.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
