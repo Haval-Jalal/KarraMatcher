@@ -97,6 +97,14 @@ databasschema ska inte ske av bara farten för att någon startade appen mot fel
 spelplatser med koordinater och 25 matcher. Seeden är idempotent — den körs vid varje
 driftsättning utan att dubblera något.
 
+Två saker som är lätta att snäva på:
+
+- **`dotnet ef` läser inte user-secrets.** Ange anslutningen uttryckligen när du kör
+  migrationer: `dotnet ef database update --connection "<sträng>"`.
+- **`dotnet run` tvingar Development** via `Properties/launchSettings.json`, oavsett vad
+  `ASPNETCORE_ENVIRONMENT` säger. Vill du prova produktionsbeteende lokalt behövs
+  `--no-launch-profile`. Render påverkas inte — containern startar binären direkt.
+
 **Frontend**
 
 ```bash
