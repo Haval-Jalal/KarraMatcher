@@ -25,9 +25,20 @@ public class ProjectReferenceTests
         return XDocument.Load(path);
     }
 
+    /// <summary>
+    /// Plockar projektnamnet ur ett Include-attribut.
+    ///
+    /// MSBuild skriver sökvägar med omvänt snedstreck oavsett plattform. Windows
+    /// behandlar det som separator, Linux gör det inte — så
+    /// <c>Path.GetFileNameWithoutExtension</c> direkt på råvärdet ger rätt svar på
+    /// utvecklarmaskinen och fel i CI. Vi normaliserar därför först.
+    /// </summary>
+    internal static string ProjectNameFrom(string include) =>
+        Path.GetFileNameWithoutExtension(include.Replace(@"\", "/", StringComparison.Ordinal));
+
     private static string[] DeclaredReferences(string project) =>
         [.. Load(project).Descendants("ProjectReference")
-            .Select(e => Path.GetFileNameWithoutExtension((string?)e.Attribute("Include") ?? string.Empty))];
+            .Select(e => ProjectNameFrom((string?)e.Attribute("Include") ?? string.Empty))];
 
     private static string[] DeclaredPackages(string project) =>
         [.. Load(project).Descendants("PackageReference")
