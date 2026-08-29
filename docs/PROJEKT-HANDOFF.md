@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** M0 pågår — 2 av 15 issues klara. Backend-lösningen står, frontenden näst
+- **Fas:** M0 pågår — 3 av 15 issues klara. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M0 — Grund (ej påbörjad)
 - **Hälsa:** 🟢 på plan
@@ -27,7 +27,7 @@
 | Resurs | Länk |
 |--------|------|
 | Projektboard (GitHub Projects) | https://github.com/users/Haval-Jalal/projects/7 |
-| Repo | https://github.com/Haval-Jalal/KarraMatcher *(privat)* |
+| Repo | https://github.com/Haval-Jalal/KarraMatcher *(publikt)* |
 | Regelverk (HUR) | [`CLAUDE.md`](../CLAUDE.md) |
 | Produktspec (VAD & VARFÖR) | [`SPEC.md`](../SPEC.md) |
 | Standarder vid behov | [`STANDARDER-VID-BEHOV.md`](../STANDARDER-VID-BEHOV.md) |
@@ -38,6 +38,7 @@
 | Miljöer (staging / prod) | *ej uppsatta — M0* |
 
 ## ✅ Klart hittills
+- `#3` Vite-frontend med strict TypeScript, TanStack Router och Query — 2026-08-29
 - `#2` .NET-lösningen med fyra lager, fyra testprojekt och arkitekturtester — 2026-08-29
 - `#1` .NET 10 LTS installerat och låst med `global.json` — 2026-08-29
 - Repo, projektboard och 73 issues fördelade på nio milstolpar — 2026-08-29
@@ -81,8 +82,9 @@
 | 2026-08-29 | **Milstolparna omordnade till M0–M8** | Inloggningen behövs av tränaradmin och samåkning men inte längre av statistiken | Konto och roller blev en egen milstolpe (M2) före tränaradmin (M3). Spelarkortet (M4) är helt frikopplat och kan byggas parallellt |
 | 2026-08-29 | **Öppen läsning, autentiserad skrivning** | En förälder som bara vill se matchtiden ska aldrig mötas av inloggning | Avvikelse §KM.0 A4. Kräver rate limiting från start och att publika endpoints aldrig returnerar PII |
 | 2026-08-29 | **Kallelse byggs men aktiveras inte** | Det finns redan appar för kallelse; funktionen ska finnas den dag klubben vill byta | `Team.AttendanceEnabled` kontrolleras serverside. Ingen komplett trupp krävs vid lansering |
-| 2026-08-29 | **Repot förblir privat tills appen är färdigbyggd, och görs publikt vid lansering** | Vi vill inte visa halvfärdig kod, men det finns inget skäl att hålla en ideell klubbapp stängd i längden | Branch protection får vänta — `.githooks/pre-push` är spärren så länge. **Påverkar mediator-valet:** en copyleft-licens som RPL-1.5 kräver källkodspublicering redan vid driftsättning, och vi driftsätter från M0 |
-| 2026-08-29 | **Branch protection skjuts upp** | Kräver GitHub Pro eller publikt repo; ensam utvecklare och hooken räcker tå slänge | Återupptas när repot blir publikt vid lansering — då är den gratis |
+| 2026-08-29 | **Repot är publikt** | Ingen anledning att hålla en ideell klubbapp stängd. Beslutet togs efter att innehållet i den borttagna mallmappen granskats i detalj | Branch protection är nu gratis om den ska slås på. **Påverkar mediator-valet:** RPL-1.5 kräver källkodspublicering vid driftsättning — med publikt repo är det uppfyllt, men vår egen kod skulle då hamna under copyleft |
+| 2026-08-29 | **Branch protection skjuts upp** | Ensam utvecklare, och `.githooks/pre-push` räcker | Kan slås på när som helst nu när repot är publikt |
+| 2026-08-29 | **`mallar/` borttagen ur hela historiken** | Mappen innehöll en affärsplan för en orelaterad produkt och hörde inte hemma i det här repot | Historiken är omskriven och force-pushad. Se känd risk nedan om gamla objekt |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
 | 2026-08-29 | **Rate limiting och DB-backup lyfts till baslinje** | Publika endpoints på öppet internet; familjestatistik går inte att återskapa | Avvikelse §KM.0 A1 och A2 — byggs i M0–M1 i stället för "vid behov" |
 
@@ -114,5 +116,6 @@
 | **Spelarkortet kan gå förlorat** | Telefonbyte, rensad webbläsardata eller iOS som gallrar lagring för en app som inte använts på en vecka → en hel säsong borta | Säkerhetskopieringskod som förstaklassfunktion, `navigator.storage.persist()`, tydlig uppmaning att installera på hemskärmen, och ärlig text om var datan finns (§KM.2) |
 | **Gamla JSONBin-nyckeln lever kvar** | Master-nyckel i en telefons localStorage ger åtkomst till hela JSONBin-kontot | Rotera nyckeln på jsonbin.io. Checklistan rad 7.7 |
 | **Ingen branch protection på GitHub** | Privat repo utan GitHub Pro kan inte skydda `main`. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tå vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Riktig branch protection kommer gratis när repot blir publikt vid lansering |
+| **Gamla objekt kvar på GitHub efter historikomskrivning** | Att skriva om historik raderar inte gamla objekt hos GitHub — de nås via sina SHA:n tills GitHub kör städning, och SHA:na syns i commitlistorna på mergade PR:ar. Verifierat: den borttagna filen gick att hämta via `?ref=<gammal SHA>` även efter omskrivningen | **Accepterad risk** (beslut 2026-08-29) — innehållet granskades och bedömdes okritiskt. **Lärdom:** kontrollera vad en mapp innehåller *innan* den checkas in; en omskrivning i efterhand är aldrig fullständig utan att be GitHub köra `gc` |
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |
