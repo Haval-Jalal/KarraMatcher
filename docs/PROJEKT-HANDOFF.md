@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** Planering — regelverk och spec satta, inget kodat än
+- **Fas:** M0 påbörjad — repo, board och 73 issues på plats, ingen produktkod än
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M0 — Grund (ej påbörjad)
 - **Hälsa:** 🟢 på plan
@@ -26,8 +26,8 @@
 ## 🔗 Viktiga länkar
 | Resurs | Länk |
 |--------|------|
-| Projektboard (GitHub Projects) | *ej skapad — M0* |
-| Repo | *ej skapat — M0* |
+| Projektboard (GitHub Projects) | https://github.com/users/Haval-Jalal/projects/7 |
+| Repo | https://github.com/Haval-Jalal/KarraMatcher *(privat)* |
 | Regelverk (HUR) | [`CLAUDE.md`](../CLAUDE.md) |
 | Produktspec (VAD & VARFÖR) | [`SPEC.md`](../SPEC.md) |
 | Standarder vid behov | [`STANDARDER-VID-BEHOV.md`](../STANDARDER-VID-BEHOV.md) |
@@ -38,6 +38,7 @@
 | Miljöer (staging / prod) | *ej uppsatta — M0* |
 
 ## ✅ Klart hittills
+- Repo, projektboard och 73 issues fördelade på nio milstolpar — 2026-08-29
 - Genomgång av båda mallarna i sin helhet (13 filer) — 2026-08-29
 - Produktbeslut fattade (roller, statistikmodell, kallelse avstängd, omfattning) — 2026-08-29
 - Regelverk, spec, standarder och säkerhetschecklista skrivna och anpassade — 2026-08-29
@@ -105,4 +106,5 @@
 | **Barn-PII** | Ett läckage av barnuppgifter vore allvarligt, oavsett hur litet projektet är | Kraftigt reducerad: spelarkortet når aldrig servern (§KM.2), och truppen finns bara om kallelsen aktiveras. §KM.1 sätter taket på det som ändå lagras |
 | **Spelarkortet kan gå förlorat** | Telefonbyte, rensad webbläsardata eller iOS som gallrar lagring för en app som inte använts på en vecka → en hel säsong borta | Säkerhetskopieringskod som förstaklassfunktion, `navigator.storage.persist()`, tydlig uppmaning att installera på hemskärmen, och ärlig text om var datan finns (§KM.2) |
 | **Gamla JSONBin-nyckeln lever kvar** | Master-nyckel i en telefons localStorage ger åtkomst till hela JSONBin-kontot | Rotera nyckeln på jsonbin.io. Checklistan rad 7.7 |
+| **Ingen branch protection på GitHub** | Privat repo utan GitHub Pro kan inte skydda `main`. Ett misstag kan pusha direkt förbi PR-flödet | En incheckad `pre-push`-hook i `.githooks/` blockerar push till `main` lokalt. Aktiveras med `git config core.hooksPath .githooks` — måste sättas en gång per klon. Alternativet är att göra repot publikt, vilket ger branch protection gratis |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |
