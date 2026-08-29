@@ -1,0 +1,47 @@
+# Render Blueprint. Definierar backend-tjansten som kod sa att uppsattningen inte
+# bara bor i en dashboard dar ingen ser den.
+#
+# Peka Render pa repot och valj "New Blueprint" - den lasar den har filen.
+
+services:
+  - type: web
+    name: karramatcher-api
+    runtime: docker
+    plan: free
+
+    # Frankfurt. Samma region som Neon-databasen, och all data ska stanna inom EU.
+    region: frankfurt
+
+    branch: main
+    autoDeploy: true
+
+    # Byggkontexten ar repo-roten, sa att global.json och .editorconfig kommer med.
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+
+    # Render gor sin egen HTTP-halsokontroll. Darfor finns ingen HEALTHCHECK i
+    # imagen - den skulle vara beroende av verktyg som inte finns i den slimmade
+    # runtime-imagen, och rapportera unhealthy utan att nagon markte det.
+    #
+    # /health och inte /health/ready: liveness ror inte databasen, sa en hackande
+    # databas far inte Render att starta om en container som i ovrigt fungerar.
+    healthCheckPath: /health
+
+    envVars:
+      # Satts manuellt i Renders dashboard. sync: false betyder att vardet aldrig
+      # kommer fran den har filen - hemligheter hor inte hemma i ett publikt repo.
+      - key: ConnectionStrings__Default
+        sync: false
+
+      # Migrationer appliceras vid varje driftsattning.
+      - key: Database__ApplyMigrationsOnStartup
+        value: "true"
+
+      # Startdata ar redan inlagd. Lamnas avstangd med avsikt: seeden ar idempotent
+      # per naturlig nyckel, sa en match som en tranare tagit bort skulle komma
+      # tillbaka vid nasta driftsattning.
+      - key: Database__SeedOnStartup
+        value: "false"
+
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
