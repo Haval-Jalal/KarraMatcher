@@ -21,8 +21,17 @@ public enum EdgeCacheProfile
 }
 
 /// <summary>
-/// Markerar en endpoint som publikt cachebar. Läggs på som endpoint-metadata via
-/// <see cref="EdgeCache.WithEdgeCache"/> och läses av mellanvaran.
+/// Markerar en endpoint som publikt cachebar.
+///
+/// <para>
+/// Sätts som attribut på en controller-action, eller via
+/// <see cref="EdgeCache.WithEdgeCache"/> på en minimal-API-endpoint. Båda vägarna hamnar
+/// som endpoint-metadata, vilket är det mellanvaran läser — därför räcker en typ för båda.
+/// </para>
 /// </summary>
-/// <param name="Profile">Innehållstypen som avgör livslängden.</param>
-public sealed record EdgeCacheMetadata(EdgeCacheProfile Profile);
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
+public sealed class EdgeCacheAttribute(EdgeCacheProfile profile) : Attribute
+{
+    /// <summary>Innehållstypen som avgör livslängden.</summary>
+    public EdgeCacheProfile Profile { get; } = profile;
+}

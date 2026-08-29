@@ -20,7 +20,13 @@ builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraEdgeCache(builder.Configuration);
 
+builder.Services.AddControllers();
+
 builder.Services.AddProblemDetails();
+
+// Ordningen är betydelsefull: valideringshanteraren måste få se felet först, annars
+// blir en användares stavfel ett 500 i stället för ett 400.
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
 
@@ -52,6 +58,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapKarraHealthChecks();
+
+app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new { service = "KarraMatcher.Api", status = "up" }));
 

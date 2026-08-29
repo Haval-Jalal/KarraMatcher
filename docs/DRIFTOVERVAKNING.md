@@ -219,4 +219,4 @@ En rad per test. Testa om larmet någon gång byter kanal eller e-postadress.
 
 | Datum | Utförd av | Resultat |
 |---|---|---|
-| 2026-08-30 | Haval | ✅ Larm inom 1 min. Nedtid verifierad utifrån: 00:24:19–00:25:49 |
+| 2026-08-30 | Haval | ✅ Larm inom 1 min, och återhämtningsmejl efter omstart. Nedtid verifierad utifrån: 00:24:19–00:25:49 |

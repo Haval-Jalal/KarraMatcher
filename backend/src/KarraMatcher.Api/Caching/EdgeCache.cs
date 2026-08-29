@@ -51,7 +51,7 @@ public static class EdgeCache
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.Add(endpoint => endpoint.Metadata.Add(new EdgeCacheMetadata(profile)));
+        builder.Add(endpoint => endpoint.Metadata.Add(new EdgeCacheAttribute(profile)));
         return builder;
     }
 
@@ -65,7 +65,7 @@ public static class EdgeCache
                 .GetRequiredService<IOptions<EdgeCacheOptions>>()
                 .Value;
 
-            var metadata = context.GetEndpoint()?.Metadata.GetMetadata<EdgeCacheMetadata>();
+            var metadata = context.GetEndpoint()?.Metadata.GetMetadata<EdgeCacheAttribute>();
 
             if (metadata is null || !IsCacheableRequest(context.Request))
             {

@@ -17,6 +17,18 @@ namespace KarraMatcher.Api.Integration.Tests;
 /// </summary>
 public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// Databasnamnet måste vara stabilt för hela fabriken, men unikt mellan fabriker.
+    ///
+    /// <para>
+    /// <c>AddDbContext</c> kör sin options-lambda varje gång optionsobjektet byggs, alltså
+    /// en gång per scope. Ett <c>Guid.NewGuid()</c> inne i lambdan hade därför gett varje
+    /// scope en <em>egen tom</em> databas — ett test som lägger in data i ett scope och
+    /// läser i ett annat hade sett ingenting, utan att något såg trasigt ut.
+    /// </para>
+    /// </summary>
+    private readonly string _databaseName = $"karra-test-{Guid.NewGuid()}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -56,7 +68,7 @@ public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
             }
 
             services.AddDbContext<KarraMatcherDbContext>(options =>
-                options.UseInMemoryDatabase($"karra-test-{Guid.NewGuid()}"));
+                options.UseInMemoryDatabase(_databaseName));
         });
     }
 }
