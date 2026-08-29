@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kravspecifikation &amp; Struktur — Backend (C#) &amp; Frontend (React)</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --sidebar: #161922;
+    --panel: #1b1f2a;
+    --card: #20252f;
+    --accent: #4f9cff;
+    --accent-2: #34d399;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --border: #2a3040;
+    --code-bg: #11141b;
+    --tag-be: #4f9cff;
+    --tag-fe: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar h1 {
+    font-size: 16px;
+    margin: 0 20px 4px;
+    color: var(--text);
+  }
+  .sidebar .sub { font-size: 12px; color: var(--muted); margin: 0 20px 20px; }
+  .search {
+    margin: 0 16px 16px;
+    width: calc(100% - 32px);
+    padding: 9px 12px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .search::placeholder { color: var(--muted); }
+
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 20px 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot.be { background: var(--tag-be); }
+  .dot.fe { background: var(--tag-fe); }
+
+  nav a {
+    display: block;
+    padding: 8px 20px 8px 36px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+  }
+  nav a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  nav a.active {
+    color: var(--text);
+    border-left-color: var(--accent);
+    background: rgba(79,156,255,0.10);
+    font-weight: 600;
+  }
+  nav a.active.fe { border-left-color: var(--accent-2); background: rgba(52,211,153,0.10); }
+
+  /* Content */
+  .content { flex: 1; padding: 48px 56px; max-width: 980px; }
+  .panel { display: none; animation: fade .25s ease; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .breadcrumb { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .badge.be { background: rgba(79,156,255,0.15); color: var(--tag-be); }
+  .badge.fe { background: rgba(52,211,153,0.15); color: var(--tag-fe); }
+
+  h2 { font-size: 28px; margin: 8px 0 6px; }
+  h3 { font-size: 17px; margin: 30px 0 10px; color: var(--accent); }
+  .panel.fe h3 { color: var(--accent-2); }
+  .lead { font-size: 16px; color: var(--text); margin: 6px 0 8px; }
+  p { color: #cdd3de; }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  code { font-family: "JetBrains Mono", "Fira Code", Consolas, monospace; }
+  pre code { color: #d6deeb; }
+
+  .why {
+    background: var(--card);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 16px 0;
+  }
+  .panel.fe .why { border-left-color: var(--accent-2); }
+  .why strong { color: var(--text); }
+
+  .checklist {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px 8px;
+    margin: 22px 0;
+  }
+  .checklist h4 { margin: 0 0 10px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .checklist label { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 9px; cursor: pointer; color: #cdd3de; font-size: 14px; }
+  .checklist input { margin-top: 5px; accent-color: var(--accent); }
+  .panel.fe .checklist input { accent-color: var(--accent-2); }
+
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+  th { background: var(--card); color: var(--text); }
+  td { color: #cdd3de; }
+
+  .welcome { text-align: center; color: var(--muted); padding-top: 60px; }
+  .welcome h2 { color: var(--text); }
+  .pill-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .pill { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; min-width: 200px; }
+  .ok { color: var(--accent-2); }
+  .bad { color: #f87171; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #2c3344; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h1>Kravspecifikation &amp; Struktur</h1>
+    <p class="sub">C# Backend &amp; React Frontend — klicka på ett element</p>
+    <input class="search" id="search" placeholder="🔍 Sök element...">
+
+    <div class="group-title"><span class="dot be"></span> Backend (C#)</div>
+    <nav id="nav-be">
+      <a data-target="be-clean">Clean Architecture</a>
+      <a data-target="be-moduler">Moduler &amp; projektstruktur</a>
+      <a data-target="be-di">Dependency Injection (DI)</a>
+      <a data-target="be-dto">DTOs &amp; Mapping</a>
+      <a data-target="be-fluent">FluentValidation</a>
+      <a data-target="be-cqrs">CQRS &amp; MediatR</a>
+      <a data-target="be-error">Felhantering &amp; Result</a>
+      <a data-target="be-repo">Repository &amp; Persistence</a>
+      <a data-target="be-test">Tester</a>
+      <a data-target="be-auth">Authentication &amp; Authorization</a>
+      <a data-target="be-logging">Logging &amp; Observability</a>
+      <a data-target="be-api">API-design, versioning &amp; Swagger</a>
+      <a data-target="be-paging">Pagination, filtrering &amp; sortering</a>
+      <a data-target="be-cache">Caching</a>
+      <a data-target="be-config">Configuration &amp; Secrets</a>
+      <a data-target="be-security">Säkerhet (CORS, rate limit, headers)</a>
+      <a data-target="be-resilience">Background jobs &amp; resiliens</a>
+      <a data-target="be-cicd">CI/CD, Docker &amp; deployment</a>
+      <a data-target="be-naming">Naming &amp; kodstil</a>
+    </nav>
+
+    <div class="group-title"><span class="dot fe"></span> Frontend (React)</div>
+    <nav id="nav-fe">
+      <a data-target="fe-struktur" class="fe">Projekt- &amp; mappstruktur</a>
+      <a data-target="fe-komponenter" class="fe">Komponenter</a>
+      <a data-target="fe-props" class="fe">Props</a>
+      <a data-target="fe-state" class="fe">State</a>
+      <a data-target="fe-events" class="fe">Events</a>
+      <a data-target="fe-effect" class="fe">useEffect</a>
+      <a data-target="fe-villkor" class="fe">Villkorlig rendering</a>
+      <a data-target="fe-listor" class="fe">Listor &amp; keys</a>
+      <a data-target="fe-hooks" class="fe">Custom hooks</a>
+      <a data-target="fe-routing" class="fe">Routing &amp; skyddade routes</a>
+      <a data-target="fe-query" class="fe">Server-state (React Query)</a>
+      <a data-target="fe-global" class="fe">Global state (Context / Zustand)</a>
+      <a data-target="fe-forms" class="fe">Forms &amp; validering</a>
+      <a data-target="fe-auth" class="fe">Authentication &amp; API-lager</a>
+      <a data-target="fe-error" class="fe">Error boundaries &amp; felhantering</a>
+      <a data-target="fe-perf" class="fe">Performance &amp; optimering</a>
+      <a data-target="fe-testing" class="fe">Testning</a>
+      <a data-target="fe-a11y" class="fe">Tillgänglighet (a11y)</a>
+      <a data-target="fe-naming" class="fe">Naming &amp; kodstil</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <!-- WELCOME -->
+    <section class="panel active" id="welcome">
+      <div class="welcome">
+        <h2>👋 Välj ett element i menyn</h2>
+        <p>Varje element innehåller <strong>förklaring</strong>, <strong>kodexempel</strong>,
+           <strong>motivering (varför)</strong> och en <strong>checklista</strong> du kan bocka av.</p>
+        <div class="pill-row">
+          <div class="pill"><span class="dot be" style="display:inline-block"></span> <strong>Backend</strong><br><small>Clean Architecture, FluentValidation, CQRS, Tester…</small></div>
+          <div class="pill"><span class="dot fe" style="display:inline-block"></span> <strong>Frontend</strong><br><small>State, Props, Events, useEffect, Listor…</small></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BACKEND ============ -->
+
+    <section class="panel" id="be-clean">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Clean Architecture</h2>
+      <p class="lead">Dela upp koden i lager där beroenden alltid pekar <strong>inåt</strong> mot domänen. Domänen ska inte känna till EF Core, ASP.NET eller något ramverk.</p>
+
+      <h3>Lagerstruktur</h3>
+      <pre><code>Presentation (API)  →  Infrastructure  →  Application  →  Domain
+        Beroenden pekar alltid INÅT ───────────────────────►</code></pre>
+
+      <table>
+        <tr><th>Lager</th><th>Ansvar</th><th>Får bero på</th></tr>
+        <tr><td>Domain</td><td>Entiteter, value objects, affärsregler</td><td>Ingenting (rent C#)</td></tr>
+        <tr><td>Application</td><td>Use cases, CQRS-handlers, interfaces</td><td>Domain</td></tr>
+        <tr><td>Infrastructure</td><td>EF Core, repositories, externa tjänster</td><td>Application, Domain</td></tr>
+        <tr><td>Presentation/API</td><td>Controllers, endpoints, DI-setup</td><td>Application, Infrastructure</td></tr>
+      </table>
+
+      <h3>Exempel — domänentitet utan ramverksberoenden</h3>
+      <pre><code>// Domain/Entities/Order.cs
+public class Order
+{
+    public Guid Id { get; private set; }
+    public string CustomerName { get; private set; }
+    public OrderStatus Status { get; private set; }
+
+    private readonly List&lt;OrderItem&gt; _items = new();
+    public IReadOnlyCollection&lt;OrderItem&gt; Items =&gt; _items.AsReadOnly();
+
+    private Order() { } // EF Core
+
+    public Order(string customerName)
+    {
+        Id = Guid.NewGuid();
+        CustomerName = customerName;
+        Status = OrderStatus.Pending;
+    }
+
+    // Affärsregeln bor i domänen — inte i en controller
+    public void Confirm()
+    {
+        if (!_items.Any())
+            throw new DomainException("Cannot confirm an order without items.");
+        Status = OrderStatus.Confirmed;
+    }
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Kärnlogiken isoleras från teknik som byts ut ofta. Du kan byta databas eller ramverk utan att röra affärsreglerna — koden blir testbar, hållbar och lätt att resonera om.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Domain-projektet har <strong>noll</strong> ramverksreferenser (ingen EF, ingen ASP.NET).</label>
+        <label><input type="checkbox">Beroenden pekar bara inåt.</label>
+        <label><input type="checkbox">Affärsregler bor i Domain, inte i controllers.</label>
+        <label><input type="checkbox">Interfaces definieras i Application, implementeras i Infrastructure.</label>
+        <label><input type="checkbox">Entiteter skyddar sin invariant (privata settrar, validering i metoder).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-moduler">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Moduler &amp; projektstruktur</h2>
+      <p class="lead">Organisera koden <strong>per feature/modul</strong> (vertical slice), inte per teknisk typ. Allt som hör till "Orders" ligger tillsammans.</p>
+
+      <h3>Rekommenderad struktur</h3>
+      <pre><code>src/
+├── MyApp.Domain/
+│   ├── Entities/   ├── ValueObjects/   ├── Enums/   └── Exceptions/
+├── MyApp.Application/
+│   ├── Common/                 # Behaviors, interfaces, basklasser
+│   └── Features/
+│       └── Orders/             # ← modul: allt för "Orders"
+│           ├── Commands/CreateOrder/
+│           │     CreateOrderCommand.cs
+│           │     CreateOrderHandler.cs
+│           │     CreateOrderValidator.cs
+│           ├── Queries/GetOrderById/
+│           └── Dtos/
+├── MyApp.Infrastructure/
+│   ├── Persistence/  └── Repositories/
+└── MyApp.Api/
+    ├── Controllers/  ├── Middleware/  └── Program.cs
+
+tests/
+├── MyApp.UnitTests/   ├── MyApp.IntegrationTests/   └── MyApp.ArchitectureTests/</code></pre>
+
+      <div class="why"><strong>Varför:</strong> När du jobbar med en feature ligger allt på ett ställe — du slipper hoppa mellan tio mappar. Minskar merge conflicts och gör features lätta att hitta, ta bort eller flytta.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">En lösning (.sln) med separata projekt per lager.</label>
+        <label><input type="checkbox">Application organiserat per feature, inte per typ.</label>
+        <label><input type="checkbox">Varje feature har sin command/query, handler, validator och DTOs.</label>
+        <label><input type="checkbox">Gemensamt (interfaces, behaviors) ligger i Common/.</label>
+        <label><input type="checkbox">Separata testprojekt för unit, integration och arkitektur.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-di">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Dependency Injection (DI)</h2>
+      <p class="lead">Koppla in beroenden via konstruktorn istället för <code>new</code>. Varje lager exponerar en egen <code>AddXxx</code>-extension för att hålla <code>Program.cs</code> ren.</p>
+
+      <h3>Registrering per lager</h3>
+      <pre><code>// Application/DependencyInjection.cs
+public static IServiceCollection AddApplication(this IServiceCollection services)
+{
+    services.AddMediatR(cfg =&gt;
+        cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+    services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+    services.AddTransient(typeof(IPipelineBehavior&lt;,&gt;), typeof(ValidationBehavior&lt;,&gt;));
+    return services;
+}
+
+// Program.cs
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration)
+    .AddPresentation();</code></pre>
+
+      <h3>Livstider — välj rätt</h3>
+      <table>
+        <tr><th>Livstid</th><th>När</th><th>Exempel</th></tr>
+        <tr><td>Transient</td><td>Ny instans varje gång</td><td>Lättviktiga, stateless services</td></tr>
+        <tr><td>Scoped</td><td>En per request</td><td>DbContext, repositories</td></tr>
+        <tr><td>Singleton</td><td>En för hela appen</td><td>Cache, config, IClock</td></tr>
+      </table>
+
+      <div class="why"><strong>Varför:</strong> DI ger loose coupling och gör klasser testbara — du kan injicera mockade beroenden. Registrering per lager håller kompositionsroten ren.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Inga <code>new</code> på beroenden inuti klasser — injicera via konstruktor.</label>
+        <label><input type="checkbox">Programmera mot interfaces, inte konkreta klasser.</label>
+        <label><input type="checkbox">Varje lager har en AddXxx-extension.</label>
+        <label><input type="checkbox">Rätt livstid (Scoped för DbContext, inte Singleton).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-dto">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>DTOs &amp; Mapping</h2>
+      <p class="lead">Exponera aldrig domänentiteter direkt i API:t. Använd <strong>DTOs</strong> (records) för in- och utdata.</p>
+
+      <pre><code>// Application/Features/Orders/Dtos/OrderDto.cs
+public record OrderDto(Guid Id, string CustomerName, string Status, decimal Total);
+
+// Mapping (extension-metod, Mapster eller AutoMapper)
+public static OrderDto ToDto(this Order order) =&gt;
+    new(order.Id, order.CustomerName, order.Status.ToString(), order.CalculateTotal());</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Returnerar du entiteten direkt riskerar du läckta interna fält, circular references vid serialisering, och att API-kontraktet låses vid databasmodellen. DTOs ger ett stabilt, explicit kontrakt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Controllers tar emot och returnerar DTOs — aldrig entiteter.</label>
+        <label><input type="checkbox"><code>record</code> används för immutabla DTOs.</label>
+        <label><input type="checkbox">Mapping sker på ett ställe (extension-metod eller profil).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-fluent">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>FluentValidation</h2>
+      <p class="lead">Validera inkommande data deklarativt istället för spridda <code>if</code>-satser. Validatorn ligger bredvid sin command och körs automatiskt via en MediatR-behavior.</p>
+
+      <h3>Validator</h3>
+      <pre><code>public class CreateOrderValidator : AbstractValidator&lt;CreateOrderCommand&gt;
+{
+    public CreateOrderValidator()
+    {
+        RuleFor(x =&gt; x.CustomerName)
+            .NotEmpty().WithMessage("Customer name is required.")
+            .MaximumLength(100);
+
+        RuleFor(x =&gt; x.Items)
+            .NotEmpty().WithMessage("An order must contain at least one item.");
+
+        RuleForEach(x =&gt; x.Items).ChildRules(item =&gt;
+        {
+            item.RuleFor(i =&gt; i.Quantity).GreaterThan(0);
+            item.RuleFor(i =&gt; i.Price).GreaterThanOrEqualTo(0);
+        });
+    }
+}</code></pre>
+
+      <h3>Automatisk körning via pipeline behavior</h3>
+      <pre><code>public class ValidationBehavior&lt;TRequest, TResponse&gt;
+    : IPipelineBehavior&lt;TRequest, TResponse&gt; where TRequest : notnull
+{
+    private readonly IEnumerable&lt;IValidator&lt;TRequest&gt;&gt; _validators;
+    public ValidationBehavior(IEnumerable&lt;IValidator&lt;TRequest&gt;&gt; validators)
+        =&gt; _validators = validators;
+
+    public async Task&lt;TResponse&gt; Handle(TRequest request,
+        RequestHandlerDelegate&lt;TResponse&gt; next, CancellationToken ct)
+    {
+        var context = new ValidationContext&lt;TRequest&gt;(request);
+        var failures = _validators
+            .Select(v =&gt; v.Validate(context))
+            .SelectMany(r =&gt; r.Errors)
+            .Where(f =&gt; f is not null)
+            .ToList();
+
+        if (failures.Any())
+            throw new ValidationException(failures);
+
+        return await next();
+    }
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Validering blir centraliserad, läsbar och testbar. Handlern kan utgå från att datan är giltig. Behavior-mönstret gör att du aldrig glömmer att köra valideringen.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Varje command/query med input har en egen validator.</label>
+        <label><input type="checkbox">Validatorer registreras automatiskt (AddValidatorsFromAssembly).</label>
+        <label><input type="checkbox">Validering körs via ValidationBehavior — inte manuellt i varje handler.</label>
+        <label><input type="checkbox">Felmeddelanden är tydliga och användarvänliga.</label>
+        <label><input type="checkbox">Validatorer testas separat (unit-tester).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-cqrs">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>CQRS &amp; MediatR</h2>
+      <p class="lead">Skilj skrivoperationer (<strong>Commands</strong>) från läsoperationer (<strong>Queries</strong>). MediatR skickar varje request till exakt en handler och håller controllers tunna.</p>
+
+      <pre><code>// Command — ändrar state
+public record CreateOrderCommand(string CustomerName, List&lt;OrderItemDto&gt; Items)
+    : IRequest&lt;Guid&gt;;
+
+public class CreateOrderHandler : IRequestHandler&lt;CreateOrderCommand, Guid&gt;
+{
+    private readonly IOrderRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public CreateOrderHandler(IOrderRepository repository, IUnitOfWork unitOfWork)
+    {
+        _repository = repository;
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task&lt;Guid&gt; Handle(CreateOrderCommand request, CancellationToken ct)
+    {
+        var order = new Order(request.CustomerName);
+        foreach (var item in request.Items)
+            order.AddItem(item.ProductId, item.Quantity, item.Price);
+
+        await _repository.AddAsync(order, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
+        return order.Id;
+    }
+}
+
+// Controllern blir tunn — den delegerar bara
+[ApiController]
+[Route("api/orders")]
+public class OrdersController : ControllerBase
+{
+    private readonly ISender _mediator;
+    public OrdersController(ISender mediator) =&gt; _mediator = mediator;
+
+    [HttpPost]
+    public async Task&lt;IActionResult&gt; Create(CreateOrderCommand command)
+    {
+        var id = await _mediator.Send(command);
+        return CreatedAtAction(nameof(GetById), new { id }, id);
+    }
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Command/query-separation ger ett enda ansvar per handler (SRP), gör use cases lätta att hitta och testa, och möjliggör cross-cutting concerns (validering, loggning) via behaviors. Controllers fokuserar bara på HTTP.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Commands ändrar state, Queries läser — aldrig blandat.</label>
+        <label><input type="checkbox">En handler per command/query.</label>
+        <label><input type="checkbox">Controllers innehåller ingen affärslogik — bara <code>_mediator.Send(...)</code>.</label>
+        <label><input type="checkbox">Cross-cutting concerns via behaviors.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-error">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Felhantering &amp; Result-mönster</h2>
+      <p class="lead">Använd ett <strong>Result-mönster</strong> för förväntade fel och exceptions bara för verkligt oväntade — plus en global middleware som mappar fel till HTTP-svar.</p>
+
+      <pre><code>// Result-mönster för förväntade utfall
+public class Result&lt;T&gt;
+{
+    public bool IsSuccess { get; }
+    public T? Value { get; }
+    public string? Error { get; }
+
+    private Result(bool ok, T? value, string? error)
+        =&gt; (IsSuccess, Value, Error) = (ok, value, error);
+
+    public static Result&lt;T&gt; Success(T value) =&gt; new(true, value, null);
+    public static Result&lt;T&gt; Failure(string error) =&gt; new(false, default, error);
+}
+
+// Global middleware mappar exceptions → ProblemDetails (RFC 7807)
+public class ExceptionHandlingMiddleware
+{
+    private readonly RequestDelegate _next;
+    public ExceptionHandlingMiddleware(RequestDelegate next) =&gt; _next = next;
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try { await _next(context); }
+        catch (ValidationException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Title = "Validation failed",
+                Detail = string.Join("; ", ex.Errors.Select(e =&gt; e.ErrorMessage))
+            });
+        }
+        catch (NotFoundException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await context.Response.WriteAsJsonAsync(new ProblemDetails { Title = ex.Message });
+        }
+    }
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Konsekvent felhantering ger förutsägbara API-svar och slipper upprepad try/catch. Result gör förväntade fel explicita i signaturen. ProblemDetails är en standard som din React-frontend kan hantera enhetligt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">En global exception-middleware finns.</label>
+        <label><input type="checkbox">Förväntade fel som Result eller domän-exceptions, inte generiska.</label>
+        <label><input type="checkbox">API returnerar ProblemDetails (RFC 7807) med rätt statuskod.</label>
+        <label><input type="checkbox">Inga råa stack traces läcker till klienten i produktion.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-repo">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Repository &amp; Persistence</h2>
+      <p class="lead">Abstrahera databasåtkomst bakom interfaces som definieras i Application och implementeras i Infrastructure. EF-konfiguration i egna klasser.</p>
+
+      <pre><code>// Application/Common/Interfaces/IOrderRepository.cs (abstraktion i Application)
+public interface IOrderRepository
+{
+    Task&lt;Order?&gt; GetByIdAsync(Guid id, CancellationToken ct);
+    Task AddAsync(Order order, CancellationToken ct);
+}
+
+// Infrastructure/Persistence/Configurations/OrderConfiguration.cs
+public class OrderConfiguration : IEntityTypeConfiguration&lt;Order&gt;
+{
+    public void Configure(EntityTypeBuilder&lt;Order&gt; builder)
+    {
+        builder.HasKey(o =&gt; o.Id);
+        builder.Property(o =&gt; o.CustomerName).IsRequired().HasMaxLength(100);
+        builder.HasMany(o =&gt; o.Items).WithOne().OnDelete(DeleteBehavior.Cascade);
+    }
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Interfaces i Application + implementation i Infrastructure respekterar beroenderiktningen. Separata IEntityTypeConfiguration-klasser håller DbContext ren utan att förorena domänen.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Repository-interfaces i Application, implementation i Infrastructure.</label>
+        <label><input type="checkbox">EF-konfiguration i egna IEntityTypeConfiguration-klasser.</label>
+        <label><input type="checkbox">DbContext är Scoped.</label>
+        <label><input type="checkbox">Migrations är versionshanterade.</label>
+        <label><input type="checkbox">Async-metoder med CancellationToken genomgående.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-test">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Tester</h2>
+      <p class="lead">Tester är ett krav. Använd <strong>AAA-mönstret</strong> (Arrange–Act–Assert) och en testpyramid: många snabba unit-tester, färre integration, ännu färre E2E.</p>
+
+      <h3>Unit-test (xUnit + FluentAssertions + Moq)</h3>
+      <pre><code>public class CreateOrderHandlerTests
+{
+    [Fact]
+    public async Task Handle_WithValidItems_CreatesOrderAndReturnsId()
+    {
+        // Arrange
+        var repo = new Mock&lt;IOrderRepository&gt;();
+        var uow = new Mock&lt;IUnitOfWork&gt;();
+        var handler = new CreateOrderHandler(repo.Object, uow.Object);
+        var command = new CreateOrderCommand("Anna",
+            new() { new OrderItemDto(Guid.NewGuid(), 2, 50m) });
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeEmpty();
+        repo.Verify(r =&gt; r.AddAsync(It.IsAny&lt;Order&gt;(), It.IsAny&lt;CancellationToken&gt;()), Times.Once);
+        uow.Verify(u =&gt; u.SaveChangesAsync(It.IsAny&lt;CancellationToken&gt;()), Times.Once);
+    }
+}</code></pre>
+
+      <h3>Arkitekturtest (NetArchTest) — skyddar lagerreglerna</h3>
+      <pre><code>[Fact]
+public void Domain_ShouldNotDependOn_Infrastructure()
+{
+    var result = Types.InAssembly(typeof(Order).Assembly)
+        .ShouldNot().HaveDependencyOn("MyApp.Infrastructure")
+        .GetResult();
+    result.IsSuccessful.Should().BeTrue();
+}</code></pre>
+
+      <p><strong>Namngivning:</strong> <code>Metod_Scenario_FörväntatResultat</code></p>
+
+      <div class="why"><strong>Varför:</strong> Tester ger trygghet vid refaktorering och dokumenterar förväntat beteende. Unit-tester är snabba och pekar exakt på felet. Arkitekturtester upprätthåller Clean Architecture-reglerna automatiskt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">AAA-mönstret följs i varje test.</label>
+        <label><input type="checkbox">Testnamn beskriver scenario och förväntat resultat.</label>
+        <label><input type="checkbox">Handlers, validatorer och domänlogik har unit-tester.</label>
+        <label><input type="checkbox">Integration-tester för API + databas (gärna Testcontainers).</label>
+        <label><input type="checkbox">Arkitekturtester skyddar lagergränserna.</label>
+        <label><input type="checkbox">Ett assert-koncept per test (fokuserade tester).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-naming">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Naming conventions &amp; kodstil</h2>
+      <table>
+        <tr><th>Element</th><th>Konvention</th><th>Exempel</th></tr>
+        <tr><td>Klasser, metoder, properties</td><td>PascalCase</td><td>CreateOrderHandler</td></tr>
+        <tr><td>Privata fält</td><td>_camelCase</td><td>_repository</td></tr>
+        <tr><td>Lokala variabler, parametrar</td><td>camelCase</td><td>customerName</td></tr>
+        <tr><td>Interfaces</td><td>I + PascalCase</td><td>IOrderRepository</td></tr>
+        <tr><td>Async-metoder</td><td>suffix Async</td><td>GetByIdAsync</td></tr>
+      </table>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox"><code>nullable</code> reference types aktiverat.</label>
+        <label><input type="checkbox"><code>async/await</code> hela vägen — inga <code>.Result</code>/<code>.Wait()</code>.</label>
+        <label><input type="checkbox">CancellationToken skickas genom hela kedjan.</label>
+        <label><input type="checkbox"><code>record</code> för immutabla typer (DTOs, commands, queries).</label>
+        <label><input type="checkbox"><code>.editorconfig</code> i roten för enhetlig formatering.</label>
+        <label><input type="checkbox">En klass per fil; filnamn = klassnamn.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-auth">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Authentication &amp; Authorization</h2>
+      <p class="lead"><strong>Authentication</strong> = vem är du (JWT bearer tokens). <strong>Authorization</strong> = vad får du göra (roller &amp; policies). Obligatoriskt i varje system som säljs till kund.</p>
+
+      <h3>JWT-konfiguration &amp; policies</h3>
+      <pre><code>// Program.cs
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =&gt;
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+
+builder.Services.AddAuthorization(options =&gt;
+{
+    options.AddPolicy("AdminOnly", p =&gt; p.RequireRole("Admin"));
+    options.AddPolicy("CanManageOrders", p =&gt; p.RequireClaim("permission", "orders:write"));
+});
+
+app.UseAuthentication();   // ordning spelar roll
+app.UseAuthorization();</code></pre>
+
+      <h3>Skydda endpoints</h3>
+      <pre><code>[Authorize(Policy = "CanManageOrders")]
+[HttpPost]
+public async Task&lt;IActionResult&gt; Create(CreateOrderCommand command) { ... }
+
+[Authorize(Roles = "Admin")]
+[HttpDelete("{id}")]
+public async Task&lt;IActionResult&gt; Delete(Guid id) { ... }</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Policy-baserad auktorisering (istället för hårdkodade rollkontroller i koden) gör behörigheter centraliserade och lätta att ändra utan att röra affärslogik. Validering av issuer/audience/lifetime skyddar mot förfalskade och utgångna tokens. Använd <strong>refresh tokens</strong> för längre sessioner och hasha lösenord med t.ex. ASP.NET Identity / BCrypt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">JWT med validering av issuer, audience, lifetime och signing key.</label>
+        <label><input type="checkbox">Policy-baserad auktorisering, inte hårdkodade rollkontroller.</label>
+        <label><input type="checkbox"><code>UseAuthentication()</code> före <code>UseAuthorization()</code>.</label>
+        <label><input type="checkbox">Lösenord hashas (aldrig i klartext); refresh tokens för sessioner.</label>
+        <label><input type="checkbox">Hemligheter (Jwt:Key) i secrets/Key Vault — aldrig i appsettings i repo.</label>
+        <label><input type="checkbox">HTTPS påtvingat; tokens skickas i Authorization-header.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-logging">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Logging &amp; Observability</h2>
+      <p class="lead">Strukturerad loggning (Serilog), <strong>correlation IDs</strong>, health checks och metrics. Utan observability är ett produktionssystem en svart låda när något går fel hos kunden.</p>
+
+      <h3>Serilog — strukturerad loggning</h3>
+      <pre><code>// Program.cs
+builder.Host.UseSerilog((ctx, cfg) =&gt; cfg
+    .ReadFrom.Configuration(ctx.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithCorrelationId()
+    .WriteTo.Console(new JsonFormatter())          // strukturerad JSON
+    .WriteTo.Seq("http://localhost:5341"));        // eller Elastic / App Insights
+
+// Logga med struktur — inte stränginterpolation
+_logger.LogInformation("Order {OrderId} created for {Customer}",
+    order.Id, order.CustomerName);</code></pre>
+
+      <h3>Health checks &amp; correlation</h3>
+      <pre><code>builder.Services.AddHealthChecks()
+    .AddDbContextCheck&lt;AppDbContext&gt;()
+    .AddRedis(redisConnectionString);
+
+app.MapHealthChecks("/health");          // för load balancer / Kubernetes
+app.UseMiddleware&lt;CorrelationIdMiddleware&gt;();  // X-Correlation-ID genom hela kedjan</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Strukturerade loggar (JSON) går att <em>söka och filtrera</em> i verktyg som Seq/Elastic/Application Insights — råa textsträngar gör inte det. Correlation ID kopplar ihop alla loggar för en och samma request över tjänster, vilket är avgörande vid felsökning i produktion. Health checks låter infrastrukturen automatiskt starta om eller dirigera om trafik.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Strukturerad loggning (Serilog) med named properties, inte interpolation.</label>
+        <label><input type="checkbox">Correlation ID genom hela request-kedjan.</label>
+        <label><input type="checkbox">Health checks (<code>/health</code>) för databas och externa beroenden.</label>
+        <label><input type="checkbox">Loggnivåer används rätt (Information/Warning/Error); ingen känslig data loggas.</label>
+        <label><input type="checkbox">Centraliserad logg-sink (Seq, Elastic, App Insights).</label>
+        <label><input type="checkbox">Överväg OpenTelemetry för distributed tracing &amp; metrics.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-api">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>API-design, versioning &amp; Swagger</h2>
+      <p class="lead">Konsekvent REST-design, <strong>API-versioning</strong> så att du kan utveckla utan att bryta kundens integrationer, och <strong>OpenAPI/Swagger</strong> som levande dokumentation.</p>
+
+      <h3>Versioning + Swagger</h3>
+      <pre><code>builder.Services.AddApiVersioning(o =&gt;
+{
+    o.DefaultApiVersion = new ApiVersion(1, 0);
+    o.AssumeDefaultVersionWhenUnspecified = true;
+    o.ReportApiVersions = true;
+}).AddApiExplorer(o =&gt; o.GroupNameFormat = "'v'VVV");
+
+builder.Services.AddSwaggerGen(o =&gt;
+{
+    o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { /* JWT */ });
+});
+
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/orders")]
+public class OrdersController : ControllerBase { ... }</code></pre>
+
+      <h3>REST-konventioner</h3>
+      <table>
+        <tr><th>Verb</th><th>Endpoint</th><th>Betydelse</th><th>Status vid succé</th></tr>
+        <tr><td>GET</td><td>/api/v1/orders</td><td>Lista</td><td>200 OK</td></tr>
+        <tr><td>GET</td><td>/api/v1/orders/{id}</td><td>Hämta en</td><td>200 / 404</td></tr>
+        <tr><td>POST</td><td>/api/v1/orders</td><td>Skapa</td><td>201 Created</td></tr>
+        <tr><td>PUT</td><td>/api/v1/orders/{id}</td><td>Ersätt</td><td>200 / 204</td></tr>
+        <tr><td>DELETE</td><td>/api/v1/orders/{id}</td><td>Ta bort</td><td>204 No Content</td></tr>
+      </table>
+
+      <div class="why"><strong>Varför:</strong> Versioning låter dig släppa ändringar utan att bryta kundens befintliga integrationer (<code>v1</code> lever kvar medan <code>v2</code> utvecklas). Swagger/OpenAPI ger alltid uppdaterad, körbar dokumentation och kan generera klient-SDK:er — ett tydligt säljargument mot kund.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Konsekventa REST-konventioner (verb, plural-substantiv, rätt statuskoder).</label>
+        <label><input type="checkbox">API-versioning från start (<code>/api/v1/...</code>).</label>
+        <label><input type="checkbox">Swagger/OpenAPI med JWT-stöd och beskrivningar.</label>
+        <label><input type="checkbox">Konsekvent svarsformat (DTOs + ProblemDetails vid fel).</label>
+        <label><input type="checkbox">Idempotens där det krävs (PUT/DELETE).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-paging">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Pagination, filtrering &amp; sortering</h2>
+      <p class="lead">Returnera <strong>aldrig</strong> hela tabeller. Sidindela, filtrera och sortera på databasnivå (<code>IQueryable</code>) så att svaren förblir snabba även när kundens data växer.</p>
+
+      <pre><code>public record PagedResult&lt;T&gt;(IReadOnlyList&lt;T&gt; Items, int Page, int PageSize, int TotalCount)
+{
+    public int TotalPages =&gt; (int)Math.Ceiling(TotalCount / (double)PageSize);
+}
+
+public async Task&lt;PagedResult&lt;OrderDto&gt;&gt; Handle(GetOrdersQuery q, CancellationToken ct)
+{
+    var query = _db.Orders.AsNoTracking();
+
+    // Filtrering
+    if (!string.IsNullOrWhiteSpace(q.Search))
+        query = query.Where(o =&gt; o.CustomerName.Contains(q.Search));
+
+    // Sortering
+    query = q.SortBy == "total"
+        ? query.OrderByDescending(o =&gt; o.Total)
+        : query.OrderBy(o =&gt; o.CreatedAt);
+
+    var total = await query.CountAsync(ct);
+
+    // Pagination — körs i databasen, inte i minnet
+    var items = await query
+        .Skip((q.Page - 1) * q.PageSize)
+        .Take(q.PageSize)
+        .Select(o =&gt; o.ToDto())
+        .ToListAsync(ct);
+
+    return new PagedResult&lt;OrderDto&gt;(items, q.Page, q.PageSize, total);
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Utan pagination växer svarstiden och minnesanvändningen linjärt med datamängden — det som funkar i demo kraschar hos en stor kund. <code>Skip/Take</code> + <code>AsNoTracking</code> gör att databasen gör jobbet och bara nödvändiga rader hämtas. Begränsa alltid maximalt <code>PageSize</code> så att klienten inte kan begära allt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Alla list-endpoints är sidindelade (page/pageSize).</label>
+        <label><input type="checkbox">Maximalt <code>PageSize</code> begränsas (t.ex. 100).</label>
+        <label><input type="checkbox">Filtrering &amp; sortering sker på <code>IQueryable</code> (databasen), inte i minnet.</label>
+        <label><input type="checkbox"><code>AsNoTracking()</code> för read-only queries.</label>
+        <label><input type="checkbox">Svaret innehåller totalCount/totalPages för klientens paginering.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-cache">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Caching</h2>
+      <p class="lead">Cacha dyra eller ofta lästa data för att minska databaslast och svarstid. <code>IMemoryCache</code> för en instans, <strong>distribuerad cache (Redis)</strong> när du kör flera instanser.</p>
+
+      <pre><code>// Cache-aside-mönstret med distribuerad cache (Redis)
+public async Task&lt;ProductDto&gt; GetProductAsync(Guid id, CancellationToken ct)
+{
+    var key = $"product:{id}";
+    var cached = await _cache.GetStringAsync(key, ct);
+    if (cached is not null)
+        return JsonSerializer.Deserialize&lt;ProductDto&gt;(cached)!;
+
+    var product = await _repository.GetByIdAsync(id, ct);
+    var dto = product.ToDto();
+
+    await _cache.SetStringAsync(key, JsonSerializer.Serialize(dto),
+        new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) }, ct);
+
+    return dto;
+}
+
+// Invalidera vid ändring
+await _cache.RemoveAsync($"product:{id}", ct);</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Caching är ofta den enskilt största prestandavinsten. <strong>Distribuerad</strong> cache (Redis) krävs när appen skalas till flera instanser/poddar — annars blir cachen inkonsekvent mellan instanserna. Sätt alltid en <em>expiration</em> och en tydlig <em>invalidation</em>-strategi, annars serverar du gammal data.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Cacha det som är dyrt/ofta läst och sällan ändras.</label>
+        <label><input type="checkbox">Distribuerad cache (Redis) vid fler än en instans.</label>
+        <label><input type="checkbox">Alltid expiration (TTL) satt.</label>
+        <label><input type="checkbox">Tydlig invalidation vid uppdatering/borttagning.</label>
+        <label><input type="checkbox">Cacha aldrig känslig eller användarspecifik data oavsiktligt.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-config">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Configuration &amp; Secrets</h2>
+      <p class="lead">Konfiguration per miljö (dev/test/prod) via <strong>Options-mönstret</strong>, och hemligheter (connection strings, API-nycklar) i en säker secret store — <strong>aldrig</strong> i koden eller i checkad-in <code>appsettings.json</code>.</p>
+
+      <pre><code>// Typad konfiguration (Options-mönstret)
+public class JwtOptions
+{
+    public string Issuer { get; init; } = default!;
+    public string Audience { get; init; } = default!;
+    public int ExpiryMinutes { get; init; }
+}
+
+builder.Services
+    .AddOptions&lt;JwtOptions&gt;()
+    .Bind(builder.Configuration.GetSection("Jwt"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();             // krascha tidigt om config saknas
+
+// Injicera typat
+public AuthService(IOptions&lt;JwtOptions&gt; options) =&gt; _jwt = options.Value;</code></pre>
+
+      <p><strong>Hemligheter per miljö:</strong> <code>dotnet user-secrets</code> (lokalt) · environment-variabler / Azure Key Vault / AWS Secrets Manager (prod). <code>appsettings.Development.json</code> vs <code>appsettings.Production.json</code> för icke-hemlig config.</p>
+
+      <div class="why"><strong>Varför:</strong> Options-mönstret ger typad, validerad config med <code>ValidateOnStart</code> så att appen kraschar direkt vid felaktig konfiguration istället för halvvägs in i produktion. Hemligheter i en secret store (inte i repo) är ett <em>säkerhets- och GDPR-krav</em> — läckta nycklar i Git är en av de vanligaste incidenterna.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Typad config via Options-mönstret med validering.</label>
+        <label><input type="checkbox"><code>ValidateOnStart()</code> så fel upptäcks vid uppstart.</label>
+        <label><input type="checkbox">Inga hemligheter i koden eller i checkad-in appsettings.</label>
+        <label><input type="checkbox">Secret store i prod (Key Vault / Secrets Manager); user-secrets lokalt.</label>
+        <label><input type="checkbox">Separat config per miljö (Development/Staging/Production).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-security">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Säkerhet (CORS, rate limiting, headers)</h2>
+      <p class="lead">Grundläggande säkerhetslager varje kund förväntar sig: <strong>CORS</strong>, <strong>rate limiting</strong>, säkerhetsheaders, HTTPS och skydd mot OWASP Top 10.</p>
+
+      <pre><code>// CORS — tillåt bara kända origins (aldrig AllowAnyOrigin i prod)
+builder.Services.AddCors(o =&gt; o.AddPolicy("Frontend", p =&gt; p
+    .WithOrigins("https://app.kund.se")
+    .AllowAnyHeader()
+    .AllowAnyMethod()
+    .AllowCredentials()));
+
+// Rate limiting — skydd mot missbruk / brute force
+builder.Services.AddRateLimiter(o =&gt; o.AddFixedWindowLimiter("api", opt =&gt;
+{
+    opt.Window = TimeSpan.FromMinutes(1);
+    opt.PermitLimit = 100;
+}));
+
+app.UseHttpsRedirection();
+app.UseCors("Frontend");
+app.UseRateLimiter();</code></pre>
+
+      <p><strong>OWASP-grunder:</strong> parametriserade queries / EF (skydd mot SQL-injection) · validering av all input · inga interna fel/stack traces till klient · säkerhetsheaders (HSTS, X-Content-Type-Options, CSP) · principen om minsta behörighet.</p>
+
+      <div class="why"><strong>Varför:</strong> Ett system som säljs till kund granskas ofta i en säkerhetsrevision. CORS hindrar obehöriga webbplatser från att anropa ditt API i användarens namn. Rate limiting skyddar mot brute force och DoS. Dessa lager är billiga att lägga till tidigt men dyra att eftermontera efter en incident.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">CORS låst till kända origins — aldrig <code>AllowAnyOrigin</code> i prod.</label>
+        <label><input type="checkbox">Rate limiting på publika/känsliga endpoints.</label>
+        <label><input type="checkbox">HTTPS påtvingat (HSTS) och säkerhetsheaders satta.</label>
+        <label><input type="checkbox">All input valideras; parametriserade queries (ingen SQL-injection).</label>
+        <label><input type="checkbox">Inga interna felmeddelanden/stack traces läcker till klient.</label>
+        <label><input type="checkbox">Beroenden scannas för kända sårbarheter (t.ex. <code>dotnet list package --vulnerable</code>).</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-resilience">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>Background jobs &amp; resiliens</h2>
+      <p class="lead">Tunga eller schemalagda uppgifter körs i bakgrunden (inte i request-tråden), och anrop till externa tjänster skyddas med <strong>retry &amp; circuit breaker</strong> (Polly).</p>
+
+      <h3>Background jobs (Hangfire eller IHostedService)</h3>
+      <pre><code>// Schemalagt / köat jobb med Hangfire
+BackgroundJob.Enqueue&lt;IEmailService&gt;(s =&gt; s.SendOrderConfirmationAsync(orderId));
+RecurringJob.AddOrUpdate&lt;IReportService&gt;("nightly",
+    s =&gt; s.GenerateDailyReportAsync(), Cron.Daily);</code></pre>
+
+      <h3>Resiliens med Polly</h3>
+      <pre><code>builder.Services.AddHttpClient&lt;IPaymentClient, PaymentClient&gt;()
+    .AddPolicyHandler(HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .WaitAndRetryAsync(3, attempt =&gt; TimeSpan.FromSeconds(Math.Pow(2, attempt))))  // exponential backoff
+    .AddPolicyHandler(HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));   // bryt vid upprepade fel</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Att skicka mejl eller generera rapporter i request-tråden gör API:t långsamt och bräckligt — flytta det till bakgrunden. Externa tjänster <em>kommer</em> att fela ibland; retry med exponential backoff och circuit breaker gör systemet motståndskraftigt istället för att en tillfällig störning sprider sig till hela appen.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Tunga/långsamma uppgifter körs i bakgrunden, inte i request-tråden.</label>
+        <label><input type="checkbox">Jobb är idempotenta och kan köras om vid fel.</label>
+        <label><input type="checkbox">Retry med exponential backoff för transienta fel.</label>
+        <label><input type="checkbox">Circuit breaker mot externa tjänster.</label>
+        <label><input type="checkbox">Timeouts satta på alla externa anrop.</label>
+      </div>
+    </section>
+
+    <section class="panel" id="be-cicd">
+      <div class="breadcrumb">Backend</div>
+      <span class="badge be">Backend</span>
+      <h2>CI/CD, Docker &amp; deployment</h2>
+      <p class="lead">Automatisera bygg, test och deploy. <strong>Containerisera</strong> appen (Docker) och kör tester + säkerhetsscanning i pipeline innan något når kunden.</p>
+
+      <h3>Dockerfile (multi-stage)</h3>
+      <pre><code>FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet restore &amp;&amp; dotnet publish MyApp.Api -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "MyApp.Api.dll"]</code></pre>
+
+      <h3>CI-pipeline (steg)</h3>
+      <pre><code>1. restore + build
+2. kör unit-, integration- och arkitekturtester   ← bygget faller om något test failar
+3. scanna beroenden för sårbarheter
+4. bygg &amp; pusha Docker-image (taggad med commit/version)
+5. deploy till Staging → automatiska smoke tests → Production
+6. databasmigrationer körs kontrollerat vid deploy</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Manuell deploy är felkällan nr 1 i produktion. En pipeline som kör alla tester och säkerhetsscanning vid varje commit gör releaser <em>förutsägbara och spårbara</em> — du kan alltid se exakt vad som deployats och rulla tillbaka. Containers ger identisk miljö lokalt, i test och i prod ("works on my machine" försvinner).</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">All kod byggs &amp; testas automatiskt vid varje push (CI).</label>
+        <label><input type="checkbox">Bygget faller om tester eller linting failar.</label>
+        <label><input type="checkbox">Appen är containeriserad (Docker, multi-stage).</label>
+        <label><input type="checkbox">Separata miljöer (Staging → Production) med automatisk deploy.</label>
+        <label><input type="checkbox">Databasmigrationer körs kontrollerat vid deploy.</label>
+        <label><input type="checkbox">Versionstaggning och möjlighet till rollback.</label>
+      </div>
+    </section>
+
+    <!-- ============ FRONTEND ============ -->
+
+    <section class="panel fe" id="fe-struktur">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Projekt- &amp; mappstruktur</h2>
+      <p class="lead">Precis som i backend — organisera <strong>per feature</strong>, inte per filtyp. Återanvändbara byggstenar i delade mappar.</p>
+
+      <pre><code>src/
+├── app/                      # App-setup, routing, providers
+├── components/ui/            # Återanvändbara UI-komponenter (Button, Modal)
+├── features/                 # ← per feature
+│   └── orders/
+│       ├── components/       # OrderList, OrderCard, OrderForm
+│       ├── hooks/            # useOrders, useCreateOrder
+│       ├── api/              # orderApi.ts
+│       ├── types/            # order.types.ts
+│       └── index.ts          # publik export från featuren
+├── hooks/                    # Globala custom hooks
+├── lib/                      # Hjälpfunktioner, api-klient
+└── main.tsx</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Feature-mappar gör att allt relaterat ligger tillsammans — lätt att hitta, ändra eller ta bort en hel feature. <code>index.ts</code> per feature ger en tydlig publik gräns (inkapsling).</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Organiserat per feature, inte per typ.</label>
+        <label><input type="checkbox">Återanvändbara komponenter i components/ui.</label>
+        <label><input type="checkbox">Varje feature exporterar sitt publika API via index.ts.</label>
+        <label><input type="checkbox">TypeScript används (typsäkerhet är ett krav).</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-komponenter">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Komponenter</h2>
+      <p class="lead">Skriv små, fokuserade <strong>funktionskomponenter</strong> med ett tydligt ansvar. Skilj på presentationskomponenter (visar UI) och container-komponenter (hämtar data/logik).</p>
+
+      <pre><code>// Presentationskomponent — ren, tar bara props, lätt att testa
+type OrderCardProps = {
+  customerName: string;
+  total: number;
+  onSelect: () =&gt; void;
+};
+
+export function OrderCard({ customerName, total, onSelect }: OrderCardProps) {
+  return (
+    &lt;article className="order-card" onClick={onSelect}&gt;
+      &lt;h3&gt;{customerName}&lt;/h3&gt;
+      &lt;p&gt;{total.toLocaleString("sv-SE", { style: "currency", currency: "SEK" })}&lt;/p&gt;
+    &lt;/article&gt;
+  );
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Små komponenter är lättare att läsa, testa och återanvända. Att separera presentation från logik gör presentationsdelen förutsägbar — samma props ger alltid samma UI.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">En komponent = ett ansvar; dela upp om den blir för stor (&gt;~150 rader).</label>
+        <label><input type="checkbox">Endast funktionskomponenter (inga class components).</label>
+        <label><input type="checkbox">Presentations- och container-logik separeras.</label>
+        <label><input type="checkbox">Komponentnamn i PascalCase, filnamn matchar.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-props">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Props</h2>
+      <p class="lead">Props är <strong>read-only</strong> data som skickas från förälder till barn. Typa dem alltid. Mutera aldrig props.</p>
+
+      <pre><code>type ButtonProps = {
+  label: string;
+  variant?: "primary" | "secondary";   // valfri prop med union-typ
+  disabled?: boolean;
+  onClick: () =&gt; void;
+};
+
+export function Button({ label, variant = "primary", disabled = false, onClick }: ButtonProps) {
+  return (
+    &lt;button className={`btn btn--${variant}`} disabled={disabled} onClick={onClick}&gt;
+      {label}
+    &lt;/button&gt;
+  );
+}</code></pre>
+
+      <p><strong>Regler:</strong> destrukturera props i parameterlistan · ge defaultvärden för valfria props · använd union-typer istället för lösa strängar · skicka funktioner ner som callbacks för att kommunicera uppåt.</p>
+
+      <div class="why"><strong>Varför:</strong> Typade props är ett kontrakt mellan komponenter — TypeScript fångar fel innan körning. Att props är read-only gör dataflödet enkelriktat och förutsägbart.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Alla props är typade.</label>
+        <label><input type="checkbox">Props muteras aldrig.</label>
+        <label><input type="checkbox">Valfria props har defaultvärden.</label>
+        <label><input type="checkbox">Union-typer för begränsade värden istället för <code>string</code>.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-state">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>State</h2>
+      <p class="lead">State är data som ändras över tid och som komponenten <strong>äger</strong>. <code>useState</code> för enkelt, <code>useReducer</code> för komplext. <strong>Lyft state</strong> till närmaste gemensamma förälder när flera behöver dela det.</p>
+
+      <pre><code>// Enkelt lokalt state
+const [count, setCount] = useState(0);
+
+// Uppdatera baserat på föregående värde — funktionsformen
+setCount(prev =&gt; prev + 1);
+
+// Objekt-state: skapa NY referens (mutera aldrig direkt)
+const [form, setForm] = useState({ name: "", email: "" });
+setForm(prev =&gt; ({ ...prev, name: "Anna" }));   // ✅ ny referens
+// form.name = "Anna";                            // ❌ muterar — React renderar inte om
+
+// Komplext state med useReducer
+type State = { items: Item[]; loading: boolean };
+type Action = { type: "loaded"; items: Item[] } | { type: "loading" };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "loading": return { ...state, loading: true };
+    case "loaded":  return { items: action.items, loading: false };
+  }
+}
+const [state, dispatch] = useReducer(reducer, { items: [], loading: false });</code></pre>
+
+      <p><strong>Regler:</strong> mutera aldrig state direkt · använd funktionsformen vid uppdatering baserad på gammalt värde · <strong>härled</strong> värden under render istället för att spara dem · håll state så lokalt som möjligt.</p>
+
+      <div class="why"><strong>Varför:</strong> React jämför referenser för att avgöra om något ändrats. Muterar du state direkt ändras inte referensen → ingen omrendering → buggar. Härledda värden istället för dubbellagring förhindrar osynk.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">State muteras aldrig direkt (spread/map/filter för nya referenser).</label>
+        <label><input type="checkbox">Funktionsformen vid uppdatering baserad på tidigare state.</label>
+        <label><input type="checkbox">Härledda värden beräknas under render, lagras inte i eget state.</label>
+        <label><input type="checkbox">State hålls lokalt; lyfts upp endast vid delning.</label>
+        <label><input type="checkbox"><code>useReducer</code> vid komplex state-logik.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-events">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Events</h2>
+      <p class="lead">Hantera interaktioner med event handlers. Namnge handlern <code>handleXxx</code> och prop:en <code>onXxx</code>. Typa eventet.</p>
+
+      <pre><code>export function SearchBox({ onSearch }: { onSearch: (term: string) =&gt; void }) {
+  const [term, setTerm] = useState("");
+
+  const handleChange = (e: React.ChangeEvent&lt;HTMLInputElement&gt;) =&gt; {
+    setTerm(e.target.value);
+  };
+
+  const handleSubmit = (e: React.FormEvent&lt;HTMLFormElement&gt;) =&gt; {
+    e.preventDefault();              // glöm inte detta på formulär
+    onSearch(term);
+  };
+
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;input value={term} onChange={handleChange} placeholder="Sök..." /&gt;
+      &lt;button type="submit"&gt;Sök&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+
+      <p><strong>Regler:</strong> skicka <span class="ok">funktionsreferens</span> <code>onClick={handleClick}</code>, inte <span class="bad">anrop</span> <code>onClick={handleClick()}</code> · behöver du argument: <code>onClick={() =&gt; handleDelete(id)}</code> · barn kommunicerar uppåt genom callback-props.</p>
+
+      <div class="why"><strong>Varför:</strong> Konsekvent handle/on-namngivning gör koden förutsägbar. Skickar du anrop istället för referens körs det vid varje render — en vanlig bugg. Callbacks uppåt håller dataflödet enkelriktat (data ner, events upp).</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Handlers heter handleXxx, props heter onXxx.</label>
+        <label><input type="checkbox">Funktionsreferens skickas, inte ett anrop.</label>
+        <label><input type="checkbox">Events är typade (React.ChangeEvent, React.FormEvent…).</label>
+        <label><input type="checkbox"><code>preventDefault()</code> på formulärsubmit.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-effect">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>useEffect</h2>
+      <p class="lead"><code>useEffect</code> är till för <strong>sidoeffekter</strong> — synk med system utanför React (API, prenumerationer, timers). Det är <strong>inte</strong> till för att beräkna värden under render.</p>
+
+      <pre><code>useEffect(() =&gt; {
+  const controller = new AbortController();
+
+  async function loadOrders() {
+    const res = await fetch("/api/orders", { signal: controller.signal });
+    setOrders(await res.json());
+  }
+  loadOrders();
+
+  // Cleanup — körs före nästa effekt och vid unmount
+  return () =&gt; controller.abort();
+}, [/* dependencies */]);   // [] = en gång · [id] = när id ändras</code></pre>
+
+      <table>
+        <tr><th>Array</th><th>Beteende</th></tr>
+        <tr><td><code>[]</code></td><td>Kör en gång vid mount</td></tr>
+        <tr><td><code>[id, filter]</code></td><td>Kör vid mount + när någon dependency ändras</td></tr>
+        <tr><td><em>utelämnad</em></td><td>Kör vid <strong>varje</strong> render — nästan alltid fel</td></tr>
+      </table>
+
+      <div class="why"><strong>Varför:</strong> Fel dependency-array ger antingen oändliga loopar eller inaktuell data (stale closures). Cleanup förhindrar minnesläckor och att ett gammalt svar skriver över ett nyare.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Dependency-arrayen innehåller alla använda värden.</label>
+        <label><input type="checkbox">Cleanup-funktion för prenumerationer, timers och requests.</label>
+        <label><input type="checkbox">useEffect används inte för att härleda renderbara värden.</label>
+        <label><input type="checkbox">Race conditions hanteras (AbortController / ignore-flagga).</label>
+        <label><input type="checkbox"><code>eslint-plugin-react-hooks</code> är aktivt och varningsfritt.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-villkor">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Villkorlig rendering</h2>
+      <p class="lead">Rendera olika UI beroende på state/props. Hantera <strong>alla</strong> tillstånd: loading, fel, tomt och data.</p>
+
+      <pre><code>function OrderList({ orders, isLoading, error }: OrderListProps) {
+  // 1. Tidig return för loading/fel — håller huvud-JSX ren
+  if (isLoading) return &lt;Spinner /&gt;;
+  if (error)     return &lt;ErrorMessage message={error} /&gt;;
+
+  // 2. Tomt tillstånd
+  if (orders.length === 0) return &lt;EmptyState text="Inga ordrar ännu." /&gt;;
+
+  // 3. Data
+  return (
+    &lt;ul&gt;
+      {orders.map(o =&gt; &lt;OrderCard key={o.id} {...o} /&gt;)}
+    &lt;/ul&gt;
+  );
+}
+
+// Inline-tekniker:
+{isAdmin &amp;&amp; &lt;AdminPanel /&gt;}                    // && för "visa om sant"
+{isLoggedIn ? &lt;Dashboard /&gt; : &lt;LoginForm /&gt;}    // ternary för antingen/eller</code></pre>
+
+      <h3>⚠️ Fallgrop med &amp;&amp;</h3>
+      <pre><code>{orders.length &amp;&amp; &lt;List /&gt;}      // ❌ renderar "0" när listan är tom
+{orders.length &gt; 0 &amp;&amp; &lt;List /&gt;}  // ✅ explicit boolean</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Att hantera loading/fel/tomt/data explicit ger robust UX — inga tomma skärmar eller kraschar vid <code>undefined</code>. Tidiga returns håller renderingen läsbar. &amp;&amp;-fallgropen med tal visas som ett "0" i UI:t.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Alla tillstånd hanteras: loading, error, empty, data.</label>
+        <label><input type="checkbox">Tidig return istället för djupt nästlade ternaries.</label>
+        <label><input type="checkbox">&amp;&amp; används bara med riktiga booleans (inte tal/strängar).</label>
+        <label><input type="checkbox">Komplexa villkor bryts ut till variabler eller komponenter.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-listor">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Listor &amp; keys</h2>
+      <p class="lead">Rendera listor med <code>.map()</code>. Varje element <strong>måste</strong> ha en stabil, unik <code>key</code> — ett riktigt ID, <strong>aldrig</strong> array-index om listan kan ändras.</p>
+
+      <pre><code>{orders.map(order =&gt; (
+  &lt;OrderCard key={order.id} customerName={order.customerName} total={order.total} /&gt;
+))}
+
+// ❌ Undvik index som key vid dynamiska listor
+{orders.map((order, index) =&gt; &lt;OrderCard key={index} {...order} /&gt;)}</code></pre>
+
+      <p><strong>Regler:</strong> <code>key</code> ska vara stabil och unik (oftast <code>item.id</code>) · sätts på det <strong>yttersta</strong> elementet i map · bryt ut komplex item-rendering till egen komponent · använd <code>.map()</code>/<code>.filter()</code>/<code>.slice()</code> som returnerar nya arrayer.</p>
+
+      <div class="why"><strong>Varför:</strong> React använder <code>key</code> för reconciliation (vilka element ändrats/lagts till/tagits bort). Index-keys orsakar buggar när listan ändras — React kan återanvända fel DOM-element, vilket ger fel state i inputs. Stabila ID-keys ger korrekta och effektiva uppdateringar.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Varje listelement har en <code>key</code>.</label>
+        <label><input type="checkbox"><code>key</code> är ett stabilt unikt ID, inte array-index.</label>
+        <label><input type="checkbox"><code>key</code> ligger på det yttersta elementet i map-callbacken.</label>
+        <label><input type="checkbox">Komplexa listelement är egna komponenter.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-hooks">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Custom hooks</h2>
+      <p class="lead">Bryt ut återanvändbar logik (data-hämtning, formulär) till <strong>custom hooks</strong> — en funktion som börjar på <code>use</code> och får använda andra hooks.</p>
+
+      <pre><code>// hooks/useOrders.ts
+export function useOrders() {
+  const [orders, setOrders] = useState&lt;Order[]&gt;([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState&lt;string | null&gt;(null);
+
+  useEffect(() =&gt; {
+    const controller = new AbortController();
+    fetch("/api/orders", { signal: controller.signal })
+      .then(res =&gt; res.json())
+      .then(setOrders)
+      .catch(err =&gt; { if (err.name !== "AbortError") setError(err.message); })
+      .finally(() =&gt; setIsLoading(false));
+    return () =&gt; controller.abort();
+  }, []);
+
+  return { orders, isLoading, error };
+}
+
+// Användning — komponenten blir ren och deklarativ
+function OrdersPage() {
+  const { orders, isLoading, error } = useOrders();
+  return &lt;OrderList orders={orders} isLoading={isLoading} error={error} /&gt;;
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Custom hooks separerar logik från UI — komponenter blir rena och logiken återanvändbar och testbar. Samma data-hämtning kan användas på flera sidor utan duplicering.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Återanvändbar logik bryts ut till hooks som börjar på <code>use</code>.</label>
+        <label><input type="checkbox">Hooks anropas bara på toppnivå (Rules of Hooks).</label>
+        <label><input type="checkbox">Datahämtning/formulärlogik ligger i hooks, inte i komponenten.</label>
+        <label><input type="checkbox">(Större projekt) Överväg React Query / TanStack Query för server-state.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-naming">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Naming conventions &amp; kodstil</h2>
+      <table>
+        <tr><th>Element</th><th>Konvention</th><th>Exempel</th></tr>
+        <tr><td>Komponenter / filer</td><td>PascalCase(.tsx)</td><td>OrderCard.tsx</td></tr>
+        <tr><td>Hooks</td><td>use + camelCase</td><td>useOrders</td></tr>
+        <tr><td>Event-handlers</td><td>handleXxx</td><td>handleClick</td></tr>
+        <tr><td>Event-props</td><td>onXxx</td><td>onSelect</td></tr>
+        <tr><td>Boolean-variabler</td><td>is/has/can + namn</td><td>isLoading, hasError</td></tr>
+        <tr><td>Konstanter</td><td>UPPER_SNAKE_CASE</td><td>MAX_ITEMS</td></tr>
+      </table>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">TypeScript överallt — undvik <code>any</code>.</label>
+        <label><input type="checkbox">ESLint + Prettier konfigurerat och varningsfritt.</label>
+        <label><input type="checkbox"><code>eslint-plugin-react-hooks</code> aktivt.</label>
+        <label><input type="checkbox">Inga magiska värden — bryt ut till namngivna konstanter.</label>
+        <label><input type="checkbox">Komponenter små och fokuserade; bryt ut tidigt.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-routing">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Routing &amp; skyddade routes</h2>
+      <p class="lead">Hantera navigation med <strong>React Router</strong>. Nästlade layouter, lazy-laddade sidor och <strong>skyddade routes</strong> som kräver inloggning.</p>
+
+      <pre><code>// app/router.tsx
+const router = createBrowserRouter([
+  {
+    element: &lt;RootLayout /&gt;,                 // delad layout (nav, sidebar)
+    children: [
+      { path: "/", element: &lt;HomePage /&gt; },
+      { path: "login", element: &lt;LoginPage /&gt; },
+      {
+        element: &lt;ProtectedRoute /&gt;,          // kräver inloggning
+        children: [
+          { path: "orders", element: &lt;OrdersPage /&gt; },
+          { path: "orders/:id", element: &lt;OrderDetailPage /&gt; },
+        ],
+      },
+      { path: "*", element: &lt;NotFoundPage /&gt; },
+    ],
+  },
+]);
+
+// Skyddad route
+function ProtectedRoute() {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return &lt;Navigate to="/login" replace /&gt;;
+  return &lt;Outlet /&gt;;     // renderar barn-routen
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> En tydlig route-struktur ger djuplänkning (kunden kan bokmärka/dela en specifik sida) och separerar publika från skyddade vyer på ett ställe. <code>Outlet</code> + nästlade routes undviker duplicerade layouter. Lazy-laddning av sidor (<code>React.lazy</code>) håller initiala bundeln liten.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Centraliserad route-definition med nästlade layouter.</label>
+        <label><input type="checkbox">Skyddade routes redirectar oinloggade till login.</label>
+        <label><input type="checkbox">404-route (<code>path: "*"</code>) finns.</label>
+        <label><input type="checkbox">Sidor lazy-laddas för mindre initial bundle.</label>
+        <label><input type="checkbox">URL-parametrar (<code>:id</code>) typas och valideras.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-query">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Server-state (React Query / TanStack Query)</h2>
+      <p class="lead">Skilj <strong>server-state</strong> (data från API:t) från <strong>client-state</strong> (UI-tillstånd). Använd <strong>TanStack Query</strong> för hämtning, cachning, refetch och mutationer — sluta bygga det själv med useEffect.</p>
+
+      <pre><code>// Query — hämtning med cache, loading &amp; error inbyggt
+function useOrders() {
+  return useQuery({
+    queryKey: ["orders"],
+    queryFn: () =&gt; api.get&lt;Order[]&gt;("/orders").then(r =&gt; r.data),
+    staleTime: 60_000,           // anses färsk i 1 min
+  });
+}
+
+// Mutation — skapa + invalidera cachen så listan uppdateras
+function useCreateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateOrderDto) =&gt; api.post("/orders", dto),
+    onSuccess: () =&gt; qc.invalidateQueries({ queryKey: ["orders"] }),
+  });
+}
+
+// Användning — ren komponent
+function OrdersPage() {
+  const { data: orders = [], isLoading, error } = useOrders();
+  if (isLoading) return &lt;Spinner /&gt;;
+  if (error) return &lt;ErrorMessage /&gt;;
+  return &lt;OrderList orders={orders} /&gt;;
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Server-state har helt andra behov än client-state: cachning, dedupering, bakgrunds-refetch, retry och invalidation. Att lösa det manuellt med <code>useEffect</code> + <code>useState</code> i varje komponent blir buggigt och repetitivt. TanStack Query ger allt detta deklarativt och är närmast standard i stora React-projekt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Server-state hanteras med TanStack Query, inte manuell useEffect-fetch.</label>
+        <label><input type="checkbox">Konsekventa <code>queryKey</code>:er; cachen invalideras vid mutationer.</label>
+        <label><input type="checkbox">Loading/error/empty hanteras via querys inbyggda flaggor.</label>
+        <label><input type="checkbox"><code>staleTime</code>/retry konfigurerat medvetet.</label>
+        <label><input type="checkbox">Server-state blandas inte ihop med client-state.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-global">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Global state (Context / Zustand)</h2>
+      <p class="lead">För <strong>client-state</strong> som delas brett (inloggad användare, tema, kundvagn). Använd <strong>Context</strong> för sällan-ändrad data och ett lättviktigt bibliotek som <strong>Zustand</strong> för mer dynamiskt global state.</p>
+
+      <h3>Context — för stabil, sällan-ändrad data</h3>
+      <pre><code>const AuthContext = createContext&lt;AuthState | null&gt;(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState&lt;User | null&gt;(null);
+  const value = useMemo(() =&gt; ({ user, login, logout }), [user]);
+  return &lt;AuthContext.Provider value={value}&gt;{children}&lt;/AuthContext.Provider&gt;;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
+}</code></pre>
+
+      <h3>Zustand — för dynamiskt global state</h3>
+      <pre><code>const useCartStore = create&lt;CartState&gt;((set) =&gt; ({
+  items: [],
+  addItem: (item) =&gt; set((s) =&gt; ({ items: [...s.items, item] })),
+  clear: () =&gt; set({ items: [] }),
+}));
+
+// Komponenten prenumererar bara på det den behöver
+const items = useCartStore((s) =&gt; s.items);</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Context är inbyggt och perfekt för värden som ändras sällan, men orsakar onödiga omrenderingar om värdet ändras ofta (allt som konsumerar kontexten renderas om). Zustand låter komponenter prenumerera på <em>delar</em> av staten och undviker det. Använd <strong>inte</strong> global state för sådant som kan vara lokalt — håll det så lokalt som möjligt.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Global state används bara för verkligt delad data.</label>
+        <label><input type="checkbox">Context-värden memoiseras (<code>useMemo</code>) för att undvika omrenderingar.</label>
+        <label><input type="checkbox">Custom hook (<code>useAuth</code>) med fel om provider saknas.</label>
+        <label><input type="checkbox">Server-state ligger i TanStack Query, inte i global client-state.</label>
+        <label><input type="checkbox">State hålls lokalt när det går.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-forms">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Forms &amp; validering</h2>
+      <p class="lead">Formulär är där de flesta buggar bor. Använd <strong>React Hook Form</strong> för prestanda och <strong>Zod</strong> för schema-baserad, typsäker validering.</p>
+
+      <pre><code>// Zod-schema = validering + TypeScript-typ från en källa
+const orderSchema = z.object({
+  customerName: z.string().min(1, "Namn krävs").max(100),
+  email: z.string().email("Ogiltig e-post"),
+  quantity: z.number().int().positive("Måste vara &gt; 0"),
+});
+type OrderForm = z.infer&lt;typeof orderSchema&gt;;
+
+function CreateOrderForm({ onSubmit }: { onSubmit: (d: OrderForm) =&gt; void }) {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } =
+    useForm&lt;OrderForm&gt;({ resolver: zodResolver(orderSchema) });
+
+  return (
+    &lt;form onSubmit={handleSubmit(onSubmit)}&gt;
+      &lt;input {...register("customerName")} /&gt;
+      {errors.customerName &amp;&amp; &lt;span&gt;{errors.customerName.message}&lt;/span&gt;}
+
+      &lt;input type="email" {...register("email")} /&gt;
+      {errors.email &amp;&amp; &lt;span&gt;{errors.email.message}&lt;/span&gt;}
+
+      &lt;button type="submit" disabled={isSubmitting}&gt;Spara&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+
+      <div class="why"><strong>Varför:</strong> React Hook Form minimerar omrenderingar (fälten är "okontrollerade" tills de behövs) — viktigt i stora formulär. Zod låter dig definiera validering <em>och</em> härleda TypeScript-typen från samma schema, så typ och validering aldrig hamnar i osynk. Samma Zod-schema kan återanvändas för att validera API-svar. Validera alltid även på backend — frontend-validering är UX, inte säkerhet.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Formulär byggda med React Hook Form (eller likvärdigt).</label>
+        <label><input type="checkbox">Validering via schema (Zod) — typ härleds från schemat.</label>
+        <label><input type="checkbox">Tydliga felmeddelanden per fält.</label>
+        <label><input type="checkbox">Submit-knapp disablad medan submit pågår.</label>
+        <label><input type="checkbox">Validering finns även på backend (frontend = UX, inte säkerhet).</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-auth">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Authentication &amp; API-lager</h2>
+      <p class="lead">Ett centraliserat <strong>API-lager</strong> (t.ex. axios-instans) med interceptors som lägger på auth-token och hanterar 401/token-refresh på ett ställe.</p>
+
+      <pre><code>// lib/api.ts — en konfigurerad klient för hela appen
+export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+
+// Lägg på token automatiskt på varje request
+api.interceptors.request.use((config) =&gt; {
+  const token = tokenStore.get();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Hantera 401 centralt — försök refresh, annars logga ut
+api.interceptors.response.use(
+  (res) =&gt; res,
+  async (error) =&gt; {
+    if (error.response?.status === 401) {
+      const ok = await tryRefreshToken();
+      if (!ok) { tokenStore.clear(); window.location.href = "/login"; }
+    }
+    return Promise.reject(error);
+  }
+);</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Ett centralt API-lager gör att auth, baseURL, headers och felhantering finns på <em>ett</em> ställe istället för upprepat i varje <code>fetch</code>. Interceptors hanterar token-refresh transparent så att användaren inte loggas ut i onödan. Lagra helst tokens i httpOnly-cookies (säkrast); <code>localStorage</code> är sårbart för XSS.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">En centraliserad API-klient (baseURL, headers, felhantering).</label>
+        <label><input type="checkbox">Auth-token läggs på automatiskt via interceptor.</label>
+        <label><input type="checkbox">401 hanteras centralt (token-refresh eller logga ut).</label>
+        <label><input type="checkbox">Tokens lagras säkert (helst httpOnly-cookie).</label>
+        <label><input type="checkbox">API-URL kommer från env-variabel, inte hårdkodad.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-error">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Error boundaries &amp; felhantering</h2>
+      <p class="lead">En <strong>Error Boundary</strong> fångar oväntade renderingsfel så att hela appen inte blir en vit skärm — visa istället ett vänligt felmeddelande och logga felet.</p>
+
+      <pre><code>// Error Boundary (klasskomponent — enda undantaget från "bara funktioner")
+class ErrorBoundary extends React.Component&lt;Props, { hasError: boolean }&gt; {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    logToService(error, info);     // skicka till t.ex. Sentry
+  }
+
+  render() {
+    if (this.state.hasError) return &lt;ErrorFallback /&gt;;
+    return this.props.children;
+  }
+}
+
+// Linda in appen (eller enskilda sektioner)
+&lt;ErrorBoundary&gt;
+  &lt;Routes /&gt;
+&lt;/ErrorBoundary&gt;</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Utan en error boundary kraschar hela React-trädet vid ett oväntat fel och användaren möts av en blank sida — oacceptabelt i en produkt som säljs. Boundaries isolerar felet, visar ett fallback-UI och loggar till en tjänst (Sentry) så att du upptäcker problem hos kunden innan de hör av sig. Kombinera med felhantering för API-anrop (via TanStack Querys <code>error</code>).</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Error boundary kring appen och kring riskfyllda sektioner.</label>
+        <label><input type="checkbox">Vänligt fallback-UI vid krasch — ingen vit skärm.</label>
+        <label><input type="checkbox">Fel loggas till en tjänst (t.ex. Sentry).</label>
+        <label><input type="checkbox">API-fel hanteras separat och visas för användaren.</label>
+        <label><input type="checkbox">Inga råa felmeddelanden/stack traces visas för slutanvändaren.</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-perf">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Performance &amp; optimering</h2>
+      <p class="lead">Optimera <strong>medvetet</strong> där det behövs: undvik onödiga omrenderingar (<code>memo</code>/<code>useMemo</code>/<code>useCallback</code>) och dela upp bundeln med <strong>code-splitting</strong> (<code>lazy</code> + <code>Suspense</code>).</p>
+
+      <pre><code>// Memoisera dyra komponenter och beräkningar
+const OrderRow = React.memo(function OrderRow({ order }: { order: Order }) {
+  return &lt;tr&gt;...&lt;/tr&gt;;
+});
+
+const total = useMemo(
+  () =&gt; orders.reduce((sum, o) =&gt; sum + o.total, 0),
+  [orders]                                    // räknas bara om när orders ändras
+);
+
+const handleSelect = useCallback((id: string) =&gt; {
+  setSelected(id);
+}, []);                                       // stabil referens → barn renderas inte om i onödan
+
+// Code-splitting — ladda tunga sidor först när de behövs
+const ReportsPage = lazy(() =&gt; import("./features/reports/ReportsPage"));
+
+&lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+  &lt;ReportsPage /&gt;
+&lt;/Suspense&gt;</code></pre>
+
+      <div class="why"><strong>Varför:</strong> I stora appar blir onödiga omrenderingar och en uppsvälld bundle märkbara för kunden. <code>memo</code>/<code>useMemo</code>/<code>useCallback</code> hindrar att tunga komponenter och callbacks beräknas om i onödan. Code-splitting gör att förstaladdningen bara hämtar det som behövs. <strong>Men:</strong> optimera inte i förväg — mät först (React DevTools Profiler, Lighthouse), annars lägger du till komplexitet utan vinst.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Tunga komponenter memoiseras (<code>React.memo</code>) vid behov.</label>
+        <label><input type="checkbox">Dyra beräkningar i <code>useMemo</code>; stabila callbacks i <code>useCallback</code>.</label>
+        <label><input type="checkbox">Route-/feature-baserad code-splitting (<code>lazy</code> + <code>Suspense</code>).</label>
+        <label><input type="checkbox">Mät innan du optimerar (Profiler, Lighthouse).</label>
+        <label><input type="checkbox">Långa listor virtualiseras vid behov (t.ex. react-window).</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-testing">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Testning</h2>
+      <p class="lead">Frontend ska också testas. <strong>Vitest + React Testing Library</strong> för komponenter/logik och <strong>Playwright</strong> för end-to-end-flöden ur användarens perspektiv.</p>
+
+      <pre><code>// Komponenttest — testa beteende, inte implementation
+test("visar felmeddelande när namn saknas", async () =&gt; {
+  render(&lt;CreateOrderForm onSubmit={vi.fn()} /&gt;);
+
+  await userEvent.click(screen.getByRole("button", { name: /spara/i }));
+
+  expect(await screen.findByText(/namn krävs/i)).toBeInTheDocument();
+});
+
+// E2E-test (Playwright) — hela flödet i en riktig webbläsare
+test("användare kan skapa en order", async ({ page }) =&gt; {
+  await page.goto("/orders");
+  await page.getByRole("button", { name: "Ny order" }).click();
+  await page.getByLabel("Kundnamn").fill("Anna");
+  await page.getByRole("button", { name: "Spara" }).click();
+  await expect(page.getByText("Anna")).toBeVisible();
+});</code></pre>
+
+      <div class="why"><strong>Varför:</strong> Testing Library uppmuntrar att testa det <em>användaren</em> ser och gör (roller, text) istället för interna detaljer — testerna går då inte sönder vid refaktorering. E2E-tester med Playwright fångar fel som bara uppstår när allt körs ihop (routing, API, auth). I en produkt som säljs är automatiska tester det som låter dig släppa ofta utan att bryta något hos kunden.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Komponenter &amp; hooks testas (Vitest + React Testing Library).</label>
+        <label><input type="checkbox">Tester utgår från användarens perspektiv (roller/text), inte interna detaljer.</label>
+        <label><input type="checkbox">Kritiska flöden täcks av E2E-tester (Playwright/Cypress).</label>
+        <label><input type="checkbox">Tester körs i CI och blockerar trasiga releaser.</label>
+        <label><input type="checkbox">API mockas i komponenttester (t.ex. MSW).</label>
+      </div>
+    </section>
+
+    <section class="panel fe" id="fe-a11y">
+      <div class="breadcrumb">Frontend</div>
+      <span class="badge fe">Frontend</span>
+      <h2>Tillgänglighet (a11y)</h2>
+      <p class="lead">Tillgänglighet är ofta ett <strong>lag-/upphandlingskrav</strong> (WCAG/EN 301 549), särskilt för offentlig sektor. Bygg in det från start — det är dyrt att lägga till efteråt.</p>
+
+      <pre><code>// ✅ Semantisk HTML — använd rätt element
+&lt;button onClick={handleSave}&gt;Spara&lt;/button&gt;        // inte &lt;div onClick&gt;
+&lt;nav&gt; &lt;main&gt; &lt;header&gt; &lt;footer&gt;                       // landmarks för skärmläsare
+
+// ✅ Labels kopplade till inputs
+&lt;label htmlFor="email"&gt;E-post&lt;/label&gt;
+&lt;input id="email" type="email" /&gt;
+
+// ✅ Ikonknappar behöver tillgängligt namn
+&lt;button aria-label="Stäng"&gt;&lt;XIcon /&gt;&lt;/button&gt;
+
+// ✅ Statusuppdateringar annonseras för skärmläsare
+&lt;div role="status" aria-live="polite"&gt;{message}&lt;/div&gt;</code></pre>
+
+      <p><strong>Grunder:</strong> tangentbordsnavigering (allt klickbart ska nås med Tab/Enter) · synligt fokus · tillräcklig färgkontrast · alt-text på bilder · inte enbart färg för att förmedla information.</p>
+
+      <div class="why"><strong>Varför:</strong> Tillgänglighet krävs ofta enligt lag (offentlig sektor måste uppfylla WCAG) och utökar din målgrupp. Semantisk HTML ger gratis tangentbords- och skärmläsarstöd — bygger du knappar av <code>&lt;div&gt;</code> tappar du allt det och måste återskapa det manuellt. Att bygga in a11y från start är en bråkdel av kostnaden mot att eftermontera det inför en upphandling.</div>
+
+      <div class="checklist">
+        <h4>Checklista</h4>
+        <label><input type="checkbox">Semantisk HTML (<code>button</code>, <code>nav</code>, <code>main</code>…) istället för <code>div</code> överallt.</label>
+        <label><input type="checkbox">Alla inputs har kopplade <code>label</code>:s.</label>
+        <label><input type="checkbox">Allt går att använda med enbart tangentbord; synligt fokus.</label>
+        <label><input type="checkbox">Tillräcklig färgkontrast; färg är inte enda informationsbäraren.</label>
+        <label><input type="checkbox">Ikonknappar har <code>aria-label</code>; bilder har alt-text.</label>
+        <label><input type="checkbox">Automatisk a11y-kontroll i pipeline (t.ex. axe / eslint-plugin-jsx-a11y).</label>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const links = document.querySelectorAll('nav a');
+  const panels = document.querySelectorAll('.panel');
+
+  function show(targetId) {
+    panels.forEach(p => p.classList.toggle('active', p.id === targetId));
+    links.forEach(l => l.classList.toggle('active', l.dataset.target === targetId));
+    document.querySelector('.content').scrollTo({ top: 0 });
+    if (location.hash !== '#' + targetId) history.replaceState(null, '', '#' + targetId);
+  }
+
+  links.forEach(link => {
+    link.addEventListener('click', () => show(link.dataset.target));
+  });
+
+  // Sök/filter i sidomenyn
+  document.getElementById('search').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    links.forEach(l => {
+      const match = l.textContent.toLowerCase().includes(q);
+      l.style.display = match ? '' : 'none';
+    });
+  });
+
+  // Öppna från URL-hash om någon delar en länk
+  if (location.hash) {
+    const id = location.hash.slice(1);
+    if (document.getElementById(id)) show(id);
+  }
+</script>
+</body>
+</html>

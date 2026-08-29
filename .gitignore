@@ -1,0 +1,46 @@
+# --- .NET ---
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+artifacts/
+TestResults/
+*.coverage
+*.trx
+
+# --- Node / frontend ---
+node_modules/
+dist/
+dist-ssr/
+.vite/
+coverage/
+*.local
+
+# --- Secrets & miljo ---
+.env
+.env.*
+!.env.example
+*.secrets*
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+*.pfx
+*.p12
+vapid*.json
+
+# --- IDE ---
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Claude Code (maskinlokalt) ---
+.claude/settings.local.json
