@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 2 av 14 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 3 av 14 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#27` Tidszonshantering i frontenden, med ESLint-regel som håller konverteringen på ett ställe — 2026-08-30
 - `#92` Edge-cachningen verifierad i skarp drift — §KM.11:s antagande bevisat — 2026-08-30
 - `#16` Publika endpoints för lag och matcher, med egen query-dispatcher — 2026-08-30
 - `#15` Uppetidsövervakning med verifierat larm — **M0 därmed klar** — 2026-08-30
@@ -66,12 +67,12 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#92` Verifiera edge-cachningen | Haval | `feature/verify-edge-cache` | In Review — verifierad i skarp drift |
+| `#27` Tidszonshantering | Haval | `feature/frontend-timezone` | In Review — FE-halvan klar; ICS-kriteriet överlämnat till `#25` |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#27` FE-halvan, sedan `#18` och `#19`** — lagväljare och matchlista. Backendens tidszonshantering är redan klar, så `#27` är mindre än den ser ut.
+1. **`#18` och `#19`** — lagväljare och matchlista. Tidsformateringen finns nu i `@/lib/time`; API-klienten är det som saknas.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
@@ -97,6 +98,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | 2026-08-29 | **Branch protection skjuts upp** | Ensam utvecklare, och `.githooks/pre-push` räcker | Kan slås på när som helst nu när repot är publikt |
 | 2026-08-29 | **`mallar/` borttagen ur hela historiken** | Mappen innehöll en affärsplan för en orelaterad produkt och hörde inte hemma i det här repot | Historiken är omskriven och force-pushad. Se känd risk nedan om gamla objekt |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
+| 2026-08-30 | **Tidszonsregeln görs verkställbar med ESLint, och testerna körs i fel tidszon** | §KM.5 säger att konverteringen ska ske på ett ställe. En regel som bara står i ett dokument bryts förr eller senare. En ESLint-regel förbjuder `toLocale*` och egna `Intl`-formaterare utanför `src/lib/time.ts`, och hela testsviten körs i `America/Los_Angeles` | Ett tappat tidszonsargument faller i CI i stället för att upptäckas av en förälder i oktober. Utvecklarmaskinen står i Europe/Berlin, som har identiska förskjutningar med Stockholm — utan den påtvingade zonen hade sviten passerat av ren tur |
 | 2026-08-30 | **Handskriven query-dispatcher i stället för MediatR** (öppen fråga 2c besvarad) | MediatR 13+ ligger under RPL-1.5, som utlöses vid **driftsättning** och skulle lägga vår egen kod under copyleft. MediatR 12.4.1 är Apache-2.0 men fryst sedan 2024. Dispatchern är ~70 rader med omslagscache och en behavior-kedja | Avvikelse **§KM.0 A9**. Noll licensyta och inget beroende som kan ändra villkor mitt i projektet. Priset: vi underhåller den själva och pipeline-behaviors byggs efter hand — därför är dispatchern täckt av egna tester som bevisar uppslagning, ordning och att valideringen avbryter |
 | 2026-08-29 | **Uppetidspingen fönstras i stället för att gå dygnet runt** | Render free ger 750 instanstimmar per månad och arbetsyta, och suspenderar **alla** fria tjänster resten av månaden när de tar slut. En ping var femte minut dygnet runt förbrukar 744 timmar i en 31-dagarsmånad — sex timmars marginal. Det är ett dåligt byte för en app hundra familjer förlitar sig på | Pingas var 5:e minut fredag 15:00 till söndag 22:59, plus en daglig kontroll 14:50. ~251 h/månad, ~499 h marginal. Priset: en tränare som redigerar en vardagskväll kan möta ~1 minuts kallstart, och avbrott utanför helgen upptäcks inom ett dygn. Rutinen står i `docs/DRIFTOVERVAKNING.md` |
 | 2026-08-29 | **Databasdumpar tas manuellt, aldrig i CI** | En schemalagd GitHub Actions-körning hade varit lätt att skriva, men artefakter i ett publikt repo går att ladda ner av vem som helst med länken. Så snart en tränare lägger upp truppen ligger barns förnamn i databasen (§KM.1) | Neons PITR är det automatiska lagret. Den logiska dumpen tas av en människa, till en katalog utanför repot. `.gitignore` blockerar `*.dump` som skyddsnät |

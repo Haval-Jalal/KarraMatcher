@@ -39,6 +39,38 @@ export default tseslint.config(
   },
 
   {
+    /*
+     * §KM.5: konverteringen mellan UTC och svensk tid sker på **exakt ett ställe** i
+     * frontenden — src/lib/time.ts. Utan den här regeln är det en ambition; med den är
+     * det verkställbart.
+     *
+     * Det som förbjuds är inte formatering i sig, utan att formatera *utan* att ange
+     * tidszon. `toLocaleTimeString()` använder webbläsarens egen zon, vilket ger rätt
+     * svar för en förälder i Kärra och fel svar för en på semester i Spanien — ett fel
+     * som är osynligt för den som bygger appen.
+     */
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/time.ts', 'src/lib/time.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.property.name=/^toLocale(Date|Time)?String$/]',
+          message:
+            'Använd hjälpfunktionerna i @/lib/time. toLocale*-metoderna använder ' +
+            'webbläsarens tidszon, inte Europe/Stockholm (§KM.5).',
+        },
+        {
+          selector: "NewExpression[callee.object.name='Intl']",
+          message:
+            'Använd hjälpfunktionerna i @/lib/time i stället för att formatera datum ' +
+            'på egen hand. Konverteringen ska ske på ett enda ställe (§KM.5).',
+        },
+      ],
+    },
+  },
+
+  {
     // Konfigfiler ligger utanför tsconfig-projekten — inga typade regler här.
     files: ['*.config.js', '*.config.ts'],
     extends: [tseslint.configs.disableTypeChecked],
