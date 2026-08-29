@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** M0 pågår — 11 av 15 issues klara. Repot är publikt
+- **Fas:** M0 pågår — 12 av 15 issues klara. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M0 — Grund (pågår)
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -39,6 +39,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#10` Arkitekturtester: lagergränser, entiteter i controllers, §KM.2-skyddet — 2026-08-29
 - `#12` `vercel.json` med `/api`-rewrite; frontend i drift på Vercel — 2026-08-29
 - `#11` Dockerfile och backend i drift på Render — 2026-08-29
 - `#9` Rate limiting på publika endpoints — 2026-08-29
@@ -58,14 +59,14 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#10` Arkitekturtester som skyddar lagergränserna | Haval | `feature/architecture-tests` | In Review |
+| `#13` Edge-cache-headers på publika GET-endpoints | Haval | `feature/edge-cache-headers` | In Review — mekanismen klar, edge-verifiering väntar på första publika endpointen i M1 |
 
 ## ➡️ Nästa steg
-*(Kvar i M0 — Grund. Alla tre är fristående och kan tas i valfri ordning.)*
+*(Kvar i M0 — Grund. De två första är fristående och kan tas i valfri ordning.)*
 
-1. **`#13` Edge-cache-headers** på publika GET-endpoints, så Vercels edge svarar utan att väcka Render (§KM.11).
-2. **`#14` DB-backup med testad återställning** (§KM.0 A2).
-3. **`#15` Uppetidsverktyg** som pingar `/health`.
+1. **`#14` DB-backup med testad återställning** (§KM.0 A2).
+2. **`#15` Uppetidsverktyg** som pingar `/health`.
+3. **I M1, med första publika endpointen:** markera den med `.WithEdgeCache(...)` och verifiera på riktigt att andra anropet ger `x-vercel-cache: HIT` utan att Render väcks. Det är sista kriteriet i `#13`.
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 
@@ -90,6 +91,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | 2026-08-29 | **Branch protection skjuts upp** | Ensam utvecklare, och `.githooks/pre-push` räcker | Kan slås på när som helst nu när repot är publikt |
 | 2026-08-29 | **`mallar/` borttagen ur hela historiken** | Mappen innehöll en affärsplan för en orelaterad produkt och hörde inte hemma i det här repot | Historiken är omskriven och force-pushad. Se känd risk nedan om gamla objekt |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
+| 2026-08-29 | **Cachning är opt-in, inte opt-out** | Standarden för varje svar är `private, no-store`; en endpoint blir publikt cachebar först genom att uttryckligen säga det. Motsatt standard hade gjort en glömd markering till ett dataläckage i stället för till en missad optimering | Varje publik endpoint i M1 måste komma ihåg `.WithEdgeCache(...)`, annars väcks Render i onödan. Priset är medvetet: att glömma kostar prestanda, aldrig integritet |
 | 2026-08-29 | **Arkitekturtesterna skrivs för hand — NetArchTest väljs bort** | Paketet som issue #10 namnger har inte släppts sedan maj 2021 och **deklarerar ingen licens i paketmetadatan** (GitHub-repot uppger MIT, nuspec:en är tom). Efter MediatR-överraskningen är ett olicensierat, övergivet beroende inte värt bekvämligheten. Alternativen — eNhancedEdition (MIT) och ArchUnitNET (Apache-2.0) — hade fungerat, men behövdes inte | Noll ny licensyta. De befintliga handskrivna reglerna täckte redan två av issuets tre krav; det tredje blev ~60 rader reflektion. Priset: vi underhåller detektorerna själva, vilket motiverar självtesterna som bevisar att varje regel faktiskt faller |
 | 2026-08-29 | **Rate limiting och DB-backup lyfts till baslinje** | Publika endpoints på öppet internet; familjestatistik går inte att återskapa | Avvikelse §KM.0 A1 och A2 — byggs i M0–M1 i stället för "vid behov" |
 
@@ -123,4 +125,5 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | **Ingen branch protection på GitHub** | `main` är oskyddad på GitHub-sidan. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tills vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Repot är numera publikt, så riktig branch protection är gratis och kan slås på när som helst |
 | **Gamla objekt kvar på GitHub efter historikomskrivning** | Att skriva om historik raderar inte gamla objekt hos GitHub — de nås via sina SHA:n tills GitHub kör städning, och SHA:na syns i commitlistorna på mergade PR:ar. Verifierat: den borttagna filen gick att hämta via `?ref=<gammal SHA>` även efter omskrivningen | **Accepterad risk** (beslut 2026-08-29) — innehållet granskades och bedömdes okritiskt. **Lärdom:** kontrollera vad en mapp innehåller *innan* den checkas in; en omskrivning i efterhand är aldrig fullständig utan att be GitHub köra `gc` |
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
+| **Vercel kanske inte edge-cachar en extern rewrite** | Hela kallstartsmotmedlet i §KM.11 bygger på att Vercels edge cachar svar den proxar vidare till Render. Det är antaget, inte verifierat — det finns ingen publik endpoint att pröva med än | Verifieras i M1 med första publika endpointen: två anrop i rad, andra ska ge `x-vercel-cache: HIT`. Håller det inte behövs en annan lösning, och då tidigt snarare än sent |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |

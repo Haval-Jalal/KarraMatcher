@@ -56,7 +56,7 @@
 | 3.7 | **§KM.2** Användaren informeras tydligt om att spelarkortet bor i telefonen | ⬜ |
 | 3.8 | Inga hemligheter i frontend-bundeln — verifierat i byggd output | ⬜ |
 | 3.9 | Inga secrets, tokens eller PII i loggar eller felrapportering (scrubbat) | ⬜ |
-| 3.10 | Cache-headers hindrar mellanliggande cachning av inloggade svar (`Cache-Control: private, no-store`) | ⬜ |
+| 3.10 | Cache-headers hindrar mellanliggande cachning av inloggade svar (`Cache-Control: private, no-store`) | ✅ |
 
 ## 4. Nätverk & transport
 | # | Kontroll | Status |
