@@ -1,20 +1,58 @@
-import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  redirect,
+} from '@tanstack/react-router'
 
 import { NotFound } from '@/components/NotFound'
+import { TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
+import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
+import { readSetting } from '@/lib/storage'
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
   notFoundComponent: NotFound,
 })
 
-const startRoute = createRoute({
+/**
+ * Startsidan skickar vidare till senast valda lag.
+ *
+ * Omdirigeringen sker i `beforeLoad` och inte i en effekt, så att en återvändande förälder
+ * aldrig ser lagväljaren blinka förbi på väg till sitt schema. Finns inget sparat val
+ * visas väljaren — det är förstagångsbesökarens vy.
+ */
+const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  beforeLoad: () => {
+    const remembered = readSetting(SELECTED_TEAM_STORAGE_KEY)
+
+    if (remembered !== null && remembered !== '') {
+      // TanStack Router signalerar omdirigering genom att man kastar resultatet av
+      // redirect(). Det är ramverkets dokumenterade API och inte ett kastat undantag,
+      // så only-throw-error gäller inte här.
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/lag/$slug', params: { slug: remembered } })
+    }
+  },
   component: StartPage,
 })
 
-const routeTree = rootRoute.addChildren([startRoute])
+/**
+ * Lagets schema. Adressen är delbar — en förälder skickar den i föräldragruppen och
+ * mottagaren landar på rätt lag utan att välja något.
+ */
+const teamRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/lag/$slug',
+  component: TeamSchedulePage,
+})
+
+/** Exporteras för tester, som bygger en egen router med minneshistorik. */
+export const routeTree = rootRoute.addChildren([indexRoute, teamRoute])
 
 export const router = createRouter({
   routeTree,

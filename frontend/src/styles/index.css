@@ -179,6 +179,97 @@ h2 {
   color: var(--text-muted);
 }
 
+/* ---- Matchlistan ---------------------------------------------------------- */
+
+.match-list__title {
+  margin-top: 28px;
+}
+
+.match-list__heading {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 20px 0 8px;
+}
+
+/* Dagens matcher framhävs med accenten — det är den vanligaste anledningen att öppna appen. */
+.match-list__heading--today {
+  color: var(--text-strong);
+  border-left: 4px solid var(--team-accent);
+  padding-left: 8px;
+}
+
+.match-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.match-card {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--team-accent);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  padding: 12px 14px;
+}
+
+.match-card__when {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.match-card__time {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.match-card__date {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.match-card__opponent {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.match-card__venue {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/*
+ * Statusmärkningen är text i en ram, inte en färgad prick. En förälder som inte skiljer
+ * färger ska förstå att matchen är inställd (WCAG 1.4.1).
+ */
+.badge {
+  display: inline-block;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  padding: 0 8px;
+  margin-right: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge--cancelled {
+  color: var(--danger);
+}
+
+.match-list__past {
+  margin-top: 24px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

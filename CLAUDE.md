@@ -63,7 +63,8 @@ Vad det globala lagret bidrar med:
    - När PR mergad och issue stängs: flytta till **`Done`** och stäng issue (`gh issue close`).
 10. **Branch-hygien mellan issues.** Innan ny issue: `git checkout main && git pull`, radera lokal branch. Börja aldrig en ny feature från en gammal branch.
 11. **Kör lint och bygge lokalt innan commit.**
-    - FE: `npm run lint` (ESLint + Prettier, `--max-warnings 0`) + `npx tsc --noEmit`.
+    - FE: `npm run lint` (ESLint + Prettier, `--max-warnings 0`) + `npm run typecheck`.
+      **Inte** `npx tsc --noEmit` — `tsconfig.json` är en lösningsfil med bara referenser, så det kommandot typkollar ingenting och ger falskt grönt.
     - BE: `dotnet build` (varningsfritt) + `dotnet test` + `dotnet format`.
 12. **Välj nästa issue från boarden.** Ta issues ur `Ready` — aldrig direkt ur Backlog utan godkännande av människa. Läs [`docs/MVP-PLAN.md`](./docs/MVP-PLAN.md) för att avgöra om ett issue hör till MVP eller post-MVP.
 13. **Verifiera BE-kontrakt innan FE-feature startas.** Kräver en FE-vy ett API-anrop — kontrollera att endpointen finns (rätt metod, URL, request/response-form) innan FE-arbetet börjar. Saknas något: bygg BE-gapet först, i egen commit inom samma PR (monorepo) eller egen PR om ändringen är stor.
