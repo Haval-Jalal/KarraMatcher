@@ -2,6 +2,7 @@ import { ApiError } from '@/lib/api'
 
 import { MatchList } from './MatchList'
 import { NextMatchCard } from './NextMatchCard'
+import { selectNextMatch } from './selectNextMatch'
 import { useTeamMatches } from './useTeamMatches'
 
 /**
@@ -55,11 +56,15 @@ export function MatchListSection({ slug }: { slug: string }) {
     )
   }
 
+  // Väljs en gång och matas till båda. Kortet och listan kan därmed aldrig bli oense om
+  // vilken match som är nästa — vilket är vad som gjorde att den visades två gånger.
+  const next = selectNextMatch(data.matches)
+
   return (
     <>
-      <NextMatchCard matches={data.matches} />
+      {next && <NextMatchCard match={next} />}
       <h2 className="match-list__title">Matcher</h2>
-      <MatchList matches={data.matches} />
+      <MatchList matches={data.matches} {...(next ? { excludeId: next.id } : {})} />
     </>
   )
 }

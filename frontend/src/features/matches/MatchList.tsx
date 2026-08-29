@@ -11,18 +11,40 @@ import type { Match } from './types'
  * förbi halva säsongen. Knappen anger antalet, så att man vet vad som väntar bakom den
  * innan man trycker.
  */
-export function MatchList({ matches, now }: { matches: Match[]; now?: Date | string }) {
+export function MatchList({
+  matches,
+  now,
+  excludeId,
+}: {
+  matches: Match[]
+  now?: Date | string
+  /**
+   * Matchen som redan visas i kortet ovanför. Utesluts på **id** och inte som "första
+   * posten" — kortet hoppar över inställda matcher, så första posten är inte alltid den
+   * kortet visar, och att ta bort fel post hade dolt en inställd match.
+   */
+  excludeId?: string
+}) {
   const [showPast, setShowPast] = useState(false)
   const pastId = useId()
-
-  const { today, upcoming, past } = groupMatches(matches, now)
-  const pastCount = past.reduce((total, group) => total + group.matches.length, 0)
 
   if (matches.length === 0) {
     return <p className="state">Inga matcher är inlagda för det här laget än.</p>
   }
 
-  const seasonOver = today.length === 0 && upcoming.length === 0
+  const shown = excludeId === undefined ? matches : matches.filter((m) => m.id !== excludeId)
+  const { today, upcoming, past } = groupMatches(shown, now)
+  const pastCount = past.reduce((total, group) => total + group.matches.length, 0)
+
+  if (shown.length === 0) {
+    // Kortet ovanför visar den enda match som fanns. Utan det här beskedet hade
+    // rubriken "Matcher" stått ensam över tomrum och sett trasig ut.
+    return <p className="state">Inga fler matcher är inlagda.</p>
+  }
+
+  // Med ett kort ovanför är en tom framtid inte "säsongen är slut" — det står redan en
+  // kommande match på sidan. Beskedet gäller bara när listan är allt som finns.
+  const seasonOver = today.length === 0 && upcoming.length === 0 && excludeId === undefined
 
   return (
     <div className="match-list">

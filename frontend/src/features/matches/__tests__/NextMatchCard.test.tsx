@@ -93,7 +93,7 @@ describe('selectNextMatch — urval', () => {
 
 describe('NextMatchCard — visning', () => {
   it('visar motståndare, tid och plats', () => {
-    render(<NextMatchCard matches={[testMatch('a', '2026-09-20T12:00:00Z')]} now={now} />)
+    render(<NextMatchCard match={testMatch('a', '2026-09-20T12:00:00Z')} now={now} />)
 
     expect(screen.getByRole('heading', { name: 'Nästa match' })).toBeInTheDocument()
     expect(screen.getByText(/Motstandare a/)).toBeInTheDocument()
@@ -107,39 +107,23 @@ describe('NextMatchCard — visning', () => {
     ['2026-09-19T16:00:00Z', 'På lördag'],
     ['2026-09-27T16:00:00Z', 'Om 12 dagar'],
   ])('visar relativ dag för %s som %s', (kickoff, expected) => {
-    render(<NextMatchCard matches={[testMatch('a', kickoff)]} now={now} />)
+    render(<NextMatchCard match={testMatch('a', kickoff)} now={now} />)
 
     expect(screen.getByText(expected)).toBeInTheDocument()
   })
 
   it('skiljer hemma och borta', () => {
     render(
-      <NextMatchCard
-        matches={[testMatch('a', '2026-09-20T12:00:00Z', { isHome: false })]}
-        now={now}
-      />,
+      <NextMatchCard match={testMatch('a', '2026-09-20T12:00:00Z', { isHome: false })} now={now} />,
     )
 
     expect(screen.getByText(/Borta mot/)).toBeInTheDocument()
   })
 
-  it('döljs helt när säsongen är slut', () => {
-    // Matchlistan säger redan att säsongen är slut. Två meddelanden om samma sak är sämre
-    // än ett.
-    const { container } = render(
-      <NextMatchCard matches={[testMatch('a', '2026-08-15T12:00:00Z')]} now={now} />,
-    )
-
-    expect(container).toBeEmptyDOMElement()
-  })
-
   it('räknar relativ dag över månadsskiftet', () => {
     // 30 september 22:30 UTC är 1 oktober i svensk tid — alltså imorgon, inte idag.
     render(
-      <NextMatchCard
-        matches={[testMatch('a', '2026-09-30T22:30:00Z')]}
-        now={'2026-09-30T09:00:00Z'}
-      />,
+      <NextMatchCard match={testMatch('a', '2026-09-30T22:30:00Z')} now={'2026-09-30T09:00:00Z'} />,
     )
 
     expect(screen.getByText('Imorgon')).toBeInTheDocument()

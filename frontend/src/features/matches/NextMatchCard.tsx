@@ -1,22 +1,19 @@
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 
-import { selectNextMatch } from './selectNextMatch'
 import type { Match } from './types'
 
 /**
  * Nästa match, framhävd överst.
  *
  * Det här är den enda information de flesta föräldrar öppnar appen för, så den ska synas
- * utan att någon letar. Kortet renderar ingenting när säsongen är slut — matchlistan säger
- * redan det, och två meddelanden om samma sak är sämre än ett.
+ * utan att någon letar.
+ *
+ * Ren presentation: vilken match som är nästa avgörs av `selectNextMatch` i sektionen
+ * ovanför. Att välja på två ställen hade kunnat ge kortet och listan olika uppfattning om
+ * vad "nästa match" är — och det är precis den oenigheten som gjorde att matchen visades
+ * två gånger.
  */
-export function NextMatchCard({ matches, now }: { matches: Match[]; now?: Date | string }) {
-  const match: Match | null = selectNextMatch(matches, now)
-
-  if (match === null) {
-    return null
-  }
-
+export function NextMatchCard({ match, now }: { match: Match; now?: Date | string }) {
   return (
     <section className="next-match" aria-labelledby="nasta-match">
       <h2 id="nasta-match" className="next-match__label">
