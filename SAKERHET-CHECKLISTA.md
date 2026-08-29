@@ -41,7 +41,7 @@
 | 2.9 | **§KM.12** Platsräkning sker server-side; accept som spränger antalet avvisas | ⬜ |
 | 2.10 | **§KM.12** Nekande utan meddelande avvisas server-side | ⬜ |
 | 2.11 | **§KM.3** Gäst kan läsa samåkning men får `401` på att lägga upp eller skicka förfrågan | ⬜ |
-| 2.12 | Ingen "mass assignment" — DTOs (records), aldrig entiteter, i API-in/ut | ⬜ |
+| 2.12 | Ingen "mass assignment" — DTOs (records), aldrig entiteter, i API-in/ut | ✅ |
 | 2.13 | Principen om minsta behörighet genomgående | ⬜ |
 
 ## 3. Datalagring i klienten (webb / PWA)
@@ -68,7 +68,7 @@
 | 4.5 | **§KM.11** Refresh-cookien är förstapart: `HttpOnly`, `Secure`, `SameSite=Lax` | ⬜ |
 | 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin | ⬜ |
 | 4.6b | Rate limiting partitioneras på klientens IP från `X-Forwarded-For`, med en opartitionerad skyddsgräns som inte går att kringgå genom att förfalska adressen | ⬜ |
-| 4.7 | **§KM.3** Publika endpoints returnerar aldrig personuppgifter | ⬜ |
+| 4.7 | **§KM.3** Publika endpoints returnerar aldrig personuppgifter | ✅ |
 | 4.8 | SSRF-skydd: väder-API anropas med koordinater från egen databas, aldrig från användarindata | ⬜ |
 | 4.9 | Web Push använder egna VAPID-nycklar; payload innehåller ingen PII | ⬜ |
 

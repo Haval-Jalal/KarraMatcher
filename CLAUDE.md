@@ -11,7 +11,7 @@
 > Produktens VAD och VARFÖR finns i [`SPEC.md`](./SPEC.md).
 
 **Teknikstack:**
-- **Backend (BE)** = C# / .NET (senaste LTS), EF Core, MediatR, FluentValidation, PostgreSQL (Npgsql).
+- **Backend (BE)** = C# / .NET (senaste LTS), EF Core, FluentValidation, PostgreSQL (Npgsql). Egen query-dispatcher i stället för MediatR (**§KM.0 A9**).
 - **Frontend (FE)** = React + TypeScript (Vite), TanStack Router, TanStack Query, React Hook Form + Zod.
 - **Klient** = **PWA** (installerbar på hemskärmen, offline-läsbart schema). Ingen app store.
 - **Repo** = **monorepo** med `backend/` och `frontend/`. Ett issue, en branch, en PR — även när ändringen rör båda.
@@ -94,6 +94,7 @@ Vad det globala lagret bidrar med:
 | A6 | Två repon | **Monorepo** | Ensam utvecklare; mallen tillåter uttryckligen monorepo. En PR kan röra både BE och FE |
 | A7 | Steg 0 = de fyra kommersiella filtren | **Omskrivna för ideell app** | Ingen betalar för appen; grinden mäter i stället om den faktiskt kommer att användas |
 | A8 | All data i backend | **Barnstatistiken lagras enbart på enheten** | Spelarkortet är familjens egen sak. Data som aldrig når servern kan inte läcka från den — men den kan gå förlorad, se §KM.2 |
+| A9 | Mediator = MediatR | **Handskriven query-dispatcher** | MediatR ligger sedan v13 under RPL-1.5, som kräver att vår källkod publiceras vid driftsättning. Dispatchern är ~70 rader och har noll licensyta |
 
 ### §KM.1 Barn-PII — hårt tak på vad som får lagras
 
@@ -283,7 +284,7 @@ backend/
 ```
 
 ### Use cases & data
-- **CQRS + MediatR.** Commands ändrar state, Queries läser. En handler per use case. Controllers tunna (`_mediator.Send`).
+- **CQRS.** Commands ändrar state, Queries läser. En handler per use case. Controllers tunna — de skickar frågan vidare och gör inget annat. Mediatorn är projektets egen dispatcher, inte MediatR (**§KM.0 A9**).
 - **DTOs (records)** för all in/utdata — exponera **aldrig** entiteter i API:t. Mapping på ett ställe.
 - **Repository-interfaces i Application**, EF-implementation i Infrastructure. `AsNoTracking()` för read-only. Async + `CancellationToken` genomgående.
 
