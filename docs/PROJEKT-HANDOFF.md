@@ -33,7 +33,7 @@
 | Standarder vid behov | [`STANDARDER-VID-BEHOV.md`](../STANDARDER-VID-BEHOV.md) |
 | Säkerhetschecklista (releasegrind) | [`SAKERHET-CHECKLISTA.md`](../SAKERHET-CHECKLISTA.md) |
 | Plan / roadmap | [`MVP-PLAN.md`](./MVP-PLAN.md) |
-| Ursprungsmallar (referens, ändras inte) | `mallar/StrukturBackendFrontend/`, `mallar/StrukturTelefonApp/` |
+| Ursprungsmallar | Förvaras utanför repot |
 | Förstudieplan (artefakt) | https://claude.ai/code/artifact/9fc04494-e56d-4510-acf7-28231d64955a |
 | Miljöer (staging / prod) | *ej uppsatta — M0* |
 
@@ -41,7 +41,7 @@
 - `#2` .NET-lösningen med fyra lager, fyra testprojekt och arkitekturtester — 2026-08-29
 - `#1` .NET 10 LTS installerat och låst med `global.json` — 2026-08-29
 - Repo, projektboard och 73 issues fördelade på nio milstolpar — 2026-08-29
-- Genomgång av båda mallarna i sin helhet (13 filer) — 2026-08-29
+- Genomgång av båda projektmallarna i sin helhet — 2026-08-29
 - Produktbeslut fattade (roller, statistikmodell, kallelse avstängd, omfattning) — 2026-08-29
 - Regelverk, spec, standarder och säkerhetschecklista skrivna och anpassade — 2026-08-29
 
@@ -73,7 +73,7 @@
 | 2026-08-29 | **Drift = Vercel + Render + Neon med `/api/*`-rewrite** | Samma uppsättning som carcheck.se, som redan kör i produktion. Noll kostnad, monorepo behålls, .NET-backenden behålls | Klienten ser **en enda origin** → CORS behöver inte öppnas och refresh-cookien blir förstapart. Priset är Renders kallstart, som måste maskeras med edge-cache (§KM.11) |
 | 2026-08-29 | **Databasen på Neon, inte på Render** | Renders gratisdatabas upphör efter 30 dagar | Familjernas statistik ligger inte på något som självdör |
 | 2026-08-29 | **Monorepo** i stället för två repon | Ensam utvecklare; mallen tillåter uttryckligen monorepo. En PR kan röra både BE och FE | §0 p.13 tolkas som "BE-gapet först i egen commit inom samma PR" |
-| 2026-08-29 | **Steg 0 omskrivet** för ideell app | Originalfiltren mäter betalningsvilja; ingen betalar för den här appen | Grinden mäter i stället adoption. Originalen kvar i `mallar/` |
+| 2026-08-29 | **Steg 0 omskrivet** för ideell app | Originalfiltren mäter betalningsvilja; ingen betalar för den här appen | Grinden mäter i stället adoption. Originalfiltren finns i projektmallen, utanför repot |
 | 2026-08-29 | **Full process** enligt mallen | Målet är ett komplett och granskningsbart projekt | Board, issue, branch och PR för varje ändring — även små |
 | 2026-08-29 | **Statistik privat per familj**, ingen skytteliga | Svensk fotbolls riktlinjer avråder från resultatrapportering och tabeller upp till 12 år; minskar dessutom föräldrapress | Matchresultatet skrivs in av varje familj för sig. Ingen roll, inte ens Admin, kan läsa det |
 | 2026-08-29 | **Barnstatistiken lagras enbart på enheten** — ingen tabell, ingen endpoint | Spelarkortet är tänkt som något föräldern och barnet gör tillsammans efter matchen. Data som aldrig når servern kan inte läcka från den, och kräver varken konto eller samtycke | Servern behandlar **inga uppgifter om barn** vid lansering. Priset: datan går förlorad vid telefonbyte utan säkerhetskopia → backupkod, `storage.persist()` och installationsuppmaning blir funktionskrav (§KM.2) |

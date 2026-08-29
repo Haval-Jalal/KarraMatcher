@@ -24,7 +24,6 @@ tränarnas schemaverktyg.
 | [`docs/MVP-PLAN.md`](./docs/MVP-PLAN.md) | Milstolpar M0–M8 och vad som hör till MVP respektive backlog |
 | [`STANDARDER-VID-BEHOV.md`](./STANDARDER-VID-BEHOV.md) | Element som införs först när triggern uppfylls (YAGNI) |
 | [`SAKERHET-CHECKLISTA.md`](./SAKERHET-CHECKLISTA.md) | Auditerbar releasegrind — bockas av före varje produktionssläpp |
-| `mallar/` | Ursprungsmallarna, orörda referenskopior. **Ändras aldrig** |
 
 ## Teknik
 
@@ -58,8 +57,7 @@ KarraMatcher/
 │   ├─ PROJEKT-HANDOFF.md     levande status
 │   └─ MVP-PLAN.md            milstolpar
 ├─ backend/                   .NET-lösningen
-├─ frontend/                  React + Vite (PWA)
-└─ mallar/                    ursprungsmallar, referens
+└─ frontend/                  React + Vite (PWA)
 ```
 
 ## Kom igång

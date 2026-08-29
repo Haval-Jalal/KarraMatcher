@@ -12,7 +12,7 @@
 > **Anpassad grind.** Mallens fyra filter (Painful, Frequent, Large Enough, Underserved) mäter
 > **betalningsvilja**. Kärra Matcher är en ideell app för en fotbollsförening — ingen ska betala för den.
 > Filtren nedan mäter i stället det som faktiskt avgör om appen lyckas: **blir den använd?**
-> Originalfiltren finns kvar i `mallar/StrukturBackendFrontend/SPEC.md` för jämförelse.
+> Originalfiltren finns kvar i projektmallen `StrukturBackendFrontend`, utanför repot.
 
 | # | Filter | Frågan | Svar |
 |---|--------|--------|------|

@@ -19,7 +19,8 @@
   Vercel rewriter `/api/*` till Render, så klienten ser en enda origin. Se **§KM.11**.
   *(Samma uppsättning som carcheck.se, som redan är i drift.)*
 
-**Ursprung:** Regelverket är en anpassning av mallen `mallar/StrukturBackendFrontend/`.
+**Ursprung:** Regelverket är en anpassning av projektmallen `StrukturBackendFrontend`, som förvaras
+utanför det här repot.
 Avvikelser från mallen är samlade och motiverade i **§KM.0** — inför inga andra avvikelser utan att skriva in dem där.
 
 ---

@@ -5,7 +5,7 @@
 > När du inför ett element: följ samma mönster och kvalitetsnivå som i [`CLAUDE.md`](./CLAUDE.md).
 > Föreslå för användaren när du ser att en trigger är uppfylld, i stället för att bygga in det tyst.
 >
-> **Ursprung:** anpassad från `mallar/StrukturBackendFrontend/STANDARDER-VID-BEHOV.md`.
+> **Ursprung:** anpassad från projektmallen `StrukturBackendFrontend`, utanför repot.
 > Mobil-/native-element är borttagna; webb- och PWA-element är tillagda.
 
 Varje element har: **Vad** · **Inför NÄR (trigger)** · **Kort hur**.

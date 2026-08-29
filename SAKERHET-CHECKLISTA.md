@@ -5,7 +5,7 @@
 > samt projektets skärpta regler i [`CLAUDE.md`](./CLAUDE.md) §KM.
 > Används som **grind före varje produktionsrelease**.
 >
-> **Ursprung:** anpassad från `mallar/StrukturTelefonApp/SAKERHET-CHECKLISTA.md`. Mobilspecifika
+> **Ursprung:** anpassad från projektmallen `StrukturTelefonApp`, utanför repot. Mobilspecifika
 > sektioner (MASVS-STORAGE, MASVS-PLATFORM, app store-krav) är ersatta med motsvarigheter för webb och PWA.
 >
 > **Status per rad:** `✅ klar` · `🟡 pågår` · `⬜ ej börjad` · `➖ ej tillämpligt (motivera)`.
