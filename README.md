@@ -202,6 +202,32 @@ Två val i imagen som är medvetna:
   En `HEALTHCHECK` i imagen skulle bero på verktyg som inte finns i den slimmade
   runtime-imagen och rapportera unhealthy utan att någon märkte det.
 
+## Edge-cachen — verifierad, inte antagen
+
+Hela kallstartsförsvaret i §KM.11 vilar på att Vercels edge cachar svar den proxar vidare
+till Render. Det är en extern rewrite, och att den cachas alls var länge ett antagande.
+
+**Verifierat 2026-08-30 mot skarp drift:**
+
+| Anrop | `X-Vercel-Cache` | Tid | `Rndr-Id` |
+|---|---|---|---|
+| 1 | `MISS` | 1,25 s | `16d71163-dc28-444b` |
+| 2 | `HIT` | 0,11 s | `16d71163-dc28-444b` |
+
+Beviset är inte tiden utan **`Rndr-Id`**. Render utfärdar ett nytt id per request, så ett
+identiskt id på anrop två betyder att backend aldrig kontaktades — svaret kom från edge.
+
+Två saker att känna till:
+
+- **Vercel försvagar vår ETag.** En stark `"abc"` kommer ut som `W/"abc"`, eftersom edge kan
+  komprimera svaret på vägen. Vår `If-None-Match`-tolkning hanterar `W/`-prefixet, så `304`
+  fungerar hela vägen genom proxyn. Tas den hanteringen bort slutar villkorade anrop fungera
+  i drift utan att något test i CI märker det.
+- **`s-maxage` syns inte utåt.** Edge konsumerar direktivet och skickar vidare
+  `public, max-age=0` till webbläsaren. Det är väntat och rätt.
+
+Felsvar cachas inte: ett `404` kommer ut med `private, no-store` och `MISS`.
+
 ## Databasbackup
 
 Två lager: Neons kontinuerliga historik (PITR) för de vanliga olyckorna, och logiska dumpar
