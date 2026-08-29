@@ -10,5 +10,6 @@
     <Project Path="tests/KarraMatcher.Application.Tests/KarraMatcher.Application.Tests.csproj" />
     <Project Path="tests/KarraMatcher.Architecture.Tests/KarraMatcher.Architecture.Tests.csproj" />
     <Project Path="tests/KarraMatcher.Domain.Tests/KarraMatcher.Domain.Tests.csproj" />
+    <Project Path="tests/KarraMatcher.Infrastructure.Tests/KarraMatcher.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

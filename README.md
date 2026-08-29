@@ -75,10 +75,18 @@ git config core.hooksPath .githooks
 ```bash
 cd backend
 dotnet restore
+
+# Anslutningssträngen krävs. Lokalt via user-secrets:
+dotnet user-secrets --project src/KarraMatcher.Api set   "ConnectionStrings:Default" "Host=...;Database=...;Username=...;Password=..."
+
+dotnet ef database update --project src/KarraMatcher.Infrastructure   --startup-project src/KarraMatcher.Api
+
 dotnet run --project src/KarraMatcher.Api      # svarar på http://localhost:5xxx/
 ```
 
-Databasen kopplas in i M0-issue #6; tills dess startar API:t utan.
+Databasen är **Neon Postgres** i EU-region. API:t vägrar starta utan anslutningssträng
+— det är avsiktligt, så att en felkonfigurerad miljö upptäcks direkt i stället för
+vid första databasanropet.
 
 **Frontend**
 

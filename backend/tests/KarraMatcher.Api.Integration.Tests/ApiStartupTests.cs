@@ -7,11 +7,11 @@ namespace KarraMatcher.Api.Integration.Tests;
 /// Startar hela API:t på riktigt via WebApplicationFactory. Faller DI-uppsättningen
 /// i något lager syns det här, inte först vid deploy.
 /// </summary>
-public class ApiStartupTests : IClassFixture<WebApplicationFactory<Program>>
+public class ApiStartupTests : IClassFixture<KarraMatcherApiFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly KarraMatcherApiFactory _factory;
 
-    public ApiStartupTests(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ApiStartupTests(KarraMatcherApiFactory factory) => _factory = factory;
 
     [Fact]
     public async Task Api_StartarOchSvararPaRoten()

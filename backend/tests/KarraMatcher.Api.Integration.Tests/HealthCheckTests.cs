@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace KarraMatcher.Api.Integration.Tests;
 
-public class HealthCheckTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class HealthCheckTests(KarraMatcherApiFactory factory)
+    : IClassFixture<KarraMatcherApiFactory>
 {
     [Fact]
     public async Task Health_ProcessenLever_Svarar200()
@@ -24,7 +24,9 @@ public class HealthCheckTests(WebApplicationFactory<Program> factory)
 
         var response = await client.GetAsync("/health/ready", CancellationToken.None);
 
+        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
     }
 
     [Fact]

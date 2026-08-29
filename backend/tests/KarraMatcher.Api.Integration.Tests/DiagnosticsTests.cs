@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace KarraMatcher.Api.Integration.Tests;
 
-public class CorrelationIdTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class CorrelationIdTests(KarraMatcherApiFactory factory)
+    : IClassFixture<KarraMatcherApiFactory>
 {
     [Fact]
     public async Task Svar_SaknarKlientensId_FarEttNyttCorrelationId()
@@ -67,8 +67,8 @@ public class CorrelationIdTests(WebApplicationFactory<Program> factory)
     }
 }
 
-public class ProblemDetailsTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class ProblemDetailsTests(KarraMatcherApiFactory factory)
+    : IClassFixture<KarraMatcherApiFactory>
 {
     [Fact]
     public async Task OhanteratFel_Svarar500MedProblemDetails()
