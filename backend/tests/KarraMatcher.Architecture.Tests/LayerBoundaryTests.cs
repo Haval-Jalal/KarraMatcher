@@ -7,8 +7,10 @@ namespace KarraMatcher.Architecture.Tests;
 /// Bevakar Clean Architecture-gränserna. Beroenden ska alltid peka inåt:
 /// Api → Infrastructure → Application → Domain.
 ///
-/// Testerna läser assembly-referenser direkt, utan extra bibliotek. De rikare
-/// NetArchTest-reglerna (namnkonventioner, entiteter i controllers) kommer i #10.
+/// Testerna läser assembly-referenser direkt, utan extra bibliotek. Regeln om entiteter
+/// i controllersignaturer bor i <see cref="EntityExposureTests"/>, och §KM.2-skyddet i
+/// <see cref="PlayerStatisticsTests"/> — båda tillkomna i #10, också de utan bibliotek.
+/// NetArchTest valdes bort: paketet är utan släpp sedan 2021 och deklarerar ingen licens.
 /// </summary>
 public class LayerBoundaryTests
 {
