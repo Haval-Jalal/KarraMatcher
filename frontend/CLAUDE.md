@@ -27,9 +27,14 @@
 
 ```bash
 npm run lint        # ESLint + Prettier, --max-warnings 0
-npx tsc --noEmit    # typkoll
+npm run typecheck   # typkoll (tsc -b). INTE npx tsc --noEmit - se nedan
 npm run test        # Vitest
 ```
+
+> **`npx tsc --noEmit` typkollar ingenting här.** `tsconfig.json` är en lösningsfil
+> (`"files": []` plus referenser till `tsconfig.app.json` och `tsconfig.node.json`), så
+> kommandot har inga filer att kontrollera och avslutas med 0 även vid uppenbara typfel.
+> Använd `npm run typecheck`, som kör `tsc -b` och följer referenserna. CI gör redan det.
 
 ## Mappstruktur
 
