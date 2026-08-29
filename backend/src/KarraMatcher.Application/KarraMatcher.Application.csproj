@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Handlers och behaviors ar internal: de anropas genom dispatchern, inte direkt.
+       Testerna nar dem anda, i stallet for att typerna gors publika for testernas skull. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="KarraMatcher.Application.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\KarraMatcher.Domain\KarraMatcher.Domain.csproj" />
   </ItemGroup>
