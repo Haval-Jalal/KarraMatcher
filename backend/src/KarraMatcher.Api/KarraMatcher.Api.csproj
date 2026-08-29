@@ -1,6 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup>  <UserSecretsId>f1b929d7-016b-4322-91aa-f02661046f99</UserSecretsId>
   </PropertyGroup>
 
+  <!-- Cache-mekanismens delar (ETag-beraekning, If-None-Match-tolkning) ar internal.
+       De testas direkt i stallet for att gora dem publika bara for testernas skull. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="KarraMatcher.Api.Integration.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">

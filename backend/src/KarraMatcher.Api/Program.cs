@@ -1,3 +1,4 @@
+using KarraMatcher.Api.Caching;
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Application;
 using KarraMatcher.Infrastructure;
@@ -17,6 +18,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
+builder.Services.AddKarraEdgeCache(builder.Configuration);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -37,6 +39,10 @@ app.UseExceptionHandler();
 
 // Loggar en rad per request i stället för flera — kompakt och lätt att följa.
 app.UseSerilogRequestLogging();
+
+// Cache-headers före rate limitern, så att även ett 429-svar får no-store i stället
+// för att bli liggande på edge (§KM.11).
+app.UseKarraEdgeCache();
 
 app.UseRateLimiter();
 
