@@ -51,6 +51,10 @@ plus mor- och farföräldrar som hämtar och skjutsar. De nås via den befintlig
 tränarna — ingen marknadsföring behövs, en länk räcker.
 **Adoptionsmål:** alla fyra tränare lägger in sitt schema i appen, och ≥ 60 % av familjerna har öppnat
 den inom fyra veckor från lansering. Nås inte tränardelen är appen tom och allt annat spelar ingen roll.
+
+**✅ Bekräftad 2026-08-29:** tränarna vill ha appen och kommer att använda den. Därmed är projektets
+enskilt största risk avförd redan före första kodraden — men adoptionsmålet står kvar och ska mätas
+efter lansering, för att vilja använda en app och att faktiskt göra det är inte samma sak.
 **Pass.**
 
 ## Filter 4 — Bättre än dagens 🎯
@@ -62,10 +66,13 @@ den inom fyra veckor från lansering. Nås inte tränardelen är appen tom och a
   egen kalender och flyttar sig av sig själva. Det är inget gruppchatten kan göra.
 - **En sak, gjord ordentligt:** matcher. Inte medlemsregister, avgifter och nyheter.
 
-**⚠️ Ärlig invändning:** klubben kan redan ha ett officiellt verktyg (laget.se, Svenskalag eller
-liknande). Konkurrerar vi med det får tränarna två ställen att underhålla, och då förlorar vi.
-**Detta måste kontrolleras med tränarna innan tränaradmin (M3) påbörjas** — se Öppna frågor.
-**Pass, villkorat.**
+**⚠️ Invändningen var:** klubben kan redan ha ett officiellt verktyg. Konkurrerar vi med det får
+tränarna två ställen att underhålla, och då förlorar vi.
+
+**✅ Besvarad 2026-08-29:** Ett officiellt verktyg **finns men används i praktiken inte.** Det är det
+starkaste tänkbara svaret — verktygets existens visar att behovet är erkänt, och att det inte används
+visar att det inte löser problemet. Vi konkurrerar alltså inte med en levande vana utan ersätter en död.
+**Pass, utan villkor.**
 
 ## ✅ Filter-scorecard (grind innan bygge)
 
@@ -74,14 +81,14 @@ liknande). Konkurrerar vi med det får tränarna två ställen att underhålla, 
 | 1. Verklig friktion | **J** | Bevisad — en workaround finns redan byggd |
 | 2. Återkommande | 🟡 | Veckovis under säsong, noll utanför → värdet får inte kräva att appen öppnas |
 | 3. Når vi alla | **J** | 4 lag, ~130 föräldrar, nåbara via en länk |
-| 4. Bättre än dagens | **J** | Ingen inloggning + kalenderfeed. Villkor: klubbens befintliga verktyg måste kartläggas |
+| 4. Bättre än dagens | **J** | Ingen inloggning + kalenderfeed. Klubbens verktyg finns men används inte — villkoret bortfaller |
 
-> **Beslut:** Passerar med **tre villkor** som gäller genom hela bygget:
-> 1. **Kalenderprenumeration och push ligger i v1** — annars faller Filter 2.
-> 2. **Tränarna förankras innan M3** — vill de inte lägga in schemat är appen tom (Filter 3).
-> 3. **Klubbens befintliga verktyg kartläggs** innan vi bygger tränardelen (Filter 4).
+> **Beslut:** Passerade ursprungligen med tre villkor. Två av dem är avklarade 2026-08-29:
+> 1. **Kalenderprenumeration och push ligger i v1** — kvarstår som villkor, annars faller Filter 2.
+> 2. ~~Tränarna förankras innan M3~~ — **klart.** De vill ha appen och kommer använda den.
+> 3. ~~Klubbens befintliga verktyg kartläggs~~ — **klart.** Det finns, men används inte.
 >
-> Grönt att fortsätta till produktspecen.
+> Grönt hela vägen. Ett villkor kvar att hålla i under bygget.
 
 ---
 
@@ -329,8 +336,9 @@ LocalChild 1—* LocalMatchReport               ← spelarkortet
 - Föräldrarna har smartphones med moderna webbläsare.
 
 **Öppna frågor:**
-1. **Har klubben redan ett officiellt verktyg** (laget.se, Svenskalag eller liknande)? Avgör Filter 4 och måste besvaras innan M3 (tränaradmin).
-2. **Vill tränarna använda den?** Förankring krävs innan tränardelen byggs.
+1. ~~**Har klubben redan ett officiellt verktyg?**~~ **Besvarad 2026-08-29:** ja, men det används inte i praktiken.
+2. ~~**Vill tränarna använda den?**~~ **Besvarad 2026-08-29:** ja, de vill ha appen och kommer använda den.
+2b. **Var kommer matchschemat ifrån i dag?** Får tränarna det från serieadministrationen, och ligger det redan i det officiella verktyget? Svaret avgör om automatisk schemaimport är värd att bygga senare — det är i dag ett vilande element. *Icke-blockerande.*
 3. ~~**Var driftas backend?**~~ **Besvarad 2026-08-29:** Vercel (frontend) + Render (backend som Docker) + Neon (databas), med `/api/*`-rewrite i `vercel.json` — samma uppsättning som carcheck.se. Se §KM.11.
 4. **Vilken e-postleverantör** för inloggningskoden? Behöver klara EU-hosting och ha en gratisnivå.
 5. **Domännamn** — `karramatcher.se` föreslaget, tillgänglighet ej kontrollerad.

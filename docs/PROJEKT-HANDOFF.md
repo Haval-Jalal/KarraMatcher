@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** M0 påbörjad — repo, board och 73 issues på plats, ingen produktkod än
+- **Fas:** M0 pågår — 1 av 15 issues klara. M3 avblockerad. Ingen produktkod än
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M0 — Grund (ej påbörjad)
 - **Hälsa:** 🟢 på plan
@@ -79,14 +79,16 @@
 | 2026-08-29 | **Milstolparna omordnade till M0–M8** | Inloggningen behövs av tränaradmin och samåkning men inte längre av statistiken | Konto och roller blev en egen milstolpe (M2) före tränaradmin (M3). Spelarkortet (M4) är helt frikopplat och kan byggas parallellt |
 | 2026-08-29 | **Öppen läsning, autentiserad skrivning** | En förälder som bara vill se matchtiden ska aldrig mötas av inloggning | Avvikelse §KM.0 A4. Kräver rate limiting från start och att publika endpoints aldrig returnerar PII |
 | 2026-08-29 | **Kallelse byggs men aktiveras inte** | Det finns redan appar för kallelse; funktionen ska finnas den dag klubben vill byta | `Team.AttendanceEnabled` kontrolleras serverside. Ingen komplett trupp krävs vid lansering |
+| 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
 | 2026-08-29 | **Rate limiting och DB-backup lyfts till baslinje** | Publika endpoints på öppet internet; familjestatistik går inte att återskapa | Avvikelse §KM.0 A1 och A2 — byggs i M0–M1 i stället för "vid behov" |
 
 ## ❓ Öppna frågor
 
 | # | Fråga | Blockerar | Ägare |
 |---|-------|-----------|-------|
-| 1 | **Har klubben redan ett officiellt verktyg** (laget.se, Svenskalag)? Konkurrerar vi tappar tränarna motivationen. | M3 | Haval — fråga tränarna |
-| 2 | **Vill tränarna använda appen?** Utan deras schema är appen tom. | M3 | Haval — förankra |
+| 1 | ~~Har klubben redan ett officiellt verktyg?~~ **Besvarad 2026-08-29:** ja, men det används inte. | — | ✅ |
+| 2 | ~~Vill tränarna använda appen?~~ **Besvarad 2026-08-29:** ja. | — | ✅ |
+| 2b | **Var kommer matchschemat ifrån i dag?** Avgör om automatisk import är värd att bygga senare. Icke-blockerande. | — | Haval |
 | 3 | ~~Var driftas backend?~~ **Besvarad 2026-08-29:** Vercel + Render + Neon, se ADR ovan. | — | ✅ |
 | 4 | **Vilken e-postleverantör** för inloggningskoden? Måste ha EU-hosting och gratisnivå. | M3 | Haval |
 | 5 | **Domännamn** — `karramatcher.se` föreslaget, tillgänglighet ej kontrollerad. | M7 | Haval |
