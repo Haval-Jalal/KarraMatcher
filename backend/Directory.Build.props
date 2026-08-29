@@ -1,0 +1,21 @@
+<Project>
+
+  <!-- Gemensamma inställningar för alla projekt i lösningen.
+       Se ../CLAUDE.md → Backend, Kvalitet. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Regelverket kräver varningsfritt bygge. Vi låter bygget falla i stället
+         för att samla på oss varningar ingen läser. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>
