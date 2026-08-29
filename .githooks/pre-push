@@ -1,0 +1,25 @@
+#!/bin/sh
+# Blockerar direktpush till main (CLAUDE.md §0 p.7).
+# Branch protection kan inte aktiveras på ett privat repo utan GitHub Pro,
+# så den här hooken är den tekniska spärren i stället.
+#
+# Aktiveras med:  git config core.hooksPath .githooks
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo "" >&2
+      echo "  BLOCKERAT: direktpush till main är inte tillåtet (CLAUDE.md §0 p.7)." >&2
+      echo "  Skapa en branch och öppna en PR i stället:" >&2
+      echo "" >&2
+      echo "      git switch -c feature/<kort-namn>" >&2
+      echo "      git push -u origin HEAD" >&2
+      echo "      gh pr create" >&2
+      echo "" >&2
+      echo "  Review och merge görs alltid av en människa." >&2
+      echo "" >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0

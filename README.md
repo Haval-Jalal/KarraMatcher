@@ -91,11 +91,17 @@ cd frontend && npm run test && npm run lint && npx tsc --noEmit
 
 **Miljövariabler:** se `.env.example` i respektive del. Riktiga `.env`-filer checkas aldrig in.
 
+**Aktivera git-hooken en gång per klon** — den blockerar direktpush till `main`:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Arbetssätt
 
 Projektet följer [`CLAUDE.md`](./CLAUDE.md) §0 till punkt och pricka:
 
-- Ett issue åt gången, taget ur `Ready` på projektboarden
+- Ett issue åt gången, taget ur `Ready` på [projektboarden](https://github.com/users/Haval-Jalal/projects/7)
 - Egen branch per ändring — **aldrig direktpush till `main`**
 - **Review och merge av PR görs alltid av en människa**, aldrig av en agent
 - Conventional Commits · lint och bygge lokalt före commit · handoff-filen uppdateras när ett issue stängs
