@@ -1,0 +1,21 @@
+<Project>
+
+  <!-- Ärver backend/Directory.Build.props och lägger till det som bara gäller tester. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+
+    <!-- CA1707 förbjuder understreck i medlemsnamn, men CLAUDE.md → Backend, Kvalitet
+         föreskriver testnamnet Metod_Scenario_FörväntatResultat. Regelverket väger tyngre,
+         så analysregeln stängs av i testprojekten — och bara där. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <!-- Ger arkitekturtesterna en pålitlig väg till källkoden, så att de kan läsa
+       de deklarerade projektreferenserna och inte bara de kompilerade. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="BackendRoot" Value="$(MSBuildThisFileDirectory)..\" />
+  </ItemGroup>
+
+</Project>
