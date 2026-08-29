@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** M0 pågår — 1 av 15 issues klara. M3 avblockerad. Ingen produktkod än
+- **Fas:** M0 pågår — 2 av 15 issues klara. Backend-lösningen står, frontenden näst
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M0 — Grund (ej påbörjad)
 - **Hälsa:** 🟢 på plan
@@ -38,6 +38,8 @@
 | Miljöer (staging / prod) | *ej uppsatta — M0* |
 
 ## ✅ Klart hittills
+- `#2` .NET-lösningen med fyra lager, fyra testprojekt och arkitekturtester — 2026-08-29
+- `#1` .NET 10 LTS installerat och låst med `global.json` — 2026-08-29
 - Repo, projektboard och 73 issues fördelade på nio milstolpar — 2026-08-29
 - Genomgång av båda mallarna i sin helhet (13 filer) — 2026-08-29
 - Produktbeslut fattade (roller, statistikmodell, kallelse avstängd, omfattning) — 2026-08-29
@@ -79,6 +81,8 @@
 | 2026-08-29 | **Milstolparna omordnade till M0–M8** | Inloggningen behövs av tränaradmin och samåkning men inte längre av statistiken | Konto och roller blev en egen milstolpe (M2) före tränaradmin (M3). Spelarkortet (M4) är helt frikopplat och kan byggas parallellt |
 | 2026-08-29 | **Öppen läsning, autentiserad skrivning** | En förälder som bara vill se matchtiden ska aldrig mötas av inloggning | Avvikelse §KM.0 A4. Kräver rate limiting från start och att publika endpoints aldrig returnerar PII |
 | 2026-08-29 | **Kallelse byggs men aktiveras inte** | Det finns redan appar för kallelse; funktionen ska finnas den dag klubben vill byta | `Team.AttendanceEnabled` kontrolleras serverside. Ingen komplett trupp krävs vid lansering |
+| 2026-08-29 | **Repot förblir privat tills appen är färdigbyggd, och görs publikt vid lansering** | Vi vill inte visa halvfärdig kod, men det finns inget skäl att hålla en ideell klubbapp stängd i längden | Branch protection får vänta — `.githooks/pre-push` är spärren så länge. **Påverkar mediator-valet:** en copyleft-licens som RPL-1.5 kräver källkodspublicering redan vid driftsättning, och vi driftsätter från M0 |
+| 2026-08-29 | **Branch protection skjuts upp** | Kräver GitHub Pro eller publikt repo; ensam utvecklare och hooken räcker tå slänge | Återupptas när repot blir publikt vid lansering — då är den gratis |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
 | 2026-08-29 | **Rate limiting och DB-backup lyfts till baslinje** | Publika endpoints på öppet internet; familjestatistik går inte att återskapa | Avvikelse §KM.0 A1 och A2 — byggs i M0–M1 i stället för "vid behov" |
 
@@ -89,6 +93,7 @@
 | 1 | ~~Har klubben redan ett officiellt verktyg?~~ **Besvarad 2026-08-29:** ja, men det används inte. | — | ✅ |
 | 2 | ~~Vill tränarna använda appen?~~ **Besvarad 2026-08-29:** ja. | — | ✅ |
 | 2b | **Var kommer matchschemat ifrån i dag?** Avgör om automatisk import är värd att bygga senare. Icke-blockerande. | — | Haval |
+| 2c | **Vilken mediator ska Application använda?** MediatR 13+ ligger under RPL-1.5 eller kommersiell licens. RPL kräver källkodspublicering vid **driftsättning**, inte bara distribution — vilket krockar med ett privat repo som servar en publik app. Alternativ: handskriven dispatcher (~40 rader, rekommenderat), MediatR 12.4.1 fastlåst (Apache-2.0 men fryst), eller acceptera RPL-copyleft på vår egen kod. **Behövs innan första handlern.** | M3 | Haval |
 | 3 | ~~Var driftas backend?~~ **Besvarad 2026-08-29:** Vercel + Render + Neon, se ADR ovan. | — | ✅ |
 | 4 | **Vilken e-postleverantör** för inloggningskoden? Måste ha EU-hosting och gratisnivå. | M3 | Haval |
 | 5 | **Domännamn** — `karramatcher.se` föreslaget, tillgänglighet ej kontrollerad. | M7 | Haval |
@@ -108,5 +113,6 @@
 | **Barn-PII** | Ett läckage av barnuppgifter vore allvarligt, oavsett hur litet projektet är | Kraftigt reducerad: spelarkortet når aldrig servern (§KM.2), och truppen finns bara om kallelsen aktiveras. §KM.1 sätter taket på det som ändå lagras |
 | **Spelarkortet kan gå förlorat** | Telefonbyte, rensad webbläsardata eller iOS som gallrar lagring för en app som inte använts på en vecka → en hel säsong borta | Säkerhetskopieringskod som förstaklassfunktion, `navigator.storage.persist()`, tydlig uppmaning att installera på hemskärmen, och ärlig text om var datan finns (§KM.2) |
 | **Gamla JSONBin-nyckeln lever kvar** | Master-nyckel i en telefons localStorage ger åtkomst till hela JSONBin-kontot | Rotera nyckeln på jsonbin.io. Checklistan rad 7.7 |
-| **Ingen branch protection på GitHub** | Privat repo utan GitHub Pro kan inte skydda `main`. Ett misstag kan pusha direkt förbi PR-flödet | En incheckad `pre-push`-hook i `.githooks/` blockerar push till `main` lokalt. Aktiveras med `git config core.hooksPath .githooks` — måste sättas en gång per klon. Alternativet är att göra repot publikt, vilket ger branch protection gratis |
+| **Ingen branch protection på GitHub** | Privat repo utan GitHub Pro kan inte skydda `main`. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tå vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Riktig branch protection kommer gratis när repot blir publikt vid lansering |
+| **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |

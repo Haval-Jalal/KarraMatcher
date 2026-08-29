@@ -84,7 +84,11 @@ Databasen kopplas in i M0-issue #6; tills dess startar API:t utan.
 
 **Frontend**
 
-*Skapas i M0-issue #3.*
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+```
 
 **Kontroller före commit**
 
@@ -93,6 +97,11 @@ cd backend
 dotnet build                          # ska vara varningsfritt
 dotnet test                           # alla gröna
 dotnet format --verify-no-changes     # inga formatdiffar
+
+cd ../frontend
+npm run typecheck                     # tsc -b, inga fel
+npm test                              # alla gröna
+npm run lint
 ```
 
 ## Backendens uppbyggnad
@@ -116,6 +125,24 @@ backend/
 Beroenden pekar alltid inåt: `Api → Infrastructure → Application → Domain`.
 Arkitekturtesterna läser de **deklarerade** referenserna i csproj-filerna, inte de kompilerade —
 en oanvänd referens elideras av kompilatorn och skulle annars slinka igenom obemärkt.
+
+## Frontendens uppbyggnad
+
+```
+frontend/
+├─ vite.config.ts / vitest.config.ts   alias @/ speglas i båda och i tsconfig
+└─ src/
+    ├─ app/          router, providers, query-klient
+    ├─ features/     en mapp per funktionsområde
+    ├─ components/   delade presentationskomponenter
+    ├─ hooks/        delade hooks
+    ├─ lib/          api-klient, datum och tidszon, ics, push, storage
+    └─ styles/
+```
+
+Server-state hanteras av TanStack Query, routing av TanStack Router — aldrig av `useEffect`-fetch.
+Path alias `@/` är konfigurerat på **tre** ställen som måste ändras tillsammans:
+`tsconfig.app.json`, `vite.config.ts` och `vitest.config.ts`.
 
 ## Arbetssätt
 
