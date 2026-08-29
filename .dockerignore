@@ -1,0 +1,26 @@
+# Byggkontexten ar repo-roten. Utan det har skickas hela frontenden och alla
+# byggartefakter till Docker-daemonen vid varje bygge.
+
+frontend/
+mallar/
+docs/
+.git/
+.github/
+.githooks/
+.vs/
+
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/TestResults/
+
+# Testprojekten behovs inte i imagen.
+backend/tests/
+
+# Aldrig med i en image.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.secrets*
+**/appsettings.Development.json

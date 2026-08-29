@@ -171,6 +171,31 @@ Server-state hanteras av TanStack Query, routing av TanStack Router — aldrig a
 Path alias `@/` är konfigurerat på **tre** ställen som måste ändras tillsammans:
 `tsconfig.app.json`, `vite.config.ts` och `vitest.config.ts`.
 
+## Driftsättning
+
+**Backend → Render.** Tjänsten är definierad i [`render.yaml`](./render.yaml). Peka Render
+på repot, välj *New Blueprint*, och sätt `ConnectionStrings__Default` i dashboarden —
+den kommer aldrig från repot.
+
+Imagen byggs från [`backend/Dockerfile`](./backend/Dockerfile) med **repo-roten som
+byggkontext**, så att `global.json` och `.editorconfig` följer med. Containern bygger
+därmed med samma SDK och samma analysregler som CI och din maskin.
+
+```bash
+# Bygg lokalt (från repo-roten, inte från backend/)
+docker build -f backend/Dockerfile -t karramatcher-api .
+docker run --rm -p 8080:8080   -e ConnectionStrings__Default="<sträng>"   karramatcher-api
+```
+
+Två val i imagen som är medvetna:
+
+- **Debian-baserad runtime**, inte alpine eller chiseled. Appen behöver både ICU och
+  tidszonsdata för `Europe/Stockholm` (§KM.5) — en bantad image utan dem skulle få
+  `SwedishTime` att kasta redan vid uppstart.
+- **Ingen `HEALTHCHECK` i imagen.** Render gör sin egen HTTP-kontroll mot `/health`.
+  En `HEALTHCHECK` i imagen skulle bero på verktyg som inte finns i den slimmade
+  runtime-imagen och rapportera unhealthy utan att någon märkte det.
+
 ## Arbetssätt
 
 Projektet följer [`CLAUDE.md`](./CLAUDE.md) §0 till punkt och pricka:
