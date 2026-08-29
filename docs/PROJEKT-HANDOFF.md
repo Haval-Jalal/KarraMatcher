@@ -8,10 +8,10 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** M0 pågår — 3 av 15 issues klara. Repot är publikt
+- **Fas:** M0 pågår — 10 av 15 issues klara. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
-- **Aktuell milstolpe:** M0 — Grund (ej påbörjad)
-- **Hälsa:** 🟢 på plan
+- **Aktuell milstolpe:** M0 — Grund (pågår)
+- **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
 
 ## 🧱 Teknikstack (bekräftad)
 - **Backend:** C# / .NET (senaste LTS), EF Core, MediatR, FluentValidation, PostgreSQL via Npgsql
@@ -35,9 +35,17 @@
 | Plan / roadmap | [`MVP-PLAN.md`](./MVP-PLAN.md) |
 | Ursprungsmallar | Förvaras utanför repot |
 | Förstudieplan (artefakt) | https://claude.ai/code/artifact/9fc04494-e56d-4510-acf7-28231d64955a |
-| Miljöer (staging / prod) | *ej uppsatta — M0* |
+| Backend i drift (Render) | Live sedan 2026-08-29. URL:en finns på exakt ett ställe: [`frontend/vercel.json`](../frontend/vercel.json) (§KM.11) |
+| Frontend i drift (Vercel) | *ej uppkopplad — `#12`* |
 
 ## ✅ Klart hittills
+- `#11` Dockerfile och backend i drift på Render — 2026-08-29
+- `#9` Rate limiting på publika endpoints — 2026-08-29
+- `#8` Serilog, correlation-ID, ProblemDetails och health checks — 2026-08-29
+- `#7` Idempotent seed av 4 lag, 7 spelplatser och 25 matcher — 2026-08-29
+- `#6` Neon Postgres och EF Core med första migrationen — 2026-08-29
+- `#5` CI som kör bygge, tester och lint på varje push — 2026-08-29
+- `#4` Lint, formatering och `.env.example` — 2026-08-29
 - `#3` Vite-frontend med strict TypeScript, TanStack Router och Query — 2026-08-29
 - `#2` .NET-lösningen med fyra lager, fyra testprojekt och arkitekturtester — 2026-08-29
 - `#1` .NET 10 LTS installerat och låst med `global.json` — 2026-08-29
@@ -49,21 +57,18 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| — | — | — | Inget påbörjat |
+| `#12` vercel.json med `/api`-rewrite och deploy av frontend | Haval | `feature/vercel-rewrite` | In Progress — rewriten skriven, Vercel-kopplingen kvar |
 
 ## ➡️ Nästa steg
-*(M0 — Grund. Måste göras i ordning; de tre första är blockerare för allt annat.)*
+*(Kvar i M0 — Grund. Punkt 1 är den enda som har en beroendekedja; resten är fristående.)*
 
-1. **Installera .NET LTS-SDK.** Maskinen har 9.0.309, som är STS och vars stödperiod löpte ut i maj 2026 — det bryter mot säkerhetschecklistan rad 10.4. Nytt projekt startas på LTS.
-2. **`git init` + GitHub-repo + projektboard** med kolumnerna `Backlog → Ready → In Progress → In Review → Done`.
-3. **Konton:** Vercel, Render och Neon (alla fria nivåer) + ett gratis uppetidsverktyg som pingar `/health`.
-4. Skapa .NET-lösningen med de fyra lagren och fyra testprojekten enligt `CLAUDE.md`.
-5. Skapa Vite-frontenden med feature-struktur, path alias och strict TS.
-6. `.editorconfig`, ESLint, Prettier, `.env.example`, CI som kör build, test och lint.
-7. Databas + första migration + idempotent seed av 4 lag, 7 spelplatser och 25 matcher.
-8. Health checks, ProblemDetails, Serilog med correlation-ID, rate limiting.
-9. Dockerfile (multi-stage, non-root, port 8080) + `frontend/vercel.json` med `/api/*`-rewrite — mönstret från CarCheck.
-10. DB-backup uppsatt **och återställning testad en gång** (§KM.0 A2).
+1. **`#12` slutförs** — rewriten ligger i `frontend/vercel.json`; kvar är att koppla Vercel till repot med `frontend/` som root directory och verifiera att `/api/...` från Vercel-domänen når Render och att djuplänkar ger `index.html`.
+2. **`#10` Arkitekturtester** (NetArchTest) som skyddar lagergränserna — inklusive testet som fäller bygget om någon inför en endpoint för barnstatistik (§KM.2). Bör ligga före första produktfeaturen.
+3. **`#13` Edge-cache-headers** på publika GET-endpoints, så Vercels edge svarar utan att väcka Render (§KM.11).
+4. **`#14` DB-backup med testad återställning** (§KM.0 A2).
+5. **`#15` Uppetidsverktyg** som pingar `/health`.
+
+När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 
 ## 🧭 Viktiga beslut (ADR-light)
 
@@ -115,7 +120,7 @@
 | **Barn-PII** | Ett läckage av barnuppgifter vore allvarligt, oavsett hur litet projektet är | Kraftigt reducerad: spelarkortet når aldrig servern (§KM.2), och truppen finns bara om kallelsen aktiveras. §KM.1 sätter taket på det som ändå lagras |
 | **Spelarkortet kan gå förlorat** | Telefonbyte, rensad webbläsardata eller iOS som gallrar lagring för en app som inte använts på en vecka → en hel säsong borta | Säkerhetskopieringskod som förstaklassfunktion, `navigator.storage.persist()`, tydlig uppmaning att installera på hemskärmen, och ärlig text om var datan finns (§KM.2) |
 | **Gamla JSONBin-nyckeln lever kvar** | Master-nyckel i en telefons localStorage ger åtkomst till hela JSONBin-kontot | Rotera nyckeln på jsonbin.io. Checklistan rad 7.7 |
-| **Ingen branch protection på GitHub** | Privat repo utan GitHub Pro kan inte skydda `main`. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tå vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Riktig branch protection kommer gratis när repot blir publikt vid lansering |
+| **Ingen branch protection på GitHub** | `main` är oskyddad på GitHub-sidan. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tills vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Repot är numera publikt, så riktig branch protection är gratis och kan slås på när som helst |
 | **Gamla objekt kvar på GitHub efter historikomskrivning** | Att skriva om historik raderar inte gamla objekt hos GitHub — de nås via sina SHA:n tills GitHub kör städning, och SHA:na syns i commitlistorna på mergade PR:ar. Verifierat: den borttagna filen gick att hämta via `?ref=<gammal SHA>` även efter omskrivningen | **Accepterad risk** (beslut 2026-08-29) — innehållet granskades och bedömdes okritiskt. **Lärdom:** kontrollera vad en mapp innehåller *innan* den checkas in; en omskrivning i efterhand är aldrig fullständig utan att be GitHub köra `gc` |
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |
