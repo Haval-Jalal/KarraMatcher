@@ -186,6 +186,14 @@ public static class EdgeCache
     /// <summary>
     /// Sant om klienten redan har svaret. Hanterar flera taggar, <c>*</c>, och det
     /// <c>W/</c>-prefix en mellanliggande cache kan ha lagt på.
+    ///
+    /// <para>
+    /// <c>W/</c>-hanteringen är inte teoretisk. Verifierat i skarp drift 2026-08-30:
+    /// Vercels edge försvagar vår starka ETag till <c>W/"…"</c> på vägen ut, eftersom den
+    /// kan komprimera svaret. Klienten skickar sedan tillbaka den försvagade taggen.
+    /// Utan prefixhanteringen slutar villkorade anrop fungera i drift — och inget test i
+    /// CI skulle märka det, eftersom ingen edge finns där.
+    /// </para>
     /// </summary>
     internal static bool MatchesClientVersion(HttpRequest request, string etag)
     {

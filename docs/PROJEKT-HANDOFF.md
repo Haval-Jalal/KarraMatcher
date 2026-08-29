@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 1 av 14 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 2 av 14 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,8 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#92` Edge-cachningen verifierad i skarp drift — §KM.11:s antagande bevisat — 2026-08-30
+- `#16` Publika endpoints för lag och matcher, med egen query-dispatcher — 2026-08-30
 - `#15` Uppetidsövervakning med verifierat larm — **M0 därmed klar** — 2026-08-30
 - `#14` Databasbackup med bevisad återställning; PITR 6 h bekräftad — 2026-08-29
 - `#13` Edge-cache-mekanism med ETag och säker standard — 2026-08-29
@@ -64,14 +66,13 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#16` Publika endpoints för lag och matcher | Haval | `feature/public-team-endpoints` | In Review — dispatcher, repository, DTO:er och controller |
+| `#92` Verifiera edge-cachningen | Haval | `feature/verify-edge-cache` | In Review — verifierad i skarp drift |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#92`** — verifiera att Vercels edge svarar utan att väcka Render, nu när `/api/v1/teams/{slug}/matches` finns att pröva med.
-2. **`#27` FE-halvan, sedan `#18` och `#19`** — lagväljare och matchlista. Backendens tidszonshantering är redan klar.
-3. *(tidigare formulering)* **`#92` i M1:** markera första publika endpointen med `.WithEdgeCache(...)` och verifiera att andra anropet ger `x-vercel-cache: HIT` utan att Render väcks. Övertaget kriterium från `#13`.
+1. **`#27` FE-halvan, sedan `#18` och `#19`** — lagväljare och matchlista. Backendens tidszonshantering är redan klar, så `#27` är mindre än den ser ut.
+2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 
@@ -135,5 +136,5 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
 | **Renders timbudget kan släcka appen** | 750 fria instanstimmar per månad och arbetsyta. När de tar slut suspenderas alla fria tjänster till den 1:a nästa månad — appen nere i upp till 30 dagar | Fönstrad ping håller förbrukningen kring 251 h/månad. **Ingen andra fri Render-tjänst får läggas till utan att räkna om budgeten.** Kontrollera förbrukningen i Renders dashboard inför säsongsstart |
 | **Neons retentionsfönster är 6 timmar** | Bekräftat 2026-08-29 — det är taket på fri nivå. En trasig migration som driftsätts fredag kväll och upptäcks lördag morgon ligger redan utanför fönstret, och det är precis då appen används | Den logiska dumpen är därmed det egentliga skyddsnätet, inte en reserv. Tas före **varje** migration mot produktion och efter att säsongens schema lagts in. Rutinen står i `docs/DATABAS-BACKUP.md`. Längre fönster kräver betald Neon-plan — omprövas om datamängden växer |
-| **Vercel kanske inte edge-cachar en extern rewrite** | Hela kallstartsmotmedlet i §KM.11 bygger på att Vercels edge cachar svar den proxar vidare till Render. Det är antaget, inte verifierat — det finns ingen publik endpoint att pröva med än | Verifieras i M1 med första publika endpointen: två anrop i rad, andra ska ge `x-vercel-cache: HIT`. Håller det inte behövs en annan lösning, och då tidigt snarare än sent |
+| ~~**Vercel kanske inte edge-cachar en extern rewrite**~~ **Avskriven 2026-08-30** | Antagandet höll. Två anrop i rad gav `MISS` följt av `HIT`, med **identiskt `Rndr-Id`** — Render utfärdar ett nytt id per request, så backend kontaktades aldrig på det andra anropet | Verifieringen står i `README.md`. Kvarstår att veta: Vercel försvagar vår ETag till `W/"…"`, vilket vår `If-None-Match`-tolkning hanterar. Tas den hanteringen bort slutar `304` fungera i drift utan att CI märker det |
 | **Ensam utvecklare** | Ingen annan kan ta över, och PR-granskning görs av samma person som skrev koden | Handoff-filen och ADR-tabellen hålls aktuella så en ny person kan kliva in. `/code-review` och `security_reviewer` används som andra ögon |

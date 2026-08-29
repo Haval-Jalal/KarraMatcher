@@ -64,7 +64,7 @@
 | 4.1 | All trafik över HTTPS — inga klartext-anrop, HTTP redirectas | ⬜ |
 | 4.2 | HSTS påtvingat med tillräcklig max-age | ⬜ |
 | 4.3 | CORS låst till kända origins — aldrig `AllowAnyOrigin` i prod | ⬜ |
-| 4.4 | **§KM.11** Klienten anropar bara `/api/*` via Vercel-rewriten — Render-URL:en finns inte i frontend-koden | ⬜ |
+| 4.4 | **§KM.11** Klienten anropar bara `/api/*` via Vercel-rewriten — Render-URL:en finns inte i frontend-koden | ✅ |
 | 4.5 | **§KM.11** Refresh-cookien är förstapart: `HttpOnly`, `Secure`, `SameSite=Lax` | ⬜ |
 | 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin | ⬜ |
 | 4.6b | Rate limiting partitioneras på klientens IP från `X-Forwarded-For`, med en opartitionerad skyddsgräns som inte går att kringgå genom att förfalska adressen | ⬜ |
@@ -155,7 +155,7 @@
 | 11.4 | Planerat underhåll läggs aldrig fredag–söndag under säsong | ⬜ |
 | 11.5 | Maintenance-läge visar en begriplig svensk text, inte ett serverfel | ⬜ |
 | 11.6 | **§KM.11** Databasen ligger på Neon — inte på en gratisnivå som upphör efter 30 dagar | ⬜ |
-| 11.7 | **§KM.11** Kallstart maskerad: publika GET-svar besvaras av Vercels edge utan att väcka backend | ⬜ |
+| 11.7 | **§KM.11** Kallstart maskerad: publika GET-svar besvaras av Vercels edge utan att väcka backend | ✅ |
 | 11.8 | **§KM.11** Uppetidsverktyg pingar `/health` och larmar när backend inte svarar | ✅ |
 | 11.9 | Docker-containern kör som **non-root** och exponerar bara port 8080 | ⬜ |
 
