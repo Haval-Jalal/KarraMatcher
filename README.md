@@ -64,38 +64,58 @@ KarraMatcher/
 
 ## Kom igång
 
-*Fylls i under M0, när lösningen och frontenden finns. Behåll den här rubriken uppdaterad — den är det
-första en ny utvecklare (eller agent) läser efter handoff-filen.*
-
-**Förutsättningar:** .NET SDK (senaste LTS) · Node 20+ · PostgreSQL · git · GitHub CLI
-
-```bash
-# Backend
-cd backend
-dotnet restore
-dotnet ef database update --project src/KarraMatcher.Infrastructure --startup-project src/KarraMatcher.Api
-dotnet run --project src/KarraMatcher.Api
-
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-**Tester**
-
-```bash
-cd backend  && dotnet test
-cd frontend && npm run test && npm run lint && npx tsc --noEmit
-```
-
-**Miljövariabler:** se `.env.example` i respektive del. Riktiga `.env`-filer checkas aldrig in.
+**Förutsättningar:** .NET SDK 10 (låses av `global.json`) · Node 20+ · git · GitHub CLI
 
 **Aktivera git-hooken en gång per klon** — den blockerar direktpush till `main`:
 
 ```bash
 git config core.hooksPath .githooks
 ```
+
+**Backend**
+
+```bash
+cd backend
+dotnet restore
+dotnet run --project src/KarraMatcher.Api      # svarar på http://localhost:5xxx/
+```
+
+Databasen kopplas in i M0-issue #6; tills dess startar API:t utan.
+
+**Frontend**
+
+*Skapas i M0-issue #3.*
+
+**Kontroller före commit**
+
+```bash
+cd backend
+dotnet build                          # ska vara varningsfritt
+dotnet test                           # alla gröna
+dotnet format --verify-no-changes     # inga formatdiffar
+```
+
+## Backendens uppbyggnad
+
+```
+backend/
+├─ KarraMatcher.slnx              lösningsfil (.NET 10:s XML-format)
+├─ Directory.Build.props          gemensamma bygginställningar
+├─ src/
+│   ├─ KarraMatcher.Domain/       affärsregler — noll ramverksberoenden
+│   ├─ KarraMatcher.Application/  use cases, validering, interfaces
+│   ├─ KarraMatcher.Infrastructure/  databas och externa tjänster
+│   └─ KarraMatcher.Api/          controllers, middleware, DI
+└─ tests/
+    ├─ KarraMatcher.Domain.Tests/
+    ├─ KarraMatcher.Application.Tests/
+    ├─ KarraMatcher.Architecture.Tests/     bevakar lagergränserna
+    └─ KarraMatcher.Api.Integration.Tests/
+```
+
+Beroenden pekar alltid inåt: `Api → Infrastructure → Application → Domain`.
+Arkitekturtesterna läser de **deklarerade** referenserna i csproj-filerna, inte de kompilerade —
+en oanvänd referens elideras av kompilatorn och skulle annars slinka igenom obemärkt.
 
 ## Arbetssätt
 
