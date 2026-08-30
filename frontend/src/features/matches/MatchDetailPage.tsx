@@ -3,6 +3,7 @@ import { Link, useParams } from '@tanstack/react-router'
 import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 
+import { DirectionsLink } from './DirectionsLink'
 import { useMatch } from './useMatch'
 
 /**
@@ -12,7 +13,7 @@ import { useMatch } from './useMatch'
  * blir av. Adressen är delbar och nås direkt från en kalenderpost — Vercels SPA-fallback
  * gör att en djuplänk fungerar även utan att någon varit på startsidan först (§KM.11).
  *
- * Knapparna för vägbeskrivning och kalenderfil kommer i #23 och #24.
+ * Knappen för kalenderfil kommer i #24.
  */
 export function MatchDetailPage() {
   const { id } = useParams({ from: '/match/$id' })
@@ -115,6 +116,17 @@ export function MatchDetailPage() {
           <dd>{match.isHome ? 'Hemmamatch' : 'Bortamatch'}</dd>
         </div>
       </dl>
+
+      {/*
+        Åtgärderna gäller en match som ska spelas som planerat. Är den inställd eller
+        framflyttad utan nytt datum skulle en vägbeskrivning leda någon till en plan där
+        ingen match äger rum — det är precis den irrelevanta åtgärd #21 talar om.
+      */}
+      {!isCancelled && !isPostponed && (
+        <div className="actions">
+          <DirectionsLink venueName={match.venue.name} address={match.address} />
+        </div>
+      )}
     </main>
   )
 }
