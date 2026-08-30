@@ -1,7 +1,8 @@
-import { useNavigate, useParams } from '@tanstack/react-router'
+import { useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { MatchListSection } from './MatchListSection'
 
@@ -14,7 +15,6 @@ import { MatchListSection } from './MatchListSection'
  */
 export function TeamSchedulePage() {
   const { slug } = useParams({ from: '/lag/$slug' })
-  const navigate = useNavigate()
   const { data: teams } = useTeams()
   const { selectedSlug, selectTeam } = useSelectedTeam()
 
@@ -29,6 +29,8 @@ export function TeamSchedulePage() {
   const team = teams?.find((candidate) => candidate.slug === slug)
   const accent = team?.colorHex
 
+  useDocumentTitle(team ? `${team.ageGroup} ${team.name}` : 'Matcher')
+
   return (
     <main style={accent ? ({ '--team-accent': accent } as React.CSSProperties) : undefined}>
       <header className="app-header">
@@ -41,13 +43,7 @@ export function TeamSchedulePage() {
       {teams && teams.length > 0 && (
         <>
           <h2>Lag</h2>
-          <TeamPicker
-            teams={teams}
-            selectedSlug={slug}
-            onSelect={(next) => {
-              void navigate({ to: '/lag/$slug', params: { slug: next } })
-            }}
-          />
+          <TeamPicker teams={teams} currentSlug={slug} />
         </>
       )}
 

@@ -1,13 +1,23 @@
+import { Link } from '@tanstack/react-router'
+
 import type { Team } from './types'
 
 interface TeamPickerProps {
   teams: Team[]
-  selectedSlug: string | null
-  onSelect: (slug: string) => void
+  /** Laget som visas just nu, eller null på startsidan innan något valts. */
+  currentSlug: string | null
 }
 
 /**
- * Lagknapparna. Ren presentation — all datahämtning ligger i `TeamPickerSection`.
+ * Lagväljaren.
+ *
+ * <h3>Länkar, inte knappar</h3>
+ *
+ * Att välja lag byter adress sedan #19. En kontroll som byter adress ska vara en länk: då
+ * går den att öppna i ny flik, kopiera och dela, och skärmläsaren säger "länk" i stället
+ * för "växlingsknapp". Aktuellt lag märks med `aria-current="page"`, som betyder just
+ * "det här är sidan du är på" — `aria-pressed` hade sagt att knappen är intryckt, vilket
+ * är något annat.
  *
  * <h3>Varför färgen inte bär betydelsen ensam</h3>
  *
@@ -16,37 +26,33 @@ interface TeamPickerProps {
  * ljust läge och Svart (#161616) mot mörkt. Med brickan står texten alltid mot sidans
  * bakgrund, och kontrasten är densamma för alla lag.
  *
- * Brickan har en tunn ring, så att både den vita och den svarta syns oavsett om appen
- * körs i ljust eller mörkt läge.
- *
- * Valt lag markeras med tre samverkande signaler och inte bara färg (WCAG 1.4.1):
- * `aria-pressed` för skärmläsare, en bock som syns, och en kraftigare ram.
+ * Ramen runt det aktuella laget använder inte heller lagfärgen — Gul ligger på 2,15:1 och
+ * Vit på 1,32:1 mot underlaget, så för hälften av lagen hade markeringen varit osynlig.
+ * Tillståndet bärs av ram, bock och `aria-current`; identiteten av brickan.
  */
-export function TeamPicker({ teams, selectedSlug, onSelect }: TeamPickerProps) {
+export function TeamPicker({ teams, currentSlug }: TeamPickerProps) {
   return (
-    <div className="team-picker" role="group" aria-label="Välj lag">
+    <nav className="team-picker" aria-label="Välj lag">
       {teams.map((team) => {
-        const isSelected = team.slug === selectedSlug
+        const isCurrent = team.slug === currentSlug
 
         return (
-          <button
+          <Link
             key={team.slug}
-            type="button"
+            to="/lag/$slug"
+            params={{ slug: team.slug }}
             className="team-picker__option"
-            aria-pressed={isSelected}
+            aria-current={isCurrent ? 'page' : undefined}
             style={{ '--team-color': team.colorHex } as React.CSSProperties}
-            onClick={() => {
-              onSelect(team.slug)
-            }}
           >
             <span className="team-picker__swatch" aria-hidden="true" />
             <span className="team-picker__name">{team.name}</span>
             <span className="team-picker__check" aria-hidden="true">
-              {isSelected ? '✓' : ''}
+              {isCurrent ? '✓' : ''}
             </span>
-          </button>
+          </Link>
         )
       })}
-    </div>
+    </nav>
   )
 }
