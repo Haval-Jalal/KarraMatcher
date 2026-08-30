@@ -1,7 +1,6 @@
-import { useNavigate } from '@tanstack/react-router'
-
-import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
+import { TeamPicker, useTeams } from '@/features/teams'
 import { ApiError } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /**
  * Förstagångsbesökarens vy: välj lag.
@@ -10,14 +9,9 @@ import { ApiError } from '@/lib/api'
  * `/lag/<slug>` innan sidan renderas.
  */
 export function StartPage() {
-  const navigate = useNavigate()
-  const { selectTeam } = useSelectedTeam()
   const { data: teams, isPending, error, refetch, isFetching } = useTeams()
 
-  function handleSelect(slug: string) {
-    selectTeam(slug)
-    void navigate({ to: '/lag/$slug', params: { slug } })
-  }
+  useDocumentTitle('Välj lag')
 
   return (
     <main>
@@ -56,9 +50,7 @@ export function StartPage() {
 
       {teams && teams.length === 0 && <p className="state">Inga lag är upplagda än.</p>}
 
-      {teams && teams.length > 0 && (
-        <TeamPicker teams={teams} selectedSlug={null} onSelect={handleSelect} />
-      )}
+      {teams && teams.length > 0 && <TeamPicker teams={teams} currentSlug={null} />}
     </main>
   )
 }

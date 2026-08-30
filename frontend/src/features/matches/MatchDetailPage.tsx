@@ -2,6 +2,7 @@ import { Link, useParams } from '@tanstack/react-router'
 
 import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { CalendarLink } from './CalendarLink'
 import { DirectionsLink } from './DirectionsLink'
@@ -19,6 +20,10 @@ import { useMatch } from './useMatch'
 export function MatchDetailPage() {
   const { id } = useParams({ from: '/match/$id' })
   const { data, isPending, error, refetch, isFetching } = useMatch(id)
+
+  useDocumentTitle(
+    data ? `${data.match.isHome ? 'Hemma' : 'Borta'} mot ${data.match.opponent}` : 'Match',
+  )
 
   if (isPending) {
     return (

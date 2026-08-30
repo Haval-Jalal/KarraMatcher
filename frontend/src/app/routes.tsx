@@ -1,19 +1,14 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  redirect,
-} from '@tanstack/react-router'
+import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 
 import { NotFound } from '@/components/NotFound'
+import { RootLayout } from '@/app/RootLayout'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
 import { readSetting } from '@/lib/storage'
 
 const rootRoute = createRootRoute({
-  component: () => <Outlet />,
+  component: RootLayout,
   notFoundComponent: NotFound,
 })
 

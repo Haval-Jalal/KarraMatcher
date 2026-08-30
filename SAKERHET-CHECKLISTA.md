@@ -167,7 +167,7 @@
 | 12.3 | **§KM.2** Arkitekturtest bevisar att ingen spelarstatistik-endpoint existerar | ✅ |
 | 12.4 | **§KM.5** Tidszonstest över sommartidsskiftet i oktober är grönt | ✅ |
 | 12.5 | E2E-test av de fem kritiska flödena i `SPEC.md` §9 | ⬜ |
-| 12.6 | A11y-genomgång: tangentbord, skärmläsare, kontrast, fokus (WCAG 2.1 AA) | ⬜ |
+| 12.6 | A11y-genomgång: tangentbord, skärmläsare, kontrast, fokus (WCAG 2.1 AA) | 🟡 |
 | 12.7 | SAST/DAST kört inför lansering; fynd åtgärdade | ⬜ |
 | 12.8 | Testad på riktig iPhone och riktig Android — inte bara i desktop-emulering | ⬜ |
 | 12.9 | Penetrationstest *(vid behov)* | ⬜ |
