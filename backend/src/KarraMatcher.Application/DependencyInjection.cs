@@ -5,7 +5,6 @@ using FluentValidation;
 using KarraMatcher.Application.Abstractions.Messaging;
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace KarraMatcher.Application;
 
@@ -19,10 +18,6 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
-
-        // Tiden som beroende, inte som DateTime.UtcNow. Kalenderfeedens DTSTAMP måste gå
-        // att låsa i ett test, annars går innehållet inte att jämföra.
-        services.TryAddSingleton(TimeProvider.System);
 
         services.AddScoped<IQueryDispatcher, QueryDispatcher>();
 

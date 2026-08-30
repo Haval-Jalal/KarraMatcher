@@ -3,7 +3,7 @@ using KarraMatcher.Application.Abstractions.Persistence;
 
 namespace KarraMatcher.Application.Features.Calendar.GetTeamCalendar;
 
-internal sealed class GetTeamCalendarQueryHandler(ITeamRepository teams, TimeProvider clock)
+internal sealed class GetTeamCalendarQueryHandler(ITeamRepository teams)
     : IQueryHandler<GetTeamCalendarQuery, string?>
 {
     public async Task<string?> HandleAsync(
@@ -21,6 +21,6 @@ internal sealed class GetTeamCalendarQueryHandler(ITeamRepository teams, TimePro
 
         var matches = await teams.GetMatchesAsync(team.Id, cancellationToken).ConfigureAwait(false);
 
-        return IcsCalendarBuilder.BuildFeed(team, matches, clock.GetUtcNow().UtcDateTime);
+        return IcsCalendarBuilder.BuildFeed(team, matches);
     }
 }

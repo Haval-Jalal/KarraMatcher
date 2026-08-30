@@ -36,7 +36,7 @@ internal static class IcsCalendarBuilder
     /// </summary>
     private static readonly TimeSpan EventDuration = TimeSpan.FromHours(1);
 
-    public static string BuildFeed(Team team, IReadOnlyList<Match> matches, DateTime generatedUtc)
+    public static string BuildFeed(Team team, IReadOnlyList<Match> matches)
     {
         var writer = BeginCalendar();
 
@@ -51,7 +51,7 @@ internal static class IcsCalendarBuilder
 
         foreach (var match in matches)
         {
-            WriteEvent(writer, team, match, generatedUtc);
+            WriteEvent(writer, team, match);
         }
 
         writer.End("VCALENDAR");
@@ -59,11 +59,11 @@ internal static class IcsCalendarBuilder
         return writer.ToString();
     }
 
-    public static string BuildSingle(Team team, Match match, DateTime generatedUtc)
+    public static string BuildSingle(Team team, Match match)
     {
         var writer = BeginCalendar();
 
-        WriteEvent(writer, team, match, generatedUtc);
+        WriteEvent(writer, team, match);
         writer.End("VCALENDAR");
 
         return writer.ToString();
@@ -82,7 +82,7 @@ internal static class IcsCalendarBuilder
         return writer;
     }
 
-    private static void WriteEvent(IcsWriter writer, Team team, Match match, DateTime generatedUtc)
+    private static void WriteEvent(IcsWriter writer, Team team, Match match)
     {
         writer.Begin("VEVENT");
 
@@ -91,7 +91,7 @@ internal static class IcsCalendarBuilder
         // med fel tid.
         writer.AddLine("UID", $"{match.Id}@{UidDomain}");
 
-        writer.AddLine("DTSTAMP", IcsWriter.FormatUtc(generatedUtc));
+        writer.AddLine("DTSTAMP", IcsWriter.FormatUtc(Stamp(match)));
         writer.AddLine("DTSTART", IcsWriter.FormatUtc(match.KickoffUtc));
         writer.AddLine("DTEND", IcsWriter.FormatUtc(match.KickoffUtc + EventDuration));
 
@@ -107,6 +107,24 @@ internal static class IcsCalendarBuilder
 
         writer.End("VEVENT");
     }
+
+    /// <summary>
+    /// När informationen senast ändrades — vilket är precis vad DTSTAMP betyder.
+    ///
+    /// <para>
+    /// Tidigare sattes den från klockan vid varje anrop. Det gjorde feeden olika för varje
+    /// sekund, vilket i sin tur gjorde ETag:en värdelös: villkorade anrop fick aldrig 304,
+    /// edge-cachen fick en ny tagg vid varje revalidering, och kalenderappar laddade ner
+    /// hela feeden var sjätte timme fast ingenting ändrats. CI fångade det; lokalt landade
+    /// båda anropen i samma sekund och testet gick grönt av ren tur.
+    /// </para>
+    ///
+    /// <para>
+    /// Med matchens egen <c>UpdatedUtc</c> är feeden byte-identisk så länge datan är det.
+    /// </para>
+    /// </summary>
+    private static DateTime Stamp(Match match) =>
+        match.UpdatedUtc == default ? match.KickoffUtc : match.UpdatedUtc;
 
     /// <summary>Lag och motståndare, med hemma eller borta — rubriken i kalendern.</summary>
     private static string Summary(Team team, Match match)

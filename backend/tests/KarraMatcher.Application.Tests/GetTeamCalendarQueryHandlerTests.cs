@@ -11,14 +11,13 @@ namespace KarraMatcher.Application.Tests;
 public class GetTeamCalendarQueryHandlerTests
 {
     private static readonly DateTime Kickoff = new(2026, 8, 30, 11, 15, 0, DateTimeKind.Utc);
-    private static readonly DateTimeOffset Generated = new(2026, 8, 25, 6, 0, 0, TimeSpan.Zero);
+    private static readonly DateTime Updated = new(2026, 8, 25, 6, 0, 0, DateTimeKind.Utc);
 
     private static (GetTeamCalendarQueryHandler Handler, FakeTeamRepository Repository) Build()
     {
         var repository = new FakeTeamRepository();
-        var clock = new FixedTimeProvider(Generated);
 
-        return (new GetTeamCalendarQueryHandler(repository, clock), repository);
+        return (new GetTeamCalendarQueryHandler(repository), repository);
     }
 
     private static async Task<string> FeedForAsync(Action<FakeTeamRepository> arrange)
@@ -83,7 +82,9 @@ public class GetTeamCalendarQueryHandlerTests
         var feed = await FeedForAsync(repository =>
         {
             var team = repository.AddTeam("gul", "Gul");
-            matchId = repository.AddMatch(team, Kickoff).Id;
+            var match = repository.AddMatch(team, Kickoff);
+            match.UpdatedUtc = Updated;
+            matchId = match.Id;
         });
 
         Assert.Contains($"UID:{matchId}@karramatcher", feed, StringComparison.Ordinal);
@@ -92,10 +93,11 @@ public class GetTeamCalendarQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SammaMatchGerSammaUidVarjeGang()
+    public async Task HandleAsync_OforandradData_GerByteIdentiskFeed()
     {
-        // Ändras UID får prenumeranten en ny post i stället för en uppdaterad, och den
-        // gamla ligger kvar med fel tid.
+        // Hela ETag:en bygger på det här. Sätts DTSTAMP från klockan i stället för från
+        // datan blir feeden olika varje sekund: villkorade anrop får aldrig 304, och
+        // kalenderappar laddar ner allt var sjätte timme fast ingenting ändrats.
         var (handler, repository) = Build();
         var team = repository.AddTeam("gul", "Gul");
         repository.AddMatch(team, Kickoff);
@@ -104,6 +106,40 @@ public class GetTeamCalendarQueryHandlerTests
         var second = await handler.HandleAsync(new GetTeamCalendarQuery("gul"), CancellationToken.None);
 
         Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DtstampKommerFranDatanOchInteFranKlockan()
+    {
+        // Det här testet kan inte gå grönt av tur, vilket det förra gjorde lokalt: två
+        // anrop inom samma sekund gav samma feed även när DTSTAMP kom från klockan.
+        // Här jämförs värdet mot matchens UpdatedUtc, som ligger fem dagar bort.
+        var feed = await FeedForAsync(repository =>
+        {
+            var team = repository.AddTeam("gul", "Gul");
+            var match = repository.AddMatch(team, Kickoff);
+            match.UpdatedUtc = Updated;
+        });
+
+        Assert.Contains("DTSTAMP:20260825T060000Z", feed, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            $"DTSTAMP:{DateTime.UtcNow:yyyyMMdd}",
+            feed,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HandleAsync_MatchUtanUppdateringsstampel_FallerTillbakaPaAvspark()
+    {
+        // Ska inte kunna hända -- databasen sätter alltid UpdatedUtc -- men ett DTSTAMP
+        // som pekar på år 1 hade sett trasigt ut i en kalender.
+        var feed = await FeedForAsync(repository =>
+        {
+            var team = repository.AddTeam("gul", "Gul");
+            repository.AddMatch(team, Kickoff);
+        });
+
+        Assert.Contains("DTSTAMP:20260830T111500Z", feed, StringComparison.Ordinal);
     }
 
     [Fact]
