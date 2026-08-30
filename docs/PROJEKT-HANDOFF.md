@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 6 av 14 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 8 av 15 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,8 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#17` Publik endpoint för enskild match — 2026-08-30
+- `#100` Nästa match visades två gånger — rättad — 2026-08-30
 - `#20` Nästa match-kort med relativ dag — 2026-08-30
 - `#19` Matchlista med månadsrubriker och hopfällbar historik, på egen adress per lag — 2026-08-30
 - `#18` Lagväljare med lagfärgen som tema, API-klient och Vite-dev-proxy — 2026-08-30
@@ -70,12 +72,13 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#20` Nästa match-kort | Haval | `feature/next-match-card` | In Review |
+| `#17` Publik endpoint för enskild match | Haval | `feature/match-detail-endpoint` | In Review |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
+1. **`#21` matchdetaljsidan** — endpointen finns nu, med koordinater för vädret och adress för kartlänken.
+2. **`#22` väder och `#23` vägbeskrivning** — båda bygger på det `#17` levererar.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
@@ -101,6 +104,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | 2026-08-29 | **Branch protection skjuts upp** | Ensam utvecklare, och `.githooks/pre-push` räcker | Kan slås på när som helst nu när repot är publikt |
 | 2026-08-29 | **`mallar/` borttagen ur hela historiken** | Mappen innehöll en affärsplan för en orelaterad produkt och hörde inte hemma i det här repot | Historiken är omskriven och force-pushad. Se känd risk nedan om gamla objekt |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
+| 2026-08-30 | **Matchnotisen exponeras inte publikt** | Notisen är tränarens fritext, som §KM.1 räknar som potentiell PII och som inte får visas för fler än den avsedda mottagarkretsen. Publika endpoints är öppna för vem som helst med länken och cachas dessutom på Vercels edge. Tre källor pekade åt samma håll: varken `#17` eller `MVP-PLAN.md` listar notisen, och inget skriver notiser förrän tränaradmin i M3 | Fältet finns kvar i databasen men lämnar aldrig servern. Ett integrationstest matar in en notis med barnnamn och hälsouppgift och kontrollerar att den inte finns i svaret. **Frågan tas upp igen i M3**, där tränargränssnittet byggs — det är också där en varning om vad som får skrivas hör hemma |
 | 2026-08-30 | **Varje lag har en egen adress: `/lag/<slug>`** | Appen sprids genom att en förälder skickar en länk i föräldragruppen (SPEC). Med schemat på startsidan hade mottagaren landat på sitt *eget* senast valda lag, eller på en lagväljare — inte på det avsändaren menade. `#21` behöver dessutom en adress per match oavsett | URL:en styr vilket lag som visas; det sparade valet avgör bara vart startsidan skickar en återvändande besökare. Omdirigeringen sker i `beforeLoad`, så väljaren aldrig blinkar förbi. Att öppna en delad länk blir också det nya ihågkomna valet |
 | 2026-08-30 | **Lagfärgen visas som bricka, aldrig som textbakgrund** | Två av de fyra lagfärgerna går inte att hålla WCAG-kontrast mot som bakgrund bakom text: Vit `#D9D9D9` i ljust läge och Svart `#161616` i mörkt. Med färgen som rund bricka står texten alltid mot sidans bakgrund i stället | Kontrasten blir densamma för alla fyra lag, och accenten syns ändå tydligt i headerremsan och kortens ram. Valt lag markeras med tre signaler — `aria-pressed`, en bock och en kraftigare ram — eftersom färg inte får bära betydelsen ensam (WCAG 1.4.1) |
 | 2026-08-30 | **Tidszonsregeln görs verkställbar med ESLint, och testerna körs i fel tidszon** | §KM.5 säger att konverteringen ska ske på ett ställe. En regel som bara står i ett dokument bryts förr eller senare. En ESLint-regel förbjuder `toLocale*` och egna `Intl`-formaterare utanför `src/lib/time.ts`, och hela testsviten körs i `America/Los_Angeles` | Ett tappat tidszonsargument faller i CI i stället för att upptäckas av en förälder i oktober. Utvecklarmaskinen står i Europe/Berlin, som har identiska förskjutningar med Stockholm — utan den påtvingade zonen hade sviten passerat av ren tur |
