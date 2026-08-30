@@ -1,5 +1,6 @@
 using KarraMatcher.Api.Caching;
 using KarraMatcher.Application.Abstractions.Messaging;
+using KarraMatcher.Application.Features.Calendar.GetMatchCalendar;
 using KarraMatcher.Application.Features.Calendar.GetTeamCalendar;
 
 using Microsoft.AspNetCore.Mvc;
@@ -49,5 +50,40 @@ public sealed class CalendarController(IQueryDispatcher dispatcher) : Controller
         // Teckenkodningen måste anges. Utan den gissar en del kalenderappar Latin-1 och
         // visar "BlÃ¥" i stället för "Blå" i varje rubrik.
         return Content(ics, "text/calendar; charset=utf-8");
+    }
+
+    /// <summary>
+    /// En enskild match som nedladdningsbar kalenderfil.
+    ///
+    /// <para>
+    /// För den som vill lägga in en enstaka match utan att prenumerera på hela schemat —
+    /// en morförälder som ska på en match, eller en förälder som redan har kalendern full.
+    /// </para>
+    /// </summary>
+    [HttpGet("match/{id:guid}.ics")]
+    [EdgeCache(EdgeCacheProfile.Calendar)]
+    [Produces("text/calendar")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMatchCalendar(Guid id, CancellationToken cancellationToken)
+    {
+        var calendar = await dispatcher
+            .SendAsync(new GetMatchCalendarQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (calendar is null)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Matchen finns inte",
+                detail: "Kontrollera länken — matchen kan ha tagits bort.");
+        }
+
+        // attachment och inte inline: filen ska hamna i nedladdningar och öppnas av
+        // kalenderappen, inte visas som text i webbläsaren.
+        return File(
+            System.Text.Encoding.UTF8.GetBytes(calendar.Content),
+            "text/calendar; charset=utf-8",
+            calendar.FileName);
     }
 }
