@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 11 av 15 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 12 av 15 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#24` Kalenderfil per match, och prenumerationslänk på lagsidan — 2026-08-30
 - `#25` ICS-prenumeration per lag, med SEQUENCE och CANCELLED — 2026-08-30
 - `#23` Vägbeskrivning till spelplatsen, rätt kartapp per enhet — 2026-08-30
 - `#21` Matchdetaljsida på egen adress, nådd från listan och nästa match-kortet — 2026-08-30
@@ -76,13 +77,15 @@
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
 | `#25` ICS-prenumeration per lag | Haval | `feature/ics-feed` | In Review — kvar: verifiera en riktig prenumeration på telefon |
+| `#24` Kalenderfil per match | Haval | `feature/match-ics` | In Review — staplad på `#25` |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#24` kalenderfil per match** — den andra knappen på matchdetaljsidan.
-2. **`#22` väder** — koordinaterna finns i matchsvaret och duger gott för väder.
-3. **`#25` ICS-prenumeration** — bär också över det sista kriteriet från `#27`.
+1. **`#22` väder** — koordinaterna finns i matchsvaret och duger gott för väder.
+2. **`#26` PWA** — manifest, ikoner, service worker och offline-läsbart schema.
+3. **`#28` a11y-genomgång** av hela den publika delen.
+4. **Verifiera kalenderprenumerationen på en riktig telefon** — sista kriteriet i `#25`, övertaget från `#27`.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).

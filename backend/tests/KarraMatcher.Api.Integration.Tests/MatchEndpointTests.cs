@@ -215,4 +215,63 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
             ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "venue"],
             matchFields);
     }
+
+    // ---- Kalenderfilen för en enskild match (#24) -------------------------------------
+
+    [Fact]
+    public async Task GetMatchCalendar_GerEnIcsFil()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync(
+            $"/calendar/match/{_matchId}.ics", CancellationToken.None);
+        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/calendar", response.Content.Headers.ContentType?.MediaType);
+        Assert.StartsWith("BEGIN:VCALENDAR", body, StringComparison.Ordinal);
+        Assert.Contains("END:VCALENDAR", body, StringComparison.Ordinal);
+        Assert.Contains("Detaljmotstandaren", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetMatchCalendar_LaddasNerMedLasbartFilnamn()
+    {
+        // attachment och inte inline: filen ska hamna i nedladdningar och öppnas av
+        // kalenderappen, inte visas som text i webbläsaren.
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync(
+            $"/calendar/match/{_matchId}.ics", CancellationToken.None);
+        var disposition = response.Content.Headers.ContentDisposition;
+
+        Assert.Equal("attachment", disposition?.DispositionType);
+        Assert.Equal("karra-detaljlaget-2026-09-20.ics", disposition?.FileNameStar ?? disposition?.FileName);
+    }
+
+    [Fact]
+    public async Task GetMatchCalendar_InnehallerIngenNotis()
+    {
+        // Samma krav som på API-svaret: notisen är tränarens fritext (§KM.1), och en
+        // kalenderfil ligger kvar i en telefon lika länge som en prenumeration.
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync(
+            $"/calendar/match/{_matchId}.ics", CancellationToken.None);
+        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
+
+        Assert.DoesNotContain("Kalle", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("sjuk", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetMatchCalendar_OkantId_Ger404()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync(
+            $"/calendar/match/{Guid.NewGuid()}.ics", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }
