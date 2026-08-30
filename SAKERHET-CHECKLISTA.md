@@ -69,7 +69,7 @@
 | 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin | ⬜ |
 | 4.6b | Rate limiting partitioneras på klientens IP från `X-Forwarded-For`, med en opartitionerad skyddsgräns som inte går att kringgå genom att förfalska adressen | ⬜ |
 | 4.7 | **§KM.3** Publika endpoints returnerar aldrig personuppgifter | ✅ |
-| 4.8 | SSRF-skydd: väder-API anropas med koordinater från egen databas, aldrig från användarindata | ⬜ |
+| 4.8 | SSRF-skydd: väder-API anropas med koordinater från egen databas, aldrig från användarindata | ✅ |
 | 4.9 | Web Push använder egna VAPID-nycklar; payload innehåller ingen PII | ⬜ |
 
 ## 5. Webbplattform & klientintegritet
