@@ -93,6 +93,24 @@ h2 {
   outline-offset: 2px;
 }
 
+/*
+ * Uppdateringsbannern. Sitter kvar overst sa den inte forsvinner nar man skrollar --
+ * budskapet ar kort men det ska ga att agera pa nar man ar redo.
+ */
+.update-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-strong);
+}
+
 /* ---- Lagväljaren ---------------------------------------------------------- */
 
 .team-picker {

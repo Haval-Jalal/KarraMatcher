@@ -71,6 +71,21 @@ export default tseslint.config(
   },
 
   {
+    /*
+     * Service workern körs i sin egen global scope: `self`, `caches` och `clients` finns
+     * där men inte i en webbläsarflik. Filen undantas medvetet inte från lintningen — den
+     * är kod som når användarna, och en trasig service worker går inte att återkalla från
+     * servern.
+     */
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: globals.serviceworker,
+      ecmaVersion: 2023,
+      sourceType: 'script',
+    },
+  },
+
+  {
     // Konfigfiler ligger utanför tsconfig-projekten — inga typade regler här.
     files: ['*.config.js', '*.config.ts'],
     extends: [tseslint.configs.disableTypeChecked],

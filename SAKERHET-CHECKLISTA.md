@@ -49,7 +49,7 @@
 |---|----------|:------:|
 | 3.1 | JWT ligger **aldrig** i `localStorage` eller `sessionStorage` — access-token i minnet | ⬜ |
 | 3.2 | Refresh-token endast i `httpOnly`-cookie, oåtkomlig för JavaScript | ⬜ |
-| 3.3 | **§KM.8** Service worker cachar aldrig auth-svar | ⬜ |
+| 3.3 | **§KM.8** Service worker cachar aldrig auth-svar | ✅ |
 | 3.4 | **§KM.2** Spelarkortet lagras i enhetens egen lagring och skickas aldrig i något anrop | ⬜ |
 | 3.5 | **§KM.2** `navigator.storage.persist()` begärs; nekad begäran hanteras utan att appen går sönder | ⬜ |
 | 3.6 | **§KM.2** Säkerhetskopieringskod finns, uppmanas till, och kan återställas på annan enhet | ⬜ |
@@ -78,8 +78,8 @@
 | 5.1 | **CSP** satt och restriktiv — inga `unsafe-inline`/`unsafe-eval` i prod | ⬜ |
 | 5.2 | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` satta | ⬜ |
 | 5.3 | Ingen `dangerouslySetInnerHTML` på otillförlitlig data | ⬜ |
-| 5.4 | Service worker registreras bara över HTTPS och har begränsat scope | ⬜ |
-| 5.5 | Uppdatering av service worker hanteras — användaren fastnar inte på gammal version | ⬜ |
+| 5.4 | Service worker registreras bara över HTTPS och har begränsat scope | ✅ |
+| 5.5 | Uppdatering av service worker hanteras — användaren fastnar inte på gammal version | ✅ |
 | 5.6 | Utgående länkar (kartor) använder `rel="noopener noreferrer"` | ✅ |
 | 5.7 | ICS-feeden är publik men innehåller **enbart** matchdata (§KM.4) | ✅ |
 | 5.8 | Öppen omdirigering omöjlig — inga redirect-mål från query-parametrar | ⬜ |
