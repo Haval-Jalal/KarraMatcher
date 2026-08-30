@@ -1,6 +1,7 @@
 import { Link, useParams } from '@tanstack/react-router'
 
 import { ApiError } from '@/lib/api'
+import { teamThemeStyle } from '@/lib/teamTheme'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -67,7 +68,7 @@ export function MatchDetailPage() {
   const isPostponed = match.status === 'Postponed'
 
   return (
-    <main style={{ '--team-accent': team.colorHex } as React.CSSProperties}>
+    <main style={teamThemeStyle(team.colorHex)}>
       <header className="app-header">
         <p className="app-header__subtitle">
           <Link to="/lag/$slug" params={{ slug: team.slug }}>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { MIN_TEXT_CONTRAST, MIN_UI_CONTRAST, contrastRatio } from '@/lib/contrast'
 import CSS_SOURCE from '@/styles/index.css?raw'
 
 /**
@@ -12,9 +13,6 @@ import CSS_SOURCE from '@/styles/index.css?raw'
  * Värdena läses ur källan i stället för att skrivas av. En kopia hade kunnat gå grön medan
  * paletten drev iväg.
  */
-
-const REQUIRED_TEXT = 4.5
-const REQUIRED_UI = 3.0
 
 /** Plockar ut ett tokenvärde ur ett block i stilmallen. */
 function token(name: string, scope: 'light' | 'dark'): string {
@@ -30,25 +28,6 @@ function token(name: string, scope: 'light' | 'dark'): string {
   }
 
   return match[1]
-}
-
-function channel(value: number): number {
-  const c = value / 255
-
-  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-}
-
-function luminance(hex: string): number {
-  const h = hex.replace('#', '')
-  const [r, g, b] = [0, 2, 4].map((i) => channel(parseInt(h.slice(i, i + 2), 16)))
-
-  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0)
-}
-
-export function contrast(a: string, b: string): number {
-  const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-
-  return ((high ?? 0) + 0.05) / ((low ?? 0) + 0.05)
 }
 
 const SCOPES = ['light', 'dark'] as const
@@ -67,9 +46,9 @@ describe('textkontrast är minst 4.5:1', () => {
 
   for (const scope of SCOPES) {
     it.each(pairs)(`%s mot %s i ${scope} läge`, (foreground, background) => {
-      const ratio = contrast(token(foreground, scope), token(background, scope))
+      const ratio = contrastRatio(token(foreground, scope), token(background, scope))
 
-      expect(ratio).toBeGreaterThanOrEqual(REQUIRED_TEXT)
+      expect(ratio).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST)
     })
   }
 })
@@ -86,9 +65,9 @@ describe('kontrast för komponenter är minst 3:1', () => {
 
   for (const scope of SCOPES) {
     it.each(pairs)(`%s mot %s i ${scope} läge`, (foreground, background) => {
-      const ratio = contrast(token(foreground, scope), token(background, scope))
+      const ratio = contrastRatio(token(foreground, scope), token(background, scope))
 
-      expect(ratio).toBeGreaterThanOrEqual(REQUIRED_UI)
+      expect(ratio).toBeGreaterThanOrEqual(MIN_UI_CONTRAST)
     })
   }
 })

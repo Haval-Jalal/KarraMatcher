@@ -2,6 +2,7 @@ import { useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
+import { teamThemeStyle } from '@/lib/teamTheme'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { MatchListSection } from './MatchListSection'
@@ -32,11 +33,17 @@ export function TeamSchedulePage() {
   useDocumentTitle(team ? `${team.ageGroup} ${team.name}` : 'Matcher')
 
   return (
-    <main style={accent ? ({ '--team-accent': accent } as React.CSSProperties) : undefined}>
+    <main style={teamThemeStyle(accent)}>
       <header className="app-header">
         <h1>Kärra Matcher</h1>
         <p className="app-header__subtitle">
-          {team ? `${team.ageGroup} ${team.name}` : 'Laget hämtas…'}
+          {team ? (
+            <span className="team-chip">
+              {team.ageGroup} {team.name}
+            </span>
+          ) : (
+            'Laget hämtas…'
+          )}
         </p>
       </header>
 

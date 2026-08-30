@@ -23,8 +23,19 @@
   --focus: #1e3f8a;
   --danger: #a4262c;
 
-  /* Sätts av appen när ett lag valts. Gråtonen gäller innan dess. */
+  /*
+   * Sätts av appen när ett lag valts (`lib/teamTheme.ts`). Gråtonen gäller innan dess.
+   *
+   * `--team-ink` är textfärgen som får ligga *på* lagfärgen. Den räknas fram ur färgen
+   * i stället för att skrivas här, eftersom lagfärgen kommer ur databasen och inte är
+   * känd när den här filen skrivs — och eftersom nästa lag som läggs till ska fungera
+   * lika bra utan att någon rör stilmallen.
+   *
+   * Den byter inte värde mellan ljust och mörkt läge: lagfärgen är densamma i båda, så
+   * bläcket ovanpå den är det också.
+   */
   --team-accent: #8a8a92;
+  --team-ink: #000000;
 
   --radius: 12px;
   --tap-target: 44px;
@@ -112,6 +123,28 @@ h1 {
 .app-header__subtitle {
   color: var(--text-muted);
   margin: 0;
+}
+
+/*
+ * Lagets namn på lagets färg. Det här är stället där färgen slutar vara en kantlinje och
+ * blir något man ser direkt.
+ *
+ * Ramen är inte dekoration. Vit `#D9D9D9` mot ljust läge och Svart `#161616` mot mörkt
+ * ligger båda för nära sidans bakgrund för att synas av sig själva — utan ramen skulle
+ * två av fyra lag få en bricka som flyter ihop med sidan. Den måste därför själv nå 3:1
+ * (WCAG 1.4.11), vilket är varför den är --border-strong och inte --border.
+ */
+.team-chip {
+  display: inline-block;
+  background: var(--team-accent);
+  color: var(--team-ink);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  letter-spacing: 0.02em;
 }
 
 h2 {
@@ -203,9 +236,13 @@ h2 {
 }
 
 /*
- * Lagfärgen som bricka, aldrig som bakgrund bakom text. Vit (#D9D9D9) och Svart (#161616)
- * går inte att hålla WCAG-kontrast mot i ljust respektive mörkt läge — med brickan står
- * texten alltid mot sidans bakgrund i stället.
+ * Lagfärgen som bricka i väljaren. Här står texten kvar mot sidans bakgrund, eftersom
+ * raden ska gå att läsa i en lista med fyra färger utan att ögat måste ställa om.
+ *
+ * Kommentaren här sa tidigare att lagfärgen aldrig får ligga bakom text alls. Det var att
+ * lösa fel problem: det som inte fungerar är en *fast* textfärg ovanpå fyra olika
+ * lagfärger. Räknas bläcket fram per färg klarar alla fyra god marginal — se `.team-chip`
+ * och `lib/teamTheme.ts`.
  *
  * Ringen är det som gör den vita och den svarta brickan synlig alls, så den måste själv nå
  * 3:1 mot underlaget (WCAG 1.4.11) — därav --border-strong och inte --border.
@@ -466,6 +503,19 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 /* Dagens matcher framhävs med accenten — det är den vanligaste anledningen att öppna appen. */
+.match-list__heading--today::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 8px;
+  background: var(--team-accent);
+
+  /* Samma skäl som brickans ram: två av lagfärgerna syns annars inte mot underlaget. */
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
 .match-list__heading--today {
   color: var(--text-strong);
   border-left: 4px solid var(--team-accent);
