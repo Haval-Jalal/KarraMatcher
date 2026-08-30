@@ -1,10 +1,9 @@
 /*
  * Basen för appens utseende. Mobil först, ljust och mörkt läge.
  *
- * Identiteten ärvs från den handbyggda föregångaren: lagfärgen som accent, kortbaserad
- * layout och stora träffytor. Systemtypsnitt tills vidare — Barlow hämtas i #26, där
- * PWA-tillgångarna paketeras och typsnitten kan ligga lokalt i stället för att kosta en
- * extern förfrågan på dålig täckning.
+ * Identiteten ärvs från den handbyggda föregångaren: Barlow och Barlow Condensed,
+ * lagfärgen som accent, kortbaserad layout och stora träffytor. Snitten paketeras
+ * lokalt — se `fonts.css` för varför de inte hämtas från en extern värd.
  */
 
 :root {
@@ -30,7 +29,24 @@
   --radius: 12px;
   --tap-target: 44px;
 
+  /*
+   * Två snitt med varsin uppgift: Condensed bär rubriker och versala etiketter, Barlow
+   * bär allt som ska läsas i följd. Fallbacken är inte dekoration — den syns i den
+   * halvsekund innan snittet hunnit hämtas, och på en telefon där hämtningen misslyckas.
+   */
   --sans: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --display: 'Barlow Condensed', 'Arial Narrow', system-ui, -apple-system, sans-serif;
+
+  /*
+   * Skala i steg om ungefär 1,25. Poängen är att storlekar väljs härifrån och inte
+   * hittas på per komponent — det är så en stilmall glider isär.
+   */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5625rem;
+  --text-2xl: 1.9375rem;
 
   font: 16px/1.5 var(--sans);
   color-scheme: light dark;
@@ -70,9 +86,18 @@ body {
   min-height: 100svh;
 }
 
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  text-wrap: balance;
+}
+
 h1 {
-  font-size: 28px;
-  line-height: 1.2;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.005em;
   color: var(--text-strong);
   margin: 0 0 4px;
 }
@@ -90,7 +115,9 @@ h1 {
 }
 
 h2 {
-  font-size: 18px;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.15;
   color: var(--text-strong);
   margin: 0 0 12px;
 }
@@ -298,8 +325,9 @@ h2 {
 }
 
 .detail__row dt {
+  font-family: var(--display);
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -377,7 +405,8 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .next-match__label {
-  font-size: 13px;
+  font-family: var(--display);
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -428,7 +457,8 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .match-list__heading {
-  font-size: 15px;
+  font-family: var(--display);
+  font-size: var(--text-base);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
@@ -493,6 +523,7 @@ a.match-card:focus-visible .match-card__opponent {
  * färger ska förstå att matchen är inställd (WCAG 1.4.1).
  */
 .badge {
+  font-family: var(--display);
   display: inline-block;
   border: 1px solid currentcolor;
   border-radius: 999px;

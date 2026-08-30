@@ -7,6 +7,25 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
+    <!-- De två snitt som syns först: brödtexten och sidrubriken. Utan förladdning
+         upptäcks de först när stilmallen är hämtad och tolkad, vilket på dålig täckning
+         är precis den stund då sidan står och byter typsnitt framför ögonen på någon.
+         Övriga vikter och latin-ext hämtas när de behövs — se fonts.css. -->
+    <link
+      rel="preload"
+      href="/fonts/barlow-400-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/barlow-condensed-700-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
     <!-- Temafärgen följer läget. En mörk statusrad över en ljus sida ser trasig ut. -->
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16161a" media="(prefers-color-scheme: dark)" />
