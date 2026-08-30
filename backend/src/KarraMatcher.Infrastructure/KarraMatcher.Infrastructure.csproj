@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Startdatan ar internal och lases direkt av testerna, i stallet for att goras
+       publik bara for testernas skull. Samma upplagg som i Api och Application. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="KarraMatcher.Infrastructure.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\KarraMatcher.Application\KarraMatcher.Application.csproj" />
   </ItemGroup>

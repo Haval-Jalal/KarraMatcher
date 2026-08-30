@@ -28,19 +28,37 @@ internal static class SeedData
     ];
 
     /// <summary>
-    /// Namnet är hela strängen som står i kallelsen, plannumret inkluderat — det är
-    /// vad föräldern letar efter på plats. Adressen pekar på anläggningen och driver
-    /// kartlänken; koordinaterna driver väderprognosen.
+    /// Namnet är hela strängen som står i kallelsen, plannumret inkluderat — det är vad
+    /// föräldern letar efter på plats.
+    ///
+    /// <para>
+    /// <b>Adressen</b> driver kartlänken. Den anges som platsnamn och inte som gatuadress,
+    /// eftersom det är så kartappar hittar en idrottsplats: "Klarebergsvallen, Kärra,
+    /// Göteborg" ger en träff på anläggningen, medan "Klarebergsvallen 3" inte ger någon
+    /// träff alls — trean är plannumret, inte ett gatunummer.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Koordinaterna</b> driver enbart väderprognosen. De var tidigare avrundade till
+    /// två decimaler och låg upp till 2,2 km fel, vilket vid kusten är skillnaden mellan
+    /// regn och uppehåll. Värdena nedan är verifierade mot OpenStreetMap och pekar på
+    /// själva anläggningen.
+    /// </para>
     /// </summary>
     public static IReadOnlyList<VenueRow> Venues { get; } =
     [
-        new("Klarebergsvallen 3", "Klarebergsvallen, Kärra, Göteborg", 57.78, 11.99, true),
-        new("Fjärdingsplan 11", "Fjärdingsplan, Lundby, Göteborg", 57.72, 11.93, false),
-        new("Länsmansgårdens IP 22", "Länsmansgårdens IP, Göteborg", 57.73, 11.90, false),
-        new("Kareby Hed 11", "Kareby Hed, Kareby, Kungälv", 57.90, 11.95, false),
-        new("Krokängsplan 12", "Krokängsplan, Eriksberg, Göteborg", 57.71, 11.92, false),
+        new("Klarebergsvallen 3", "Klarebergsvallen, Kärra, Göteborg", 57.7996, 11.9840, true),
+        new("Fjärdingsplan 11", "Fjärdingsplan, Lundby, Göteborg", 57.7241, 11.9390, false),
+        new("Länsmansgårdens IP 22", "Länsmansgårdens IP, Göteborg", 57.7311, 11.8856, false),
+        new("Kareby Hed 11", "Kareby Hed, Kareby, Kungälv", 57.9032, 11.9279, false),
+        new("Krokängsplan 12", "Krokängsplan, Eriksberg, Göteborg", 57.7031, 11.9102, false),
+
+        // Kode IP är inte verifierad. OpenStreetMap har fyra namnlösa fotbollsplaner i
+        // Kode och ingen namngiven idrottsplats, så värdet nedan är det gamla avrundade.
+        // Att gissa hade varit sämre än att låta det stå kvar och vara känt fel — se #110.
         new("Kode IP 31", "Kode IP, Kode, Kungälv", 57.96, 11.87, false),
-        new("Prästängen 31", "Prästängen, Öckerö", 57.71, 11.65, false),
+
+        new("Prästängen 31", "Prästängen, Öckerö", 57.7166, 11.6410, false),
     ];
 
     public static IReadOnlyList<MatchRow> Matches { get; } =
