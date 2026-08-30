@@ -1,4 +1,5 @@
 import { TeamPicker, useTeams } from '@/features/teams'
+import { LoadingState } from '@/components/LoadingState'
 import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -22,11 +23,7 @@ export function StartPage() {
 
       <h2>Lag</h2>
 
-      {isPending && (
-        <p className="state" role="status">
-          Hämtar lagen…
-        </p>
-      )}
+      {isPending && <LoadingState label="Hämtar lagen…" />}
 
       {error && (
         <div className="state state--error" role="alert">

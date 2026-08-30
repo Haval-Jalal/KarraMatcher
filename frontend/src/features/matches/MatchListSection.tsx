@@ -1,6 +1,8 @@
+import { LoadingState } from '@/components/LoadingState'
 import { ApiError } from '@/lib/api'
 
 import { MatchList } from './MatchList'
+import { ScheduleSkeleton } from './ScheduleSkeleton'
 import { NextMatchCard } from './NextMatchCard'
 import { TeamCalendarLink } from './TeamCalendarLink'
 import { selectNextMatch } from './selectNextMatch'
@@ -19,9 +21,9 @@ export function MatchListSection({ slug }: { slug: string }) {
 
   if (isPending) {
     return (
-      <p className="state" role="status">
-        Hämtar matcherna…
-      </p>
+      <LoadingState label="Hämtar matcherna…">
+        <ScheduleSkeleton />
+      </LoadingState>
     )
   }
 

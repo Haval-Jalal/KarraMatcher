@@ -29,7 +29,12 @@ export function MatchList({
   const pastId = useId()
 
   if (matches.length === 0) {
-    return <p className="state">Inga matcher är inlagda för det här laget än.</p>
+    return (
+      <p className="state">
+        Inga matcher är inlagda för det här laget än. Schemat läggs in inför säsongen — då dyker
+        matcherna upp här av sig själva.
+      </p>
+    )
   }
 
   const shown = excludeId === undefined ? matches : matches.filter((m) => m.id !== excludeId)

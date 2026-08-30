@@ -15,6 +15,14 @@ describe('MatchList — innehåll', () => {
     expect(screen.getByText(/Inga matcher är inlagda/)).toBeInTheDocument()
   })
 
+  it('förklarar varför listan är tom, inte bara att den är det', async () => {
+    // En tom lista utan förklaring läses som ett fel. Den vanligaste orsaken är att
+    // säsongens schema inte lagts in än, och det ska stå — annars ringer någon tränaren.
+    await renderWithRouter(<MatchList matches={[]} now={now} />)
+
+    expect(screen.getByText(/Schemat läggs in inför säsongen/)).toBeInTheDocument()
+  })
+
   it('delar upp kommande matcher under månadsrubriker', async () => {
     await renderWithRouter(
       <MatchList
