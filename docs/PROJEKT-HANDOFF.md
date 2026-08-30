@@ -91,15 +91,15 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#118` Laddning, tomt och offline | Haval | `feature/loading-states` | In Review — sista issuen i M1.5 |
+| `#34` Gästens åtkomst | Haval | `test/guest-access` | In Review — regressionsskydd inför inloggningen |
 
 ## ➡️ Nästa steg
 
 Två spår som kan köras parallellt — de rör inte samma filer.
 
-**M1.5 — Utseende** (ny milstolpe 2026-08-30). Appen är funktionellt klar men saknar gestaltad identitet: `--sans` pekar på Barlow, men typsnittet laddas aldrig och Barlow Condensed används ingenstans. Fyra issues, alla frontend, ingen backend-koppling. Börja med `#115` — typsnittet ändrar helhetsintrycket mest, och de tre andra ska gestaltas med Condensed på plats.
+**M1.5 — Utseende** ✅ **klar 2026-08-30, 4 av 4.** Appen är funktionellt klar men saknar gestaltad identitet: `--sans` pekar på Barlow, men typsnittet laddas aldrig och Barlow Condensed används ingenstans. Fyra issues, alla frontend, ingen backend-koppling. Börja med `#115` — typsnittet ändrar helhetsintrycket mest, och de tre andra ska gestaltas med Condensed på plats.
 
-**M2 — Konto och roller.** Öppen fråga 4 är besvarad (Resend), men **fråga 5 — domänen — blockerar fortfarande**: utan egen domän går det inte att sätta SPF och DKIM, och då hamnar inloggningskoden i skräpposten oavsett leverantör. Lös den först. Två saker att bära med in i milstolpen:
+**M2 — Konto och roller.** Öppen fråga 4 är besvarad (Resend) och fråga 5 är nedgraderad: bygget kan gå vidare utan domän, eftersom Resend skickar till kontots egen adress och det räcker för att testa flödet. Domänen blockerar först lanseringen. Två saker att bära med in i milstolpen:
 
 1. **Gästen ska fortsatt kunna allt i M1 utan konto** — ett uttryckligt kriterium, och värt ett test som fäller bygget snarare än en avsikt.
 2. **Checklistans rad 9.14 följer med valet av Resend** och ska vara avbockad före lansering, inte efter.
@@ -153,7 +153,7 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2c | ~~**Vilken mediator ska Application använda?**~~ **Besvarad 2026-08-30:** handskriven dispatcher, se ADR ovan. Tidigare formulering: MediatR 13+ ligger under RPL-1.5 eller kommersiell licens. RPL kräver källkodspublicering vid **driftsättning**, inte bara distribution — vilket krockar med ett privat repo som servar en publik app. Alternativ: handskriven dispatcher (~40 rader, rekommenderat), MediatR 12.4.1 fastlåst (Apache-2.0 men fryst), eller acceptera RPL-copyleft på vår egen kod. **Behövdes innan första handlern**, vilket visade sig vara `#16` i M1 — inte M3. | — | ✅ |
 | 3 | ~~Var driftas backend?~~ **Besvarad 2026-08-29:** Vercel + Render + Neon, se ADR ovan. | — | ✅ |
 | 4 | ~~**Vilken e-postleverantör** för inloggningskoden?~~ **Besvarad 2026-08-30:** Resend, med dokumenterat undantag från checklistans 9.12 — se ADR ovan. Kravet på EU-hosting är därmed medvetet uppmjukat, inte bortglömt. | — | ✅ |
-| 5 | **Domännamn** — `karramatcher.se` föreslaget, tillgänglighet ej kontrollerad. **Uppgraderad 2026-08-30: blockerar nu M2.** Utan egen domän går SPF och DKIM inte att sätta, och inloggningskoden hamnar i skräpposten. | **M2** | Haval |
+| 5 | **Domännamn** — `karramatcher.se` föreslaget, tillgänglighet ej kontrollerad. **Nedgraderad 2026-08-30: blockerar M8, inte M2.** Beslut: vi kör utan domän tills vidare. Effekten är dock inte den man tror — utan verifierad domän svarar Resend **403** och skickar bara till kontots egen adress, alltså inget mejl alls till föräldrarna, inte ens i skräpkorgen. Det räcker ändå för att bygga och testa hela M2 mot Havals egen adress. Domänen behövs först när hundra föräldrar ska få koder. Billigaste vägen dit: en underdomän till `carcheck.se`, som redan ägs och är i drift. | **M8** | Haval |
 | 10 | **Ska barnuppgifter någonsin få finnas på servern?** §KM.1 tillåter i dag förnamn, tröjnummer och lag-id, och §KM.2 förutsätter att `Player` finns som tränarens trupp när kallelsen aktiveras. Haval uttryckte 2026-08-30 en strängare hållning: barn ska bara finnas som lokala poster på enheten. **Beslutet är medvetet uppskjutet till M6**, där kallelsen faktiskt byggs. Blir svaret "nej" måste M6:s fyra issues skrivas om utan namngivna spelare. I dag finns ingen `Player`-entitet i koden — bara vakttesterna som håller spelarstatistiken borta. | M6 | Haval |
 | 6 | **Vem är admin och vilka är tränare?** Riktiga personer krävs före lansering. | M7 | Haval |
 | 7 | **Samtyckestexten** — behövs först när en tränare lägger upp truppen, eftersom servern annars inte behandlar några barnuppgifter alls. Kvar: en begriplig integritetstext. | M6 | Haval + klubben |
