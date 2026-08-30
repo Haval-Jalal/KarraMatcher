@@ -148,6 +148,68 @@ h2 {
   font-weight: 700;
 }
 
+/* ---- Matchdetalj ---------------------------------------------------------- */
+
+/*
+ * Statusrutan star fore allt annat och bar sitt budskap i text. En inställd match andrar
+ * allt ovrigt pa sidan, sa den far inte forlita sig pa farg (WCAG 1.4.1).
+ */
+.notice {
+  border: 1px solid currentcolor;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 0 0 16px;
+}
+
+.notice--cancelled {
+  color: var(--danger);
+}
+
+.detail {
+  margin: 0;
+}
+
+.detail__row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail__row dt {
+  color: var(--text-muted);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.detail__row dd {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.detail__hint {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.next-match__more {
+  margin: 12px 0 0;
+}
+
+/* Hela matchkortet ar en lank. Storsta mojliga traffyta pa en telefon. */
+a.match-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.match-card:hover .match-card__opponent,
+a.match-card:focus-visible .match-card__opponent {
+  text-decoration: underline;
+}
+
 /* ---- Tillstånd ------------------------------------------------------------ */
 
 .state {

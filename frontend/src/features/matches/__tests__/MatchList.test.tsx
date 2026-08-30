@@ -1,21 +1,22 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { MatchList } from '@/features/matches'
 import { testMatch } from '@/test/apiStub'
+import { renderWithRouter } from '@/test/renderWithRouter'
 
 const now = '2026-09-15T09:00:00Z'
 
 describe('MatchList — innehåll', () => {
-  it('säger till när laget saknar matcher', () => {
-    render(<MatchList matches={[]} now={now} />)
+  it('säger till när laget saknar matcher', async () => {
+    await renderWithRouter(<MatchList matches={[]} now={now} />)
 
     expect(screen.getByText(/Inga matcher är inlagda/)).toBeInTheDocument()
   })
 
-  it('delar upp kommande matcher under månadsrubriker', () => {
-    render(
+  it('delar upp kommande matcher under månadsrubriker', async () => {
+    await renderWithRouter(
       <MatchList
         matches={[testMatch('a', '2026-09-20T12:00:00Z'), testMatch('b', '2026-10-04T12:00:00Z')]}
         now={now}
@@ -26,31 +27,37 @@ describe('MatchList — innehåll', () => {
     expect(screen.getByRole('heading', { name: 'Oktober 2026' })).toBeInTheDocument()
   })
 
-  it('framhäver dagens matcher under en egen rubrik', () => {
-    render(<MatchList matches={[testMatch('a', '2026-09-15T16:00:00Z')]} now={now} />)
+  it('framhäver dagens matcher under en egen rubrik', async () => {
+    await renderWithRouter(
+      <MatchList matches={[testMatch('a', '2026-09-15T16:00:00Z')]} now={now} />,
+    )
 
     expect(screen.getByRole('heading', { name: 'Idag' })).toBeInTheDocument()
   })
 
-  it('visar avspark i svensk tid', () => {
+  it('visar avspark i svensk tid', async () => {
     // Testerna körs i America/Los_Angeles. 12:00 UTC är 14:00 i Sverige i september.
-    render(<MatchList matches={[testMatch('a', '2026-09-20T12:00:00Z')]} now={now} />)
+    await renderWithRouter(
+      <MatchList matches={[testMatch('a', '2026-09-20T12:00:00Z')]} now={now} />,
+    )
 
     expect(screen.getByText('14:00')).toBeInTheDocument()
   })
 
-  it('säger att säsongen är slut i stället för att visa en tom lista', () => {
+  it('säger att säsongen är slut i stället för att visa en tom lista', async () => {
     // Utan det här ser sidan trasig ut i november, när allt ligger bakom historikknappen.
-    render(<MatchList matches={[testMatch('a', '2026-08-15T12:00:00Z')]} now={now} />)
+    await renderWithRouter(
+      <MatchList matches={[testMatch('a', '2026-08-15T12:00:00Z')]} now={now} />,
+    )
 
     expect(screen.getByText(/Säsongen är slut/)).toBeInTheDocument()
   })
 })
 
 describe('MatchList — inställda matcher', () => {
-  it('märker inställd match med text, inte bara färg', () => {
+  it('märker inställd match med text, inte bara färg', async () => {
     // WCAG 1.4.1: en förälder som inte skiljer färger ska förstå att matchen är inställd.
-    render(
+    await renderWithRouter(
       <MatchList
         matches={[testMatch('a', '2026-09-20T12:00:00Z', { status: 'Cancelled' })]}
         now={now}
@@ -60,8 +67,8 @@ describe('MatchList — inställda matcher', () => {
     expect(screen.getByText('Inställd')).toBeInTheDocument()
   })
 
-  it('märker framflyttad match', () => {
-    render(
+  it('märker framflyttad match', async () => {
+    await renderWithRouter(
       <MatchList
         matches={[testMatch('a', '2026-09-20T12:00:00Z', { status: 'Postponed' })]}
         now={now}
@@ -79,21 +86,21 @@ describe('MatchList — tidigare matcher', () => {
     testMatch('kommande', '2026-09-20T12:00:00Z'),
   ]
 
-  it('fäller ihop historiken bakom en knapp som anger antalet', () => {
-    render(<MatchList matches={matches} now={now} />)
+  it('fäller ihop historiken bakom en knapp som anger antalet', async () => {
+    await renderWithRouter(<MatchList matches={matches} now={now} />)
 
     expect(screen.getByRole('button', { name: 'Visa 2 tidigare matcher' })).toBeInTheDocument()
   })
 
-  it('böjer ordet rätt när det bara är en match', () => {
-    render(<MatchList matches={[matches[0]!, matches[2]!]} now={now} />)
+  it('böjer ordet rätt när det bara är en match', async () => {
+    await renderWithRouter(<MatchList matches={[matches[0]!, matches[2]!]} now={now} />)
 
     expect(screen.getByRole('button', { name: 'Visa 1 tidigare match' })).toBeInTheDocument()
   })
 
   it('döljer historiken tills den fälls ut', async () => {
     const user = userEvent.setup()
-    render(<MatchList matches={matches} now={now} />)
+    await renderWithRouter(<MatchList matches={matches} now={now} />)
 
     const toggle = screen.getByRole('button', { name: /Visa 2 tidigare/ })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -107,7 +114,7 @@ describe('MatchList — tidigare matcher', () => {
   it('pekar knappen på det område den styr', async () => {
     // aria-controls kopplar knappen till innehållet för skärmläsare.
     const user = userEvent.setup()
-    render(<MatchList matches={matches} now={now} />)
+    await renderWithRouter(<MatchList matches={matches} now={now} />)
 
     const toggle = screen.getByRole('button', { name: /Visa 2 tidigare/ })
     const controlled = document.getElementById(toggle.getAttribute('aria-controls') ?? '')
@@ -122,7 +129,7 @@ describe('MatchList — tidigare matcher', () => {
 
   it('visar senast spelade match först i historiken', async () => {
     const user = userEvent.setup()
-    render(<MatchList matches={matches} now={now} />)
+    await renderWithRouter(<MatchList matches={matches} now={now} />)
 
     await user.click(screen.getByRole('button', { name: /Visa 2 tidigare/ }))
 
@@ -136,16 +143,18 @@ describe('MatchList — tidigare matcher', () => {
     expect(headings).toEqual(['September 2026', 'Augusti 2026'])
   })
 
-  it('visar ingen knapp när det inte finns någon historik', () => {
-    render(<MatchList matches={[testMatch('a', '2026-09-20T12:00:00Z')]} now={now} />)
+  it('visar ingen knapp när det inte finns någon historik', async () => {
+    await renderWithRouter(
+      <MatchList matches={[testMatch('a', '2026-09-20T12:00:00Z')]} now={now} />,
+    )
 
     expect(screen.queryByRole('button', { name: /tidigare/ })).not.toBeInTheDocument()
   })
 })
 
 describe('MatchList — matchen som redan visas i kortet', () => {
-  it('utesluter kortets match ur listan', () => {
-    render(
+  it('utesluter kortets match ur listan', async () => {
+    await renderWithRouter(
       <MatchList
         matches={[
           testMatch('i-kortet', '2026-09-20T12:00:00Z'),
@@ -160,11 +169,11 @@ describe('MatchList — matchen som redan visas i kortet', () => {
     expect(screen.getByText(/Motstandare nasta/)).toBeInTheDocument()
   })
 
-  it('visar fortfarande en inställd match som kortet hoppade över', () => {
+  it('visar fortfarande en inställd match som kortet hoppade över', async () => {
     // Kortet hoppar över inställda matcher, så den som visas där är inte alltid listans
     // första. Att i stället ta bort första posten hade dolt just den inställda matchen —
     // som är den föräldrar behöver se.
-    render(
+    await renderWithRouter(
       <MatchList
         matches={[
           testMatch('installd', '2026-09-18T12:00:00Z', { status: 'Cancelled' }),
@@ -180,8 +189,8 @@ describe('MatchList — matchen som redan visas i kortet', () => {
     expect(screen.queryByText(/Motstandare i-kortet/)).not.toBeInTheDocument()
   })
 
-  it('renderar ingen tom Idag-rubrik när dagens enda match ligger i kortet', () => {
-    render(
+  it('renderar ingen tom Idag-rubrik när dagens enda match ligger i kortet', async () => {
+    await renderWithRouter(
       <MatchList
         matches={[
           testMatch('idag', '2026-09-15T16:00:00Z'),
@@ -195,8 +204,8 @@ describe('MatchList — matchen som redan visas i kortet', () => {
     expect(screen.queryByRole('heading', { name: 'Idag' })).not.toBeInTheDocument()
   })
 
-  it('säger att inga fler matcher finns när kortets match var den enda', () => {
-    render(
+  it('säger att inga fler matcher finns när kortets match var den enda', async () => {
+    await renderWithRouter(
       <MatchList
         matches={[testMatch('enda', '2026-09-20T12:00:00Z')]}
         now={now}
@@ -207,9 +216,9 @@ describe('MatchList — matchen som redan visas i kortet', () => {
     expect(screen.getByText('Inga fler matcher är inlagda.')).toBeInTheDocument()
   })
 
-  it('säger inte att säsongen är slut när ett kort visar en kommande match', () => {
+  it('säger inte att säsongen är slut när ett kort visar en kommande match', async () => {
     // Kortet står kvar ovanför. "Säsongen är slut" hade motsagt det som syns strax ovan.
-    render(
+    await renderWithRouter(
       <MatchList
         matches={[
           testMatch('spelad', '2026-08-15T12:00:00Z'),
@@ -224,8 +233,8 @@ describe('MatchList — matchen som redan visas i kortet', () => {
     expect(screen.getByRole('button', { name: /Visa 1 tidigare match/ })).toBeInTheDocument()
   })
 
-  it('visar hela listan när inget kort finns', () => {
-    render(
+  it('visar hela listan när inget kort finns', async () => {
+    await renderWithRouter(
       <MatchList
         matches={[testMatch('a', '2026-09-20T12:00:00Z'), testMatch('b', '2026-09-27T12:00:00Z')]}
         now={now}

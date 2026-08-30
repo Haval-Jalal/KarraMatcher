@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { Match, TeamMatches } from '@/features/matches'
+import type { Match, MatchDetail, TeamMatches } from '@/features/matches'
 import type { Team } from '@/features/teams'
 
 export const testTeams: Team[] = [
@@ -41,11 +41,25 @@ function jsonResponse(body: unknown, status = 200): Response {
 export function stubApi(options: {
   teams?: Team[] | 'error'
   matches?: TeamMatches | 'error' | 'notFound'
+  match?: MatchDetail | 'error' | 'notFound'
 }) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: unknown) => {
       const url = String(input)
+
+      // Enskild match först: /api/v1/matches/{id} innehåller också "/matches".
+      if (url.includes('/api/v1/matches/')) {
+        if (options.match === 'error') return Promise.reject(new TypeError('Failed to fetch'))
+        if (options.match === 'notFound') {
+          return Promise.resolve(jsonResponse({ title: 'Matchen finns inte' }, 404))
+        }
+        return Promise.resolve(
+          jsonResponse(
+            options.match ?? { team: testTeams[0], match: testMatch('a', '2026-09-20T12:00:00Z') },
+          ),
+        )
+      }
 
       if (url.includes('/matches')) {
         if (options.matches === 'error') return Promise.reject(new TypeError('Failed to fetch'))

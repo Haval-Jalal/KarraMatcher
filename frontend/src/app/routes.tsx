@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-router'
 
 import { NotFound } from '@/components/NotFound'
-import { TeamSchedulePage } from '@/features/matches'
+import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
 import { readSetting } from '@/lib/storage'
@@ -52,7 +52,17 @@ const teamRoute = createRoute({
 })
 
 /** Exporteras för tester, som bygger en egen router med minneshistorik. */
-export const routeTree = rootRoute.addChildren([indexRoute, teamRoute])
+/**
+ * En match på egen adress. Nås från listan, från "nästa match"-kortet, och så småningom
+ * direkt från en kalenderpost eller en push-notis.
+ */
+const matchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/match/$id',
+  component: MatchDetailPage,
+})
+
+export const routeTree = rootRoute.addChildren([indexRoute, teamRoute, matchRoute])
 
 export const router = createRouter({
   routeTree,

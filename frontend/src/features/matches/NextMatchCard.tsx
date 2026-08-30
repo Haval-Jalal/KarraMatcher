@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 
 import type { Match } from './types'
@@ -35,6 +37,12 @@ export function NextMatchCard({ match, now }: { match: Match; now?: Date | strin
       <p className="next-match__venue">
         {match.venue.name}
         {match.address ? `, ${match.address}` : ''}
+      </p>
+
+      <p className="next-match__more">
+        <Link to="/match/$id" params={{ id: match.id }}>
+          Visa matchen
+        </Link>
       </p>
     </section>
   )

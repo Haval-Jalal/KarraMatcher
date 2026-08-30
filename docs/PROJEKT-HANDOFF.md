@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 8 av 15 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 9 av 15 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#21` Matchdetaljsida på egen adress, nådd från listan och nästa match-kortet — 2026-08-30
 - `#17` Publik endpoint för enskild match — 2026-08-30
 - `#100` Nästa match visades två gånger — rättad — 2026-08-30
 - `#20` Nästa match-kort med relativ dag — 2026-08-30
@@ -72,13 +73,14 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#17` Publik endpoint för enskild match | Haval | `feature/match-detail-endpoint` | In Review |
+| `#21` Matchdetaljsida | Haval | `feature/match-detail-page` | In Review — knapparna för väg och kalender kommer i `#23` och `#24` |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#21` matchdetaljsidan** — endpointen finns nu, med koordinater för vädret och adress för kartlänken.
-2. **`#22` väder och `#23` vägbeskrivning** — båda bygger på det `#17` levererar.
+1. **`#23` vägbeskrivning och `#24` kalenderfil** — de två knapparna som matchdetaljsidan är byggd för att rymma.
+2. **`#22` väder** — koordinaterna finns i matchsvaret.
+3. **`#25` ICS-prenumeration** — bär också över det sista kriteriet från `#27`.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).

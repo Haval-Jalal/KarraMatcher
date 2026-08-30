@@ -25,3 +25,14 @@ export interface TeamMatches {
   }
   matches: Match[]
 }
+
+/** Svaret från `GET /api/v1/matches/{id}`: matchen och dess lag. */
+export interface MatchDetail {
+  match: Match
+  team: {
+    slug: string
+    name: string
+    ageGroup: string
+    colorHex: string
+  }
+}
