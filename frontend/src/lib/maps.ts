@@ -47,11 +47,21 @@ export function directionsDestination(venueName: string, address?: string | null
  *
  * Båda adresserna är dokumenterade webbadresser som fungerar även utan appen installerad:
  * på en dator öppnas maps.apple.com respektive google.com/maps i webbläsaren.
+ *
+ * <h3>Färdsättet anges uttryckligen</h3>
+ *
+ * Utan `dirflg` respektive `travelmode` använder kartappen det färdsätt användaren senast
+ * råkade välja. Stod den i kollektivtrafik får föräldern en resa till närmaste hållplats i
+ * stället för en bilväg till planen — vilket ser ut som att adressen är fel, fast
+ * adressträngen är riktig.
+ *
+ * Bil är rätt förvalt här: en förälder med barn, matchkläder och ofta en boll i bagaget
+ * kör till bortamatchen. Den som ändå åker kollektivt byter i kartappen med ett tryck.
  */
 export function directionsUrl(destination: string, platform: MapsPlatform): string {
   const encoded = encodeURIComponent(destination)
 
   return platform === 'apple'
-    ? `https://maps.apple.com/?daddr=${encoded}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`
+    ? `https://maps.apple.com/?daddr=${encoded}&dirflg=d`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`
 }

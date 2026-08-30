@@ -22,7 +22,7 @@ describe('DirectionsLink', () => {
 
     expect(screen.getByRole('link', { name: /Vägbeskrivning/ })).toHaveAttribute(
       'href',
-      'https://maps.apple.com/?daddr=Kareby%20Hed%2C%20Kung%C3%A4lv',
+      'https://maps.apple.com/?daddr=Kareby%20Hed%2C%20Kung%C3%A4lv&dirflg=d',
     )
   })
 
@@ -35,7 +35,7 @@ describe('DirectionsLink', () => {
 
     expect(screen.getByRole('link', { name: /Vägbeskrivning/ })).toHaveAttribute(
       'href',
-      'https://www.google.com/maps/dir/?api=1&destination=Kareby%20Hed%2C%20Kung%C3%A4lv',
+      'https://www.google.com/maps/dir/?api=1&destination=Kareby%20Hed%2C%20Kung%C3%A4lv&travelmode=driving',
     )
   })
 
