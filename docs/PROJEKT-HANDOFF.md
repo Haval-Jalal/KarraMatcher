@@ -91,7 +91,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#117` Lagfärgen | Haval | `feature/team-colour` | In Review — lagfärgen som yta, med härlett bläck |
+| `#118` Laddning, tomt och offline | Haval | `feature/loading-states` | In Review — sista issuen i M1.5 |
 
 ## ➡️ Nästa steg
 

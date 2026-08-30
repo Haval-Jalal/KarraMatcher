@@ -1,5 +1,6 @@
 import { Link, useParams } from '@tanstack/react-router'
 
+import { LoadingState } from '@/components/LoadingState'
 import { ApiError } from '@/lib/api'
 import { teamThemeStyle } from '@/lib/teamTheme'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
@@ -29,9 +30,7 @@ export function MatchDetailPage() {
   if (isPending) {
     return (
       <main>
-        <p className="state" role="status">
-          Hämtar matchen…
-        </p>
+        <LoadingState label="Hämtar matchen…" />
       </main>
     )
   }

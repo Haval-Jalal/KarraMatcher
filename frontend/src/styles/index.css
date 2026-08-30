@@ -402,6 +402,90 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0;
 }
 
+/* ---- Väntan --------------------------------------------------------------- */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+ * Förklaringen när servern sover. Inte dämpad som resten av .state — det här är det enda
+ * appen har att säga under upp till en minut, och den som undrar om något gått sönder ska
+ * kunna läsa det utan att leta.
+ */
+.loading__slow {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Samma låda som matchkortet, så att sidan inte hoppar när innehållet landar. */
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  padding: 14px 16px;
+  min-height: var(--tap-target);
+}
+
+/*
+ * Rutorna sveps med en ljusare ton för att visa att något pågår.
+ *
+ * Rörelsen stannar av sig själv under `prefers-reduced-motion` — regeln längst ned i
+ * filen nollar alla animationer. Rutan blir då stillastående och fullt synlig, vilket är
+ * precis vad som behövs: formen bär beskedet, rörelsen är bara en påminnelse om att
+ * något händer.
+ */
+.skeleton {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--surface-raised) 50%,
+    var(--border) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton--time {
+  width: 5.5em;
+  height: 1.6em;
+}
+
+.skeleton--opponent {
+  width: 70%;
+  height: 1em;
+}
+
+.skeleton--venue {
+  width: 45%;
+  height: 0.9em;
+}
+
 .state--error {
   color: var(--danger);
   display: flex;
