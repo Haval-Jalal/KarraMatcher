@@ -9,6 +9,13 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   test: {
+    /*
+     * Utan detta ersätter Vitest CSS-importer med tomma strängar, och kontrasttestet läser
+     * en tom stilmall — alltså går grönt utan att ha mätt något. Med css: true når `?raw`
+     * den riktiga källan.
+     */
+    css: true,
+
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],

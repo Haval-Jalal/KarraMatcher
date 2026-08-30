@@ -21,7 +21,10 @@ describe('routing', () => {
     renderRoute('/')
 
     expect(await screen.findByText('Välj lag för att se matcherna')).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: /Gul/ })).toBeInTheDocument()
+
+    // Länk och inte knapp: att välja lag byter adress, och en kontroll som byter adress
+    // ska gå att öppna i ny flik och kopiera.
+    expect(await screen.findByRole('link', { name: /Gul/ })).toHaveAttribute('href', '/lag/gul')
   })
 
   it('skickar en återvändande besökare vidare till sitt lag', async () => {
@@ -61,7 +64,7 @@ describe('routing', () => {
     const user = userEvent.setup()
     const { router } = renderRoute('/lag/gul')
 
-    await user.click(await screen.findByRole('button', { name: /Blå/ }))
+    await user.click(await screen.findByRole('link', { name: /Blå/ }))
 
     expect(router.state.location.pathname).toBe('/lag/bla')
   })
