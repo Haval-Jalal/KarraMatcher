@@ -11,6 +11,10 @@ afterEach(() => {
 
 const MATCH_ID = '11111111-2222-3333-4444-555555555555'
 
+/** Ett par dagar fram, så vädret hamnar inom prognosfönstret oavsett när testet körs. */
+const FUTURE_KICKOFF = new Date(Date.now() + 2 * 86_400_000).toISOString()
+const FUTURE_HOUR = `${FUTURE_KICKOFF.slice(0, 13)}:00`
+
 function detail(overrides: Partial<MatchDetail['match']> = {}): MatchDetail {
   return {
     team: testTeams[0]!,
@@ -198,5 +202,75 @@ describe('Matchdetaljsidan — kalenderfil', () => {
 
     await screen.findByText(/Matchen är inställd/)
     expect(screen.queryByRole('link', { name: /Lägg till i kalendern/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('Matchdetaljsidan — väder', () => {
+  it('visar temperatur, beskrivning och nederbördsrisk', async () => {
+    stubApi({ match: detail({ kickoffUtc: FUTURE_KICKOFF }) })
+    const inner = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('open-meteo.com')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () =>
+              Promise.resolve({
+                hourly: {
+                  time: [FUTURE_HOUR],
+                  temperature_2m: [17.3],
+                  precipitation_probability: [100],
+                  weather_code: [51],
+                },
+              }),
+          } as unknown as Response)
+        }
+
+        return inner(input as RequestInfo, init)
+      }),
+    )
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    expect(await screen.findByText('17°')).toBeInTheDocument()
+    expect(screen.getByText('Lätt duggregn')).toBeInTheDocument()
+    expect(screen.getByText(/100% risk för nederbörd/)).toBeInTheDocument()
+  })
+
+  it('visar inget väder för en match långt fram i tiden', async () => {
+    // Prognosfönstret är 15 dagar. Inget anrop görs alls bortom det.
+    stubApi({ match: detail({ kickoffUtc: '2099-09-20T12:00:00Z' }) })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    await screen.findByText('Hemmamatch')
+    expect(screen.queryByText(/risk för nederbörd/)).not.toBeInTheDocument()
+  })
+
+  it('förstör inte sidan när väderanropet misslyckas', async () => {
+    // Kriterium i #22. Vädret är en bonus; matchtiden är det föräldern kom för.
+    stubApi({ match: detail({ kickoffUtc: FUTURE_KICKOFF }) })
+    const inner = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('open-meteo.com')) {
+          return Promise.reject(new TypeError('Failed to fetch'))
+        }
+
+        return inner(input as RequestInfo, init)
+      }),
+    )
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    expect(await screen.findByText('Hemmamatch')).toBeInTheDocument()
+    expect(screen.queryByText(/risk för nederbörd/)).not.toBeInTheDocument()
   })
 })
