@@ -81,7 +81,7 @@
 | 5.4 | Service worker registreras bara över HTTPS och har begränsat scope | ⬜ |
 | 5.5 | Uppdatering av service worker hanteras — användaren fastnar inte på gammal version | ⬜ |
 | 5.6 | Utgående länkar (kartor) använder `rel="noopener noreferrer"` | ✅ |
-| 5.7 | ICS-feeden är publik men innehåller **enbart** matchdata (§KM.4) | ⬜ |
+| 5.7 | ICS-feeden är publik men innehåller **enbart** matchdata (§KM.4) | ✅ |
 | 5.8 | Öppen omdirigering omöjlig — inga redirect-mål från query-parametrar | ⬜ |
 
 ## 6. Indata, kod & vanliga sårbarheter
