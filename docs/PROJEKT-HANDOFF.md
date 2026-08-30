@@ -91,7 +91,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#115` Typsnitten på plats | Haval | `feature/typography` | In Review — Barlow och Barlow Condensed paketerade lokalt |
+| `#116` Matchkortet | Haval | `feature/match-card` | In Review — tiden bär kortet, hemma/borta kodat med form |
 
 ## ➡️ Nästa steg
 

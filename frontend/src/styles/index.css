@@ -481,30 +481,78 @@ a.match-card:focus-visible .match-card__opponent {
   gap: 8px;
 }
 
+/*
+ * Kortet är det man öppnar appen för. En förälder på väg ut genom dörren ska se
+ * avsparkstiden utan att läsa kortet — därför bär tiden nästan all vikt, och allt annat
+ * är tydligt underordnat.
+ *
+ * Kanten till vänster kodar hemma och borta: fylld respektive streckad. Två skillnader,
+ * inte bara en färg, och texten "Hemma mot" står kvar (WCAG 1.4.1). Lagfärgen bär alltså
+ * ingen betydelse ensam — den kan den inte, eftersom Gul ligger på 2,15:1 mot underlaget.
+ */
 .match-card {
   border: 1px solid var(--border-strong);
-  border-left: 4px solid var(--team-accent);
+  border-left: 5px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-raised);
-  padding: 12px 14px;
+  padding: 14px 16px;
+
+  /* Träffytan ska hålla även om innehållet en dag blir kortare än i dag. */
+  min-height: var(--tap-target);
+}
+
+.match-card--home {
+  border-left-style: solid;
+  border-left-color: var(--team-accent);
+}
+
+.match-card--away {
+  border-left-style: dashed;
+}
+
+/*
+ * Inställd match tar över kanten. Att den då slutar visa hemma eller borta är avsiktligt:
+ * spelas matchen inte är det inte längre den upplysning som betyder något.
+ */
+.match-card--cancelled {
+  border-left-style: solid;
+  border-left-color: var(--danger);
 }
 
 .match-card__when {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin: 0 0 4px;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 2px;
 }
 
 .match-card__time {
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.05;
   color: var(--text-strong);
+
+  /* Siffror i samma bredd, så tiderna står i en rak kolumn nedför listan. */
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Överstruken tid på en inställd match. Det är en form och inte en färg, och kommer
+ * utöver märkningen — den som inte skiljer färger ser ändå att tiden inte gäller.
+ */
+.match-card--cancelled .match-card__time {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 
 .match-card__date {
+  font-family: var(--display);
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .match-card__opponent {
@@ -512,10 +560,14 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+.match-card__opponent strong {
+  font-weight: 600;
+}
+
 .match-card__venue {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 /*
