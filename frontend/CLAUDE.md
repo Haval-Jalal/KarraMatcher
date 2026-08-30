@@ -26,10 +26,17 @@
 ## Före commit
 
 ```bash
-npm run lint        # ESLint + Prettier, --max-warnings 0
-npm run typecheck   # typkoll (tsc -b). INTE npx tsc --noEmit - se nedan
-npm run test        # Vitest
+npm run typecheck     # typkoll (tsc -b). INTE npx tsc --noEmit - se nedan
+npm run lint          # ESLint, --max-warnings 0
+npm run format:check  # Prettier. Egen grind i CI - lint kollar INTE formatering
+npm run build         # samma bygge som CI kör
+npm run test          # Vitest
 ```
+
+> **`npm run lint` kontrollerar inte formateringen.** ESLint och Prettier är två
+> separata steg i CI, och ett genererat eller handskrivet block som ESLint är nöjd med
+> kan mycket väl fälla `format:check`. Kör alla fem, i den ordningen — det är samma
+> ordning som CI använder.
 
 > **`npx tsc --noEmit` typkollar ingenting här.** `tsconfig.json` är en lösningsfil
 > (`"files": []` plus referenser till `tsconfig.app.json` och `tsconfig.node.json`), så
