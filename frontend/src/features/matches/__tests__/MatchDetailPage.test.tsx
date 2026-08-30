@@ -137,3 +137,43 @@ describe('Matchlistan länkar till matchen', () => {
     expect(link).toHaveAttribute('href', `/match/${MATCH_ID}`)
   })
 })
+
+describe('Matchdetaljsidan — vägbeskrivning', () => {
+  it('erbjuder vägbeskrivning för en match som spelas', async () => {
+    stubApi({ match: detail() })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    expect(await screen.findByRole('link', { name: /Vägbeskrivning/ })).toBeInTheDocument()
+  })
+
+  it('döljer vägbeskrivningen för en inställd match', async () => {
+    // #21: irrelevanta åtgärder ska döljas. En vägbeskrivning till en inställd match
+    // leder någon till en plan där ingen match äger rum.
+    stubApi({ match: detail({ status: 'Cancelled' }) })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    await screen.findByText(/Matchen är inställd/)
+    expect(screen.queryByRole('link', { name: /Vägbeskrivning/ })).not.toBeInTheDocument()
+  })
+
+  it('döljer vägbeskrivningen för en framflyttad match', async () => {
+    // Utan nytt datum vet vi inte när matchen spelas, bara att det inte är nu.
+    stubApi({ match: detail({ status: 'Postponed' }) })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    await screen.findByText(/Matchen är framflyttad/)
+    expect(screen.queryByRole('link', { name: /Vägbeskrivning/ })).not.toBeInTheDocument()
+  })
+
+  it('pekar vägbeskrivningen på matchens adress', async () => {
+    stubApi({ match: detail() })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    const link = await screen.findByRole('link', { name: /Vägbeskrivning/ })
+    expect(link.getAttribute('href')).toContain(encodeURIComponent('Klarebergsvallen, Karra'))
+  })
+})

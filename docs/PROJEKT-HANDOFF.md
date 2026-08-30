@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 9 av 15 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 10 av 15 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#23` Vägbeskrivning till spelplatsen, rätt kartapp per enhet — 2026-08-30
 - `#21` Matchdetaljsida på egen adress, nådd från listan och nästa match-kortet — 2026-08-30
 - `#17` Publik endpoint för enskild match — 2026-08-30
 - `#100` Nästa match visades två gånger — rättad — 2026-08-30
@@ -73,13 +74,13 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#21` Matchdetaljsida | Haval | `feature/match-detail-page` | In Review — knapparna för väg och kalender kommer i `#23` och `#24` |
+| `#23` Vägbeskrivning till spelplatsen | Haval | `feature/directions` | In Review |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#23` vägbeskrivning och `#24` kalenderfil** — de två knapparna som matchdetaljsidan är byggd för att rymma.
-2. **`#22` väder** — koordinaterna finns i matchsvaret.
+1. **`#24` kalenderfil per match** — den andra knappen på matchdetaljsidan.
+2. **`#22` väder** — koordinaterna finns i matchsvaret och duger gott för väder.
 3. **`#25` ICS-prenumeration** — bär också över det sista kriteriet från `#27`.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
@@ -147,6 +148,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | **Ingen branch protection på GitHub** | `main` är oskyddad på GitHub-sidan. Ett misstag kan pusha direkt förbi PR-flödet | **Accepterad risk tills vidare** (beslut 2026-08-29). `.githooks/pre-push` blockerar push till `main` lokalt — aktiveras med `git config core.hooksPath .githooks`, en gång per klon. Repot är numera publikt, så riktig branch protection är gratis och kan slås på när som helst |
 | **Gamla objekt kvar på GitHub efter historikomskrivning** | Att skriva om historik raderar inte gamla objekt hos GitHub — de nås via sina SHA:n tills GitHub kör städning, och SHA:na syns i commitlistorna på mergade PR:ar. Verifierat: den borttagna filen gick att hämta via `?ref=<gammal SHA>` även efter omskrivningen | **Accepterad risk** (beslut 2026-08-29) — innehållet granskades och bedömdes okritiskt. **Lärdom:** kontrollera vad en mapp innehåller *innan* den checkas in; en omskrivning i efterhand är aldrig fullständig utan att be GitHub köra `gc` |
 | **Licensfläck från ett beroende** | Ett copyleft-licensierat bibliotek kan tvinga fram publicering av vår källkod — RPL-1.5 redan vid driftsättning | Kontrollera licensen innan ett paket läggs in, inte efteråt. Upptäcktes på MediatR i #2, se öppen fråga 2c |
+| **Spelplatsernas koordinater är avrundade till ~1,1 km** | Alla sju `Venue`-rader har latitud och longitud med två decimaler. Det duger för väderprognosen (`#22`), där en kilometer inte spelar roll, men **inte för navigation** — en förälder kunde skickas en kilometer fel utan att märka det, eftersom kartappen bara visar en namnlös nål | `#23` navigerar därför på **adressen**, som kartappen visar som ett namngivet mål man känner igen. Ska koordinaterna någon gång driva navigation måste de först göras exakta — och då krävs en migration eller ny startdata |
 | **Renders timbudget kan släcka appen** | 750 fria instanstimmar per månad och arbetsyta. När de tar slut suspenderas alla fria tjänster till den 1:a nästa månad — appen nere i upp till 30 dagar | Fönstrad ping håller förbrukningen kring 251 h/månad. **Ingen andra fri Render-tjänst får läggas till utan att räkna om budgeten.** Kontrollera förbrukningen i Renders dashboard inför säsongsstart |
 | **Neons retentionsfönster är 6 timmar** | Bekräftat 2026-08-29 — det är taket på fri nivå. En trasig migration som driftsätts fredag kväll och upptäcks lördag morgon ligger redan utanför fönstret, och det är precis då appen används | Den logiska dumpen är därmed det egentliga skyddsnätet, inte en reserv. Tas före **varje** migration mot produktion och efter att säsongens schema lagts in. Rutinen står i `docs/DATABAS-BACKUP.md`. Längre fönster kräver betald Neon-plan — omprövas om datamängden växer |
 | ~~**Vercel kanske inte edge-cachar en extern rewrite**~~ **Avskriven 2026-08-30** | Antagandet höll. Två anrop i rad gav `MISS` följt av `HIT`, med **identiskt `Rndr-Id`** — Render utfärdar ett nytt id per request, så backend kontaktades aldrig på det andra anropet | Verifieringen står i `README.md`. Kvarstår att veta: Vercel försvagar vår ETag till `W/"…"`, vilket vår `If-None-Match`-tolkning hanterar. Tas den hanteringen bort slutar `304` fungera i drift utan att CI märker det |
