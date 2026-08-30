@@ -5,6 +5,7 @@ import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time
 
 import { CalendarLink } from './CalendarLink'
 import { DirectionsLink } from './DirectionsLink'
+import { MatchWeather } from './MatchWeather'
 import { useMatch } from './useMatch'
 
 /**
@@ -115,6 +116,12 @@ export function MatchDetailPage() {
           <dt>Match</dt>
           <dd>{match.isHome ? 'Hemmamatch' : 'Bortamatch'}</dd>
         </div>
+
+        {/*
+          Vädret renderar sig självt till ingenting när matchen ligger för långt fram
+          eller anropet misslyckats, så raden försvinner helt i stället för att stå tom.
+        */}
+        <MatchWeather match={match} />
       </dl>
 
       {/*

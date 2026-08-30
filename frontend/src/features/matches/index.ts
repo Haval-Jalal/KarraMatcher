@@ -1,4 +1,6 @@
 export { CalendarLink } from './CalendarLink'
+export { MatchWeather } from './MatchWeather'
+export { useWeather } from './useWeather'
 export { TeamCalendarLink } from './TeamCalendarLink'
 export { MatchList } from './MatchList'
 export { NextMatchCard } from './NextMatchCard'

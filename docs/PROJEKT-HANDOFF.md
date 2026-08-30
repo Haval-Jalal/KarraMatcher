@@ -8,7 +8,7 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 12 av 15 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15).** M1 pågår — 13 av 15 issues. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
 - **Aktuell milstolpe:** M1 — Den publika delen
 - **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
@@ -41,6 +41,7 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+- `#22` Väder vid avspark via Open-Meteo — 2026-08-30
 - `#24` Kalenderfil per match, och prenumerationslänk på lagsidan — 2026-08-30
 - `#25` ICS-prenumeration per lag, med SEQUENCE och CANCELLED — 2026-08-30
 - `#23` Vägbeskrivning till spelplatsen, rätt kartapp per enhet — 2026-08-30
@@ -76,16 +77,15 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#25` ICS-prenumeration per lag | Haval | `feature/ics-feed` | In Review — kvar: verifiera en riktig prenumeration på telefon |
-| `#24` Kalenderfil per match | Haval | `feature/match-ics` | In Review — staplad på `#25` |
+| `#22` Väder vid avspark | Haval | `feature/weather` | In Review |
+| `#25` ICS-prenumeration | Haval | *mergad* | Öppen: kvar att verifiera en riktig prenumeration på telefon |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **`#22` väder** — koordinaterna finns i matchsvaret och duger gott för väder.
-2. **`#26` PWA** — manifest, ikoner, service worker och offline-läsbart schema.
-3. **`#28` a11y-genomgång** av hela den publika delen.
-4. **Verifiera kalenderprenumerationen på en riktig telefon** — sista kriteriet i `#25`, övertaget från `#27`.
+1. **`#26` PWA** — manifest, ikoner, service worker och offline-läsbart schema.
+2. **`#28` a11y-genomgång** av hela den publika delen. Sista issuet i M1.
+3. **Verifiera kalenderprenumerationen på en riktig telefon** — sista kriteriet i `#25`, övertaget från `#27`.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
 När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
@@ -111,6 +111,7 @@ När M0 är stängd tar M1 vid enligt [`MVP-PLAN.md`](./MVP-PLAN.md).
 | 2026-08-29 | **Branch protection skjuts upp** | Ensam utvecklare, och `.githooks/pre-push` räcker | Kan slås på när som helst nu när repot är publikt |
 | 2026-08-29 | **`mallar/` borttagen ur hela historiken** | Mappen innehöll en affärsplan för en orelaterad produkt och hörde inte hemma i det här repot | Historiken är omskriven och force-pushad. Se känd risk nedan om gamla objekt |
 | 2026-08-29 | **M3 avblockerad** — klubbens officiella verktyg används inte, och tränarna vill ha appen | Filter 3 och Filter 4 i `SPEC.md` är därmed besvarade utan villkor. Vi ersätter en oanvänd lösning i stället för att konkurrera med en levande vana | Tränaradmin kan byggas utan förbehåll. Projektets största risk — att appen står tom — är kraftigt reducerad, men adoptionen ska ändå mätas efter lansering |
+| 2026-08-30 | **Webbläsaren anropar Open-Meteo direkt, inte via vår backend** | §KM.6 tillåter uttryckligen Open-Meteo i frontenden. Att gå direkt håller Render utanför: en förälder som kollar vädret väcker då inte en sovande backend och äter inte av de 750 instanstimmarna — samma resonemang som edge-cachen i §KM.11 bygger på | Noll extra instanstimmar och ingen kallstart för vädret. Priset: förälderns IP-adress når Open-Meteo, och varje webbläsare cachar för sig i stället för centralt. Koordinaterna kommer ändå ur vår egen `Venue`-tabell via matchsvaret, aldrig ur användarindata (checklistan 4.8) |
 | 2026-08-30 | **Kalenderfeeden anger tid i UTC med `Z`, inte lokal tid med `VTIMEZONE`** | Ett `Z`-suffix är entydigt och kan inte bli fel — kalenderappen räknar själv om till användarens zon. En egen `VTIMEZONE`-definition med sommartidsregler är den vanligaste orsaken till att en hemsnickrad feed visar rätt timme i en app och fel i en annan (§KM.5) | Feeden fungerar likadant i alla klienter, och skiftet i oktober sköts av kalenderappen i stället för av vår kod. En förälder utomlands ser matchen i sin egen zon, vilket är rätt för en kalenderpost — händelsen inträffar vid ett absolut ögonblick |
 | 2026-08-30 | **Matchnotisen exponeras inte publikt** | Notisen är tränarens fritext, som §KM.1 räknar som potentiell PII och som inte får visas för fler än den avsedda mottagarkretsen. Publika endpoints är öppna för vem som helst med länken och cachas dessutom på Vercels edge. Tre källor pekade åt samma håll: varken `#17` eller `MVP-PLAN.md` listar notisen, och inget skriver notiser förrän tränaradmin i M3 | Fältet finns kvar i databasen men lämnar aldrig servern. Ett integrationstest matar in en notis med barnnamn och hälsouppgift och kontrollerar att den inte finns i svaret. **Frågan tas upp igen i M3**, där tränargränssnittet byggs — det är också där en varning om vad som får skrivas hör hemma |
 | 2026-08-30 | **Varje lag har en egen adress: `/lag/<slug>`** | Appen sprids genom att en förälder skickar en länk i föräldragruppen (SPEC). Med schemat på startsidan hade mottagaren landat på sitt *eget* senast valda lag, eller på en lagväljare — inte på det avsändaren menade. `#21` behöver dessutom en adress per match oavsett | URL:en styr vilket lag som visas; det sparade valet avgör bara vart startsidan skickar en återvändande besökare. Omdirigeringen sker i `beforeLoad`, så väljaren aldrig blinkar förbi. Att öppna en delad länk blir också det nya ihågkomna valet |
