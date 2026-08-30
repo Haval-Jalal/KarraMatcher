@@ -43,6 +43,7 @@ public static class DependencyInjection
 
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
+        services.AddScoped<IMatchRepository, MatchRepository>();
 
         // Databaskontrollen taggas "ready". Därmed faller /health/ready när databasen
         // är onåbar, medan /health fortsätter svara — se §KM.11 och issue #8.
