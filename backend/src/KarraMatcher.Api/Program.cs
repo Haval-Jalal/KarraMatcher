@@ -1,5 +1,6 @@
 using KarraMatcher.Api.Caching;
 using KarraMatcher.Api.Diagnostics;
+using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application;
 using KarraMatcher.Infrastructure;
 using KarraMatcher.Infrastructure.Persistence;
@@ -19,6 +20,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraEdgeCache(builder.Configuration);
+builder.Services.AddKarraAuthentication(builder.Environment);
 
 builder.Services.AddControllers();
 
@@ -51,6 +53,12 @@ app.UseSerilogRequestLogging();
 app.UseKarraEdgeCache();
 
 app.UseRateLimiter();
+
+// Autentisering fore auktorisering -- annars ar anvandaren inte kand nar beslutet fattas.
+// Bada ligger efter rate limitern, sa att ett flodesangrepp stoppas innan en signatur
+// hinner verifieras.
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {

@@ -109,12 +109,42 @@ public class PersistenceModelTests
     }
 
     [Fact]
-    public void AllaFemEntiteterFinnsIModellen()
+    public void AllaEntiteterFinnsIModellen()
     {
+        // Namnet sa tidigare "AllaFem". Kontot och refresh-token tillkom i #30, och
+        // raknandet i ett testnamn aldras samre an listan sjalv.
         var names = Model().GetEntityTypes().Select(e => e.ClrType.Name).ToHashSet();
 
         Assert.Equal(
-            ["AgeGroup", "Club", "Match", "Team", "Venue"],
+            ["Account", "AgeGroup", "Club", "Match", "RefreshToken", "Team", "Venue"],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
+    public void RefreshToken_ForsvinnerMedSittKonto()
+    {
+        // Kontoradering ska ta med sig sessionerna (checklistan 1.6). Restrict eller
+        // SetNull hade lamnat kvar tokens som pekar pa ett konto som inte finns.
+        var entity = Model().FindEntityType(typeof(Domain.Accounts.RefreshToken))!;
+
+        var toAccount = entity.GetForeignKeys()
+            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(Domain.Accounts.Account));
+
+        Assert.Equal(DeleteBehavior.Cascade, toAccount.DeleteBehavior);
+    }
+
+    [Fact]
+    public void Sessionstider_LagrasMedTidszon()
+    {
+        // §KM.5: allt i UTC. En token som gar ut "lokal tid" ar en token som gar ut fel
+        // timme tva ganger om aret.
+        var entity = Model().FindEntityType(typeof(Domain.Accounts.RefreshToken))!;
+
+        foreach (var property in new[] { "CreatedUtc", "ExpiresUtc", "ReplacedUtc", "RevokedUtc" })
+        {
+            Assert.Equal(
+                "timestamp with time zone",
+                entity.FindProperty(property)!.GetColumnType());
+        }
     }
 }

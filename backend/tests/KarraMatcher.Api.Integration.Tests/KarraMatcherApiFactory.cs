@@ -46,6 +46,10 @@ public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
         // Testerna styr sin egen databaslivscykel. Utan det här skulle
         // appsettings.Development.json slå på migrationer, som in-memory-providern
         // inte stödjer — testerna körs i Development-miljön.
+        // Inloggningens nyckel valideras vid start. Ett fast testvarde, aldrig ett
+        // riktigt: det har far garna sta i klartext i ett publikt repo.
+        builder.UseSetting("Auth:SigningKey", "testnyckel-som-bara-anvands-i-tester-0123456789");
+
         builder.UseSetting(DatabaseInitializer.MigrateKey, "false");
         builder.UseSetting(DatabaseInitializer.SeedKey, "false");
 

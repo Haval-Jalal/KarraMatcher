@@ -85,6 +85,9 @@ dotnet restore
 # Anslutningssträngen krävs. Lokalt via user-secrets:
 dotnet user-secrets --project src/KarraMatcher.Api set   "ConnectionStrings:Default" "Host=...;Database=...;Username=...;Password=..."
 
+# Signeringsnyckeln for inloggningen. Minst 32 tecken, valideras vid start.
+dotnet user-secrets --project src/KarraMatcher.Api set   "Auth:SigningKey" "$(openssl rand -base64 48)"
+
 dotnet ef database update --project src/KarraMatcher.Infrastructure   --startup-project src/KarraMatcher.Api
 
 dotnet run --project src/KarraMatcher.Api      # svarar på http://localhost:5xxx/
