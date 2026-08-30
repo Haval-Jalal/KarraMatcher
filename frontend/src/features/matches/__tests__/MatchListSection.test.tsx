@@ -80,3 +80,34 @@ describe('MatchListSection — tillstånd', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('MatchListSection — kalenderprenumeration', () => {
+  it('erbjuder prenumeration på lagets kalender', async () => {
+    stubApi({ matches: schedule([testMatch('a', '2099-09-20T12:00:00Z')]) })
+
+    await renderWithProviders(<MatchListSection slug="gul" />)
+
+    expect(await screen.findByRole('link', { name: /Prenumerera i kalendern/ })).toBeInTheDocument()
+  })
+
+  it('använder webcal så telefonen erbjuder en prenumeration, inte en nedladdning', async () => {
+    // Skillnaden är hela poängen: en nedladdad fil uppdateras aldrig, medan en
+    // prenumeration hämtar om av sig själv när en match flyttas.
+    stubApi({ matches: schedule([]) })
+
+    await renderWithProviders(<MatchListSection slug="gul" />)
+
+    const link = await screen.findByRole('link', { name: /Prenumerera i kalendern/ })
+    expect(link.getAttribute('href')).toMatch(/^webcal:\/\/.*\/calendar\/gul\.ics$/)
+  })
+
+  it('erbjuder prenumeration även för ett lag utan matcher', async () => {
+    // En nystartad säsong har inga matcher än. Föräldern ska kunna prenumerera nu och
+    // slippa komma ihåg att göra det senare.
+    stubApi({ matches: schedule([]) })
+
+    await renderWithProviders(<MatchListSection slug="gul" />)
+
+    expect(await screen.findByRole('link', { name: /Prenumerera i kalendern/ })).toBeInTheDocument()
+  })
+})

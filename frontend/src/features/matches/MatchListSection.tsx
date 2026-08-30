@@ -2,6 +2,7 @@ import { ApiError } from '@/lib/api'
 
 import { MatchList } from './MatchList'
 import { NextMatchCard } from './NextMatchCard'
+import { TeamCalendarLink } from './TeamCalendarLink'
 import { selectNextMatch } from './selectNextMatch'
 import { useTeamMatches } from './useTeamMatches'
 
@@ -65,6 +66,7 @@ export function MatchListSection({ slug }: { slug: string }) {
       {next && <NextMatchCard match={next} />}
       <h2 className="match-list__title">Matcher</h2>
       <MatchList matches={data.matches} {...(next ? { excludeId: next.id } : {})} />
+      <TeamCalendarLink slug={slug} />
     </>
   )
 }
