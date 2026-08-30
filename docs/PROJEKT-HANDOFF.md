@@ -91,7 +91,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| — | — | — | Inget påbörjat. M0 och M1 är stängda; nästa issue tas ur M1.5 eller M2 |
+| `#115` Typsnitten på plats | Haval | `feature/typography` | In Review — Barlow och Barlow Condensed paketerade lokalt |
 
 ## ➡️ Nästa steg
 
