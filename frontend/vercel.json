@@ -9,6 +9,10 @@
       "destination": "https://karramatcher-api.onrender.com/api/:path*"
     },
     {
+      "source": "/calendar/:path*",
+      "destination": "https://karramatcher-api.onrender.com/calendar/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
