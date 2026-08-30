@@ -50,6 +50,7 @@
 | 3.1 | JWT ligger **aldrig** i `localStorage` eller `sessionStorage` — access-token i minnet | ⬜ |
 | 3.2 | Refresh-token endast i `httpOnly`-cookie, oåtkomlig för JavaScript | ⬜ |
 | 3.3 | **§KM.8** Service worker cachar aldrig auth-svar | ✅ |
+| 3.3b | **§KM.8** Schemat är läsbart offline — verifierat i flygplansläge på iPhone och Android | ✅ |
 | 3.4 | **§KM.2** Spelarkortet lagras i enhetens egen lagring och skickas aldrig i något anrop | ⬜ |
 | 3.5 | **§KM.2** `navigator.storage.persist()` begärs; nekad begäran hanteras utan att appen går sönder | ⬜ |
 | 3.6 | **§KM.2** Säkerhetskopieringskod finns, uppmanas till, och kan återställas på annan enhet | ⬜ |
@@ -167,7 +168,7 @@
 | 12.3 | **§KM.2** Arkitekturtest bevisar att ingen spelarstatistik-endpoint existerar | ✅ |
 | 12.4 | **§KM.5** Tidszonstest över sommartidsskiftet i oktober är grönt | ✅ |
 | 12.5 | E2E-test av de fem kritiska flödena i `SPEC.md` §9 | ⬜ |
-| 12.6 | A11y-genomgång: tangentbord, skärmläsare, kontrast, fokus (WCAG 2.1 AA) | 🟡 |
+| 12.6 | A11y-genomgång: tangentbord, skärmläsare, kontrast, fokus (WCAG 2.1 AA) | ✅ |
 | 12.7 | SAST/DAST kört inför lansering; fynd åtgärdade | ⬜ |
 | 12.8 | Testad på riktig iPhone och riktig Android — inte bara i desktop-emulering | ⬜ |
 | 12.9 | Penetrationstest *(vid behov)* | ⬜ |

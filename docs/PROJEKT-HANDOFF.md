@@ -8,10 +8,10 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15).** M1 pågår — 15 av 17 issues. Repot är publikt
+- **Fas:** **M0 klar (15/15). M1 klar (17/17).** Nästa milstolpe är M2 — konto och roller. Repot är publikt
 - **Senast uppdaterad:** 2026-08-29 av Haval
-- **Aktuell milstolpe:** M1 — Den publika delen
-- **Hälsa:** 🟢 på plan — backend är i drift på Render och svarar `Healthy` mot Neon
+- **Aktuell milstolpe:** M2 — Konto och roller (ej påbörjad)
+- **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
 - **Backend:** C# / .NET (senaste LTS), EF Core, MediatR, FluentValidation, PostgreSQL via Npgsql
@@ -41,6 +41,16 @@
 | Frontend i drift (Vercel) | https://karra-matcher.vercel.app — live sedan 2026-08-29 |
 
 ## ✅ Klart hittills
+
+**M1 verifierad på riktiga enheter 2026-08-30.** Tre prov som inte gick att göra härifrån:
+
+| Prov | Resultat |
+|---|---|
+| Kalenderprenumeration | `P2016 Gul`, 6 matcher, dagens match **13:15** — i både iOS Kalender och Google Kalender. Rätt tid bevisar att UTC med `Z` var rätt val framför en egen `VTIMEZONE` |
+| Installation på hemskärmen | Fungerar på iPhone och Android. Rätt ikon, inget adressfält |
+| Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
+| Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
+
 - `#28` Tillgänglighetsgenomgång: två AA-fel rättade, kraven låsta i test — 2026-08-30
 - `#26` PWA: manifest, ikoner, service worker och offline-läsbart schema — 2026-08-30
 - `#110` Spelplatsernas koordinater rättade — 2026-08-30
@@ -81,17 +91,16 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#28` Tillgänglighetsgenomgång | Haval | `feature/a11y-review` | In Review — kvar: prova med VoiceOver och TalkBack |
+| — | — | — | Inget påbörjat. M1 är stängd; nästa issue tas ur M2 |
 | `#25` ICS-prenumeration | Haval | *mergad* | Öppen: kvar att verifiera en riktig prenumeration på telefon |
 
 ## ➡️ Nästa steg
 *(Kvar i M0 — Grund.)*
 
-1. **Tre prov som kräver riktiga telefoner** innan M1 kan stängas:
-   - kalenderprenumerationen (`#25`)
-   - installationen på hemskärmen (`#26`)
-   - VoiceOver och TalkBack (`#28`)
-2. **Därefter M2** — konto och roller, enligt `MVP-PLAN.md`.
+**M2 — Konto och roller.** Läs `MVP-PLAN.md` och ta ett issue ur milstolpen. Två saker att avgöra först:
+
+1. **Öppen fråga 4: e-postleverantör för inloggningskoden.** EU-hosting och gratisnivå krävs. Blockerar M2:s inloggningsflöde.
+2. **Gästen ska fortsatt kunna allt i M1 utan konto** — det är ett uttryckligt kriterium i M2 och värt ett test som fäller bygget, inte bara en avsikt.
 3. **Verifiera kalenderprenumerationen på en riktig telefon** — sista kriteriet i `#25`, övertaget från `#27`.
 2. **`#17` och `#21`** — matchdetalj. `#17` måste ta uttrycklig ställning till om matchnotisen hör hemma i ett publikt svar (§KM.1).
 
