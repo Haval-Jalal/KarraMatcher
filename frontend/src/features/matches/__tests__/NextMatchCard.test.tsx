@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { NextMatchCard, selectNextMatch } from '@/features/matches'
 import { testMatch } from '@/test/apiStub'
+import { renderWithRouter } from '@/test/renderWithRouter'
 
 const now = '2026-09-15T09:00:00Z'
 
@@ -92,8 +93,10 @@ describe('selectNextMatch — urval', () => {
 })
 
 describe('NextMatchCard — visning', () => {
-  it('visar motståndare, tid och plats', () => {
-    render(<NextMatchCard match={testMatch('a', '2026-09-20T12:00:00Z')} now={now} />)
+  it('visar motståndare, tid och plats', async () => {
+    await renderWithRouter(
+      <NextMatchCard match={testMatch('a', '2026-09-20T12:00:00Z')} now={now} />,
+    )
 
     expect(screen.getByRole('heading', { name: 'Nästa match' })).toBeInTheDocument()
     expect(screen.getByText(/Motstandare a/)).toBeInTheDocument()
@@ -106,23 +109,23 @@ describe('NextMatchCard — visning', () => {
     ['2026-09-16T16:00:00Z', 'Imorgon'],
     ['2026-09-19T16:00:00Z', 'På lördag'],
     ['2026-09-27T16:00:00Z', 'Om 12 dagar'],
-  ])('visar relativ dag för %s som %s', (kickoff, expected) => {
-    render(<NextMatchCard match={testMatch('a', kickoff)} now={now} />)
+  ])('visar relativ dag för %s som %s', async (kickoff, expected) => {
+    await renderWithRouter(<NextMatchCard match={testMatch('a', kickoff)} now={now} />)
 
     expect(screen.getByText(expected)).toBeInTheDocument()
   })
 
-  it('skiljer hemma och borta', () => {
-    render(
+  it('skiljer hemma och borta', async () => {
+    await renderWithRouter(
       <NextMatchCard match={testMatch('a', '2026-09-20T12:00:00Z', { isHome: false })} now={now} />,
     )
 
     expect(screen.getByText(/Borta mot/)).toBeInTheDocument()
   })
 
-  it('räknar relativ dag över månadsskiftet', () => {
+  it('räknar relativ dag över månadsskiftet', async () => {
     // 30 september 22:30 UTC är 1 oktober i svensk tid — alltså imorgon, inte idag.
-    render(
+    await renderWithRouter(
       <NextMatchCard match={testMatch('a', '2026-09-30T22:30:00Z')} now={'2026-09-30T09:00:00Z'} />,
     )
 

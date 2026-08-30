@@ -25,7 +25,7 @@ describe('MatchListSection — kortet och listan tillsammans', () => {
       ]),
     })
 
-    renderWithProviders(<MatchListSection slug="gul" />)
+    await renderWithProviders(<MatchListSection slug="gul" />)
 
     expect(await screen.findByRole('heading', { name: 'Nästa match' })).toBeInTheDocument()
     expect(screen.getAllByText(/Motstandare nasta/)).toHaveLength(1)
@@ -37,7 +37,7 @@ describe('MatchListSection — kortet och listan tillsammans', () => {
     // prövas här.
     stubApi({ matches: schedule([testMatch('spelad', '2020-08-15T12:00:00Z')]) })
 
-    renderWithProviders(<MatchListSection slug="gul" />)
+    await renderWithProviders(<MatchListSection slug="gul" />)
 
     expect(await screen.findByText(/Säsongen är slut/)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Nästa match' })).not.toBeInTheDocument()
@@ -46,7 +46,7 @@ describe('MatchListSection — kortet och listan tillsammans', () => {
   it('visar kortet men inget dubblettfel när det bara finns en match kvar', async () => {
     stubApi({ matches: schedule([testMatch('enda', '2099-09-20T12:00:00Z')]) })
 
-    renderWithProviders(<MatchListSection slug="gul" />)
+    await renderWithProviders(<MatchListSection slug="gul" />)
 
     expect(await screen.findByRole('heading', { name: 'Nästa match' })).toBeInTheDocument()
     expect(screen.getByText('Inga fler matcher är inlagda.')).toBeInTheDocument()
@@ -57,7 +57,7 @@ describe('MatchListSection — tillstånd', () => {
   it('skiljer på uteblivet nät och okänt lag', async () => {
     stubApi({ matches: 'notFound' })
 
-    renderWithProviders(<MatchListSection slug="finns-inte" />)
+    await renderWithProviders(<MatchListSection slug="finns-inte" />)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Laget finns inte')
   })
@@ -65,7 +65,7 @@ describe('MatchListSection — tillstånd', () => {
   it('säger till när nätet är nere', async () => {
     stubApi({ matches: 'error' })
 
-    renderWithProviders(<MatchListSection slug="gul" />)
+    await renderWithProviders(<MatchListSection slug="gul" />)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ingen anslutning')
   })
@@ -73,7 +73,7 @@ describe('MatchListSection — tillstånd', () => {
   it('säger till när laget saknar matcher', async () => {
     stubApi({ matches: schedule([]) })
 
-    renderWithProviders(<MatchListSection slug="gul" />)
+    await renderWithProviders(<MatchListSection slug="gul" />)
 
     expect(
       await screen.findByText(/Inga matcher är inlagda för det här laget än/),
