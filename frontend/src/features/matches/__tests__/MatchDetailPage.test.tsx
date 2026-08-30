@@ -177,3 +177,26 @@ describe('Matchdetaljsidan — vägbeskrivning', () => {
     expect(link.getAttribute('href')).toContain(encodeURIComponent('Klarebergsvallen, Karra'))
   })
 })
+
+describe('Matchdetaljsidan — kalenderfil', () => {
+  it('erbjuder nedladdning för en match som spelas', async () => {
+    stubApi({ match: detail() })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    const link = await screen.findByRole('link', { name: /Lägg till i kalendern/ })
+    expect(link).toHaveAttribute('href', `/calendar/match/${MATCH_ID}.ics`)
+    expect(link).toHaveAttribute('download')
+  })
+
+  it('döljer kalenderknappen för en inställd match', async () => {
+    // Samma regel som vägbeskrivningen: en kalenderpost för en match som inte spelas är
+    // sämre än ingen post alls — den ligger kvar och påminner om fel sak.
+    stubApi({ match: detail({ status: 'Cancelled' }) })
+
+    renderRoute(`/match/${MATCH_ID}`)
+
+    await screen.findByText(/Matchen är inställd/)
+    expect(screen.queryByRole('link', { name: /Lägg till i kalendern/ })).not.toBeInTheDocument()
+  })
+})

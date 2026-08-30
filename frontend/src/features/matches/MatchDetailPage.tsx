@@ -3,6 +3,7 @@ import { Link, useParams } from '@tanstack/react-router'
 import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 
+import { CalendarLink } from './CalendarLink'
 import { DirectionsLink } from './DirectionsLink'
 import { useMatch } from './useMatch'
 
@@ -13,7 +14,6 @@ import { useMatch } from './useMatch'
  * blir av. Adressen är delbar och nås direkt från en kalenderpost — Vercels SPA-fallback
  * gör att en djuplänk fungerar även utan att någon varit på startsidan först (§KM.11).
  *
- * Knappen för kalenderfil kommer i #24.
  */
 export function MatchDetailPage() {
   const { id } = useParams({ from: '/match/$id' })
@@ -125,6 +125,7 @@ export function MatchDetailPage() {
       {!isCancelled && !isPostponed && (
         <div className="actions">
           <DirectionsLink venueName={match.venue.name} address={match.address} />
+          <CalendarLink match={match} />
         </div>
       )}
     </main>
