@@ -6,7 +6,7 @@ using KarraMatcher.Domain.Common;
 
 namespace KarraMatcher.Application.Features.Calendar.GetMatchCalendar;
 
-internal sealed class GetMatchCalendarQueryHandler(IMatchRepository matches, TimeProvider clock)
+internal sealed class GetMatchCalendarQueryHandler(IMatchRepository matches)
     : IQueryHandler<GetMatchCalendarQuery, MatchCalendar?>
 {
     public async Task<MatchCalendar?> HandleAsync(
@@ -22,8 +22,7 @@ internal sealed class GetMatchCalendarQueryHandler(IMatchRepository matches, Tim
             return null;
         }
 
-        var content = IcsCalendarBuilder.BuildSingle(
-            match.Team, match, clock.GetUtcNow().UtcDateTime);
+        var content = IcsCalendarBuilder.BuildSingle(match.Team, match);
 
         return new MatchCalendar(content, FileNameFor(match.Team.Slug, match.KickoffUtc));
     }

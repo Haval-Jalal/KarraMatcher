@@ -6,8 +6,6 @@ namespace KarraMatcher.Application.Tests;
 
 public class GetMatchCalendarQueryHandlerTests
 {
-    private static readonly DateTimeOffset Generated = new(2026, 8, 25, 6, 0, 0, TimeSpan.Zero);
-
     private static Match NewMatch(DateTime kickoffUtc, string slug = "gul")
     {
         var ageGroup = FakeTeamRepository.NewAgeGroup();
@@ -38,7 +36,7 @@ public class GetMatchCalendarQueryHandlerTests
     {
         var repository = new FakeMatchRepository();
 
-        return (new GetMatchCalendarQueryHandler(repository, new FixedTimeProvider(Generated)), repository);
+        return (new GetMatchCalendarQueryHandler(repository), repository);
     }
 
     [Fact]
