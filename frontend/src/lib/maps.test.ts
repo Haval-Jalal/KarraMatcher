@@ -55,13 +55,13 @@ describe('directionsDestination', () => {
 describe('directionsUrl', () => {
   it('bygger en Apple Maps-länk med destinationen', () => {
     expect(directionsUrl('Kareby Hed, Kungälv', 'apple')).toBe(
-      'https://maps.apple.com/?daddr=Kareby%20Hed%2C%20Kung%C3%A4lv',
+      'https://maps.apple.com/?daddr=Kareby%20Hed%2C%20Kung%C3%A4lv&dirflg=d',
     )
   })
 
   it('bygger en Google Maps-länk med destinationen', () => {
     expect(directionsUrl('Kareby Hed, Kungälv', 'google')).toBe(
-      'https://www.google.com/maps/dir/?api=1&destination=Kareby%20Hed%2C%20Kung%C3%A4lv',
+      'https://www.google.com/maps/dir/?api=1&destination=Kareby%20Hed%2C%20Kung%C3%A4lv&travelmode=driving',
     )
   })
 
@@ -76,13 +76,20 @@ describe('directionsUrl', () => {
     const url = directionsUrl(address, 'google')
 
     expect(url).toContain(encodeURIComponent(address))
-    expect(url.split('destination=')[1]).toBe(encodeURIComponent(address))
+    expect(url.split('destination=')[1]).toBe(`${encodeURIComponent(address)}&travelmode=driving`)
   })
 
-  it('lämnar inga råa specialtecken kvar i frågesträngen', () => {
+  it('lämnar inga råa specialtecken kvar i destinationen', () => {
     const url = directionsUrl('A & B ? C # D', 'apple')
-    const query = url.slice(url.indexOf('?') + 1)
+    const destination = url.slice(url.indexOf('daddr=') + 6, url.indexOf('&dirflg='))
 
-    expect(query.split('daddr=')[1]).not.toMatch(/[&?#\s]/)
+    expect(destination).not.toMatch(/[&?#\s]/)
+  })
+
+  it('anger färdsätt uttryckligen så kartappen inte ärver senaste valet', () => {
+    // Utan det här får en förälder vars kartapp stod i kollektivtrafik en resa till
+    // närmaste hållplats i stället för en bilväg till planen. Upptäckt på riktig telefon.
+    expect(directionsUrl('Kareby Hed', 'apple')).toContain('dirflg=d')
+    expect(directionsUrl('Kareby Hed', 'google')).toContain('travelmode=driving')
   })
 })
