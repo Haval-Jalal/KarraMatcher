@@ -1,9 +1,13 @@
+using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Auth.RefreshSession;
+using KarraMatcher.Application.Features.Auth.RequestLoginCode;
 using KarraMatcher.Application.Features.Auth.SignOut;
+using KarraMatcher.Application.Features.Auth.VerifyLoginCode;
 
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KarraMatcher.Api.Features.Auth;
 
@@ -44,6 +48,60 @@ public sealed class AuthController(
         var tokens = antiforgery.GetAndStoreTokens(HttpContext);
 
         return Ok(new CsrfTokenResponse(tokens.RequestToken ?? string.Empty));
+    }
+
+    /// <summary>Begär en engångskod till en mejladress.</summary>
+    /// <remarks>
+    /// Svarar alltid 202, oavsett om adressen är känd, om en kod skickades, eller om
+    /// mejlet gick fram. Ett svar som skiljde på fallen hade gjort inloggningsrutan till
+    /// en adresslista för den som frågar tillräckligt många gånger.
+    /// </remarks>
+    [HttpPost("request-code")]
+    [RequireCsrfToken]
+    [EnableRateLimiting(RateLimiting.LoginPolicy)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<IActionResult> RequestCode(
+        RequestCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        await dispatcher
+            .SendAsync(new RequestLoginCodeCommand(request.Email), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Accepted();
+    }
+
+    /// <summary>Verifierar koden och startar sessionen.</summary>
+    [HttpPost("verify-code")]
+    [RequireCsrfToken]
+    [EnableRateLimiting(RateLimiting.LoginPolicy)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> VerifyCode(
+        VerifyCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var session = await dispatcher
+            .SendAsync(new VerifyLoginCodeCommand(request.Email, request.Code), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (session is null)
+        {
+            // Ett enda svar för fel kod, utgången kod, förbrukad kod, för många försök
+            // och okänd adress. Skillnaden mellan dem är upplysande för den som provar.
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Koden stämmer inte",
+                detail: "Kontrollera koden, eller begär en ny.");
+        }
+
+        SessionCookie.Write(Response, session.RefreshToken, session.RefreshExpiresUtc);
+
+        return Ok(new SessionResponse(session.AccessToken, session.AccessExpiresUtc));
     }
 
     /// <summary>Byter refresh-cookien mot en ny access-token och en ny cookie.</summary>
@@ -115,3 +173,9 @@ public sealed record CsrfTokenResponse(string Token);
 /// </para>
 /// </summary>
 public sealed record SessionResponse(string AccessToken, DateTime ExpiresUtc);
+
+/// <summary>Begäran om en engångskod.</summary>
+public sealed record RequestCodeRequest(string Email);
+
+/// <summary>Koden från mejlet, tillsammans med adressen den skickades till.</summary>
+public sealed record VerifyCodeRequest(string Email, string Code);

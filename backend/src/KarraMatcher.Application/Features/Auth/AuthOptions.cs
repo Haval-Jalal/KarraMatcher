@@ -36,4 +36,36 @@ public sealed class AuthOptions
     /// livstiden försvarbar.
     /// </summary>
     public TimeSpan RefreshTokenLifetime { get; set; } = TimeSpan.FromDays(60);
+
+    /// <summary>
+    /// Hur länge en engångskod går att använda.
+    ///
+    /// <para>
+    /// Tio minuter är avvägt mot verkligheten: mejlet ska hinna fram, föräldern ska hinna
+    /// byta app och skriva av sex siffror, och en kod som råkar bli kvar i en inkorg ska
+    /// vara död långt innan någon annan läser den.
+    /// </para>
+    /// </summary>
+    public TimeSpan LoginCodeLifetime { get; set; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// Antal felgissningar innan koden är död.
+    ///
+    /// <para>
+    /// Det här talet är vad som gör en sexsiffrig kod försvarbar. En miljon möjliga koder
+    /// och fem försök ger en chans på tvåhundratusen per kod — och koden lever i tio
+    /// minuter. Utan spärren hade siffrorna varit meningslösa.
+    /// </para>
+    /// </summary>
+    public int MaxLoginCodeAttempts { get; set; } = 5;
+
+    /// <summary>
+    /// Kortaste tid mellan två utskickade koder till samma adress.
+    ///
+    /// <para>
+    /// Skyddar en förälders inkorg från att fyllas av någon som upprepar begäran. Svaret
+    /// utåt är detsamma oavsett — den som frågar ska inte kunna mäta skillnaden.
+    /// </para>
+    /// </summary>
+    public TimeSpan LoginCodeResendCooldown { get; set; } = TimeSpan.FromSeconds(60);
 }

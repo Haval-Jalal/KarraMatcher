@@ -17,14 +17,14 @@
 ## 1. Autentisering & sessioner
 | # | Kontroll | Status |
 |---|----------|:------:|
-| 1.1 | Inloggning via e-postkod — ingen lösenordslagring, eller lösenord hashade (Identity/BCrypt) om det införs | ⬜ |
-| 1.2 | Engångskoder är tidsbegränsade, engångsanvända och kryptografiskt slumpade | ⬜ |
+| 1.1 | Inloggning via e-postkod — inga lösenord alls, alltså inget att läcka | ✅ |
+| 1.2 | Engångskoder är tidsbegränsade (10 min), engångsanvända och kryptografiskt slumpade; lagras hashade | ✅ |
 | 1.3 | JWT validerar issuer, audience, lifetime och signing key | ✅ |
 | 1.4 | Access-token kortlivad (15 min); refresh-token i `httpOnly`-cookie med `Secure` + `SameSite=Lax` | ✅ |
 | 1.5 | Refresh tokens roteras + återanvändning detekteras (hela familjen ogiltigförklaras) | ✅ |
 | 1.6 | Token-revocation vid utloggning; kontoradering kaskaderar bort tokens (raderingsflödet självt i `#33`) | 🟡 |
-| 1.7 | Account lockout / exponentiell fördröjning vid upprepade misslyckade koder | ⬜ |
-| 1.8 | Ingen sessionsfixering — ny session-identitet efter inloggning | ⬜ |
+| 1.7 | Spärr efter 5 felgissningar per kod, plus egen rate limit på inloggningens endpoints | ✅ |
+| 1.8 | Ingen sessionsfixering — varje inloggning startar en ny token-familj | ✅ |
 | 1.9 | MFA *(vid behov — ej aktuellt för denna app)* | ➖ |
 
 ## 2. Auktorisering (åtkomstkontroll)

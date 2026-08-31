@@ -160,7 +160,10 @@ public partial class PlayerStatisticsTests
          * och spelarkortet nar fortfarande aldrig servern (§KM.2).
          */
         Assert.Equal(
-            ["Accounts", "AgeGroups", "Clubs", "Matches", "RefreshTokens", "Teams", "Venues"],
+            [
+                "Accounts", "AgeGroups", "Clubs", "LoginCodes", "Matches", "RefreshTokens",
+                "Teams", "Venues",
+            ],
             DbSetNames());
     }
 

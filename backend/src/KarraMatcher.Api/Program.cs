@@ -16,7 +16,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext());
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraEdgeCache(builder.Configuration);
