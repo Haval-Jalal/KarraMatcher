@@ -47,8 +47,8 @@
 ## 3. Datalagring i klienten (webb / PWA)
 | # | Kontroll | Status |
 |---|----------|:------:|
-| 3.1 | JWT ligger **aldrig** i `localStorage` eller `sessionStorage` — access-token i minnet | ⬜ |
-| 3.2 | Refresh-token endast i `httpOnly`-cookie, oåtkomlig för JavaScript | ⬜ |
+| 3.1 | JWT ligger **aldrig** i `localStorage` eller `sessionStorage` — access-token i minnet | ✅ |
+| 3.2 | Refresh-token endast i `httpOnly`-cookie, oåtkomlig för JavaScript | ✅ |
 | 3.3 | **§KM.8** Service worker cachar aldrig auth-svar | ✅ |
 | 3.3b | **§KM.8** Schemat är läsbart offline — verifierat i flygplansläge på iPhone och Android | ✅ |
 | 3.4 | **§KM.2** Spelarkortet lagras i enhetens egen lagring och skickas aldrig i något anrop | ⬜ |

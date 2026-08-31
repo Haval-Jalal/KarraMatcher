@@ -3,6 +3,7 @@ import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/rea
 import { render } from '@testing-library/react'
 
 import { routeTree } from '@/app/routes'
+import { AuthProvider } from '@/features/auth'
 import { SelectedTeamProvider } from '@/features/teams'
 
 /**
@@ -25,9 +26,11 @@ export function renderRoute(initialPath: string) {
 
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <SelectedTeamProvider>
-        <RouterProvider router={router} />
-      </SelectedTeamProvider>
+      <AuthProvider>
+        <SelectedTeamProvider>
+          <RouterProvider router={router} />
+        </SelectedTeamProvider>
+      </AuthProvider>
     </QueryClientProvider>,
   )
 
