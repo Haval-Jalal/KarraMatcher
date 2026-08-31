@@ -1,8 +1,10 @@
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Security;
+using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Infrastructure.Persistence;
 using KarraMatcher.Infrastructure.Persistence.Repositories;
 using KarraMatcher.Infrastructure.Persistence.Seed;
-
+using KarraMatcher.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,9 +43,22 @@ public static class DependencyInjection
                 npgsql.MigrationsAssembly(typeof(DependencyInjection).Assembly.FullName);
             }));
 
+        /*
+         * Inloggningens installningar valideras vid start, inte vid forsta inloggningen.
+         * En saknad eller for kort signeringsnyckel ska falla driftsattningen medan nagon
+         * tittar -- inte en lordagsmorgon nar en foralder forsoker logga in.
+         */
+        services.AddOptions<AuthOptions>()
+            .Bind(configuration.GetSection(AuthOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IAccessTokenIssuer, JwtAccessTokenIssuer>();
 
         // Databaskontrollen taggas "ready". Därmed faller /health/ready när databasen
         // är onåbar, medan /health fortsätter svara — se §KM.11 och issue #8.

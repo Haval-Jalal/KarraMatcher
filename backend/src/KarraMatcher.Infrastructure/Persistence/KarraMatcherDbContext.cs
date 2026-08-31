@@ -1,5 +1,6 @@
 using System.Reflection;
 
+using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 
@@ -19,6 +20,10 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Venue> Venues => Set<Venue>();
 
     public DbSet<Match> Matches => Set<Match>();
+
+    public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

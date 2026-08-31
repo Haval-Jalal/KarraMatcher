@@ -19,10 +19,10 @@
 |---|----------|:------:|
 | 1.1 | Inloggning via e-postkod — ingen lösenordslagring, eller lösenord hashade (Identity/BCrypt) om det införs | ⬜ |
 | 1.2 | Engångskoder är tidsbegränsade, engångsanvända och kryptografiskt slumpade | ⬜ |
-| 1.3 | JWT validerar issuer, audience, lifetime och signing key | ⬜ |
-| 1.4 | Access-token kortlivad; refresh-token i `httpOnly`-cookie med `Secure` + `SameSite` | ⬜ |
-| 1.5 | Refresh tokens roteras + återanvändning detekteras (hela familjen ogiltigförklaras) | ⬜ |
-| 1.6 | Token-revocation vid utloggning och vid kontoradering | ⬜ |
+| 1.3 | JWT validerar issuer, audience, lifetime och signing key | ✅ |
+| 1.4 | Access-token kortlivad (15 min); refresh-token i `httpOnly`-cookie med `Secure` + `SameSite=Lax` | ✅ |
+| 1.5 | Refresh tokens roteras + återanvändning detekteras (hela familjen ogiltigförklaras) | ✅ |
+| 1.6 | Token-revocation vid utloggning; kontoradering kaskaderar bort tokens (raderingsflödet självt i `#33`) | 🟡 |
 | 1.7 | Account lockout / exponentiell fördröjning vid upprepade misslyckade koder | ⬜ |
 | 1.8 | Ingen sessionsfixering — ny session-identitet efter inloggning | ⬜ |
 | 1.9 | MFA *(vid behov — ej aktuellt för denna app)* | ➖ |
@@ -92,7 +92,7 @@
 | 6.2 | Parametriserade queries / EF Core → ingen SQL-injection | ⬜ |
 | 6.3 | Massinläggs-parsern hanterar skadlig och trasig indata utan att krascha eller injicera | ⬜ |
 | 6.4 | Rate limiting på publika endpoints och inloggning; `429` med `Retry-After` (**§KM.0 A1**) | ✅ |
-| 6.5 | CSRF-skydd aktivt (anti-forgery + `SameSite`) eftersom refresh-token ligger i cookie | ⬜ |
+| 6.5 | CSRF-skydd aktivt (anti-forgery + `SameSite`) eftersom refresh-token ligger i cookie | ✅ |
 | 6.6 | Inga interna fel eller stack traces läcker till klient (ProblemDetails) | ⬜ |
 | 6.7 | Filuppladdning saknas — eller, om den införs, typ-, storleks- och innehållsvalideras | ➖ |
 

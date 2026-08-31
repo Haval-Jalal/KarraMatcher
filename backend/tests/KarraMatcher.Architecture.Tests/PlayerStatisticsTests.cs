@@ -150,9 +150,18 @@ public partial class PlayerStatisticsTests
     [Fact]
     public void Databasen_HarPreciseDeTabellerViVantarOss()
     {
-        // Skyddar regeln ovan mot att gå grön för att scannern slutat hitta något alls.
-        // Läggs en tabell till medvetet ska raden här ändras i samma PR — det är avsikten.
-        Assert.Equal(["AgeGroups", "Clubs", "Matches", "Teams", "Venues"], DbSetNames());
+        /*
+         * Skyddar regeln ovan mot att ga gron for att scannern slutat hitta nagot alls.
+         * Laggs en tabell till medvetet ska raden har andras i samma PR -- det ar avsikten.
+         *
+         * Accounts och RefreshTokens tillkom i #30 och ar medvetet med. Accounts lagrar en
+         * vuxens mejladress och ingenting annat; RefreshTokens lagrar hashar och tider.
+         * Ingen av dem har nagot falt som kan innehalla en uppgift om ett barn (§KM.1),
+         * och spelarkortet nar fortfarande aldrig servern (§KM.2).
+         */
+        Assert.Equal(
+            ["Accounts", "AgeGroups", "Clubs", "Matches", "RefreshTokens", "Teams", "Venues"],
+            DbSetNames());
     }
 
     // ---- Självtester: bevisar att detektorn känner igen rätt saker --------------------
