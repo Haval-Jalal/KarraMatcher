@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddScoped<ILoginCodeRepository, LoginCodeRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
 
         AddEmail(services, configuration, isDevelopment);
 

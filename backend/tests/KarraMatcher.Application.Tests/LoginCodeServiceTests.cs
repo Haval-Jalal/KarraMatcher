@@ -49,6 +49,7 @@ public sealed class LoginCodeServiceTests
         _email,
         new SessionIssuer(
             _tokens,
+            new FakeRoleRepository(),
             new StubTokenIssuer(),
             Options.Create(_options),
             _clock,
@@ -277,7 +278,10 @@ public sealed class LoginCodeServiceTests
 
     private sealed class StubTokenIssuer : IAccessTokenIssuer
     {
-        public (string Token, DateTime ExpiresUtc) Issue(Guid accountId, string email) =>
+        public (string Token, DateTime ExpiresUtc) Issue(
+            Guid accountId,
+            string email,
+            AccountRoles roles) =>
             ($"access-{accountId}", DateTime.UtcNow.AddMinutes(15));
     }
 

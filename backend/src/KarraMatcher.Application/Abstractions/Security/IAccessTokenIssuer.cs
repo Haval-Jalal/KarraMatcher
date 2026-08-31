@@ -10,6 +10,18 @@ namespace KarraMatcher.Application.Abstractions.Security;
 /// </summary>
 public interface IAccessTokenIssuer
 {
-    /// <summary>Signerar en token för kontot och svarar med den och dess utgångstid.</summary>
-    public (string Token, DateTime ExpiresUtc) Issue(Guid accountId, string email);
+    /// <summary>
+    /// Signerar en token för kontot och svarar med den och dess utgångstid.
+    ///
+    /// <para>
+    /// Rollerna följer med in i token, så att varje efterföljande anrop kan avgöras utan
+    /// en databasfråga. Priset är att en ändrad roll slår igenom först när token förnyas
+    /// — som mest en kvart. Att återkalla omedelbart kräver i stället att sessionen
+    /// avslutas, vilket är vad <c>SignOut</c> gör.
+    /// </para>
+    /// </summary>
+    public (string Token, DateTime ExpiresUtc) Issue(
+        Guid accountId,
+        string email,
+        Features.Auth.AccountRoles roles);
 }
