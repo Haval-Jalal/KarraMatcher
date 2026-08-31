@@ -116,7 +116,7 @@ public class PersistenceModelTests
         var names = Model().GetEntityTypes().Select(e => e.ClrType.Name).ToHashSet();
 
         Assert.Equal(
-            ["Account", "AgeGroup", "Club", "Match", "RefreshToken", "Team", "Venue"],
+            ["Account", "AgeGroup", "Club", "LoginCode", "Match", "RefreshToken", "Team", "Venue"],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());
     }
 

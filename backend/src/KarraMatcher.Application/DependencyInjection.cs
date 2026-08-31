@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
 
         services.AddScoped<SessionIssuer>();
+        services.AddScoped<LoginCodeService>();
 
         return services;
     }

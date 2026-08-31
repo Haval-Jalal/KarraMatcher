@@ -20,6 +20,20 @@ namespace KarraMatcher.Api.Diagnostics;
 public static class RateLimiting
 {
     public const string PermitKey = "RateLimiting:PermitPerMinute";
+
+    /// <summary>
+    /// Egen, hårdare gräns för inloggningen.
+    ///
+    /// <para>
+    /// Den allmänna gränsen är satt för att ett helt lag ska kunna läsa schemat samtidigt
+    /// och duger inte här: 120 försök i minuten mot en sexsiffrig kod är en helt annan
+    /// sak än 120 sidvisningar. Spärren per kod stoppar gissningar mot <em>en</em> kod;
+    /// den här stoppar den som begär nya koder i strid ström för att få fler försök.
+    /// </para>
+    /// </summary>
+    public const string LoginPolicy = "inloggning";
+
+    private const int LoginPermitPerMinute = 8;
     private const int DefaultPermitPerMinute = 120;
 
     /// <summary>
@@ -84,6 +98,15 @@ public static class RateLimiting
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0,
                         })));
+
+            options.AddPolicy(LoginPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                ClientKey(context),
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = LoginPermitPerMinute,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
 
             options.OnRejected = (context, _) =>
             {
