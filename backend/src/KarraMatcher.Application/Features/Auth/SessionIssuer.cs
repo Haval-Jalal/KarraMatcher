@@ -25,6 +25,7 @@ namespace KarraMatcher.Application.Features.Auth;
 /// </summary>
 public sealed partial class SessionIssuer(
     IRefreshTokenRepository tokens,
+    IRoleRepository roles,
     IAccessTokenIssuer accessTokens,
     IOptions<AuthOptions> options,
     TimeProvider clock,
@@ -192,7 +193,13 @@ public sealed partial class SessionIssuer(
 
         await tokens.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        var (accessToken, accessExpires) = accessTokens.Issue(account.Id, account.Email);
+        // Rollerna lases vid varje utfardande, alltsa aven vid fornyelse. Det ar dar en
+        // andrad behorighet slar igenom.
+        var accountRoles = await roles.GetRolesAsync(account.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        var (accessToken, accessExpires) = accessTokens.Issue(
+            account.Id, account.Email, accountRoles);
 
         return new SessionTokens(accessToken, accessExpires, raw, refreshExpires);
     }

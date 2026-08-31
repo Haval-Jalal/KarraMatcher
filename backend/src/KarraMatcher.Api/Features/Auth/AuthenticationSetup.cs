@@ -3,6 +3,7 @@ using System.Text;
 using KarraMatcher.Application.Features.Auth;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -91,8 +92,13 @@ internal static class AuthenticationSetup
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SigningKey));
             });
 
-        // Utan argument: inga policys, ingen fallback. Se klassens kommentar.
-        services.AddAuthorization();
+        // Policys ja, fallback nej. Se klassens kommentar: en fallback hade lagt krav pa
+        // inloggning aven pa schemat, som ska vara oppet for vem som helst.
+        services.AddAuthorization(options => options.AddKarraPolicies());
+
+        // Kravet pa ratt lag laser routen, och behover darfor komma at anropet.
+        services.AddHttpContextAccessor();
+        services.AddSingleton<IAuthorizationHandler, CoachOfTeamHandler>();
 
         services.AddAntiforgery(options =>
         {

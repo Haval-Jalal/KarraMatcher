@@ -33,6 +33,7 @@ public sealed class SessionIssuerTests
 
     private SessionIssuer CreateIssuer(AuthOptions? options = null) => new(
         _tokens,
+        new FakeRoleRepository(),
         new StubAccessTokenIssuer(_clock),
         Options.Create(options ?? new AuthOptions
         {
@@ -215,7 +216,10 @@ public sealed class SessionIssuerTests
     /// <summary>Access-token intresserar inte de här testerna — bara att den finns.</summary>
     private sealed class StubAccessTokenIssuer(TimeProvider clock) : IAccessTokenIssuer
     {
-        public (string Token, DateTime ExpiresUtc) Issue(Guid accountId, string email) =>
+        public (string Token, DateTime ExpiresUtc) Issue(
+            Guid accountId,
+            string email,
+            AccountRoles roles) =>
             ($"access-{accountId}", clock.GetUtcNow().UtcDateTime.AddMinutes(15));
     }
 }

@@ -30,12 +30,12 @@
 ## 2. Auktorisering (åtkomstkontroll)
 | # | Kontroll | Status |
 |---|----------|:------:|
-| 2.1 | Policy-baserad auktorisering — inga hårdkodade rollkontroller i controllers | ⬜ |
+| 2.1 | Policy-baserad auktorisering — inga hårdkodade rollkontroller i controllers | ✅ |
 | 2.2 | **Objektnivå-auktorisering på varje resurs (mot IDOR)** | ⬜ |
 | 2.3 | **§KM.2** Ingen endpoint tar emot eller returnerar spelarstatistik — verifierat med arkitekturtest | ✅ |
 | 2.4 | **§KM.2** Ingen entitet, tabell eller migration för barnstatistik finns i backend | ✅ |
 | 2.5 | Resurs som tillhör annan användare svarar `404`, inte `403` | ⬜ |
-| 2.6 | Tränarroll är bunden till **sitt lag** — kan inte ändra andra lags matcher | ⬜ |
+| 2.6 | Tränarroll är bunden till **sitt lag** — kan inte ändra andra lags matcher | ✅ |
 | 2.7 | **§KM.7** `AttendanceEnabled` kontrolleras serverside; avstängd flagga ger `404` | ⬜ |
 | 2.8 | **§KM.12** Endast erbjudandets ägare kan acceptera eller neka dess förfrågningar | ⬜ |
 | 2.9 | **§KM.12** Platsräkning sker server-side; accept som spränger antalet avvisas | ⬜ |

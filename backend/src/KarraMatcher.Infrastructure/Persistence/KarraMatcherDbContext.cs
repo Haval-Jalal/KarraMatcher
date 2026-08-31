@@ -27,6 +27,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<LoginCode> LoginCodes => Set<LoginCode>();
 
+    public DbSet<TeamRole> TeamRoles => Set<TeamRole>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
