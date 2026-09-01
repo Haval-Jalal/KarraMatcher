@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
+import { DeleteAccountSection } from './DeleteAccountSection'
 import { useAuth } from './useAuth'
 
 /**
@@ -14,7 +15,7 @@ import { useAuth } from './useAuth'
  * </para>
  */
 export function AccountPage() {
-  const { email, signOut } = useAuth()
+  const { email, refresh, signOut } = useAuth()
   const navigate = useNavigate()
 
   useDocumentTitle('Mitt konto')
@@ -45,6 +46,14 @@ export function AccountPage() {
           Logga ut
         </button>
       </div>
+
+      <DeleteAccountSection
+        onDeleted={() => {
+          // Kontot ar borta -- las om tillstandet sa appen inte star kvar som inloggad.
+          refresh()
+          void navigate({ to: '/' })
+        }}
+      />
     </main>
   )
 }

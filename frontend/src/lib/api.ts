@@ -6,7 +6,7 @@
  * är hela poängen med uppsättningen (§KM.11). Render-URL:en finns bara i `vercel.json`.
  */
 
-import { clearSession, getAccessToken, setAccessToken } from '@/lib/session'
+import { clearSession, getAccessToken, onSessionChange, setAccessToken } from '@/lib/session'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -54,6 +54,12 @@ async function messageFor(response: Response): Promise<string> {
  */
 let csrfToken: string | null = null
 
+// Anti-forgery-token ar bunden till identiteten. Byter inloggningen maste vi hamta en ny,
+// annars svarar servern 400 pa allt som andrar nagot -- se onSessionChange i session.ts.
+onSessionChange(() => {
+  csrfToken = null
+})
+
 async function getCsrfToken(): Promise<string> {
   csrfToken ??= (await getJson<{ token: string }>('/api/v1/auth/csrf')).token
 
@@ -75,7 +81,7 @@ async function getCsrfToken(): Promise<string> {
 export async function postJson<T>(
   path: string,
   body?: unknown,
-  options: { retryOnUnauthorized?: boolean } = {},
+  options: { retryOnUnauthorized?: boolean; method?: 'POST' | 'DELETE' } = {},
 ): Promise<T> {
   const retry = options.retryOnUnauthorized ?? true
   const token = getAccessToken()
@@ -84,7 +90,7 @@ export async function postJson<T>(
 
   try {
     response = await fetch(`${baseUrl}${path}`, {
-      method: 'POST',
+      method: options.method ?? 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -104,7 +110,7 @@ export async function postJson<T>(
     const renewed = await renewSession()
 
     if (renewed) {
-      return postJson<T>(path, body, { retryOnUnauthorized: false })
+      return postJson<T>(path, body, { ...options, retryOnUnauthorized: false })
     }
   }
 

@@ -17,6 +17,25 @@ import { readSetting, writeSetting } from '@/lib/storage'
 let accessToken: string | null = null
 
 /**
+ * Anropas när inloggningen ändras — vid inloggning, förnyelse och utloggning.
+ *
+ * <h3>Varför det här behövs</h3>
+ *
+ * ASP.NET binder anti-forgery-token till användarens identitet. En token som hämtats
+ * utloggad gäller **inte** för ett inloggat anrop. Utan den här signalen hade appen
+ * fortsatt använda den gamla token efter en inloggning, och varje anrop som ändrar något
+ * hade svarat 400 — inklusive kontoraderingen.
+ *
+ * Bindningen är avsiktlig och bra: den gör en stulen CSRF-token oanvändbar för någon
+ * annans session. Det är klienten som måste hänga med.
+ */
+let sessionChanged: (() => void) | null = null
+
+export function onSessionChange(listener: () => void): void {
+  sessionChanged = listener
+}
+
+/**
  * Att användaren *har* loggat in någon gång på den här telefonen.
  *
  * <h3>Varför det här får ligga i lagringen</h3>
@@ -41,12 +60,15 @@ export function setAccessToken(token: string | null): void {
   if (token !== null) {
     writeSetting(SESSION_HINT_KEY, '1')
   }
+
+  sessionChanged?.()
 }
 
 /** Rensar allt appen håller om sessionen. Cookien rensas av servern. */
 export function clearSession(): void {
   accessToken = null
   writeSetting(SESSION_HINT_KEY, '')
+  sessionChanged?.()
 }
 
 /** Sant om det är värt att försöka förnya sessionen vid start. */

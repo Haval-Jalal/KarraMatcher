@@ -1,13 +1,16 @@
+using System.Security.Claims;
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Application.Abstractions.Messaging;
+using KarraMatcher.Application.Features.Auth.DeleteAccount;
 using KarraMatcher.Application.Features.Auth.RefreshSession;
 using KarraMatcher.Application.Features.Auth.RequestLoginCode;
 using KarraMatcher.Application.Features.Auth.SignOut;
 using KarraMatcher.Application.Features.Auth.VerifyLoginCode;
-
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace KarraMatcher.Api.Features.Auth;
 
@@ -141,6 +144,57 @@ public sealed class AuthController(
 
         // Refresh-token följer med i cookien och aldrig i kroppen.
         return Ok(new SessionResponse(session.AccessToken, session.AccessExpiresUtc));
+    }
+
+    /// <summary>Raderar kontot och allt servern äger om det.</summary>
+    /// <remarks>
+    /// Direkt, inte som en markering (§KM.6). Spelarkortet berörs inte och kan inte
+    /// beröras — det har aldrig nått servern (§KM.2). Att det ligger kvar i telefonen är
+    /// gränssnittets sak att förklara, och det gör det.
+    /// </remarks>
+    [HttpDelete("account")]
+    [Authorize]
+    [RequireCsrfToken]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DeleteAccount(CancellationToken cancellationToken)
+    {
+        var accountId = CurrentAccountId();
+
+        if (accountId is null)
+        {
+            // Token utan sub. Ska inte kunna hända -- vi utfärdar det alltid -- men att
+            // radera "vem som helst" vore ett katastrofalt sätt att ha fel.
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Sessionen gäller inte längre",
+                detail: "Logga in igen.");
+        }
+
+        await dispatcher
+            .SendAsync(new DeleteAccountCommand(accountId.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        SessionCookie.Clear(Response);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Kontot som är inloggat, ur token.
+    ///
+    /// <para>
+    /// Två anspråksnamn prövas: <c>sub</c> som vi skriver, och den längre URI:n som
+    /// ramverket kan mappa den till. Vilken som syns beror på inställningar som inte hör
+    /// hemma i den här metoden, och att bara läsa den ena är ett fel som ger 401 för alla.
+    /// </para>
+    /// </summary>
+    private Guid? CurrentAccountId()
+    {
+        var raw = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return Guid.TryParse(raw, out var id) ? id : null;
     }
 
     /// <summary>Avslutar sessionen och återkallar hela dess familj.</summary>

@@ -1,3 +1,4 @@
+using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Email;
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Abstractions.Security;
@@ -64,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddScoped<ILoginCodeRepository, LoginCodeRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IAuditLog, AuditLog>();
 
         AddEmail(services, configuration, isDevelopment);
 
