@@ -402,6 +402,61 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0;
 }
 
+/* ---- Formulär -------------------------------------------------------------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.form__field label {
+  font-family: var(--display);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.form__field input {
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+
+  /* Minst 16px, annars zoomar iOS in vid fokus och sidan hoppar. */
+  font-size: var(--text-base);
+
+  /* Träffytan gäller även inmatningsfält — ett fält man missar är lika illa som en knapp. */
+  min-height: var(--tap-target);
+  padding: 8px 12px;
+}
+
+.form__field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+/*
+ * Felmeddelandet är text och inte bara en röd ram. Den som inte skiljer färger ska få
+ * veta vad som är fel, inte bara att något är det (WCAG 1.4.1 och 3.3.1).
+ */
+.form__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
 /* ---- Väntan --------------------------------------------------------------- */
 
 .loading {
