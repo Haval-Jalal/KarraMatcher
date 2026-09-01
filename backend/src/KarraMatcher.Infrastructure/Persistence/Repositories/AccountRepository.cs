@@ -23,4 +23,9 @@ internal sealed class AccountRepository(KarraMatcherDbContext context) : IAccoun
 
     public async Task AddAsync(Account account, CancellationToken cancellationToken) =>
         await context.Accounts.AddAsync(account, cancellationToken).ConfigureAwait(false);
+
+    public void Remove(Account account) => context.Accounts.Remove(account);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
+        context.SaveChangesAsync(cancellationToken);
 }

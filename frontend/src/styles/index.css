@@ -402,6 +402,38 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0;
 }
 
+/* ---- Radering ---------------------------------------------------------------- */
+
+/*
+ * Avskilt från resten med en ram i varningsfärg. Inte för att det ser dramatiskt ut, utan
+ * för att knappen inte ska ligga bland de vanliga — den har ingen ångerknapp.
+ */
+.danger-zone {
+  margin-top: 32px;
+  padding: 16px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.danger-zone h2 {
+  margin: 0;
+  color: var(--danger);
+}
+
+/*
+ * Färgen är den andra signalen, inte den första: knappen säger "Radera mitt konto" och
+ * bekräftelsen säger "Ja, radera kontot" (WCAG 1.4.1).
+ */
+.button--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* ---- Formulär -------------------------------------------------------------- */
 
 .form {

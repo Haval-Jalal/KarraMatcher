@@ -32,6 +32,20 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * Raderar kontot och allt servern äger om det.
+ *
+ * Sessionen rensas lokalt oavsett utfall — är kontot borta finns inget att vara inloggad
+ * på, och står appen kvar som inloggad blir nästa anrop ett obegripligt fel.
+ */
+export async function deleteAccount(): Promise<void> {
+  try {
+    await postJson<void>('/api/v1/auth/account', undefined, { method: 'DELETE' })
+  } finally {
+    clearSession()
+  }
+}
+
+/**
  * Läser mejladressen ur access-token, för att kunna visa vem som är inloggad.
  *
  * <h3>Att avkoda utan att verifiera är rätt här</h3>

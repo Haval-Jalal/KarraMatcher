@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 
@@ -28,6 +29,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<LoginCode> LoginCodes => Set<LoginCode>();
 
     public DbSet<TeamRole> TeamRoles => Set<TeamRole>();
+
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

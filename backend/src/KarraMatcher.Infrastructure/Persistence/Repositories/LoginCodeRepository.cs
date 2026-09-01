@@ -36,6 +36,16 @@ internal sealed class LoginCodeRepository(KarraMatcherDbContext context) : ILogi
         }
     }
 
+    public async Task DeleteForEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var codes = await context.LoginCodes
+            .Where(c => c.Email == email)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        context.LoginCodes.RemoveRange(codes);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         context.SaveChangesAsync(cancellationToken);
 }

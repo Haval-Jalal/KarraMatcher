@@ -22,7 +22,7 @@
 | 1.3 | JWT validerar issuer, audience, lifetime och signing key | ✅ |
 | 1.4 | Access-token kortlivad (15 min); refresh-token i `httpOnly`-cookie med `Secure` + `SameSite=Lax` | ✅ |
 | 1.5 | Refresh tokens roteras + återanvändning detekteras (hela familjen ogiltigförklaras) | ✅ |
-| 1.6 | Token-revocation vid utloggning; kontoradering kaskaderar bort tokens (raderingsflödet självt i `#33`) | 🟡 |
+| 1.6 | Token-revocation vid utloggning och vid kontoradering | ✅ |
 | 1.7 | Spärr efter 5 felgissningar per kod, plus egen rate limit på inloggningens endpoints | ✅ |
 | 1.8 | Ingen sessionsfixering — varje inloggning startar en ny token-familj | ✅ |
 | 1.9 | MFA *(vid behov — ej aktuellt för denna app)* | ➖ |
@@ -129,7 +129,7 @@
 | 9.3 | **§KM.1** Ny PII-kolumn har beslut infört i `docs/PROJEKT-HANDOFF.md` | ⬜ |
 | 9.4 | **§KM.6** Vårdnadshavarsamtycke inhämtas innan barn kopplas; version och tidsstämpel sparas | ⬜ |
 | 9.5 | **§KM.6** Radering av barn tar bort spelare, rapporter, närvarosvar och koppling — direkt, ej mjuk | ⬜ |
-| 9.6 | **§KM.6** Radering av konto tar bort kontot och allt det äger | ⬜ |
+| 9.6 | **§KM.6** Radering av konto tar bort kontot och allt det äger | ✅ |
 | 9.7 | Laglig grund dokumenterad i `SPEC.md` per uppgiftstyp | ⬜ |
 | 9.8 | Gallringsregler implementerade: push-prenumerationer, **samåkning 30 dagar efter match**, gamla säsonger | ⬜ |
 | 9.9 | Dataminimering — varje fält kan motiveras med en funktion som kräver det | ⬜ |

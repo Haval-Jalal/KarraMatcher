@@ -19,5 +19,15 @@ public interface ILoginCodeRepository
     /// <summary>Ogiltigförklarar alla oanvända koder för adressen.</summary>
     public Task ConsumeOutstandingAsync(string email, DateTime nowUtc, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Tar bort alla koder för adressen.
+    ///
+    /// <para>
+    /// Behövs vid kontoradering. Koderna hänger på adressen och inte på kontot — kontot
+    /// finns ju inte när koden skickas — så de kaskaderar inte bort av sig själva.
+    /// </para>
+    /// </summary>
+    public Task DeleteForEmailAsync(string email, CancellationToken cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

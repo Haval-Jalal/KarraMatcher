@@ -1,5 +1,6 @@
 export { AccountPage } from './AccountPage'
 export { AuthProvider } from './AuthProvider'
+export { DeleteAccountSection } from './DeleteAccountSection'
 export type { AuthState, AuthStatus } from './authContext'
 export { LoginPage } from './LoginPage'
 export { useAuth } from './useAuth'
