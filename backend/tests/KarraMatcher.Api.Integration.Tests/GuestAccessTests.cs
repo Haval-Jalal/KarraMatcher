@@ -6,6 +6,7 @@ using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -163,20 +164,55 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
     // ---- Varför den är öppen ---------------------------------------------------------
 
     [Fact]
-    public void PublikaRouter_HarIngenAuktoriseringsmetadata()
+    public void PublikLasning_HarIngenAuktoriseringsmetadata()
     {
-        // Det här är testet som fäller bygget när inloggningen införs fel. Det behöver
-        // inget anrop och märker även en route som ingen råkar testa.
-        var protectedPublic = PublicRouteEndpoints()
+        /*
+         * Testet som faller bygget nar inloggningen infors fel. Det behover inget anrop
+         * och marker aven en route som ingen rakar testa.
+         *
+         * Bara sakra metoder raknas. §KM.3 ar "publik lasning, autentiserad skrivning" --
+         * en POST under samma adress ar alltsa inte den publika ytan. Forsta versionen av
+         * det har testet matchade pa sokvag oavsett metod, och fallde nar tranarens
+         * endpoints kom i #35. Den hade ratt att titta, men fel upplosning.
+         */
+        var protectedReads = PublicRouteEndpoints()
+            .Where(IsSafeMethod)
             .Where(e => e.Metadata.GetOrderedMetadata<IAuthorizeData>().Count > 0)
             .Select(e => e.RoutePattern.RawText)
             .ToArray();
 
         Assert.True(
-            protectedPublic.Length == 0,
-            "Publika routes har fått krav på inloggning, vilket bryter §KM.3: "
-                + string.Join(", ", protectedPublic));
+            protectedReads.Length == 0,
+            "Publik läsning har fått krav på inloggning, vilket bryter §KM.3: "
+                + string.Join(", ", protectedReads));
     }
+
+    [Fact]
+    public void Skrivning_ArAldrigOppen()
+    {
+        /*
+         * Den omvanda kontrollen, och lika viktig. §KM.3 kraver inloggning for allt som
+         * skriver -- en oskyddad POST under en publik adress ar precis lika illa som en
+         * skyddad GET, och betydligt lattare att skriva av misstag.
+         */
+        var openWrites = PublicRouteEndpoints()
+            .Where(e => !IsSafeMethod(e))
+            .Where(e => e.Metadata.GetOrderedMetadata<IAuthorizeData>().Count == 0)
+            .Select(e => $"{Methods(e)} {e.RoutePattern.RawText}")
+            .ToArray();
+
+        Assert.True(
+            openWrites.Length == 0,
+            "Endpoints som ändrar tillstånd saknar krav på inloggning (§KM.3): "
+                + string.Join(", ", openWrites));
+    }
+
+    private static string Methods(RouteEndpoint endpoint) =>
+        string.Join("/", endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? []);
+
+    private static bool IsSafeMethod(RouteEndpoint endpoint) =>
+        endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods
+            .All(method => method is "GET" or "HEAD" or "OPTIONS") ?? true;
 
     [Fact]
     public void Auktorisering_HarIngenFallbackPolicy()

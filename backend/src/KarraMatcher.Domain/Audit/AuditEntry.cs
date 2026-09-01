@@ -31,6 +31,21 @@ public sealed class AuditEntry
     /// <summary>Vem, som id. Aldrig adressen.</summary>
     public Guid ActorAccountId { get; set; }
 
+    /// <summary>Vad åtgärden gällde — matchens id, kontots id. Tomt när det inte finns.</summary>
+    public Guid? SubjectId { get; set; }
+
+    /// <summary>
+    /// Före- och eftervärde, kort och maskinvänligt.
+    ///
+    /// <para>
+    /// <b>Aldrig fritext från en användare.</b> Matchnotisen är tränarens egna ord och
+    /// räknas som potentiell PII (§KM.1) — den får inte hamna här bara för att den ändrats.
+    /// Fältet innehåller tid, motståndare, plats och status, alltså sådant som ändå står i
+    /// den publika kalendern.
+    /// </para>
+    /// </summary>
+    public string? Details { get; set; }
+
     public DateTime OccurredUtc { get; set; }
 }
 
@@ -38,4 +53,9 @@ public sealed class AuditEntry
 public static class AuditActions
 {
     public const string AccountDeleted = "konto.raderat";
+
+    public const string MatchCreated = "match.skapad";
+    public const string MatchUpdated = "match.andrad";
+    public const string MatchCancelled = "match.installd";
+    public const string MatchDeleted = "match.raderad";
 }

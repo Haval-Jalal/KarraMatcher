@@ -15,6 +15,12 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEn
         builder.Property(e => e.Action).HasMaxLength(64).IsRequired();
         builder.Property(e => e.OccurredUtc).IsRequired();
 
+        // Taket ar med flit lagt: en detaljrad ska vara en sammanfattning, inte ett stalle
+        // dar nagon far plats att klistra in en anvandares text.
+        builder.Property(e => e.Details).HasMaxLength(512);
+
+        builder.HasIndex(e => e.SubjectId);
+
         // Ingen frammande nyckel till Accounts -- posten om en radering ska finnas kvar
         // efter att kontot ar borta. Se AuditEntry.
         builder.HasIndex(e => e.OccurredUtc);
