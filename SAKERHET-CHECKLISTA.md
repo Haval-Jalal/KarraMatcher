@@ -113,7 +113,7 @@
 |---|----------|:------:|
 | 8.1 | Strukturerad loggning (Serilog) med correlation-ID per request | ⬜ |
 | 8.2 | **§KM.10** Aldrig barnnamn, e-post, push-endpoint, JWT eller användarfritext i loggar | ⬜ |
-| 8.3 | **§KM.10** Audit-logg för: matchändring, inställd match, rolländring, trupp­ändring, radera konto | ⬜ |
+| 8.3 | **§KM.10** Audit-logg för: matchändring ✅, inställd match ✅, radera konto ✅ — rolländring och truppändring kvar (M3) | 🟡 |
 | 8.4 | Audit-loggen är oföränderlig och innehåller vem, vad, när och correlation-ID | ⬜ |
 | 8.5 | Larm eller uppföljning vid upprepade inloggningsfel och behörighetsavslag | ⬜ |
 | 8.6 | Felrapportering aktiv och PII-scrubbad | ⬜ |

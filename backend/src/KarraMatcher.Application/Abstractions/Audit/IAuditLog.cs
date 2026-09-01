@@ -10,5 +10,10 @@ namespace KarraMatcher.Application.Abstractions.Audit;
 /// </summary>
 public interface IAuditLog
 {
-    public Task RecordAsync(string action, Guid actorAccountId, CancellationToken cancellationToken);
+    public Task RecordAsync(
+        string action,
+        Guid actorAccountId,
+        CancellationToken cancellationToken,
+        Guid? subjectId = null,
+        string? details = null);
 }

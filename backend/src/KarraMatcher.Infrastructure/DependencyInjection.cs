@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ILoginCodeRepository, LoginCodeRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IAuditLog, AuditLog>();
+        services.AddScoped<IMatchAdminRepository, MatchAdminRepository>();
 
         AddEmail(services, configuration, isDevelopment);
 
