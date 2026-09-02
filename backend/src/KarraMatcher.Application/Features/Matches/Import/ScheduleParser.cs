@@ -22,6 +22,17 @@ public enum LineOutcome
 
     /// <summary>Samma match finns redan, i inklistringen eller sedan tidigare.</summary>
     Duplicate,
+
+    /// <summary>
+    /// Raden gäller ett annat lag.
+    ///
+    /// <para>
+    /// Ett inklistrat serieschema innehåller ofta alla lagen, och behörigheten gäller ett.
+    /// Raden rapporteras i stället för att tyst försvinna — tränaren ska förstå varför
+    /// tjugofem rader blev sex.
+    /// </para>
+    /// </summary>
+    OtherTeam,
 }
 
 /// <summary>En rad ur inklistringen, tolkad.</summary>

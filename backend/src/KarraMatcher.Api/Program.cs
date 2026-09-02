@@ -22,7 +22,18 @@ builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraEdgeCache(builder.Configuration);
 builder.Services.AddKarraAuthentication(builder.Environment);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    /*
+     * Enum-varden som text, inte som siffror.
+     *
+     * En siffra tvingar klienten att kanna till enumens ordning, och att lagga till ett
+     * varde i mitten andrar da tyst betydelsen av alla svar som redan skickats. Texten
+     * gar dessutom att lasa i ett felmeddelande utan att sla upp nagot.
+     */
+    options.JsonSerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
 
 builder.Services.AddProblemDetails();
 

@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLog, AuditLog>();
         services.AddScoped<IMatchAdminRepository, MatchAdminRepository>();
         services.AddScoped<IVenueRepository, VenueRepository>();
+        services.AddScoped<IScheduleImportRepository, ScheduleImportRepository>();
 
         /*
          * Adressuppslagning mot Nominatim (OpenStreetMap).

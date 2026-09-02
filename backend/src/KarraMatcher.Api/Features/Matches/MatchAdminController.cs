@@ -4,6 +4,7 @@ using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Matches;
 using KarraMatcher.Application.Features.Matches.Admin;
+using KarraMatcher.Application.Features.Matches.Import;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +32,9 @@ namespace KarraMatcher.Api.Features.Matches;
 [Produces("application/json")]
 [Authorize(Policy = AuthorizationPolicies.CoachOfTeam)]
 [RequireCsrfToken]
-public sealed class MatchAdminController(ICommandDispatcher dispatcher) : ControllerBase
+public sealed class MatchAdminController(
+    ICommandDispatcher dispatcher,
+    ScheduleImportService import) : ControllerBase
 {
     /// <summary>Lägger upp en match i laget.</summary>
     [HttpPost]
@@ -135,6 +138,51 @@ public sealed class MatchAdminController(ICommandDispatcher dispatcher) : Contro
         return removed ? NoContent() : NotFoundForTeam();
     }
 
+    /// <summary>Tolkar en inklistring utan att spara något.</summary>
+    /// <remarks>
+    /// Ingen ska behöva lita på en parser i blindo. Förhandsgranskningen är det som gör
+    /// massinlägget tryggt nog att faktiskt användas.
+    /// </remarks>
+    [HttpPost("import/preview")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ImportResult>> Preview(
+        string slug,
+        ImportRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return Ok(await import.PreviewAsync(slug, request.Text, cancellationToken)
+            .ConfigureAwait(false));
+    }
+
+    /// <summary>Sparar de rader som gick igenom.</summary>
+    /// <remarks>
+    /// <b>Texten tolkas om här.</b> Klienten skickar samma inklistring en gång till, aldrig
+    /// den tolkade listan — annars vore förhandsgranskningen en rekommendation, och en
+    /// tränare kunde skicka in vad som helst som "det parsern kom fram till".
+    /// </remarks>
+    [HttpPost("import")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Import(
+        string slug,
+        ImportRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        return Ok(await import
+            .ImportAsync(slug, request.Text, actor.Value, cancellationToken)
+            .ConfigureAwait(false));
+    }
+
     /// <summary>
     /// Samma svar för "finns inte" och "hör till ett annat lag".
     ///
@@ -181,3 +229,6 @@ public sealed record MatchRequest(
     internal MatchDraft ToDraft() =>
         new(KickoffUtc, Opponent, VenueId, IsHome, AddressOverride, Note);
 }
+
+/// <summary>Den inklistrade texten. Skickas oförändrad både till granskning och import.</summary>
+public sealed record ImportRequest(string? Text);

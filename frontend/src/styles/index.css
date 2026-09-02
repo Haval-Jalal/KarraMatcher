@@ -475,6 +475,68 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+/* ---- Massinlägg -------------------------------------------------------------- */
+
+.import {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.import textarea {
+  font: inherit;
+  font-size: var(--text-base);
+  width: 100%;
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+
+  /* Monospace: kolumnerna i ett inklistrat schema ska gå att se. */
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+.import__table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--text-sm);
+}
+
+.import__table caption {
+  text-align: left;
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding-bottom: 6px;
+}
+
+.import__table th,
+.import__table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.import__table thead th {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Den inklistrade raden visas som den skrevs, så tränaren känner igen den. */
+.import__raw {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  color: var(--text-muted);
+  white-space: pre;
+}
+
 /* ---- Radering ---------------------------------------------------------------- */
 
 /*
