@@ -475,6 +475,62 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+/* ---- Säsongsöversikt ---------------------------------------------------------- */
+
+.season {
+  margin-top: 20px;
+}
+
+.season__month {
+  font-family: var(--display);
+  font-size: var(--text-base);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+}
+
+.season__table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--text-sm);
+}
+
+.season__table th,
+.season__table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.season__table thead th {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.season__time {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.season__date,
+.season__venue {
+  color: var(--text-muted);
+}
+
+.season__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* ---- Massinlägg -------------------------------------------------------------- */
 
 .import {

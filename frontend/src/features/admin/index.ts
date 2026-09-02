@@ -1,3 +1,5 @@
 export { CoachMatchesPage } from './CoachMatchesPage'
 export { MatchForm } from './MatchForm'
 export { ScheduleImport } from './ScheduleImport'
+export { SeasonOverview } from './SeasonOverview'
+export { findClashes } from './findClashes'
