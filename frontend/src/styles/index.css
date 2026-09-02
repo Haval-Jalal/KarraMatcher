@@ -475,6 +475,88 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+/* ---- Matchrapporten ----------------------------------------------------------- */
+
+.report {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report__child h3 {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  margin: 12px 0 6px;
+}
+
+.report__label {
+  font-family: var(--display);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.report__scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stepper__label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.stepper__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/*
+ * Stora och isär. Rapporten fylls i med en hand, stående vid en plan eller sittande i en
+ * bil — ett felklick är inte farligt, men irriterande nog att någon slutar fylla i.
+ */
+.stepper__button {
+  min-width: var(--tap-target);
+  min-height: var(--tap-target);
+  font: inherit;
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.stepper__button:disabled {
+  color: var(--text-muted);
+  border-color: var(--border);
+  cursor: default;
+}
+
+.stepper__value {
+  font-family: var(--display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5em;
+  text-align: center;
+}
+
 /* ---- Spelarkortet ------------------------------------------------------------- */
 
 .children {

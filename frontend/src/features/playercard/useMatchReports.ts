@@ -1,0 +1,102 @@
+import { useCallback, useState } from 'react'
+
+import { readCard, writeCard } from './storage/playerCardStore'
+import type { MatchReport } from './storage/schema'
+
+/**
+ * Matchrapporterna för en match.
+ *
+ * <h3>Sparas direkt, utan sparaknapp</h3>
+ *
+ * Varje tryck skriver till enheten. En sparaknapp är ett sätt att förlora data: rapporten
+ * fylls i med ett barn bredvid sig, ofta på väg ut ur en bil, och det som skrivs men
+ * aldrig sparas är borta utan att någon märker det.
+ *
+ * <h3>Aldrig negativa</h3>
+ *
+ * Ett negativt antal mål betyder ingenting. Spärren sitter både här och på knappen — i
+ * gränssnittet så att den syns, och här så att den gäller.
+ */
+export function useMatchReports(matchId: string) {
+  const [card, setCard] = useState(readCard)
+
+  const reportFor = useCallback(
+    (childId: string): MatchReport =>
+      card.reports.find((report) => report.matchId === matchId && report.childId === childId) ??
+      emptyReport(matchId, childId),
+    [card.reports, matchId],
+  )
+
+  const save = useCallback(
+    (childId: string, change: (report: MatchReport) => MatchReport) => {
+      const current = readCard()
+      const existing = current.reports.find(
+        (report) => report.matchId === matchId && report.childId === childId,
+      )
+
+      const updated = change(existing ?? emptyReport(matchId, childId))
+
+      const next = {
+        ...current,
+        reports:
+          existing === undefined
+            ? [...current.reports, updated]
+            : current.reports.map((report) => (report.id === existing.id ? updated : report)),
+      }
+
+      writeCard(next)
+      setCard(next)
+    },
+    [matchId],
+  )
+
+  const adjust = useCallback(
+    (childId: string, field: 'goals' | 'assists', delta: number) => {
+      save(childId, (report) => ({
+        ...report,
+        // Math.max och inte en if: spärren ska gälla oavsett hur den anropas.
+        [field]: Math.max(0, report[field] + delta),
+      }))
+    },
+    [save],
+  )
+
+  /**
+   * Resultatet gäller matchen, inte ett enskilt barn.
+   *
+   * <para>
+   * Det skrivs ändå på varje syskons rapport, så att en rapport är fullständig i sig
+   * själv. Tas ett barn bort ska den andra syskonets rapport fortfarande veta hur matchen
+   * slutade.
+   * </para>
+   */
+  const setResult = useCallback(
+    (field: 'teamGoals' | 'opponentGoals', delta: number) => {
+      const current = readCard()
+
+      for (const child of current.children) {
+        save(child.id, (report) => ({
+          ...report,
+          [field]: Math.max(0, (report[field] ?? 0) + delta),
+        }))
+      }
+    },
+    [save],
+  )
+
+  return { card, reportFor, adjust, setResult }
+}
+
+function emptyReport(matchId: string, childId: string): MatchReport {
+  return {
+    id: `${matchId}-${childId}`,
+    childId,
+    matchId,
+    playedUtc: new Date().toISOString(),
+    goals: 0,
+    assists: 0,
+    teamGoals: null,
+    opponentGoals: null,
+    note: null,
+  }
+}

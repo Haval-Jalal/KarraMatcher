@@ -130,6 +130,8 @@ describe('ta bort barn', () => {
           playedUtc: '2026-09-20T12:00:00.000Z',
           goals: 1,
           assists: 0,
+          teamGoals: null,
+          opponentGoals: null,
           note: null,
         },
         {
@@ -139,6 +141,8 @@ describe('ta bort barn', () => {
           playedUtc: '2026-09-20T12:00:00.000Z',
           goals: 2,
           assists: 0,
+          teamGoals: null,
+          opponentGoals: null,
           note: null,
         },
       ],

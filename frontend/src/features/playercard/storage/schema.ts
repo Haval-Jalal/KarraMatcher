@@ -13,7 +13,7 @@
  */
 
 /** Nuvarande schemaversion. Höjs varje gång formen ändras. */
-export const CURRENT_VERSION = 1
+export const CURRENT_VERSION = 2
 
 /** Ett barn, så som familjen själv lagt in det. */
 export interface Child {
@@ -34,6 +34,17 @@ export interface MatchReport {
   playedUtc: string
   goals: number
   assists: number
+
+  /**
+   * Matchens resultat, som familjen antecknat det.
+   *
+   * <para>
+   * Tomt tills någon fyllt i. Tillkom i version 2 — äldre rapporter får <c>null</c> genom
+   * migreringen, eftersom vi inte vet vad de slutade och inte ska hitta på det.
+   * </para>
+   */
+  teamGoals: number | null
+  opponentGoals: number | null
   /** Barnets egna ord om matchen. Lämnar aldrig telefonen. */
   note: string | null
 }
