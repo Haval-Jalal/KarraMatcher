@@ -3,18 +3,27 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { renewSession } from '@/lib/api'
 import { getAccessToken, hasSessionHint } from '@/lib/session'
 
-import { emailFromToken, signOut as signOutRequest } from './authApi'
+import {
+  coachTeamsFromToken,
+  emailFromToken,
+  isAdminFromToken,
+  signOut as signOutRequest,
+} from './authApi'
 import { AuthContext, type AuthState, type AuthStatus } from './authContext'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('okand')
   const [email, setEmail] = useState<string | null>(null)
+  const [coachOf, setCoachOf] = useState<string[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const read = useCallback(() => {
     const token = getAccessToken()
 
     setStatus(token === null ? 'utloggad' : 'inloggad')
     setEmail(token === null ? null : emailFromToken(token))
+    setCoachOf(token === null ? [] : coachTeamsFromToken(token))
+    setIsAdmin(token === null ? false : isAdminFromToken(token))
   }, [])
 
   useEffect(() => {
@@ -56,13 +65,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       email,
+      coachOf,
+      isAdmin,
+      canManage: (teamSlug: string) => isAdmin || coachOf.includes(teamSlug),
       refresh: read,
       signOut: async () => {
         await signOutRequest()
         read()
       },
     }),
-    [status, email, read],
+    [status, email, coachOf, isAdmin, read],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
