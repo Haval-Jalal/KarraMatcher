@@ -81,7 +81,7 @@ async function getCsrfToken(): Promise<string> {
 export async function postJson<T>(
   path: string,
   body?: unknown,
-  options: { retryOnUnauthorized?: boolean; method?: 'POST' | 'DELETE' } = {},
+  options: { retryOnUnauthorized?: boolean; method?: 'POST' | 'PUT' | 'DELETE' } = {},
 ): Promise<T> {
   const retry = options.retryOnUnauthorized ?? true
   const token = getAccessToken()

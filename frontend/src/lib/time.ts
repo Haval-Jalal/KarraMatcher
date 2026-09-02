@@ -193,3 +193,113 @@ export function relativeDayLabel(
 
   return `För ${String(Math.abs(difference))} dagar sedan`
 }
+
+/**
+ * Svensk lokaltid in, UTC ut — motsatsen till allt annat i den här filen.
+ *
+ * <h3>Varför det inte räcker att skapa en Date</h3>
+ *
+ * `new Date('2026-09-20T14:00')` tolkas i *webbläsarens* zon. En tränare som lägger in en
+ * match från en semester i Spanien hade fått den sparad en timme fel, och felet hade synts
+ * först i föräldrarnas kalendrar.
+ *
+ * <h3>Hur den räknar</h3>
+ *
+ * Vi vet vilken väggklockstid vi vill ha, men inte vilket ögonblick det är — offseten beror
+ * på datumet. Så: gissa att tiden är UTC, mät vad den gissningen visar på en svensk klocka,
+ * och korrigera med skillnaden. En andra runda behövs för dygnet då klockan ställs om, då
+ * den första korrigeringen kan hamna på fel sida av skiftet.
+ *
+ * Sommartidsskiftet i oktober ligger mitt i säsongen, så det här är inte en teoretisk
+ * finess — det är den sista helgen i oktober varje år.
+ */
+export function swedishLocalToUtc(local: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local)
+
+  if (match === null) {
+    return null
+  }
+
+  const [, year, month, day, hour, minute] = match.map(Number)
+  const wanted = Date.UTC(year!, month! - 1, day, hour, minute)
+
+  /*
+   * Date.UTC rullar tyst over: manad 13 blir januari nasta ar, dag 45 blir nasta manad.
+   * "2026-13-45T99:99" hade alltsa blivit en giltig tid i februari 2027.
+   *
+   * Kontrollen maste ske har och inte pa resultatet, eftersom normaliseringen redan skett
+   * nar vardet finns -- den efterfragade tiden ar da inte langre den som efterfragades.
+   * Att jamfora komponenterna fangar bade omojliga manader och den 30 februari.
+   */
+  const normalized = new Date(wanted)
+
+  if (
+    normalized.getUTCFullYear() !== year ||
+    normalized.getUTCMonth() !== month! - 1 ||
+    normalized.getUTCDate() !== day ||
+    normalized.getUTCHours() !== hour ||
+    normalized.getUTCMinutes() !== minute
+  ) {
+    return null
+  }
+
+  let guess = wanted
+
+  for (let round = 0; round < 2; round++) {
+    const shownAsUtc = wallClockAsUtc(guess)
+
+    if (shownAsUtc === wanted) {
+      break
+    }
+
+    guess += wanted - shownAsUtc
+  }
+
+  /*
+   * Kontrollen som ocksa avvisar skrap.
+   *
+   * Har gissningen inte landat pa den tid som efterfragades finns tiden inte: antingen ar
+   * datumet omojligt ("2026-13-45"), eller sa ar det timmen som hoppas over nar klockan
+   * stalls fram i mars. Date.UTC rullar tyst over till nasta manad, sa utan den har
+   * kontrollen hade "2026-13-45T99:99" blivit en tid i februari aret darpa.
+   */
+  if (wallClockAsUtc(guess) !== wanted) {
+    return null
+  }
+
+  /*
+   * Tvetydiga tider: natten da klockan stalls tillbaka intraffar 02:00 tva ganger. Vi
+   * valjer det *tidigare* ogonblicket, alltsa det som fortfarande ar sommartid.
+   *
+   * Valet spelar ingen roll for en fotbollsmatch -- ingen sparkar igang 02:00 -- men en
+   * funktion som ger olika svar beroende pa hur en slinga rakar konvergera ar inte en
+   * funktion man litar pa.
+   */
+  const oneHour = 3_600_000
+
+  if (wallClockAsUtc(guess - oneHour) === wanted) {
+    guess -= oneHour
+  }
+
+  return new Date(guess).toISOString()
+}
+
+/** Vad ögonblicket visar på en svensk klocka, uttryckt som om den avläsningen vore UTC. */
+function wallClockAsUtc(instant: number): number {
+  const shown = partsOf(new Date(instant))
+
+  return Date.UTC(shown.year, shown.month - 1, shown.day, shown.hour, shown.minute)
+}
+
+/**
+ * UTC ut, svensk lokaltid in — formen ett `datetime-local`-fält vill ha.
+ *
+ * Används när tränaren öppnar en befintlig match för att ändra den: fältet ska visa den
+ * tid hen en gång skrev, inte den UTC vi lagrat.
+ */
+export function utcToSwedishLocalInput(value: string | Date): string {
+  const parts = partsOf(new Date(value))
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return `${String(parts.year)}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}`
+}

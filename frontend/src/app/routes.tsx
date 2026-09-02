@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/
 
 import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
+import { CoachMatchesPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
@@ -105,12 +106,36 @@ const accountRoute = createRoute({
   component: AccountPage,
 })
 
+/**
+ * Tränarens vy för ett lag.
+ *
+ * Kräver inloggning här, och rätt lag i själva vyn. Servern avgör vad som faktiskt
+ * tillåts — det här sparar bara en tränare från att mötas av ett 403 där en text hade
+ * räckt.
+ */
+const coachRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/lag/$slug/tranare',
+  beforeLoad: async ({ location }) => {
+    if (getAccessToken() === null && hasSessionHint()) {
+      await renewSession()
+    }
+
+    if (getAccessToken() === null) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
+    }
+  },
+  component: CoachMatchesPage,
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
   matchRoute,
   loginRoute,
   accountRoute,
+  coachRoute,
 ])
 
 export const router = createRouter({
