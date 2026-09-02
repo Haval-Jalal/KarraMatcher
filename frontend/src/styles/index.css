@@ -475,6 +475,53 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+/* ---- Spelarkortet ------------------------------------------------------------- */
+
+.children {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.children__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.children__name {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-strong);
+  flex: 1 1 6rem;
+}
+
+.children__number,
+.children__team {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.form__field select {
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  min-height: var(--tap-target);
+  padding: 8px 12px;
+}
+
 /* ---- Säsongsöversikt ---------------------------------------------------------- */
 
 .season {

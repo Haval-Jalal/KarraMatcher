@@ -1,3 +1,5 @@
+export { ChildrenPage } from './ChildrenPage'
+export { usePlayerCard } from './usePlayerCard'
 export { clearCard, readCard, writeCard } from './storage/playerCardStore'
 export { requestPersistentStorage } from './storage/persistentStorage'
 export { CURRENT_VERSION, emptyCard } from './storage/schema'

@@ -4,6 +4,7 @@ import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
 import { CoachMatchesPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
+import { ChildrenPage } from '@/features/playercard'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
@@ -129,6 +130,19 @@ const coachRoute = createRoute({
   component: CoachMatchesPage,
 })
 
+/**
+ * Spelarkortet.
+ *
+ * Ingen inloggning: kortet ligger på enheten och kräver varken konto eller server
+ * (§KM.2). Att skydda den här routen hade varit att kräva inloggning för att se sin egen
+ * telefons innehåll.
+ */
+const playerCardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/spelarkort',
+  component: ChildrenPage,
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
@@ -136,6 +150,7 @@ export const routeTree = rootRoute.addChildren([
   loginRoute,
   accountRoute,
   coachRoute,
+  playerCardRoute,
 ])
 
 export const router = createRouter({

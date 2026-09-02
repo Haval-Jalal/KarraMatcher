@@ -91,7 +91,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#42` Lokalt lagringslager | Haval | `feature/local-storage` | In Review — första i M4 |
+| `#43` Barn på spelarkortet | Haval | `feature/children` | In Review |
 
 ## ➡️ Nästa steg
 
