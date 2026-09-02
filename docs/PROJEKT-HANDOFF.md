@@ -8,9 +8,9 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 klar (15/15). M1 klar (17/17).** Nästa milstolpe är M2 — konto och roller. Repot är publikt
-- **Senast uppdaterad:** 2026-08-29 av Haval
-- **Aktuell milstolpe:** M2 — Konto och roller (ej påbörjad)
+- **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
+- **Senast uppdaterad:** 2026-09-02 av Haval
+- **Aktuell milstolpe:** M4 — Spelarkortet (3 av 7 klara)
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -91,7 +91,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#44` Matchrapporten | Haval | `feature/match-report` | In Review — schema version 2 |
+| `#47` Säkerhetskopiering av spelarkortet | Haval | `feature/playercard-backup` | In Review — läser även föregångarens `KARRA1.` |
 
 ## ➡️ Nästa steg
 
@@ -148,6 +148,9 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2026-09-02 | **Enum-värden serialiseras som text i API:t** | En siffra tvingar klienten att känna till enumens ordning, och att lägga till ett värde i mitten ändrar då tyst betydelsen av alla svar som redan skickats | Upptäcktes när radernas utfall kom ut som `0`, `1`, `2`. Påverkar inga befintliga svar — `MatchDto.Status` var redan en sträng |
 | 2026-09-02 | **Massinläggets parser ger besked per rad, inte per inklistring** | Att knappa in tjugofem matcher för hand gör ingen två gånger, och en app utan matcher är en app ingen öppnar igen. Men en parser som svarar "något gick fel" är nästan lika illa: tränaren vet inte vilken rad som är trasig | Varje rad får ett eget utfall — klar, ofullständig, otolkbart datum, okänt lag eller spelplats, eller dubblett — och resten tolkas ändå. **Tabb prövas före komma**, eftersom lagnamn innehåller komma ("Kareby IS, Blå") men aldrig tabb. Tak på 500 rader, för att en inklistring på tio megabyte inte ska binda upp den enda Render-instansen |
 | 2026-09-02 | **Svensk lokaltid till UTC räknas om i `lib/time.ts`, inte i formuläret** | §KM.5 kräver att konverteringen sker på ett enda ställe i frontenden. `new Date('2026-09-20T14:00')` tolkas i webbläsarens zon — en tränare som lägger in en match från en semester i Spanien hade fått den sparad en timme fel, och felet syns först i föräldrarnas kalendrar | Omräkningen mäter offseten vid det gissade ögonblicket och korrigerar **två gånger**. Andra rundan behövs för timmen före vårskiftet, då första gissningen hamnar på fel sida om omställningen. Tvetydiga tider (02:00 på höstskiftet, som inträffar två gånger) löses till det **tidigare** ögonblicket, och tider som inte finns avvisas |
+| 2026-09-02 | **Vid krock i en import vinner den lokala telefonen** | Import ska aldrig kunna göra skada. Den telefon man står med är den man valt att återställa *till*, och det som skrivs över finns ingen annanstans — koden går alltid att importera om, men den överskrivna statistiken gör det inte | Importen **lägger till**, den ersätter aldrig. Två vårdnadshavare med varsin telefon har varsin uppsättning statistik (§KM.2); den som läser in den andres kod får det som saknas och behåller sitt eget. Användaren får veta exakt vad som tillkom |
+| 2026-09-02 | **Föregångarens `KARRA1.`-kod läses, och formatet är avläst — inte antaget** | Familjerna har en säsong i den gamla appen. En gissad form hade inte fallit förrän någon försökte flytta över på riktigt och misslyckades | Formen lästes ur `index 4.html`: `{ kids: [{id,name,team}], stats: { "datum_lag_motståndare": { us, them, kids: { id: {g,a} } } } }`. Datumet räddas ur statistikens nyckel; matchens id finns inte, eftersom den gamla appen inte hade några. Rapporterna kommer alltså in utan koppling till en match — **men med sin statistik i behåll**, vilket är det familjen ville flytta med sig |
+| 2026-09-02 | **Base64 går via `TextEncoder`, inte rakt genom `btoa`** | `btoa` klarar bara latin-1. Ett barn som heter Åsa hade fått koden att kasta — och det är ett namn som finns i vilket lag som helst | Samma omväg som föregångaren använde, vilket också är varför koderna går att läsa åt båda håll. Ett test med `Åsa Ärlig Öberg` vaktar det |
 | 2026-09-01 | **Ny tredjepart: Nominatim (OpenStreetMap) för adressuppslagning** | §KM.6 kräver ett skrivet beslut för varje ny tredjepart. Koordinater måste härledas ur adressen — de sju handinmatade låg upp till 2,2 km fel, och vid kusten är två kilometer skillnaden mellan regn och uppehåll i prognosen | **Server-side, aldrig från frontenden**, så §KM.6:s förbud mot externa skript i klienten är orört. Anropet sker **en gång per spelplats, vid sparande** — aldrig vid läsning — vilket ger en handfull anrop per säsong och ligger med god marginal inom villkoret om högst en förfrågan per sekund. Värden är fast och adressen går in som kodad frågeparameter (SSRF, checklistan 4.8). `User-Agent` identifierar oss, vilket villkoren kräver |
 | 2026-09-01 | **Klienten skickar aldrig koordinater — inte ens i bekräftelsesteget** | Tränaren ska få bekräfta träffen, men om klienten skickar tillbaka en position blir geokodningen en rekommendation i stället för en regel | En adress med flera träffar besvaras med **kandidaternas adresser**, och tränaren skickar tillbaka den hen valde. Servern slår upp den på nytt. `VenueRequest` har inga koordinatfält alls |
 | 2026-09-01 | **Laget står i adressen, inte i indata** | Behörigheten prövas mot lagets slug i routen (`CoachOfTeam`). Toge kommandot emot ett lag-id i kroppen kunde en tränare för Gul skicka Blås id och kringgå kontrollen helt | `MatchRequest` har inget lagfält. Dessutom kontrolleras att **matchen** hör till laget — policyn har bara sett på slugen, så utan den kontrollen kunde ett match-id från ett annat lag skickas till den egna lagadressen. Svaret är 404 och inte 403, så det inte går att kartlägga andra lags matcher genom att prova |

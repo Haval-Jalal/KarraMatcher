@@ -53,7 +53,7 @@
 | 3.3b | **§KM.8** Schemat är läsbart offline — verifierat i flygplansläge på iPhone och Android | ✅ |
 | 3.4 | **§KM.2** Spelarkortet lagras i enhetens egen lagring och skickas aldrig i något anrop | ✅ |
 | 3.5 | **§KM.2** `navigator.storage.persist()` begärs; nekad begäran hanteras utan att appen går sönder | ✅ |
-| 3.6 | **§KM.2** Säkerhetskopieringskod finns, uppmanas till, och kan återställas på annan enhet | ⬜ |
+| 3.6 | **§KM.2** Säkerhetskopieringskod finns, uppmanas till, och kan återställas på annan enhet | ✅ |
 | 3.7 | **§KM.2** Användaren informeras tydligt om att spelarkortet bor i telefonen | ⬜ |
 | 3.8 | Inga hemligheter i frontend-bundeln — verifierat i byggd output | ⬜ |
 | 3.9 | Inga secrets, tokens eller PII i loggar eller felrapportering (scrubbat) | ⬜ |

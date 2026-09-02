@@ -7,6 +7,7 @@ import { useTeams } from '@/features/teams'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import type { Child } from './storage/schema'
+import { BackupSection } from './BackupSection'
 import { usePlayerCard } from './usePlayerCard'
 
 /**
@@ -41,7 +42,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export function ChildrenPage() {
-  const { card, addChild, updateChild, removeChild } = usePlayerCard()
+  const { card, addChild, updateChild, removeChild, reload } = usePlayerCard()
   const { data: teams } = useTeams()
   const [editing, setEditing] = useState<Child | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<Child | null>(null)
@@ -145,6 +146,8 @@ export function ChildrenPage() {
               }
         }
       />
+
+      <BackupSection onChanged={reload} />
 
       {confirmRemove !== null && (
         <section className="danger-zone">

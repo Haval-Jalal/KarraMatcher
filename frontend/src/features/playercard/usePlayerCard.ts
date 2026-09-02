@@ -71,7 +71,18 @@ export function usePlayerCard() {
     [card, save],
   )
 
-  return { card, addChild, updateChild, removeChild }
+  /**
+   * Läser om kortet från enheten.
+   *
+   * Behövs efter en import, som skriver till lagringen utan att gå genom den här hooken.
+   * Alternativet vore att låta importen returnera det nya kortet — men då hade två ställen
+   * ägt sanningen, och lagringen är den enda som faktiskt gör det.
+   */
+  const reload = useCallback(() => {
+    setCard(readCard())
+  }, [])
+
+  return { card, addChild, updateChild, removeChild, reload }
 }
 
 /**

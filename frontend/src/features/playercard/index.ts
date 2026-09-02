@@ -1,3 +1,6 @@
+export { BackupSection } from './BackupSection'
+export { decodeBackup, encodeBackup } from './backup/backupCode'
+export { mergeCards } from './backup/mergeCards'
 export { ChildrenPage } from './ChildrenPage'
 export { MatchReportCard } from './MatchReportCard'
 export { useMatchReports } from './useMatchReports'
