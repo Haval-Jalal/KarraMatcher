@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<LoginCodeService>();
         services.AddScoped<Features.Matches.Admin.MatchAdminService>();
         services.AddScoped<Features.Venues.VenueRegistry>();
+        services.AddScoped<Features.Matches.Import.ScheduleImportService>();
 
         return services;
     }

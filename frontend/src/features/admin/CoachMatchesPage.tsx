@@ -8,6 +8,7 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { cancelMatch, createMatch, deleteMatch, updateMatch } from './adminApi'
 import { MatchForm } from './MatchForm'
+import { ScheduleImport } from './ScheduleImport'
 
 /**
  * Tränarens vy för ett lag.
@@ -98,6 +99,13 @@ export function CoachMatchesPage() {
           </button>
         </div>
       )}
+
+      <ScheduleImport
+        slug={slug}
+        onImported={() => {
+          void refresh()
+        }}
+      />
 
       <h2 className="match-list__title">Lagets matcher</h2>
 
