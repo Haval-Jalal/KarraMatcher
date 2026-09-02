@@ -7,6 +7,8 @@ import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { CalendarLink } from './CalendarLink'
+import { MatchReportCard, readCard } from '@/features/playercard'
+
 import { DirectionsLink } from './DirectionsLink'
 import { MatchWeather } from './MatchWeather'
 import { useMatch } from './useMatch'
@@ -63,6 +65,16 @@ export function MatchDetailPage() {
   }
 
   const { match, team } = data
+
+  /*
+   * Barnen som spelar i det har laget.
+   *
+   * Lases direkt fran enheten och inte genom en hook med tillstand: sidan behover bara
+   * veta vilka som ska fa en rapportrad, och listan andras bara pa spelarkortssidan.
+   */
+  const childrenForMatch = readCard().children.filter(
+    (child) => child.teamSlug === null || child.teamSlug === team.slug,
+  )
   const isCancelled = match.status === 'Cancelled'
   const isPostponed = match.status === 'Postponed'
 
@@ -140,6 +152,7 @@ export function MatchDetailPage() {
           <CalendarLink match={match} />
         </div>
       )}
+      <MatchReportCard match={match} children={childrenForMatch} />
     </main>
   )
 }

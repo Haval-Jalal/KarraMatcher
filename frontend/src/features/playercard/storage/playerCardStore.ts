@@ -1,5 +1,5 @@
 import { requestPersistentStorage } from './persistentStorage'
-import { CURRENT_VERSION, emptyCard, type PlayerCardData } from './schema'
+import { CURRENT_VERSION, emptyCard, type MatchReport, type PlayerCardData } from './schema'
 
 /**
  * Spelarkortets lagring på enheten.
@@ -30,7 +30,30 @@ const STORAGE_KEY = 'karra.spelarkort'
  * </para>
  */
 const migrations: Record<number, (data: PlayerCardData) => PlayerCardData> = {
-  // Version 1 är den första. Nästa formändring lägger till 1: (data) => ({ ... }).
+  /**
+   * 1 → 2: matchrapporten fick resultatfält.
+   *
+   * <para>
+   * Befintliga rapporter får <c>null</c>, inte 0. Vi vet inte vad de matcherna slutade,
+   * och en nolla hade sett ut som ett svar — en familj som öppnar en gammal match skulle
+   * läsa 0–0 som något de skrivit.
+   * </para>
+   */
+  1: (data) => ({
+    ...data,
+    version: 2,
+    reports: data.reports.map((report) => {
+      // Datan har version 1 och saknar faltet, aven om typen sager annat -- typen
+      // beskriver nuvarande form, inte den som lases fran disk.
+      const legacy = report as Partial<MatchReport>
+
+      return {
+        ...report,
+        teamGoals: legacy.teamGoals ?? null,
+        opponentGoals: legacy.opponentGoals ?? null,
+      }
+    }),
+  }),
 }
 
 /**

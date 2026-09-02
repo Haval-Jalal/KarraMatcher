@@ -1,4 +1,6 @@
 export { ChildrenPage } from './ChildrenPage'
+export { MatchReportCard } from './MatchReportCard'
+export { useMatchReports } from './useMatchReports'
 export { usePlayerCard } from './usePlayerCard'
 export { clearCard, readCard, writeCard } from './storage/playerCardStore'
 export { requestPersistentStorage } from './storage/persistentStorage'

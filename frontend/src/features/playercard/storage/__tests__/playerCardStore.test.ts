@@ -80,6 +80,71 @@ describe('datan överlever', () => {
   })
 })
 
+describe('migreringen tar datan hela vägen', () => {
+  it('lyfter en rapport från version 1 till 2', () => {
+    /*
+     * Resultatfalten tillkom i version 2. En familj som inte oppnat appen sedan forra
+     * sasongen har version 1 pa disk, och den datan ska tas hela vagen -- inte lasas som
+     * om den redan vore aktuell.
+     *
+     * Testet skrevs efter att ett prov visat att migreringen inte hade nagot test alls.
+     */
+    localStorage.setItem(
+      'karra.spelarkort',
+      JSON.stringify({
+        version: 1,
+        children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null }],
+        reports: [
+          {
+            id: 'r1',
+            childId: '1',
+            matchId: null,
+            playedUtc: '2025-09-20T12:00:00.000Z',
+            goals: 2,
+            assists: 1,
+            note: null,
+          },
+        ],
+        lastBackupUtc: null,
+      }),
+    )
+
+    const card = readCard()
+
+    expect(card.version).toBe(CURRENT_VERSION)
+    expect(card.reports[0]?.goals).toBe(2)
+  })
+
+  it('sätter resultatet till tomt och inte till noll', () => {
+    /*
+     * Vi vet inte vad de gamla matcherna slutade. En nolla hade sett ut som ett svar --
+     * en familj som oppnar en gammal match skulle lasa 0-0 som nagot de sjalva skrivit.
+     */
+    localStorage.setItem(
+      'karra.spelarkort',
+      JSON.stringify({
+        version: 1,
+        children: [],
+        reports: [
+          {
+            id: 'r1',
+            childId: '1',
+            matchId: null,
+            playedUtc: '2025-09-20T12:00:00.000Z',
+            goals: 0,
+            assists: 0,
+            note: null,
+          },
+        ],
+        lastBackupUtc: null,
+      }),
+    )
+
+    expect(readCard().reports[0]?.teamGoals).toBeNull()
+    expect(readCard().reports[0]?.opponentGoals).toBeNull()
+  })
+})
+
 describe('appen går aldrig sönder av lagringen', () => {
   it('ger ett tomt kort när lagringen är tom', () => {
     expect(readCard()).toEqual(emptyCard())
@@ -186,6 +251,8 @@ function report() {
     playedUtc: '2026-09-20T12:00:00.000Z',
     goals: 2,
     assists: 1,
+    teamGoals: 3,
+    opponentGoals: 1,
     note: null,
   }
 }
