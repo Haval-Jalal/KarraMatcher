@@ -90,7 +90,7 @@
 |---|----------|:------:|
 | 6.1 | All input valideras server-side (FluentValidation); klientvalidering är endast UX | ⬜ |
 | 6.2 | Parametriserade queries / EF Core → ingen SQL-injection | ⬜ |
-| 6.3 | Massinläggs-parsern hanterar skadlig och trasig indata utan att krascha eller injicera | ⬜ |
+| 6.3 | Massinläggs-parsern hanterar skadlig och trasig indata utan att krascha eller injicera | ✅ |
 | 6.4 | Rate limiting på publika endpoints och inloggning; `429` med `Retry-After` (**§KM.0 A1**) | ✅ |
 | 6.5 | CSRF-skydd aktivt (anti-forgery + `SameSite`) eftersom refresh-token ligger i cookie | ✅ |
 | 6.6 | Inga interna fel eller stack traces läcker till klient (ProblemDetails) | ⬜ |
