@@ -1,9 +1,11 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Email;
+using KarraMatcher.Application.Abstractions.Geocoding;
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Infrastructure.Email;
+using KarraMatcher.Infrastructure.Geocoding;
 using KarraMatcher.Infrastructure.Persistence;
 using KarraMatcher.Infrastructure.Persistence.Repositories;
 using KarraMatcher.Infrastructure.Persistence.Seed;
@@ -67,6 +69,22 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IAuditLog, AuditLog>();
         services.AddScoped<IMatchAdminRepository, MatchAdminRepository>();
+        services.AddScoped<IVenueRepository, VenueRepository>();
+
+        /*
+         * Adressuppslagning mot Nominatim (OpenStreetMap).
+         *
+         * Villkoren kraver att anroparen gar att identifiera -- att skicka anonymt vore att
+         * bryta mot villkoren for en tjanst som drivs av frivilliga. Anropen ar fa: en gang
+         * per spelplats, nar den sparas, och aldrig vid lasning.
+         */
+        services.AddHttpClient<IGeocoder, NominatimGeocoder>(client =>
+        {
+            client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "KarraMatcher/1.0 (+https://github.com/Haval-Jalal/KarraMatcher)");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         AddEmail(services, configuration, isDevelopment);
 

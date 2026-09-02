@@ -195,8 +195,14 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
          * skriver -- en oskyddad POST under en publik adress ar precis lika illa som en
          * skyddad GET, och betydligt lattare att skriva av misstag.
          */
-        var openWrites = PublicRouteEndpoints()
+        /*
+         * Varje route, inte bara de under de publika prefixen. Forsta versionen tittade
+         * bara dar den publika lasningen bor, och hade darfor missat en oskyddad
+         * /api/v1/venues -- alltsa precis det slags nya endpoint kontrollen finns for.
+         */
+        var openWrites = AllRouteEndpoints()
             .Where(e => !IsSafeMethod(e))
+            .Where(e => !IsAnonymousByDesign(e))
             .Where(e => e.Metadata.GetOrderedMetadata<IAuthorizeData>().Count == 0)
             .Select(e => $"{Methods(e)} {e.RoutePattern.RawText}")
             .ToArray();
@@ -206,6 +212,35 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "Endpoints som ändrar tillstånd saknar krav på inloggning (§KM.3): "
                 + string.Join(", ", openWrites));
     }
+
+    /// <summary>
+    /// Endpoints som ändrar tillstånd utan inloggning, med avsikt.
+    ///
+    /// <para>
+    /// Alla hör till inloggningen själv: man kan inte kräva en session för att skapa en.
+    /// Listan är kort med flit — varje rad här är ett undantag någon måste kunna försvara.
+    /// </para>
+    /// </summary>
+    private static bool IsAnonymousByDesign(RouteEndpoint endpoint)
+    {
+        string[] allowed =
+        [
+            "api/v1/auth/request-code",
+            "api/v1/auth/verify-code",
+            "api/v1/auth/refresh",
+            "api/v1/auth/logout",
+        ];
+
+        return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);
+    }
+
+    private IEnumerable<RouteEndpoint> AllRouteEndpoints() =>
+        _factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(e => (e.RoutePattern.RawText ?? string.Empty)
+                .StartsWith("api/", StringComparison.Ordinal));
 
     private static string Methods(RouteEndpoint endpoint) =>
         string.Join("/", endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? []);

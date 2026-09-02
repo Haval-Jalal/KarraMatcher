@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<SessionIssuer>();
         services.AddScoped<LoginCodeService>();
         services.AddScoped<Features.Matches.Admin.MatchAdminService>();
+        services.AddScoped<Features.Venues.VenueRegistry>();
 
         return services;
     }
