@@ -3,12 +3,13 @@ import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
-import { MatchList, teamMatchesQueryKey, useTeamMatches, type Match } from '@/features/matches'
+import { teamMatchesQueryKey, useTeamMatches, type Match } from '@/features/matches'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { cancelMatch, createMatch, deleteMatch, updateMatch } from './adminApi'
 import { MatchForm } from './MatchForm'
 import { ScheduleImport } from './ScheduleImport'
+import { SeasonOverview } from './SeasonOverview'
 
 /**
  * Tränarens vy för ett lag.
@@ -107,57 +108,24 @@ export function CoachMatchesPage() {
         }}
       />
 
-      <h2 className="match-list__title">Lagets matcher</h2>
+      <h2 className="match-list__title">Hela säsongen</h2>
 
       {isPending ? (
         <p className="state" role="status">
           Hämtar matcherna…
         </p>
       ) : (
-        <>
-          <MatchList matches={data?.matches ?? []} now={new Date().toISOString()} />
-
-          <ul className="coach-actions">
-            {(data?.matches ?? []).map((match) => (
-              <li key={match.id} className="coach-actions__row">
-                <span className="coach-actions__label">{match.opponent}</span>
-
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => {
-                    setEditing(match)
-                  }}
-                >
-                  Ändra
-                </button>
-
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => {
-                    void (async () => {
-                      await cancelMatch(slug, match.id)
-                      await refresh()
-                    })()
-                  }}
-                >
-                  Ställ in
-                </button>
-
-                <button
-                  type="button"
-                  className="button button--danger"
-                  onClick={() => {
-                    setConfirmDelete(match)
-                  }}
-                >
-                  Ta bort
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
+        <SeasonOverview
+          matches={data?.matches ?? []}
+          onEdit={setEditing}
+          onCancel={(match) => {
+            void (async () => {
+              await cancelMatch(slug, match.id)
+              await refresh()
+            })()
+          }}
+          onDelete={setConfirmDelete}
+        />
       )}
 
       {confirmDelete !== null && (
