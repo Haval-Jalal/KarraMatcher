@@ -1,3 +1,5 @@
+import { markEarnedAsSeen } from '../badges/badges'
+import { migrate } from '../storage/playerCardStore'
 import { CURRENT_VERSION, emptyCard, type PlayerCardData } from '../storage/schema'
 
 /**
@@ -88,12 +90,17 @@ function fromCurrent(payload: unknown): PlayerCardData | null {
     return null
   }
 
-  return {
+  /*
+   * Koden bar sin egen version och kan vara aldre an telefonen som laser den -- en kod
+   * sparad forra sasongen ar precis det som ska ga att lasa. Den maste darfor genom samma
+   * migreringskedja som lagringen, annars skrivs den ner som aktuell utan att vara det.
+   */
+  return migrate({
     version: typeof candidate.version === 'number' ? candidate.version : CURRENT_VERSION,
     children: candidate.children,
     reports: candidate.reports,
     lastBackupUtc: candidate.lastBackupUtc ?? null,
-  }
+  })
 }
 
 /** Föregångarens form. Avläst ur `index 4.html`, inte antagen. */
@@ -140,6 +147,7 @@ function fromLegacy(payload: unknown): PlayerCardData | null {
       name: kid.name as string,
       shirtNumber: null,
       teamSlug: typeof kid.team === 'string' ? kid.team : null,
+      seenBadges: [],
     }))
 
   for (const [key, entry] of Object.entries(legacy.stats ?? {})) {
@@ -163,7 +171,12 @@ function fromLegacy(payload: unknown): PlayerCardData | null {
     }
   }
 
-  return card
+  /*
+   * En hel sasong kommer in pa en gang. Marken som redan ar fortjanade markeras darfor som
+   * sedda -- samma val som migreringen gor, av samma skal: sex firanden i rad firar
+   * ingenting som just hant.
+   */
+  return markEarnedAsSeen(card)
 }
 
 function asCount(value: unknown): number {

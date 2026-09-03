@@ -475,6 +475,189 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+/* ---- Märken -------------------------------------------------------------------- */
+
+.children__badges {
+  flex: 1 1 100%;
+  font-size: var(--text-sm);
+}
+
+.children__badges summary {
+  cursor: pointer;
+  min-height: var(--tap-target);
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+
+.badges {
+  list-style: none;
+  margin: 8px 0 4px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .badges {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/*
+ * Låst kontra upplåst bärs av ram, text och mätare -- inte av ljushet. Föregångaren
+ * dämpade låsta märken med `opacity: .4`, vilket både faller under 4,5:1 och gör
+ * ljusheten till enda bäraren av beskedet (WCAG 1.4.1). Här är låst full läskontrast;
+ * det är den ifyllda ramen som säger att något är upplåst.
+ */
+.badge {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.badge--earned {
+  border-color: var(--team-accent);
+  border-width: 2px;
+
+  /* Kompenserar den tjockare ramen sa att raderna inte hoppar. */
+  padding: 9px 11px;
+  background: var(--surface-raised);
+}
+
+.badge__emoji {
+  font-size: var(--text-xl);
+  line-height: 1.1;
+}
+
+.badge__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.badge__name {
+  font-family: var(--display);
+  font-size: var(--text-base);
+  color: var(--text-strong);
+}
+
+.badge__requirement,
+.badge__count {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.badge__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.badge__bar {
+  flex: 1 1 auto;
+  height: 6px;
+  min-width: 40px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.badge__fill {
+  display: block;
+  height: 100%;
+  background: var(--team-accent);
+}
+
+.badge__count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Firandet ------------------------------------------------------------------ */
+
+.celebration {
+  margin-top: 16px;
+  padding: 14px;
+  border: 2px solid var(--team-accent);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.celebration__title {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.celebration__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.celebration__item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.celebration__emoji {
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+
+/*
+ * Rörelsen är tillagd, inte bortstädad.
+ *
+ * Regeln längst ned i filen nollar alla animationer under `prefers-reduced-motion`, men
+ * den är ett skyddsnät -- inte en design. Här ligger studsen i stället bakom
+ * `no-preference`, så att den som inte uttryckt något om rörelse är den enda som får den.
+ * Firandet bärs av texten; animationen tillför ingenting att gå miste om (§KM.0 A3).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .celebration {
+    animation: celebration-in 320ms ease-out;
+  }
+
+  .celebration__emoji {
+    animation: celebration-pop 520ms ease-out;
+  }
+}
+
+@keyframes celebration-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes celebration-pop {
+  0% {
+    transform: scale(0.4) rotate(-12deg);
+  }
+
+  60% {
+    transform: scale(1.25) rotate(6deg);
+  }
+}
+
 /* ---- Säkerhetskopia ------------------------------------------------------------ */
 
 .backup {

@@ -1,5 +1,6 @@
 import type { Match } from '@/features/matches'
 
+import { BadgeCelebration } from './badges/BadgeCelebration'
 import type { Child, MatchReport } from './storage/schema'
 import { useMatchReports } from './useMatchReports'
 
@@ -23,7 +24,7 @@ import { useMatchReports } from './useMatchReports'
  * §KM.2. Komponenten når lagringen, aldrig API-lagret.
  */
 export function MatchReportCard({ match, children }: { match: Match; children: Child[] }) {
-  const { reportFor, adjust, setResult } = useMatchReports(match.id)
+  const { card, reportFor, adjust, setResult, acknowledgeBadges } = useMatchReports(match.id)
 
   if (match.status === 'Cancelled') {
     /*
@@ -93,6 +94,13 @@ export function MatchReportCard({ match, children }: { match: Match; children: C
           </div>
         </div>
       ))}
+
+      {/*
+        Firandet star sist: markena lases upp av det som fylls i ovanfor, och ska dyka upp
+        under handen som just tryckte -- inte ovanfor den och knuffa undan raden man hall
+        pa med.
+      */}
+      <BadgeCelebration card={card} children={children} onAcknowledge={acknowledgeBadges} />
     </section>
   )
 }

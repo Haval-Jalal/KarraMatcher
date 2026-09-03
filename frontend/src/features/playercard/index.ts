@@ -1,4 +1,15 @@
 export { BackupSection } from './BackupSection'
+export {
+  BADGES,
+  earnedBadges,
+  isEarned,
+  markEarnedAsSeen,
+  totalsFor,
+  unseenBadges,
+} from './badges/badges'
+export type { Badge, Totals } from './badges/badges'
+export { BadgeCelebration } from './badges/BadgeCelebration'
+export { BadgeList } from './badges/BadgeList'
 export { decodeBackup, encodeBackup } from './backup/backupCode'
 export { mergeCards } from './backup/mergeCards'
 export { ChildrenPage } from './ChildrenPage'

@@ -1,3 +1,5 @@
+import { markEarnedAsSeen } from '../badges/badges'
+
 import { requestPersistentStorage } from './persistentStorage'
 import { CURRENT_VERSION, emptyCard, type MatchReport, type PlayerCardData } from './schema'
 
@@ -54,6 +56,20 @@ const migrations: Record<number, (data: PlayerCardData) => PlayerCardData> = {
       }
     }),
   }),
+
+  /**
+   * 2 → 3: märkena kom, och behövde veta vad barnet redan sett.
+   *
+   * <h3>Gamla märken firas inte i efterhand</h3>
+   *
+   * Allt barnet <em>redan</em> förtjänat markeras som sett. En familj som spelat en hel
+   * säsong ska inte mötas av sex firanden på en gång vid en uppdatering — det firar
+   * ingenting som just hänt, och gör att det första riktiga firandet drunknar.
+   *
+   * Märkena syns ändå direkt i listan, som upplåsta. Det är firandet som är reserverat
+   * för ögonblicket, inte märket.
+   */
+  2: (data) => ({ ...markEarnedAsSeen(data), version: 3 }),
 }
 
 /**
@@ -156,8 +172,15 @@ export function clearCard(): void {
  * Saknas ett steg stannar kedjan och datan lämnas som den är, i stället för att tolkas
  * som om den vore aktuell. Att låtsas är hur ett fält försvinner tyst.
  * </para>
+ *
+ * <para>
+ * Exporterad därför att lagringen inte är den enda vägen in: en <b>säkerhetskopia</b> bär
+ * också en version, och kan mycket väl vara äldre än telefonen som läser den. Skulle den
+ * koden gå förbi kedjan skrevs den ner som aktuell utan att vara det — och ett fält som
+ * saknas syns först när något läser det.
+ * </para>
  */
-function migrate(data: PlayerCardData): PlayerCardData {
+export function migrate(data: PlayerCardData): PlayerCardData {
   let current = data
 
   while (current.version < CURRENT_VERSION) {

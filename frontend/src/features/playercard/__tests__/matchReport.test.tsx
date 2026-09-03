@@ -24,7 +24,7 @@ import HOOK_SOURCE from '../useMatchReports.ts?raw'
 const MATCH_ID = 'match-1'
 
 function child(id: string, name: string) {
-  return { id, name, shirtNumber: null, teamSlug: null }
+  return { id, name, shirtNumber: null, teamSlug: null, seenBadges: [] }
 }
 
 function openMatch(options: { cancelled?: boolean } = {}) {

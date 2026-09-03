@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 
+import { unseenBadges } from './badges/badges'
 import { readCard, writeCard } from './storage/playerCardStore'
 import type { MatchReport } from './storage/schema'
 
@@ -84,7 +85,34 @@ export function useMatchReports(matchId: string) {
     [save],
   )
 
-  return { card, reportFor, adjust, setResult }
+  /**
+   * Markerar de firade märkena som sedda.
+   *
+   * <para>
+   * Ligger här därför att hooken redan äger kortet. Att låta firandet ha ett eget
+   * tillstånd hade gett två ägare till samma data, och den som fyller i ett mål medan
+   * firandet står på skärmen hade riskerat att få det överskrivet.
+   * </para>
+   */
+  const acknowledgeBadges = useCallback(() => {
+    const current = readCard()
+
+    const next = {
+      ...current,
+      children: current.children.map((child) => ({
+        ...child,
+        seenBadges: [
+          ...child.seenBadges,
+          ...unseenBadges(current, child.id).map((badge) => badge.id),
+        ],
+      })),
+    }
+
+    writeCard(next)
+    setCard(next)
+  }, [])
+
+  return { card, reportFor, adjust, setResult, acknowledgeBadges }
 }
 
 function emptyReport(matchId: string, childId: string): MatchReport {
