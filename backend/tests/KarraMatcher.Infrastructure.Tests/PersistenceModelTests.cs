@@ -117,7 +117,7 @@ public class PersistenceModelTests
 
         Assert.Equal(
             [
-                "Account", "AgeGroup", "AuditEntry", "Club", "LoginCode", "Match",
+                "Account", "AgeGroup", "AuditEntry", "CarpoolOffer", "Club", "LoginCode", "Match",
                 "RefreshToken", "Team", "TeamRole", "Venue",
             ],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());

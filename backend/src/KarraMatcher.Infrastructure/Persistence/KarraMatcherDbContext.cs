@@ -2,6 +2,7 @@ using System.Reflection;
 
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Audit;
+using KarraMatcher.Domain.Carpool;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 
@@ -31,6 +32,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<TeamRole> TeamRoles => Set<TeamRole>();
 
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+
+    public DbSet<CarpoolOffer> CarpoolOffers => Set<CarpoolOffer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

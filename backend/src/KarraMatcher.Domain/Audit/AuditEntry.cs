@@ -58,4 +58,7 @@ public static class AuditActions
     public const string MatchUpdated = "match.andrad";
     public const string MatchCancelled = "match.installd";
     public const string MatchDeleted = "match.raderad";
+
+    public const string CarpoolOfferCreated = "samakning.erbjudande.skapat";
+    public const string CarpoolOfferWithdrawn = "samakning.erbjudande.tillbakadraget";
 }
