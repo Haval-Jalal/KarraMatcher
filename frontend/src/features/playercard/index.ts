@@ -1,4 +1,7 @@
 export { BackupSection } from './BackupSection'
+export { PlayerCardPage } from './season/PlayerCardPage'
+export { possessive, seasonFor, summarise } from './season/season'
+export type { Season, SeasonRow, TeamRecord } from './season/season'
 export {
   BADGES,
   earnedBadges,

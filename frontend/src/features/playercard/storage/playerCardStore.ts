@@ -70,6 +70,25 @@ const migrations: Record<number, (data: PlayerCardData) => PlayerCardData> = {
    * för ögonblicket, inte märket.
    */
   2: (data) => ({ ...markEarnedAsSeen(data), version: 3 }),
+
+  /**
+   * 3 → 4: rapporten minns motståndaren.
+   *
+   * <para>
+   * Gamla rapporter får <c>null</c>. Namnet går inte att räkna fram i efterhand utan att
+   * fråga servern, och att gissa det vore att hitta på en match som familjen inte skrivit.
+   * Raden visas då med datum i stället, vilket är sant.
+   * </para>
+   */
+  3: (data) => ({
+    ...data,
+    version: 4,
+    reports: data.reports.map((report) => {
+      const legacy = report as Partial<MatchReport>
+
+      return { ...report, opponent: legacy.opponent ?? null }
+    }),
+  }),
 }
 
 /**

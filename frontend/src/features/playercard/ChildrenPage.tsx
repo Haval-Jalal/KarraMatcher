@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -7,7 +8,6 @@ import { useTeams } from '@/features/teams'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { BADGES, earnedBadges, totalsFor } from './badges/badges'
-import { BadgeList } from './badges/BadgeList'
 import type { Child } from './storage/schema'
 import { BackupSection } from './BackupSection'
 import { usePlayerCard } from './usePlayerCard'
@@ -116,19 +116,18 @@ export function ChildrenPage() {
               </button>
 
               {/*
-                Marken ligger bakom en <details> och inte utfallda: med tva barn hade tolv
-                rader marken tryckt ner allt annat pa sidan. Sammanfattningen sager anda hur
-                manga som ar upplasta, sa man ser att det finns nagot dar utan att oppna.
+                Marken visas inte har langre utan pa barnets egen sida (#46), dar de star
+                bredvid siffrorna de raknas ur. Raden sager anda hur manga som ar upplasta,
+                sa man ser att det finns nagot att oppna.
               */}
-              <details className="children__badges">
-                <summary
-                  aria-label={`Märken för ${child.name} — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)} upplåsta`}
-                >
-                  {`Märken — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)}`}
-                </summary>
-
-                <BadgeList card={card} childId={child.id} />
-              </details>
+              <Link
+                className="button children__card"
+                to="/spelarkort/$childId"
+                params={{ childId: child.id }}
+                aria-label={`Öppna spelarkortet för ${child.name} — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)} märken upplåsta`}
+              >
+                {`Spelarkort — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)} märken`}
+              </Link>
             </li>
           ))}
         </ul>

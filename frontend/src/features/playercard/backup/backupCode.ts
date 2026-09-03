@@ -151,7 +151,15 @@ function fromLegacy(payload: unknown): PlayerCardData | null {
     }))
 
   for (const [key, entry] of Object.entries(legacy.stats ?? {})) {
-    const date = key.split('_')[0] ?? ''
+    const parts = key.split('_')
+    const date = parts[0] ?? ''
+
+    /*
+     * Nyckeln ar `datum_lag_motstandare`, sa motstandaren gar att rada ur den. Resten av
+     * nyckeln fogas ihop igen ifall ett lagnamn skulle innehalla ett understreck -- en
+     * avhuggen motstandare vore samre an ingen alls.
+     */
+    const opponent = parts.slice(2).join('_')
     const playedUtc = /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? `${date}T12:00:00.000Z`
       : new Date(0).toISOString()
@@ -166,6 +174,7 @@ function fromLegacy(payload: unknown): PlayerCardData | null {
         assists: asCount(values.a),
         teamGoals: asCountOrNull(entry.us),
         opponentGoals: asCountOrNull(entry.them),
+        opponent: opponent === '' ? null : opponent,
         note: null,
       })
     }

@@ -18,14 +18,14 @@ import type { MatchReport } from './storage/schema'
  * Ett negativt antal mål betyder ingenting. Spärren sitter både här och på knappen — i
  * gränssnittet så att den syns, och här så att den gäller.
  */
-export function useMatchReports(matchId: string) {
+export function useMatchReports(matchId: string, opponent: string | null = null) {
   const [card, setCard] = useState(readCard)
 
   const reportFor = useCallback(
     (childId: string): MatchReport =>
       card.reports.find((report) => report.matchId === matchId && report.childId === childId) ??
-      emptyReport(matchId, childId),
-    [card.reports, matchId],
+      emptyReport(matchId, childId, opponent),
+    [card.reports, matchId, opponent],
   )
 
   const save = useCallback(
@@ -35,7 +35,14 @@ export function useMatchReports(matchId: string) {
         (report) => report.matchId === matchId && report.childId === childId,
       )
 
-      const updated = change(existing ?? emptyReport(matchId, childId))
+      /*
+       * Motstandaren skrivs av vid varje sparning, inte bara nar rapporten skapas. En
+       * rapport som fylldes i pa version 3 saknar namnet, och nasta trycket ar den
+       * naturliga stunden att fylla det -- familjen star anda i ratt match.
+       */
+      const updated = { ...change(existing ?? emptyReport(matchId, childId, opponent)) }
+
+      updated.opponent ??= opponent
 
       const next = {
         ...current,
@@ -48,7 +55,7 @@ export function useMatchReports(matchId: string) {
       writeCard(next)
       setCard(next)
     },
-    [matchId],
+    [matchId, opponent],
   )
 
   const adjust = useCallback(
@@ -115,7 +122,7 @@ export function useMatchReports(matchId: string) {
   return { card, reportFor, adjust, setResult, acknowledgeBadges }
 }
 
-function emptyReport(matchId: string, childId: string): MatchReport {
+function emptyReport(matchId: string, childId: string, opponent: string | null): MatchReport {
   return {
     id: `${matchId}-${childId}`,
     childId,
@@ -125,6 +132,7 @@ function emptyReport(matchId: string, childId: string): MatchReport {
     assists: 0,
     teamGoals: null,
     opponentGoals: null,
+    opponent,
     note: null,
   }
 }

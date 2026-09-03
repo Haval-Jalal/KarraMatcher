@@ -13,7 +13,7 @@
  */
 
 /** Nuvarande schemaversion. Höjs varje gång formen ändras. */
-export const CURRENT_VERSION = 3
+export const CURRENT_VERSION = 4
 
 /** Ett barn, så som familjen själv lagt in det. */
 export interface Child {
@@ -62,6 +62,23 @@ export interface MatchReport {
    */
   teamGoals: number | null
   opponentGoals: number | null
+  /**
+   * Motståndaren, som den hette när rapporten fylldes i.
+   *
+   * <h3>Varför namnet skrivs av i stället för att slås upp</h3>
+   *
+   * Spelarkortet ska gå att läsa på ett flygplan, på en telefon utan valt lag, och för en
+   * familj som importerat sin säsong från den gamla appen. Att hämta motståndaren ur
+   * lagets schema hade krävt nät — och hade öppnat en väg ut från just de filer där §KM.2
+   * säger att ingen sådan väg ska finnas.
+   *
+   * <para>
+   * Lagnamn är inte personuppgifter; de står redan i det publika schemat och i ICS-feeden.
+   * Tomt för rapporter som fanns före version 4 och för koder från den gamla appen, som
+   * bär datumet men inte motståndaren.
+   * </para>
+   */
+  opponent: string | null
   /** Barnets egna ord om matchen. Lämnar aldrig telefonen. */
   note: string | null
 }
