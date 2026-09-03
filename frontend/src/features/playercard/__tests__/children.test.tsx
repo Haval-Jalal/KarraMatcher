@@ -210,7 +210,12 @@ describe('texten är ärlig om var datan finns', () => {
 
     renderRoute('/spelarkort')
 
-    expect(await screen.findByText(/Ingenting av det här skickas någonstans/)).toBeInTheDocument()
-    expect(screen.getByText(/Byter du telefon behöver du en säkerhetskopia/)).toBeInTheDocument()
+    // Texten vaxte i `#48`; kravet ar detsamma. Bada halvorna ska sta i samma stycke --
+    // en styrka utan sin risk ar ett saljargument, inte arlighet.
+    // Fetstilen ar ett eget element, sa stycket runt den ar det som ska provas.
+    const lead = (await screen.findByText(/Allt här sparas bara på den här telefonen/)).closest('p')
+
+    expect(lead).toHaveTextContent('Du behöver inget konto')
+    expect(lead).toHaveTextContent('statistiken följer med telefonen, inte med dig')
   })
 })
