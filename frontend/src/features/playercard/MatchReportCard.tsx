@@ -24,7 +24,10 @@ import { useMatchReports } from './useMatchReports'
  * §KM.2. Komponenten når lagringen, aldrig API-lagret.
  */
 export function MatchReportCard({ match, children }: { match: Match; children: Child[] }) {
-  const { card, reportFor, adjust, setResult, acknowledgeBadges } = useMatchReports(match.id)
+  const { card, reportFor, adjust, setResult, acknowledgeBadges } = useMatchReports(
+    match.id,
+    match.opponent,
+  )
 
   if (match.status === 'Cancelled') {
     /*

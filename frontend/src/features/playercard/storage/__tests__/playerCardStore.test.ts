@@ -253,6 +253,7 @@ function report() {
     assists: 1,
     teamGoals: 3,
     opponentGoals: 1,
+    opponent: null,
     note: null,
   }
 }

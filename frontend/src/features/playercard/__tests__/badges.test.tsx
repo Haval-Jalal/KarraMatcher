@@ -42,6 +42,7 @@ function report(childId: string, values: Partial<MatchReport> = {}): MatchReport
     assists: 0,
     teamGoals: null,
     opponentGoals: null,
+    opponent: null,
     note: null,
     ...values,
   }
@@ -175,12 +176,11 @@ describe('firandet sker när märket låses upp', () => {
 
 describe('låsta märken visas som låsta', () => {
   async function openBadges() {
+    // Marken bor pa barnets egen sida (#46), dar de star bredvid siffrorna de raknas ur.
     stubApi({})
+    renderRoute('/spelarkort/1')
 
-    const user = userEvent.setup()
-    renderRoute('/spelarkort')
-
-    await user.click(await screen.findByText(/^Märken —/))
+    await screen.findByRole('heading', { level: 1, name: 'Elias' })
   }
 
   it('listar alla sex, med krav och hur långt barnet kommit', async () => {
@@ -230,7 +230,7 @@ describe('en hel säsong firas inte i efterhand', () => {
 
     const card = readCard()
 
-    expect(card.version).toBe(3)
+    expect(card.version).toBe(4)
     expect(unseenBadges(card, '1')).toHaveLength(0)
     expect(card.children[0]?.seenBadges).toContain('malmaskin')
   })
@@ -263,7 +263,7 @@ describe('en hel säsong firas inte i efterhand', () => {
 
     const result = decodeBackup(`KARRA2.${old}`)
 
-    expect(result.ok && result.card.version).toBe(3)
+    expect(result.ok && result.card.version).toBe(4)
     expect(result.ok && result.card.children[0]?.seenBadges).toEqual(['forsta-malet'])
   })
 })

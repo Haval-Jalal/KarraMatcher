@@ -99,7 +99,7 @@ export const BADGES: Badge[] = [
  * </para>
  */
 export function totalsFor(card: PlayerCardData, childId: string): Totals {
-  const reports = card.reports.filter((report) => report.childId === childId && hasContent(report))
+  const reports = card.reports.filter((report) => report.childId === childId && isFilledIn(report))
 
   return {
     goals: sum(reports, (report) => report.goals),
@@ -164,12 +164,17 @@ export function markEarnedAsSeen(card: PlayerCardData): PlayerCardData {
  * En rapport räknas som ifylld när den bär något familjen faktiskt skrivit in.
  *
  * <para>
+ * Exporterad så att märkena och säsongssidan räknar likadant. Två egna definitioner hade
+ * glidit isär, och då hade Stammis sagt tio matcher medan sidan bredvid sa nio.
+ * </para>
+ *
+ * <para>
  * Resultatet räknas med. Det skrivs på varje syskons rapport när någon fyller i hur
  * matchen slutade, precis som i föregångaren — där en match räknades som spelad så fort
  * den hade ett resultat, oavsett om barnet gjort mål.
  * </para>
  */
-function hasContent(report: MatchReport): boolean {
+export function isFilledIn(report: MatchReport): boolean {
   return (
     report.goals > 0 ||
     report.assists > 0 ||

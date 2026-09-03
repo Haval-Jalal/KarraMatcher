@@ -132,6 +132,7 @@ describe('ta bort barn', () => {
           assists: 0,
           teamGoals: null,
           opponentGoals: null,
+          opponent: null,
           note: null,
         },
         {
@@ -143,6 +144,7 @@ describe('ta bort barn', () => {
           assists: 0,
           teamGoals: null,
           opponentGoals: null,
+          opponent: null,
           note: null,
         },
       ],

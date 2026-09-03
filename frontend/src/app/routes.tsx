@@ -4,7 +4,7 @@ import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
 import { CoachMatchesPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
-import { ChildrenPage } from '@/features/playercard'
+import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
@@ -143,6 +143,21 @@ const playerCardRoute = createRoute({
   component: ChildrenPage,
 })
 
+/**
+ * Barnets egen sida.
+ *
+ * <para>
+ * Id:t i adressen är barnets lokala id och betyder ingenting utanför den här telefonen —
+ * kortet ligger på enheten (§KM.2). En delad länk hit landar därför på en vänlig sida som
+ * säger just det, inte på ett tomt kort.
+ * </para>
+ */
+const playerCardChildRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/spelarkort/$childId',
+  component: PlayerCardPage,
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
@@ -151,6 +166,7 @@ export const routeTree = rootRoute.addChildren([
   accountRoute,
   coachRoute,
   playerCardRoute,
+  playerCardChildRoute,
 ])
 
 export const router = createRouter({
