@@ -32,11 +32,20 @@ export function usePlayerCard() {
     return saved
   }, [])
 
+  /**
+   * Lägger till ett barn.
+   *
+   * <para>
+   * Formuläret frågar inte efter <c>seenBadges</c> och ska inte behöva veta att fältet
+   * finns. Ett nytt barn har inte sett några märken — det är hookens sak att veta, inte
+   * anropsställets.
+   * </para>
+   */
   const addChild = useCallback(
-    (child: Omit<Child, 'id'>): boolean =>
+    (child: Omit<Child, 'id' | 'seenBadges'>): boolean =>
       save({
         ...card,
-        children: [...card.children, { ...child, id: newId() }],
+        children: [...card.children, { ...child, id: newId(), seenBadges: [] }],
       }),
     [card, save],
   )

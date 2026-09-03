@@ -13,7 +13,7 @@
  */
 
 /** Nuvarande schemaversion. Höjs varje gång formen ändras. */
-export const CURRENT_VERSION = 2
+export const CURRENT_VERSION = 3
 
 /** Ett barn, så som familjen själv lagt in det. */
 export interface Child {
@@ -23,6 +23,23 @@ export interface Child {
   /** Tröjnummer, om barnet har ett. */
   shirtNumber: string | null
   teamSlug: string | null
+
+  /**
+   * Märken barnet redan fått se firas.
+   *
+   * <para>
+   * Sparas för att firandet ska ske <em>en</em> gång — den gång märket låstes upp. Utan
+   * den här listan hade varje omstart av appen firat samma sex märken igen, och det som
+   * skulle vara en händelse blivit en påminnelse man klickar bort.
+   * </para>
+   *
+   * <para>
+   * Märkena själva sparas aldrig. De räknas fram ur statistiken varje gång, så en ändrad
+   * matchrapport ger ett ändrat märke — det är bara <b>vad barnet sett</b> som ligger här.
+   * Tillkom i version 3.
+   * </para>
+   */
+  seenBadges: string[]
 }
 
 /** En ifylld matchrapport. Fylls i av förälder och barn efter matchen. */

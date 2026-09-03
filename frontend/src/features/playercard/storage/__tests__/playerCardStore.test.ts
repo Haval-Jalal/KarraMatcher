@@ -93,7 +93,7 @@ describe('migreringen tar datan hela vägen', () => {
       'karra.spelarkort',
       JSON.stringify({
         version: 1,
-        children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null }],
+        children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null, seenBadges: [] }],
         reports: [
           {
             id: 'r1',
@@ -240,7 +240,7 @@ describe('beständig lagring', () => {
 })
 
 function child() {
-  return { id: 'barn-1', name: 'Elias', shirtNumber: '7', teamSlug: 'gul' }
+  return { id: 'barn-1', name: 'Elias', shirtNumber: '7', teamSlug: 'gul', seenBadges: [] }
 }
 
 function report() {

@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { useTeams } from '@/features/teams'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
+import { BADGES, earnedBadges, totalsFor } from './badges/badges'
+import { BadgeList } from './badges/BadgeList'
 import type { Child } from './storage/schema'
 import { BackupSection } from './BackupSection'
 import { usePlayerCard } from './usePlayerCard'
@@ -112,6 +114,21 @@ export function ChildrenPage() {
                 <span aria-hidden="true">Ta bort</span>
                 <span className="visually-hidden">{`Ta bort ${child.name}`}</span>
               </button>
+
+              {/*
+                Marken ligger bakom en <details> och inte utfallda: med tva barn hade tolv
+                rader marken tryckt ner allt annat pa sidan. Sammanfattningen sager anda hur
+                manga som ar upplasta, sa man ser att det finns nagot dar utan att oppna.
+              */}
+              <details className="children__badges">
+                <summary
+                  aria-label={`Märken för ${child.name} — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)} upplåsta`}
+                >
+                  {`Märken — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)}`}
+                </summary>
+
+                <BadgeList card={card} childId={child.id} />
+              </details>
             </li>
           ))}
         </ul>

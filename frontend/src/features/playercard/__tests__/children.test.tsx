@@ -80,8 +80,8 @@ describe('lägga till barn', () => {
     writeCard({
       ...emptyCard(),
       children: [
-        { id: '1', name: 'Elias', shirtNumber: '7', teamSlug: 'gul' },
-        { id: '2', name: 'Vera', shirtNumber: null, teamSlug: 'bla' },
+        { id: '1', name: 'Elias', shirtNumber: '7', teamSlug: 'gul', seenBadges: [] },
+        { id: '2', name: 'Vera', shirtNumber: null, teamSlug: 'bla', seenBadges: [] },
       ],
     })
 
@@ -97,7 +97,7 @@ describe('ta bort barn', () => {
     stubApi({})
     writeCard({
       ...emptyCard(),
-      children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null }],
+      children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null, seenBadges: [] }],
     })
 
     const user = userEvent.setup()
@@ -119,8 +119,8 @@ describe('ta bort barn', () => {
     writeCard({
       ...emptyCard(),
       children: [
-        { id: '1', name: 'Elias', shirtNumber: null, teamSlug: null },
-        { id: '2', name: 'Vera', shirtNumber: null, teamSlug: null },
+        { id: '1', name: 'Elias', shirtNumber: null, teamSlug: null, seenBadges: [] },
+        { id: '2', name: 'Vera', shirtNumber: null, teamSlug: null, seenBadges: [] },
       ],
       reports: [
         {
@@ -165,7 +165,7 @@ describe('ta bort barn', () => {
     stubApi({})
     writeCard({
       ...emptyCard(),
-      children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null }],
+      children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null, seenBadges: [] }],
     })
 
     const user = userEvent.setup()
@@ -182,7 +182,7 @@ describe('ändra barn', () => {
     stubApi({})
     writeCard({
       ...emptyCard(),
-      children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null }],
+      children: [{ id: '1', name: 'Elias', shirtNumber: null, teamSlug: null, seenBadges: [] }],
     })
 
     const user = userEvent.setup()
