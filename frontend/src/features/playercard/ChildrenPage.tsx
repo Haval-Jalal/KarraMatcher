@@ -8,6 +8,8 @@ import { useTeams } from '@/features/teams'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { BADGES, earnedBadges, totalsFor } from './badges/badges'
+import { InstallTip } from './storage/InstallTip'
+import { StorageNotice } from './storage/StorageNotice'
 import type { Child } from './storage/schema'
 import { BackupSection } from './BackupSection'
 import { usePlayerCard } from './usePlayerCard'
@@ -65,11 +67,9 @@ export function ChildrenPage() {
         </p>
       </header>
 
-      <p className="state">
-        <strong>Ingenting av det här skickas någonstans.</strong> Det gör att du inte behöver konto
-        — men också att statistiken följer med telefonen. Byter du telefon behöver du en
-        säkerhetskopia.
-      </p>
+      <StorageNotice />
+
+      <InstallTip hasContent={card.children.length > 0 || card.reports.length > 0} />
 
       {failure !== null && (
         <p className="state state--error" role="alert">

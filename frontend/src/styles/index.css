@@ -475,6 +475,81 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-strong);
 }
 
+/* ---- Ärligheten om lagringen --------------------------------------------------- */
+
+.notice {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.notice__lead {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
+  max-width: 60ch;
+}
+
+.notice__more {
+  margin-top: 8px;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.notice__more summary {
+  cursor: pointer;
+  min-height: var(--tap-target);
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+
+.notice__more p,
+.notice__more ul {
+  max-width: 60ch;
+  margin: 0 0 8px;
+}
+
+.notice__more ul {
+  padding-left: 20px;
+}
+
+/*
+ * Tipset ar en uppmaning och far darfor lagfargens ram -- men bara ramen. Fyllningen
+ * lamnas at ytan bakom, sa att rutan syns utan att ta over sidan fran det den handlar om.
+ */
+.tip {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 2px solid var(--team-accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.tip h2 {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.tip p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
+  max-width: 60ch;
+}
+
+.tip__how {
+  color: var(--text-muted);
+}
+
 /* ---- Barnets egen sida --------------------------------------------------------- */
 
 /*
