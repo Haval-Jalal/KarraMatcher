@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IMatchAdminRepository, MatchAdminRepository>();
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IScheduleImportRepository, ScheduleImportRepository>();
+        services.AddScoped<ICarpoolOfferRepository, CarpoolOfferRepository>();
 
         /*
          * Adressuppslagning mot Nominatim (OpenStreetMap).
