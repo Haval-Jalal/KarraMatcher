@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Venues.VenueRegistry>();
         services.AddScoped<Features.Matches.Import.ScheduleImportService>();
         services.AddScoped<Features.Carpool.CarpoolOfferService>();
+        services.AddScoped<Features.Carpool.CarpoolRequestService>();
 
         return services;
     }

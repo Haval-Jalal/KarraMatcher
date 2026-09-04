@@ -159,15 +159,16 @@ public partial class PlayerStatisticsTests
          * Ingen av dem har nagot falt som kan innehalla en uppgift om ett barn (§KM.1),
          * och spelarkortet nar fortfarande aldrig servern (§KM.2).
          *
-         * CarpoolOffers tillkom i #50 och ar medvetet med. Tabellen bar en vuxens
-         * erbjudande om skjuts -- riktning, plats, tid, antal platser och forarens egen
-         * notis. Inget barn namns, och notisen ar forarens egna ord om sin egen resa.
-         * Gallras 30 dagar efter matchen (§KM.12).
+         * CarpoolOffers tillkom i #50 och CarpoolRequests i #51. Bada ar medvetet med och
+         * bar vuxnas uppgifter: erbjudandets riktning, plats, tid och platser, och
+         * forfragans antal platser. Fritexten -- forarens notis och fragarens halsning --
+         * ar vuxnas egna ord om sin egen resa. Inget barn namns i nagondera (§KM.1), och
+         * bada gallras 30 dagar efter matchen (§KM.12).
          */
         Assert.Equal(
             [
-                "Accounts", "AgeGroups", "AuditEntries", "CarpoolOffers", "Clubs", "LoginCodes",
-                "Matches", "RefreshTokens", "TeamRoles", "Teams", "Venues",
+                "Accounts", "AgeGroups", "AuditEntries", "CarpoolOffers", "CarpoolRequests",
+                "Clubs", "LoginCodes", "Matches", "RefreshTokens", "TeamRoles", "Teams", "Venues",
             ],
             DbSetNames());
     }

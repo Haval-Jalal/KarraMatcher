@@ -177,6 +177,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
          */
         var protectedReads = PublicRouteEndpoints()
             .Where(IsSafeMethod)
+            .Where(e => !IsAuthenticatedByDesign(e))
             .Where(e => e.Metadata.GetOrderedMetadata<IAuthorizeData>().Count > 0)
             .Select(e => e.RoutePattern.RawText)
             .ToArray();
@@ -229,6 +230,37 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "api/v1/auth/verify-code",
             "api/v1/auth/refresh",
             "api/v1/auth/logout",
+        ];
+
+        return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// Läsningar under en publik sökväg som ändå kräver inloggning, med avsikt.
+    ///
+    /// <para>
+    /// Spegelbilden av <see cref="IsAnonymousByDesign"/>, och lika kort med flit. Prefixen
+    /// i <see cref="PublicRouteEndpoints"/> beskriver schemat — lag, matcher, kalender — och
+    /// allt <em>det</em> handlar om ska vara öppet.
+    /// </para>
+    ///
+    /// <para>
+    /// Åkförfrågningarna ligger under samma adress som matchen men är något annat: en sak
+    /// mellan två föräldrar. Hälsningen är fritext och får bara nå de inblandade (§KM.12),
+    /// så listan filtreras dessutom på vem som frågar — föraren ser alla, alla andra bara
+    /// sina egna. Erbjudandena är däremot fortsatt öppna för alla, precis som §KM.3 kräver.
+    /// </para>
+    ///
+    /// <para>
+    /// Jämförelsen är exakt och inte på prefix: undantaget ska gälla den här routen, inte
+    /// allt som en dag råkar börja likadant.
+    /// </para>
+    /// </summary>
+    private static bool IsAuthenticatedByDesign(RouteEndpoint endpoint)
+    {
+        string[] allowed =
+        [
+            "api/v1/matches/{matchId:guid}/carpool/offers/{offerId:guid}/requests",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

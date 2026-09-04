@@ -117,7 +117,7 @@ public class PersistenceModelTests
 
         Assert.Equal(
             [
-                "Account", "AgeGroup", "AuditEntry", "CarpoolOffer", "Club", "LoginCode", "Match",
+                "Account", "AgeGroup", "AuditEntry", "CarpoolOffer", "CarpoolRequest", "Club", "LoginCode", "Match",
                 "RefreshToken", "Team", "TeamRole", "Venue",
             ],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());
@@ -149,5 +149,48 @@ public class PersistenceModelTests
                 "timestamp with time zone",
                 entity.FindProperty(property)!.GetColumnType());
         }
+    }
+
+    /// <summary>
+    /// En aktiv förfrågan per person och erbjudande — som ett filtrerat unikt index.
+    ///
+    /// <para>
+    /// <b>Kontrolleras här och inte i integrationstesterna med flit.</b> De kör mot EF:s
+    /// InMemory-provider, som varken bryr sig om unika index eller filter — ett test där
+    /// hade gått grönt vad än indexet sa, vilket är värre än inget test alls. Modellen
+    /// byggs däremot mot Npgsql, så det som står här är det som hamnar i databasen.
+    /// </para>
+    ///
+    /// <para>
+    /// Kontrollen i handlern ger det begripliga felet; indexet ger garantin. Två anrop som
+    /// kommer samtidigt hinner båda läsa "ingen aktiv finns" innan någon av dem skrivit.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Akforfragan_HarUniktIndexForAktivaPerPersonOchErbjudande()
+    {
+        var entity = Model().FindEntityType(typeof(Domain.Carpool.CarpoolRequest));
+        Assert.NotNull(entity);
+
+        var index = entity.GetIndexes().SingleOrDefault(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(
+                [
+                    nameof(Domain.Carpool.CarpoolRequest.OfferId),
+                    nameof(Domain.Carpool.CarpoolRequest.RequesterAccountId),
+                ]));
+
+        Assert.NotNull(index);
+        Assert.True(index.IsUnique, "Indexet maste vara unikt, annars garanterar det ingenting.");
+
+        var filter = index.GetFilter();
+
+        Assert.NotNull(filter);
+
+        // Filtret ar hela poangen: en nekad eller atertagen forfragan far inte blockera en
+        // ny, och utan filter hade indexet last ute den som fragat en gang.
+        Assert.Contains("Pending", filter, StringComparison.Ordinal);
+        Assert.Contains("Accepted", filter, StringComparison.Ordinal);
+        Assert.DoesNotContain("Retracted", filter, StringComparison.Ordinal);
+        Assert.DoesNotContain("Denied", filter, StringComparison.Ordinal);
     }
 }

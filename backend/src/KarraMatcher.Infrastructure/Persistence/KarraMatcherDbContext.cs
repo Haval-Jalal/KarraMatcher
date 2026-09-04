@@ -35,6 +35,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<CarpoolOffer> CarpoolOffers => Set<CarpoolOffer>();
 
+    public DbSet<CarpoolRequest> CarpoolRequests => Set<CarpoolRequest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
