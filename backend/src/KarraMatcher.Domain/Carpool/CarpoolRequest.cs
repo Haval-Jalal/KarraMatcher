@@ -36,6 +36,17 @@ public sealed class CarpoolRequest
     /// </summary>
     public string? Message { get; set; }
 
+    /// <summary>
+    /// Förarens ord tillbaka. Krävs vid ett nekande (§KM.12) och är valfritt vid en accept.
+    ///
+    /// <para>
+    /// Samma sorts fritext som hälsningen, och behandlas likadant: loggas aldrig, visas bara
+    /// för de inblandade. Den ligger på förfrågan och inte på erbjudandet därför att svaret
+    /// gäller <em>en</em> familj — ett nej till grannen är inget de andra ska läsa.
+    /// </para>
+    /// </summary>
+    public string? ResponseMessage { get; set; }
+
     public CarpoolRequestStatus Status { get; set; }
 
     public DateTime CreatedUtc { get; set; }

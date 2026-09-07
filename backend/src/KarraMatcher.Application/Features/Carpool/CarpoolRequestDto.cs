@@ -17,6 +17,7 @@ public sealed record CarpoolRequestDto(
     Guid OfferId,
     int Seats,
     string? Message,
+    string? ResponseMessage,
     CarpoolRequestStatus Status,
     DateTime CreatedUtc,
     bool IsMine)
@@ -30,6 +31,7 @@ public sealed record CarpoolRequestDto(
             request.OfferId,
             request.Seats,
             request.Message,
+            request.ResponseMessage,
             request.Status,
             request.CreatedUtc,
             request.RequesterAccountId == reader);

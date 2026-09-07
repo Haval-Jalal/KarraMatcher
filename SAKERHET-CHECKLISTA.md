@@ -37,9 +37,9 @@
 | 2.5 | Resurs som tillhör annan användare svarar `404`, inte `403` | ⬜ |
 | 2.6 | Tränarroll är bunden till **sitt lag** — kan inte ändra andra lags matcher | ✅ |
 | 2.7 | **§KM.7** `AttendanceEnabled` kontrolleras serverside; avstängd flagga ger `404` | ⬜ |
-| 2.8 | **§KM.12** Endast erbjudandets ägare kan acceptera eller neka dess förfrågningar | ⬜ |
-| 2.9 | **§KM.12** Platsräkning sker server-side; accept som spränger antalet avvisas | ⬜ |
-| 2.10 | **§KM.12** Nekande utan meddelande avvisas server-side | ⬜ |
+| 2.8 | **§KM.12** Endast erbjudandets ägare kan acceptera eller neka dess förfrågningar | ✅ |
+| 2.9 | **§KM.12** Platsräkning sker server-side; accept som spränger antalet avvisas | ✅ |
+| 2.10 | **§KM.12** Nekande utan meddelande avvisas server-side | ✅ |
 | 2.11 | **§KM.3** Gäst kan läsa samåkning men får `401` på att lägga upp eller skicka förfrågan | ⬜ |
 | 2.12 | Ingen "mass assignment" — DTOs (records), aldrig entiteter, i API-in/ut | ✅ |
 | 2.13 | Principen om minsta behörighet genomgående | ⬜ |

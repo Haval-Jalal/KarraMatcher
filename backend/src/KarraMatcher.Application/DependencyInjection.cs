@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Matches.Import.ScheduleImportService>();
         services.AddScoped<Features.Carpool.CarpoolOfferService>();
         services.AddScoped<Features.Carpool.CarpoolRequestService>();
+        services.AddScoped<Features.Carpool.CarpoolResponseService>();
 
         return services;
     }

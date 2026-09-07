@@ -9,8 +9,8 @@
 
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
-- **Senast uppdaterad:** 2026-09-06 av Haval
-- **Aktuell milstolpe:** M5 — Samåkning (1 av 6 klara). M4 klar 8 av 8
+- **Senast uppdaterad:** 2026-09-07 av Haval
+- **Aktuell milstolpe:** M5 — Samåkning (2 av 6 klara). M4 klar 8 av 8
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -91,7 +91,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#51` Åkförfrågan i backend | Haval | `feature/carpool-request` | In Review — ny tabell `CarpoolRequests` |
+| `#52` Acceptera eller neka förfrågan | Haval | `feature/carpool-response` | In Review — ny kolumn `ResponseMessage` |
 
 ## ➡️ Nästa steg
 
@@ -169,6 +169,9 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2026-09-03 | **Notisen lämnas ute ur svaret till en gäst, och listan är aldrig edge-cachad** | §KM.3 gör erbjudandena publika, §KM.12 säger att fritext bara får nå de inblandade. Båda kan gälla samtidigt om svaret innehåller olika mycket beroende på vem som frågar | Men då får svaret **aldrig** ligga i en delad cache — annars levereras en förälders fritext till någon annan från Vercels edge. Endpointen är därför medvetet inte märkt med `WithEdgeCache` och får `private`. Kallstarten på Render får kosta här, och ett test vaktar att ingen "optimerar" bort det |
 | 2026-09-03 | **Läsning och skrivning ligger i varsin controller, inte i en med `[AllowAnonymous]`** | Blandat i en klass fungerar det vid körning, men den publika läsningen bär då auktoriseringsmetadata — och gästvakten från `#33` kan inte längre skilja en öppen endpoint från en som råkat bli stängd. Vakten fällde bygget direkt när jag försökte | Samma uppdelning som `MatchesController`/`MatchAdminController` redan använder, och vars kommentar varnar för precis det här |
 | 2026-09-03 | **Föraren identifierar sig i notisen — inget namnfält på kontot** | Kontot lagrar bara en mejladress, som aldrig visas, så ett erbjudande kan inte säga vem som kör. Beslutat med Haval 2026-09-03: notisen får bära det | Samma hållning som §KM.12 har till telefonnummer — appen frågar aldrig, men den förälder som vill skriva "Johan, Elias pappa" får göra det. Ingen ny PII-kolumn införs, och notisen omfattas av gallringen efter 30 dagar. Gäller `#53` när samåkningsvyn byggs |
+| 2026-09-07 | **Ny kolumn: `CarpoolRequests.ResponseMessage`** | Ett nekande kräver ett meddelande (§KM.12), och det måste gå att läsa för den som frågade — annars är kravet bara en formulärkontroll | Svaret ligger på förfrågan och inte på erbjudandet: det gäller **en** familj, och ett nej till grannen är inget de andra ska läsa. Samma tak som hälsningen, 500 tecken. Fritext, alltså aldrig i audit-loggen och omfattad av gallringen efter 30 dagar |
+| 2026-09-07 | **Ett svar ges en gång — till skillnad från ett återtagande** | Att återta något som redan är återtaget är ofarligt och svarar ja. Ett andra *svar* betyder att föraren ändrar sig, och det är inte samma händelse: en familj som fått ja och packat bilen ska inte kunna få det omgjort till nej med en knapptryckning | Andra svaret ger `409`. Den som ändrat sig får göra det med orden, i meddelandefältet. `#55` får avgöra om en förare ska kunna ta tillbaka ett ja, och i så fall vad den som drabbas får veta |
+| 2026-09-07 | **Platsräkningen frågar databasen, den litar inte på erbjudandet** | Följdbeslutet till att "fullt" räknas fram (2026-09-03): accepten måste läsa summan av de accepterade förfrågningarna, inte ett tal på erbjudandet | En accept som spränger antalet avvisas med `409` och ett fel som säger hur många platser som faktiskt är kvar — aldrig genom att knappen döljs, för en dold knapp är ingen regel. Kvarstående risk: två accepter i samma sekund kan sälja en plats för mycket, eftersom raden inte låses. Föraren är en person med en telefon, så det får stå kvar tills något visar motsatsen |
 | 2026-09-03 | **Ny tabell: `CarpoolRequests`, med ett filtrerat unikt index** | En aktiv förfrågan per person och erbjudande. Kontrollen i handlern ger det begripliga felet, men två anrop som kommer samtidigt hinner båda läsa "ingen aktiv finns" innan någon skrivit — då är det bara databasen som kan säga nej | Filtret är `Status IN ('Pending','Accepted')`: en nekad eller återtagen förfrågan blockerar inte, eftersom planerna kan ha ändrats och att låsa ute någon för att de frågat en gång vore fel |
 | 2026-09-03 | **Indexet vaktas i modelltesterna, inte i integrationstesterna** | Integrationstesterna kör mot EF:s InMemory-provider, som varken bryr sig om unika index eller filter. Ett test där hade gått grönt vad än indexet sa — **värre än inget test alls** | Upptäckt genom att provet inte föll: `Assert.ThrowsAny<DbUpdateException>` gav "No exception was thrown" fastän indexet fanns. Kontrollen ligger nu i `PersistenceModelTests`, som bygger modellen mot Npgsql utan att en databas behöver finnas. Detsamma gäller varje framtida databasgaranti |
 | 2026-09-03 | **Gästvakten fick en spegelbild: `IsAuthenticatedByDesign`** | Åkförfrågningarna ligger under `api/v1/matches/...`, som vakten räknar som publik läsyta — men de är något annat än schemat: en sak mellan två föräldrar, där hälsningen är fritext som bara får nå de inblandade (§KM.12) | Undantaget är namngivet och jämförs exakt, inte på prefix, precis som `IsAnonymousByDesign` för skrivningar. Listan ska förbli kort: varje rad är ett undantag någon måste kunna försvara. Erbjudandena är fortsatt öppna för alla |

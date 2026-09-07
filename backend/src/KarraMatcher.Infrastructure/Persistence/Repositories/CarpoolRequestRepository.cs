@@ -34,6 +34,39 @@ internal sealed class CarpoolRequestRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<int> AcceptedSeatsAsync(Guid offerId, CancellationToken cancellationToken) =>
+        await context.CarpoolRequests
+            .AsNoTracking()
+            .Where(r => r.OfferId == offerId && r.Status == CarpoolRequestStatus.Accepted)
+            .SumAsync(r => r.Seats, cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyDictionary<Guid, int>> AcceptedSeatsForOffersAsync(
+        IReadOnlyCollection<Guid> offerIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(offerIds);
+
+        if (offerIds.Count == 0)
+        {
+            return new Dictionary<Guid, int>();
+        }
+
+        /*
+         * Grupperat i databasen. Att hamta raderna och summera i minnet hade fungerat lika
+         * bra pa en match med fyra erbjudanden, och lika daligt den dag det ar femtio.
+         */
+        var rows = await context.CarpoolRequests
+            .AsNoTracking()
+            .Where(r => offerIds.Contains(r.OfferId) && r.Status == CarpoolRequestStatus.Accepted)
+            .GroupBy(r => r.OfferId)
+            .Select(group => new { OfferId = group.Key, Seats = group.Sum(r => r.Seats) })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(row => row.OfferId, row => row.Seats);
+    }
+
     public async Task AddAsync(CarpoolRequest request, CancellationToken cancellationToken) =>
         await context.CarpoolRequests.AddAsync(request, cancellationToken).ConfigureAwait(false);
 
