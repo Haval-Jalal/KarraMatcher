@@ -1,6 +1,8 @@
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 
+import { AppNav } from '@/components/AppNav'
+
 /**
  * Ramen runt varje sida.
  *
@@ -36,6 +38,12 @@ export function RootLayout() {
       <a className="skip-link" href="#innehall">
         Hoppa till innehållet
       </a>
+
+      {/*
+        Menyn star fore innehallet, alltsa efter hopplanken. Den som anvander tangentbord
+        kan da hoppa forbi den; den som vill navigera tabbar in i den direkt.
+      */}
+      <AppNav />
 
       {/*
         tabIndex={-1} gör elementet fokuserbart från kod utan att lägga det i tabbordningen.
