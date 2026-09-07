@@ -18,6 +18,9 @@ internal sealed class CarpoolRequestConfiguration : IEntityTypeConfiguration<Car
 
         builder.Property(r => r.Message).HasMaxLength(500);
 
+        // Forarens svar tillbaka. Samma tak som halsningen -- ett nej ska rymma ett riktigt skal.
+        builder.Property(r => r.ResponseMessage).HasMaxLength(500);
+
         // Text och inte siffra: en siffra sager ingenting den dag nagon felsoker med psql.
         builder.Property(r => r.Status)
             .HasConversion<string>()

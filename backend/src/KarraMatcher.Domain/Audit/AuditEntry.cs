@@ -63,4 +63,6 @@ public static class AuditActions
     public const string CarpoolOfferWithdrawn = "samakning.erbjudande.tillbakadraget";
     public const string CarpoolRequestCreated = "samakning.forfragan.skickad";
     public const string CarpoolRequestRetracted = "samakning.forfragan.atertagen";
+    public const string CarpoolRequestAccepted = "samakning.forfragan.accepterad";
+    public const string CarpoolRequestDenied = "samakning.forfragan.nekad";
 }

@@ -197,6 +197,111 @@ public sealed class CarpoolDriverController(
         return retracted ? NoContent() : NotFoundForOwner();
     }
 
+    /// <summary>Föraren accepterar en förfrågan. Först nu förbrukas platser (§KM.12).</summary>
+    [HttpPost("requests/{requestId:guid}/accept")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Accept(
+        Guid requestId,
+        [FromBody] CarpoolAnswerRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        // Kroppen ar valfri. Ett ja behover inga ord, och da ska det inte kravas en tom rad.
+        var answered = await commands
+            .SendAsync(
+                new AcceptCarpoolRequestCommand(requestId, request?.Message, actor.Value),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return Answered(answered);
+    }
+
+    /// <summary>
+    /// Föraren nekar. Meddelandet är obligatoriskt (§KM.12) — utan det svarar valideringen
+    /// <c>400</c> innan något ändras.
+    /// </summary>
+    [HttpPost("requests/{requestId:guid}/deny")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Deny(
+        Guid requestId,
+        CarpoolAnswerRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var answered = await commands
+            .SendAsync(
+                new DenyCarpoolRequestCommand(requestId, request.Message ?? string.Empty, actor.Value),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return Answered(answered);
+    }
+
+    /// <summary>Översätter utfallet av ett svar till ett HTTP-svar.</summary>
+    private IActionResult Answered((CarpoolResponseOutcome Outcome, int SeatsLeft) result) =>
+        result.Outcome switch
+        {
+            CarpoolResponseOutcome.Answered => NoContent(),
+
+            CarpoolResponseOutcome.OfferUnavailable => NotFoundForOffer(),
+
+            CarpoolResponseOutcome.AlreadyAnswered => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Förfrågan är redan besvarad",
+                detail: "Skriv till familjen om du har ändrat dig."),
+
+            CarpoolResponseOutcome.Retracted => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Förfrågan är återtagen",
+                detail: "Familjen har tagit tillbaka den och behöver inte längre skjuts."),
+
+            CarpoolResponseOutcome.NotEnoughSeats => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Det finns inte så många platser kvar",
+                detail: SeatsLeftText(result.SeatsLeft)),
+
+            _ => NotFoundForRequest(),
+        };
+
+    private static string SeatsLeftText(int seatsLeft) => seatsLeft switch
+    {
+        0 => "Bilen är full. Du kan neka med ett meddelande i stället.",
+        1 => "Det finns en plats kvar.",
+        _ => $"Det finns {seatsLeft} platser kvar.",
+    };
+
+    /// <summary>
+    /// Samma svar för "förfrågan finns inte" och "det är inte ditt erbjudande".
+    ///
+    /// <para>
+    /// Av samma skäl som <see cref="NotFoundForOwner"/>: skiljde de sig åt gick det att
+    /// kartlägga vilka förfrågningar som existerar genom att prova sig fram.
+    /// </para>
+    /// </summary>
+    private ObjectResult NotFoundForRequest() => Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Förfrågan finns inte",
+        detail: "Den kan ha återtagits, eller så är det inte ditt erbjudande.");
+
     private ObjectResult NotFoundForOffer() => Problem(
         statusCode: StatusCodes.Status404NotFound,
         title: "Erbjudandet går inte att fråga om",
@@ -249,6 +354,17 @@ public sealed record CarpoolRequestRequest(int Seats, string? Message)
 {
     internal CarpoolRequestDraft ToDraft() => new(Seats, Message);
 }
+
+/// <summary>
+/// Förarens svar.
+///
+/// <para>
+/// Samma kropp för ja och nej, för det är samma sorts ord — skillnaden är att ett nej
+/// <b>kräver</b> dem (§KM.12). Kravet prövas i valideringen av kommandot, inte här, så att
+/// ingen väg in i tjänsten kan komma runt det.
+/// </para>
+/// </summary>
+public sealed record CarpoolAnswerRequest(string? Message);
 
 public sealed record CarpoolOfferRequest(
     CarpoolDirection Direction,

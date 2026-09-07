@@ -24,6 +24,29 @@ public interface ICarpoolRequestRepository
         Guid offerId,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Summan av platserna på erbjudandets <b>accepterade</b> förfrågningar.
+    ///
+    /// <para>
+    /// Bara accepterade räknas (§KM.12) — att fråga tar ingen plats i anspråk. Summan räknas
+    /// i databasen i stället för att lagras på erbjudandet: ett sparat "upptaget"-tal är ett
+    /// andra ställe som vet samma sak, och det är det som glider isär.
+    /// </para>
+    /// </summary>
+    public Task<int> AcceptedSeatsAsync(Guid offerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Samma räkning för flera erbjudanden på en gång.
+    ///
+    /// <para>
+    /// Finns för att listningen av en matchs erbjudanden inte ska ställa en fråga per
+    /// erbjudande. Erbjudanden utan accepterade förfrågningar saknas i svaret.
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyDictionary<Guid, int>> AcceptedSeatsForOffersAsync(
+        IReadOnlyCollection<Guid> offerIds,
+        CancellationToken cancellationToken);
+
     public Task AddAsync(CarpoolRequest request, CancellationToken cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken);

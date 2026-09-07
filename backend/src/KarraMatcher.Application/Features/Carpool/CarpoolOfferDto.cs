@@ -3,19 +3,16 @@ using KarraMatcher.Domain.Carpool;
 namespace KarraMatcher.Application.Features.Carpool;
 
 /// <summary>
-/// Ett erbjudande så som klienten ser det.
+/// Ett erbjudande så som en läsare ser det.
 ///
-/// <h3>Notisen följer inte alltid med</h3>
-///
-/// <para>
-/// Erbjudandena går att se utan konto (§KM.3), men fritext är potentiell PII och ska bara
-/// nå de inblandade (§KM.12). Notisen fylls därför bara i för en inloggad läsare — en
-/// utloggad får erbjudandet utan den, inte ett tomt svar.
-/// </para>
+/// <h3>"Fullt" räknas fram, det lagras inte</h3>
 ///
 /// <para>
-/// Det är också vad som gör svaret ofarligt att svara på från en öppen adress: två läsare
-/// av samma erbjudande kan få olika mycket, så svaret får aldrig ligga i en delad cache.
+/// <see cref="SeatsTaken"/> är summan av de accepterade förfrågningarnas platser (§KM.12).
+/// Erbjudandet självt har inget fullt-tillstånd: hade det haft ett, vore det ett andra ställe
+/// som vet samma sak, och varje ställe som ändrar en förfrågan hade behövt komma ihåg att
+/// hålla det i takt. Ett fullt erbjudande ska dessutom fortsätta synas i listan och gå att
+/// fråga om — så det får inte vara ett tillstånd som filtrerar bort det.
 /// </para>
 /// </summary>
 public sealed record CarpoolOfferDto(
@@ -25,15 +22,25 @@ public sealed record CarpoolOfferDto(
     string DeparturePlace,
     DateTime DepartureUtc,
     int Seats,
+    int SeatsTaken,
     string? Note,
     bool IsMine)
 {
+    /// <summary>Platser kvar. Aldrig negativt — se <see cref="SeatsTaken"/>.</summary>
+    public int SeatsLeft => Math.Max(0, Seats - SeatsTaken);
+
     /// <summary>
-    /// Bygger svaret för en viss läsare.
+    /// Sant när platserna tagit slut.
+    ///
+    /// <para>
+    /// Betyder <em>inte</em> att erbjudandet är stängt. Det syns kvar och går att fråga om,
+    /// så att föraren kan svara "någon annan hann före" i stället för att den som frågar möts
+    /// av en död knapp (§KM.12).
+    /// </para>
     /// </summary>
-    /// <param name="offer">Erbjudandet.</param>
-    /// <param name="reader">Den inloggades konto-id, eller null för en gäst.</param>
-    public static CarpoolOfferDto For(CarpoolOffer offer, Guid? reader)
+    public bool IsFull => SeatsLeft == 0;
+
+    public static CarpoolOfferDto For(CarpoolOffer offer, Guid? reader, int seatsTaken = 0)
     {
         ArgumentNullException.ThrowIfNull(offer);
 
@@ -44,6 +51,7 @@ public sealed record CarpoolOfferDto(
             offer.DeparturePlace,
             offer.DepartureUtc,
             offer.Seats,
+            seatsTaken,
             reader is null ? null : offer.Note,
             reader == offer.DriverAccountId);
     }

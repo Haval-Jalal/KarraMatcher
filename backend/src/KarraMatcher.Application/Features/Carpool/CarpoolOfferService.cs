@@ -24,7 +24,10 @@ namespace KarraMatcher.Application.Features.Carpool;
 /// hände; förarens egna ord gör det inte.
 /// </para>
 /// </summary>
-public sealed class CarpoolOfferService(ICarpoolOfferRepository offers, IAuditLog audit)
+public sealed class CarpoolOfferService(
+    ICarpoolOfferRepository offers,
+    ICarpoolRequestRepository requests,
+    IAuditLog audit)
 {
     /// <summary>
     /// Lägger upp ett erbjudande. Svarar null när matchen inte finns.
@@ -73,7 +76,15 @@ public sealed class CarpoolOfferService(ICarpoolOfferRepository offers, IAuditLo
         return CarpoolOfferDto.For(offer, driverAccountId);
     }
 
-    /// <summary>Matchens öppna erbjudanden, sedda av <paramref name="reader"/> (null = gäst).</summary>
+    /// <summary>
+    /// Matchens öppna erbjudanden, sedda av <paramref name="reader"/> (null = gäst).
+    ///
+    /// <para>
+    /// Fulla erbjudanden är med. De märks ut med <see cref="CarpoolOfferDto.IsFull"/> och
+    /// går fortfarande att fråga om (§KM.12) — att sortera bort dem hade tagit ifrån
+    /// föraren möjligheten att svara "någon annan hann före".
+    /// </para>
+    /// </summary>
     public async Task<IReadOnlyList<CarpoolOfferDto>> ListAsync(
         Guid matchId,
         Guid? reader,
@@ -82,7 +93,23 @@ public sealed class CarpoolOfferService(ICarpoolOfferRepository offers, IAuditLo
         var open = await offers.ListOpenForMatchAsync(matchId, cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. open.Select(offer => CarpoolOfferDto.For(offer, reader))];
+        if (open.Count == 0)
+        {
+            return [];
+        }
+
+        // En fraga for hela listan, inte en per erbjudande.
+        var taken = await requests
+            .AcceptedSeatsForOffersAsync([.. open.Select(offer => offer.Id)], cancellationToken)
+            .ConfigureAwait(false);
+
+        return
+        [
+            .. open.Select(offer => CarpoolOfferDto.For(
+                offer,
+                reader,
+                taken.TryGetValue(offer.Id, out var seats) ? seats : 0)),
+        ];
     }
 
     /// <summary>

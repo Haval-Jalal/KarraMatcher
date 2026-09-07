@@ -29,6 +29,16 @@ public sealed record ListCarpoolRequestsQuery(Guid OfferId, Guid Reader)
 /// </summary>
 internal sealed class CarpoolRequestDraftValidator : AbstractValidator<CarpoolRequestDraft>
 {
+    /// <summary>
+    /// Taket för fritext mellan föräldrar — hälsningen hit, och förarens svar tillbaka.
+    ///
+    /// <para>
+    /// Samma tak åt båda hållen med flit. Ett svar som måste rymma ett riktigt skäl ska inte
+    /// vara knappare tilltaget än frågan som ställdes.
+    /// </para>
+    /// </summary>
+    internal const int MaxMessageLength = 500;
+
     public CarpoolRequestDraftValidator()
     {
         RuleFor(d => d.Seats)
@@ -37,7 +47,7 @@ internal sealed class CarpoolRequestDraftValidator : AbstractValidator<CarpoolRe
                 $"Antalet platser måste vara mellan 1 och {CarpoolOfferDraftValidator.MaxSeats}.");
 
         RuleFor(d => d.Message)
-            .MaximumLength(500).WithMessage("Hälsningen är för lång.");
+            .MaximumLength(MaxMessageLength).WithMessage("Hälsningen är för lång.");
     }
 }
 
