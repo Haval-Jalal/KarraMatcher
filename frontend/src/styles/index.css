@@ -200,6 +200,57 @@ h2 {
   left: 0;
 }
 
+/* ---- Huvudmenyn ------------------------------------------------------------ */
+
+/*
+ * Ligger överst på varje sida och är det enda som binder ihop appens delar (`#148`).
+ *
+ * Radbrytning i stället för vågrät skrollning: på 320 px ryms inte fyra poster på en rad,
+ * och en meny som skrollar i sidled har poster som ingen hittar.
+ */
+.app-nav {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  padding: 0 10px;
+  font-family: var(--display);
+  font-size: var(--text-base);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+
+.app-nav__link:hover {
+  color: var(--text-strong);
+}
+
+/*
+ * Aktuell sida markeras med tre saker samtidigt: `aria-current` for skarmlasaren, fetare
+ * text, och en accentremsa. Farg ensam duger inte (WCAG 1.4.1), och remsan ensam skulle
+ * forsvinna for den som inte ser den.
+ */
+.app-nav__link[aria-current='page'] {
+  color: var(--text-strong);
+  font-weight: 600;
+  border-bottom-color: var(--team-accent);
+}
+
 /* ---- Lagväljaren ---------------------------------------------------------- */
 
 .team-picker {
