@@ -30,7 +30,26 @@ services:
     envVars:
       # Satts manuellt i Renders dashboard. sync: false betyder att vardet aldrig
       # kommer fran den har filen - hemligheter hor inte hemma i ett publikt repo.
+      #
+      # De listas anda har, utan varde. En hemlighet som inte namns nagonstans gar
+      # inte att sakna: PR #30 gjorde Auth__SigningKey och Email__ApiKey obligatoriska
+      # vid uppstart utan att de skrevs in har, och fran 30 augusti till 6 september
+      # foll varje driftsattning pa uppstarten. Render beholl den gamla friska
+      # containern, sa API:t svarade hela tiden -- med en vecka gammal kod. Listade
+      # har visar Render en tom ruta i stallet for att felet gommer sig i en logg.
       - key: ConnectionStrings__Default
+        sync: false
+
+      # Signeringsnyckeln for access-tokens. Minst 32 tecken. AuthOptions valideras
+      # med ValidateOnStart, sa en saknad eller for kort nyckel faller driftsattningen
+      # i stallet for forsta inloggningen. Aldrig samma varde som lokalt.
+      - key: Auth__SigningKey
+        sync: false
+
+      # API-nyckel hos Resend, for inloggningskoderna. Saknas den kastar AddEmail vid
+      # uppstart utanfor utveckling -- att tyst inte skicka koder ar samre an att inte
+      # starta alls.
+      - key: Email__ApiKey
         sync: false
 
       # Migrationer appliceras vid varje driftsattning.

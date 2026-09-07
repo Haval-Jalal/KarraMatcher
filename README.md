@@ -186,8 +186,19 @@ Path alias `@/` är konfigurerat på **tre** ställen som måste ändras tillsam
 ## Driftsättning
 
 **Backend → Render.** Tjänsten är definierad i [`render.yaml`](./render.yaml). Peka Render
-på repot, välj *New Blueprint*, och sätt `ConnectionStrings__Default` i dashboarden —
-den kommer aldrig från repot.
+på repot, välj *New Blueprint*, och sätt de tre hemligheterna i dashboarden — de kommer
+aldrig från repot:
+
+| Variabel | Vad den är |
+|----------|------------|
+| `ConnectionStrings__Default` | Neon-strängen |
+| `Auth__SigningKey` | Signeringsnyckel för access-tokens, minst 32 tecken. Aldrig samma värde som lokalt |
+| `Email__ApiKey` | Resend-nyckeln för inloggningskoderna |
+
+Alla tre är **obligatoriska vid uppstart** — saknas någon startar inte containern. Det är
+med avsikt, men var medveten om följden: Render låter då den föregående containern ligga
+kvar och servera trafik. API:t svarar alltså som vanligt fast koden är gammal. **Kontrollera
+*Events* i Render efter varje sammanslagning till `main`**, tills något gör det åt dig.
 
 Imagen byggs från [`backend/Dockerfile`](./backend/Dockerfile) med **repo-roten som
 byggkontext**, så att `global.json` och `.editorconfig` följer med. Containern bygger
@@ -196,7 +207,11 @@ därmed med samma SDK och samma analysregler som CI och din maskin.
 ```bash
 # Bygg lokalt (från repo-roten, inte från backend/)
 docker build -f backend/Dockerfile -t karramatcher-api .
-docker run --rm -p 8080:8080   -e ConnectionStrings__Default="<sträng>"   karramatcher-api
+docker run --rm -p 8080:8080 \
+  -e ConnectionStrings__Default="<sträng>" \
+  -e Auth__SigningKey="<minst 32 tecken>" \
+  -e Email__ApiKey="<resend-nyckel>" \
+  karramatcher-api
 ```
 
 Två val i imagen som är medvetna:
