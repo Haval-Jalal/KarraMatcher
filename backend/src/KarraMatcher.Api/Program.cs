@@ -7,6 +7,24 @@ using KarraMatcher.Infrastructure.Persistence;
 
 using Serilog;
 
+/*
+ * En vag att skapa VAPID-nycklar utan att lagga till ett verktyg till.
+ *
+ * `dotnet run --project src/KarraMatcher.Api -- --vapid` skriver ut ett nytt par och
+ * avslutar. Nycklarna hamnar aldrig i en fil harifran -- den som kor kommandot klistrar in
+ * dem i user-secrets eller i Renders miljovariabler, och den privata far inte lamna det
+ * stallet (#60, checklistan 7.5).
+ */
+if (args.Contains("--vapid", StringComparer.Ordinal))
+{
+    var (publicKey, privateKey) = KarraMatcher.Infrastructure.Security.VapidKeys.Generate();
+
+    Console.WriteLine("Push__PublicKey=" + publicKey);
+    Console.WriteLine("Push__PrivateKey=" + privateKey);
+
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog läses från konfiguration så att nivåer kan ändras per miljö utan omdeploy.
@@ -25,6 +43,10 @@ builder.Services.AddKarraAuthentication(builder.Environment);
 // Gallringen av samakning (§KM.12). Kors i processen och inte som cron -- se
 // CarpoolRetentionWorker for varfor, och for varfor det ar ofarligt att den kors ofta.
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Carpool.CarpoolRetentionWorker>();
+
+// Notisutskicken sker utanfor request-traden (#61). En tranare som flyttar en match ska fa
+// sitt svar direkt, inte efter att femton notiser gatt ivag over internet.
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushDispatchWorker>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {

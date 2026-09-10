@@ -59,6 +59,16 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        /*
+         * Push-nycklarna valideras pa samma satt, men ar inte obligatoriska: appen ska ga
+         * att kora utan push -- kalenderfeeden ar den primara kanalen (§KM.0 A5). Det som
+         * fangas ar en halv konfiguration, alltsa en satt nyckel utan sin motsvarighet.
+         */
+        services.AddOptions<Application.Features.Push.PushOptions>()
+            .Bind(configuration.GetSection(Application.Features.Push.PushOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
@@ -75,6 +85,22 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolRequestRepository, CarpoolRequestRepository>();
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+        services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
+        services.AddScoped<IPushDeliveryRepository, PushDeliveryRepository>();
+
+        /*
+         * Kon ar en singleton -- den ar ett stalle, inte ett per request. Sandaren far en
+         * egen HttpClient via fabriken, sa att anslutningar ateranvands mot Google och Apple
+         * i stallet for att en ny socket oppnas per notis.
+         */
+        services.AddSingleton<Push.PushOutbox>();
+        services.AddSingleton<Application.Abstractions.Push.IPushOutbox>(
+            provider => provider.GetRequiredService<Push.PushOutbox>());
+        services.AddSingleton<Application.Abstractions.Push.IPushOutboxReader>(
+            provider => provider.GetRequiredService<Push.PushOutbox>());
+
+        services.AddHttpClient<Application.Abstractions.Push.IPushSender, Push.WebPushSender>(
+            client => client.Timeout = TimeSpan.FromSeconds(10));
 
         /*
          * Adressuppslagning mot Nominatim (OpenStreetMap).

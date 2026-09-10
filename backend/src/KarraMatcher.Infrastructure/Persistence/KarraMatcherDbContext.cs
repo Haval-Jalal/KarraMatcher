@@ -37,6 +37,9 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<CarpoolRequest> CarpoolRequests => Set<CarpoolRequest>();
 
+    public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
+        Set<Domain.Push.PushSubscription>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
