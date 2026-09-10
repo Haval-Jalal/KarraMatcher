@@ -22,6 +22,10 @@ builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraEdgeCache(builder.Configuration);
 builder.Services.AddKarraAuthentication(builder.Environment);
 
+// Gallringen av samakning (§KM.12). Kors i processen och inte som cron -- se
+// CarpoolRetentionWorker for varfor, och for varfor det ar ofarligt att den kors ofta.
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Carpool.CarpoolRetentionWorker>();
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     /*

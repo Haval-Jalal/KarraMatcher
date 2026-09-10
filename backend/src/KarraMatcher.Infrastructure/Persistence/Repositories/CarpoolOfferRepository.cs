@@ -24,6 +24,25 @@ internal sealed class CarpoolOfferRepository(KarraMatcherDbContext context) : IC
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<CarpoolOffer>> ListOpenForMatchesAsync(
+        IReadOnlyCollection<Guid> matchIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(matchIds);
+
+        if (matchIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await context.CarpoolOffers
+            .AsNoTracking()
+            .Where(o => matchIds.Contains(o.MatchId) && o.Status == CarpoolOfferStatus.Open)
+            .OrderBy(o => o.DepartureUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task AddAsync(CarpoolOffer offer, CancellationToken cancellationToken) =>
         await context.CarpoolOffers.AddAsync(offer, cancellationToken).ConfigureAwait(false);
 

@@ -67,6 +67,29 @@ internal sealed class CarpoolRequestRepository(KarraMatcherDbContext context)
         return rows.ToDictionary(row => row.OfferId, row => row.Seats);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, int>> CountPendingForOffersAsync(
+        IReadOnlyCollection<Guid> offerIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(offerIds);
+
+        if (offerIds.Count == 0)
+        {
+            return new Dictionary<Guid, int>();
+        }
+
+        // Bara antalet. Halsningen ar fritext och har ingenting i en overblick att gora.
+        var rows = await context.CarpoolRequests
+            .AsNoTracking()
+            .Where(r => offerIds.Contains(r.OfferId) && r.Status == CarpoolRequestStatus.Pending)
+            .GroupBy(r => r.OfferId)
+            .Select(group => new { OfferId = group.Key, Count = group.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(row => row.OfferId, row => row.Count);
+    }
+
     public async Task AddAsync(CarpoolRequest request, CancellationToken cancellationToken) =>
         await context.CarpoolRequests.AddAsync(request, cancellationToken).ConfigureAwait(false);
 
