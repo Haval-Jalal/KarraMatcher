@@ -7,6 +7,24 @@ using KarraMatcher.Infrastructure.Persistence;
 
 using Serilog;
 
+/*
+ * En vag att skapa VAPID-nycklar utan att lagga till ett verktyg till.
+ *
+ * `dotnet run --project src/KarraMatcher.Api -- --vapid` skriver ut ett nytt par och
+ * avslutar. Nycklarna hamnar aldrig i en fil harifran -- den som kor kommandot klistrar in
+ * dem i user-secrets eller i Renders miljovariabler, och den privata far inte lamna det
+ * stallet (#60, checklistan 7.5).
+ */
+if (args.Contains("--vapid", StringComparer.Ordinal))
+{
+    var (publicKey, privateKey) = KarraMatcher.Infrastructure.Security.VapidKeys.Generate();
+
+    Console.WriteLine("Push__PublicKey=" + publicKey);
+    Console.WriteLine("Push__PrivateKey=" + privateKey);
+
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog läses från konfiguration så att nivåer kan ändras per miljö utan omdeploy.

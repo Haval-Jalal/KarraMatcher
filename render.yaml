@@ -52,6 +52,21 @@ services:
       - key: Email__ApiKey
         sync: false
 
+      # VAPID-nycklarna for notiser (#60). Push ar avstangt om de saknas -- appen
+      # fungerar anda, kalenderfeeden ar den primara kanalen. Listade har av samma
+      # skal som ovan: en tom ruta i dashboarden ar lattare att upptacka an en
+      # funktion som tyst aldrig slas pa.
+      #
+      # Genereras med: dotnet run --project src/KarraMatcher.Api -- --vapid
+      - key: Push__PublicKey
+        sync: false
+
+      - key: Push__PrivateKey
+        sync: false
+
+      - key: Push__Subject
+        sync: false
+
       # Migrationer appliceras vid varje driftsattning.
       - key: Database__ApplyMigrationsOnStartup
         value: "true"

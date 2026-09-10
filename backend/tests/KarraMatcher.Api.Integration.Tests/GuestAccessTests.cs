@@ -230,6 +230,14 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "api/v1/auth/verify-code",
             "api/v1/auth/refresh",
             "api/v1/auth/logout",
+
+            /*
+             * Notisprenumerationen (#60). Kraver notiser ett konto nar de en brakdel av
+             * foraldrarna, och att lordagens match ar installd ar precis det slags
+             * upplysning som ska na alla. Det som skrivs ar inte nagons uppgifter om nagon
+             * annan -- det ar webblasarens egen adress, som webblasaren sjalv nyss skapade.
+             */
+            "api/v1/teams/{slug}/push",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);
