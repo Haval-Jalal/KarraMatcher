@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { postJson, renewSession } from '@/lib/api'
 import { clearSession, getAccessToken, hasSessionHint, setAccessToken } from '@/lib/session'
+import { jsonResponse } from '@/test/apiStub'
 
 /**
  * Hur klienten håller sessionen (checklistan 3.1 och 3.2).
@@ -13,15 +14,6 @@ import { clearSession, getAccessToken, hasSessionHint, setAccessToken } from '@/
  * långt efter att någon slutat använda appen. Regeln är lätt att bryta av bekvämlighet —
  * det är precis därför den har ett test.
  */
-
-/** Svar som ser ut som API:ts, utan att bero på fetch-implementationen. */
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response
-}
 
 beforeEach(() => {
   localStorage.clear()

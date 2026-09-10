@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
+import { jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -15,14 +16,6 @@ import { renderRoute } from '@/test/renderRoute'
  * eftersom kalenderposten ska bli kvar (§KM.4).
  * </para>
  */
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response
-}
 
 /** Token med tränarskap för det lag testet använder. */
 function coachToken(slug: string): string {

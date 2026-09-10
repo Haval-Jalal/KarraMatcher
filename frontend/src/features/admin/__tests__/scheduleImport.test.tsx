@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ScheduleImport } from '@/features/admin'
 import { clearSession, setAccessToken } from '@/lib/session'
+import { jsonResponse } from '@/test/apiStub'
 
 /**
  * Massinläggets granskning (`#39`).
@@ -14,14 +15,6 @@ import { clearSession, setAccessToken } from '@/lib/session'
  * besked i ord — inte en färg.
  * </para>
  */
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response
-}
 
 const preview = {
   imported: 0,
