@@ -101,6 +101,12 @@ function stubApi(
         return Promise.resolve(jsonResponse({ accessToken: SIGNED_IN_TOKEN }))
       }
 
+      // Inloggningen, for gastens vag in. 202 utan kropp ar vad servern faktiskt svarar.
+      if (url.includes('/auth/request-code')) return Promise.resolve(emptyResponse(202))
+      if (url.includes('/auth/verify-code')) {
+        return Promise.resolve(jsonResponse({ accessToken: SIGNED_IN_TOKEN }))
+      }
+
       if (url.includes('/carpool/requests/')) return Promise.resolve(emptyResponse(204))
       if (url.includes('/withdraw')) return Promise.resolve(emptyResponse(204))
 
@@ -297,7 +303,7 @@ describe('att lägga upp en skjuts', () => {
   })
 
   it('erbjuder inte gästen att lägga upp något', async () => {
-    // Gästen ser samåkningen men deltar inte (§KM.3). Vägen in byggs i `#54`.
+    // Gästen ser samåkningen men deltar inte (§KM.3).
     stubApi({ offers: [offer()] })
 
     renderRoute('/match/m1')
@@ -305,6 +311,46 @@ describe('att lägga upp en skjuts', () => {
     expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Erbjud skjuts' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Fråga om plats' })).not.toBeInTheDocument()
+  })
+})
+
+describe('gästen leds till inloggning i stället för in i en vägg', () => {
+  it('byter ut knapparna mot en väg in, inte mot tomhet', async () => {
+    /*
+     * Kanterna pa §KM.3, sedda fran en foralder. En dold knapp och en knapp som svarar 401
+     * ser lika trasiga ut -- bada far nagon att ge upp och skriva i gruppchatten i stallet.
+     */
+    stubApi({ offers: [offer()] })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Logga in för att samåka' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Logga in för att fråga om plats' }),
+    ).toBeInTheDocument()
+  })
+
+  it('lämnar tillbaka föräldern till matchen efter inloggningen', async () => {
+    // Den som var på väg att fråga om en plats ska inte behöva leta upp matchen igen.
+    stubApi({ offers: [offer()] })
+
+    const user = userEvent.setup()
+    renderRoute('/match/m1')
+
+    await user.click(await screen.findByRole('link', { name: 'Logga in för att fråga om plats' }))
+
+    expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Mejladress'), 'foralder@example.com')
+    await user.click(screen.getByRole('button', { name: 'Skicka kod' }))
+
+    await user.type(await screen.findByLabelText('Kod från mejlet'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Logga in' }))
+
+    // Tillbaka på matchen, och nu som någon som får fråga.
+    expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Fråga om plats' })).toBeInTheDocument()
   })
 })
 
