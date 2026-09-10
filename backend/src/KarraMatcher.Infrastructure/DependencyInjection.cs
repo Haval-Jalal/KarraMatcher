@@ -74,6 +74,7 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolOfferRepository, CarpoolOfferRepository>();
         services.AddScoped<ICarpoolRequestRepository, CarpoolRequestRepository>();
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
+        services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 
         /*
          * Adressuppslagning mot Nominatim (OpenStreetMap).

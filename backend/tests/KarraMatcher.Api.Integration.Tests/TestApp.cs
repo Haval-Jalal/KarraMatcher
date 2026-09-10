@@ -26,6 +26,20 @@ public static class TestApp
                 tags: [HealthChecks.ReadyTag])));
 
     /// <summary>
+    /// Kopplar in testets egen prov-endpoint bakom <c>[RequireAttendanceEnabled]</c>.
+    ///
+    /// <para>
+    /// Kallelsens riktiga endpoints byggs i <c>#57</c>. Grinden måste ändå gå att pröva
+    /// <em>nu</em> — en flagga som ingen provat är en flagga man upptäcker är trasig samma
+    /// dag som funktionen släpps. Provrouten finns bara i tester och når aldrig drift.
+    /// </para>
+    /// </summary>
+    public static WebApplicationFactory<Program> WithAttendanceProbe(
+        this WebApplicationFactory<Program> factory) =>
+        factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddControllers().AddApplicationPart(typeof(AttendanceProbeController).Assembly)));
+
+    /// <summary>
     /// Lägger en endpoint sist i kedjan som kastar. Den ligger efter
     /// <c>UseExceptionHandler</c>, vilket är hela poängen — annars testar vi inget.
     /// </summary>
