@@ -1746,6 +1746,22 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0 0 6px;
 }
 
+/*
+ * Gästens väg in (#54). Rutan står efter erbjudandena, inte före: det första en förälder
+ * ska se är vem som kör — inte att appen vill ha ett konto.
+ */
+.carpool__guest {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.carpool__guest p {
+  margin: 0 0 12px;
+}
+
 /* Radioalternativ i ett formulär: etikett och knapp på samma rad, hela raden klickbar. */
 .form__choice {
   display: flex;

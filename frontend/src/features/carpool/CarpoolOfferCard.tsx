@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { SignInLink } from '@/components/SignInLink'
+
 import { formatDayAndMonth, formatKickoffTime } from '@/lib/time'
 
 import {
@@ -140,6 +142,17 @@ export function CarpoolOfferCard({
             </div>
           )}
         </>
+      )}
+
+      {/*
+        Gästen får samma knapp som alla andra, men den går till inloggningen. Att dölja den
+        hade varit ett tystare fel: erbjudandet syns, och då ser det ut som att det inte går
+        att fråga om (`#54`, §KM.3).
+      */}
+      {!offer.isMine && !isSignedIn && (
+        <div className="actions">
+          <SignInLink variant="secondary">Logga in för att fråga om plats</SignInLink>
+        </div>
       )}
 
       {!offer.isMine && isSignedIn && (

@@ -307,6 +307,23 @@ public sealed class CarpoolRequestTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Atertag_UtanInloggning_Nekas()
+    {
+        // Att ta tillbaka en forfragan andrar tillstand, och da kravs konto (§KM.3).
+        var fixture = await SeedAsync("anon-atertag");
+        var requestId = await AskedAsync(fixture, fixture.AskerId);
+
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsync(
+            $"/api/v1/matches/{fixture.MatchId}/carpool/requests/{requestId}/retract",
+            content: null,
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Atertag_SomNagonAnnan_Nekas()
     {
         // Objektnivå-auktorisering: aven foraren far inte atertaga nagon annans forfragan.

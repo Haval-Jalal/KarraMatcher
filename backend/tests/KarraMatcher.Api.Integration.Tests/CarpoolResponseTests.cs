@@ -227,6 +227,27 @@ public sealed class CarpoolResponseTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Neka_UtanInloggning_Nekas()
+    {
+        /*
+         * Ett nekande andrar tillstand och kraver darfor konto (§KM.3). Att acceptera redan
+         * har ett sadant test racker inte -- de gar genom varsin endpoint, och den dag nagon
+         * flyttar ett attribut ar det bara det anropet som gors om.
+         */
+        var fixture = await SeedAsync("anon-neka");
+        var requestId = await AskedAsync(fixture, fixture.AskerId);
+
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/v1/matches/{fixture.MatchId}/carpool/requests/{requestId}/deny",
+            new { message = Refusal },
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Acceptera_SomNagonAnnan_Nekas()
     {
         /*

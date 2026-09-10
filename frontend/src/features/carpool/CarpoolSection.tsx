@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { SignInLink } from '@/components/SignInLink'
 import { useAuth } from '@/features/auth'
 import type { Match } from '@/features/matches'
 import { ApiError } from '@/lib/api'
@@ -80,10 +81,20 @@ export function CarpoolSection({ match }: { match: Match }) {
       )}
 
       {/*
-        Knappen visas bara för den som är inloggad. Gästen ser erbjudandena men deltar
-        inte (§KM.3) — vägen in för hen byggs i `#54`, och ska bli en uppmaning att logga
-        in, aldrig ett tyst fel.
+        Gästen ser erbjudandena men deltar inte (§KM.3). Skillnaden sägs rakt ut och
+        knappen leder till inloggningen — en knapp som i stället hade skickat ett anrop och
+        fått `401` läser som att appen är trasig (`#54`).
       */}
+      {!isSignedIn && offers !== undefined && (
+        <div className="carpool__guest">
+          <p>
+            Du kan se vem som kör utan att logga in. För att erbjuda skjuts eller fråga om en plats
+            behöver du ett konto.
+          </p>
+          <SignInLink>Logga in för att samåka</SignInLink>
+        </div>
+      )}
+
       {isSignedIn &&
         (adding ? (
           <CarpoolOfferForm
