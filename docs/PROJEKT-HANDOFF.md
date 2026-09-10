@@ -10,7 +10,7 @@
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
 - **Senast uppdaterad:** 2026-09-10 av Haval
-- **Aktuell milstolpe:** M6 — Kallelse, byggd men avstängd (1 av 4 klara). M5 klar 6 av 6, M4 klar 8 av 8
+- **Aktuell milstolpe:** M7 — Notiser (1 av 6 klara). M6 blockerad efter `#56`: `#57`/`#40` väntar på öppen fråga 10. M5 klar 6 av 6
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -51,6 +51,7 @@
 | Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
 | Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
 
+- `#56` Feature flag `AttendanceEnabled` med serverside-grind och adminspak — 2026-09-10
 - `#154` Namn på kontot — samåkningen fick ett ansikte. Rättade samtidigt att `getJson` aldrig skickade access-token, så inloggade GET-anrop lästes som gäst — 2026-09-10
 - `#55` Tränarens samåkningsöverblick och gallring efter 30 dagar — **M5 klar** — 2026-09-10
 - `#54` Gästen leds till inloggning i stället för att mötas av en saknad knapp — 2026-09-10
@@ -97,7 +98,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#56` Feature flag `AttendanceEnabled` | Haval | `feature/attendance-flag` | In Review — grinden som håller kallelsen avstängd |
+| `#60` VAPID-nycklar och prenumerationshantering | Haval | `feature/push-subscriptions` | In Review — grunden för notiser |
 
 ## ➡️ Nästa steg
 
@@ -123,6 +124,7 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2026-08-29 | **Full process** enligt mallen | Målet är ett komplett och granskningsbart projekt | Board, issue, branch och PR för varje ändring — även små |
 | 2026-08-29 | **Statistik privat per familj**, ingen skytteliga | Svensk fotbolls riktlinjer avråder från resultatrapportering och tabeller upp till 12 år; minskar dessutom föräldrapress | Matchresultatet skrivs in av varje familj för sig. Ingen roll, inte ens Admin, kan läsa det |
 | 2026-08-29 | **Barnstatistiken lagras enbart på enheten** — ingen tabell, ingen endpoint | Spelarkortet är tänkt som något föräldern och barnet gör tillsammans efter matchen. Data som aldrig når servern kan inte läcka från den, och kräver varken konto eller samtycke | Servern behandlar **inga uppgifter om barn** vid lansering. Priset: datan går förlorad vid telefonbyte utan säkerhetskopia → backupkod, `storage.persist()` och installationsuppmaning blir funktionskrav (§KM.2) |
+| 2026-09-10 | **Notisprenumerationen kopplas inte till ett konto** | Prenumerationen hör till webbläsaren och ska fungera utan inloggning — annars når notiserna en bråkdel av föräldrarna. En koppling till kontot hade dessutom mött §KM.6: allt som ägs av ett konto raderas med det, och då slutar en enhet tyst få besked om inställda matcher | `PushSubscriptions` har ingen `AccountId`. Samåkningsnotiserna i `#63` behöver kopplingen och får införa den med den avvägningen skriven — en kolumn som inte används ännu ska inte finnas |
 | 2026-09-10 | **Kontot får för- och efternamn** | Servern lagrade bara en mejladress, så samåkningen blev anonym: "någon frågar om skjuts". Mellan grannar som möts på planen nästa lördag är det ett tomrum, och tränarens överblick kunde inte svara på vem som kör | Ny PII-kolumn om en **vuxen** (§KM.1:s tak gäller barn och berörs inte). Förnamn krävs, efternamn valfritt. Namnet visas bara för inloggade — aldrig i den publika erbjudandelistan, aldrig i loggar eller audit-rader, och det raderas med kontot |
 | 2026-09-10 | **Gallringen körs i API-processen, inte som cron** | Vercel Hobby ger ett cronjobb per dygn, och det är lovat till påminnelsen kvällen före match (§KM.11). En gallring som beror på att en annan tjänst hör av sig slutar tyst köra den dag villkoren ändras | `CarpoolRetentionWorker` kör vid uppstart och var 24:e timme. Render free vaknar flera gånger om dagen, så den körs ofta — raderingen är idempotent och kostar en fråga när det inte finns något att ta bort |
 | 2026-09-10 | **Tränarens samåkningsöverblick är räknad, inte namngiven** | Servern lagrar inget namn på en förälder, bara en mejladress — och den visas aldrig för någon annan. Överblickens fråga ("får alla skjuts?") besvaras av siffror | Ingen ny PII-exponering (§KM.1). Vill vi någon gång visa vem som kör krävs ett eget beslut här, inte en tyst utökning av svaret |

@@ -59,6 +59,16 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        /*
+         * Push-nycklarna valideras pa samma satt, men ar inte obligatoriska: appen ska ga
+         * att kora utan push -- kalenderfeeden ar den primara kanalen (§KM.0 A5). Det som
+         * fangas ar en halv konfiguration, alltsa en satt nyckel utan sin motsvarighet.
+         */
+        services.AddOptions<Application.Features.Push.PushOptions>()
+            .Bind(configuration.GetSection(Application.Features.Push.PushOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
@@ -75,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolRequestRepository, CarpoolRequestRepository>();
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+        services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
 
         /*
          * Adressuppslagning mot Nominatim (OpenStreetMap).
