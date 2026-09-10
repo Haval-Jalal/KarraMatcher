@@ -20,9 +20,21 @@ public sealed record CarpoolRequestDto(
     string? ResponseMessage,
     CarpoolRequestStatus Status,
     DateTime CreatedUtc,
-    bool IsMine)
+    bool IsMine,
+    string? RequesterName)
 {
-    public static CarpoolRequestDto For(CarpoolRequest request, Guid reader)
+    /// <summary>
+    /// Bygger svaret för en läsare.
+    ///
+    /// <para>
+    /// Listan når bara föraren och den som frågat (§KM.12), så namnet är redan begränsat
+    /// till de inblandade när det kommer hit.
+    /// </para>
+    /// </summary>
+    public static CarpoolRequestDto For(
+        CarpoolRequest request,
+        Guid reader,
+        string? requesterName = null)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -34,6 +46,7 @@ public sealed record CarpoolRequestDto(
             request.ResponseMessage,
             request.Status,
             request.CreatedUtc,
-            request.RequesterAccountId == reader);
+            request.RequesterAccountId == reader,
+            requesterName);
     }
 }

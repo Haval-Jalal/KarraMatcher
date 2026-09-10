@@ -25,7 +25,22 @@ const withDriver = {
   kickoffUtc: '2026-09-20T11:00:00Z',
   opponent: 'Torslanda',
   isHome: false,
-  offers: [],
+  offers: [
+    {
+      id: 'o1',
+      matchId: 'm1',
+      direction: 'ToMatch',
+      departurePlace: 'Kärra centrum',
+      departureUtc: '2026-09-20T10:15:00Z',
+      seats: 3,
+      seatsTaken: 1,
+      seatsLeft: 2,
+      isFull: false,
+      note: null,
+      isMine: false,
+      driverName: 'Anna Berg',
+    },
+  ],
   pendingRequests: 1,
   seatsOffered: 3,
   seatsTaken: 1,
@@ -117,6 +132,17 @@ describe('överblicken svarar på tränarens fråga', () => {
     expect(await screen.findByText(/3 platser erbjudna/)).toBeInTheDocument()
     expect(screen.getByText('2 platser kvar')).toBeInTheDocument()
     expect(screen.getByText('1 förfrågan väntar på svar.')).toBeInTheDocument()
+  })
+
+  it('säger vem som kör', async () => {
+    // Frågan `#55` egentligen ställde, och som `#154` gav svaret på.
+    const token = coachToken('gul')
+    stubApi({ overview: [withDriver], token })
+    setAccessToken(token)
+
+    renderRoute('/lag/gul/tranare')
+
+    expect(await screen.findByText('Kör: Anna Berg')).toBeInTheDocument()
   })
 
   it('säger till när nätet är nere', async () => {

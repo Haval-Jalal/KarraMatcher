@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Application.Abstractions.Messaging;
+using KarraMatcher.Application.Features.Accounts;
 using KarraMatcher.Application.Features.Auth.DeleteAccount;
 using KarraMatcher.Application.Features.Auth.RefreshSession;
 using KarraMatcher.Application.Features.Auth.RequestLoginCode;
@@ -33,6 +34,7 @@ namespace KarraMatcher.Api.Features.Auth;
 [Produces("application/json")]
 public sealed class AuthController(
     ICommandDispatcher dispatcher,
+    IQueryDispatcher queries,
     IAntiforgery antiforgery) : ControllerBase
 {
     /// <summary>
@@ -146,6 +148,61 @@ public sealed class AuthController(
         return Ok(new SessionResponse(session.AccessToken, session.AccessExpiresUtc));
     }
 
+    /// <summary>Kontots eget namn (`#154`).</summary>
+    /// <remarks>
+    /// Bara den inloggade får fråga efter sitt eget — det finns inget kontofält att skicka,
+    /// så det går inte att fråga efter någon annans. Namnet i sig når andra bara genom
+    /// samåkningen, och bara den som är inloggad (§KM.3).
+    /// </remarks>
+    [HttpGet("profile")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetProfile(CancellationToken cancellationToken)
+    {
+        var accountId = CurrentAccountId();
+
+        if (accountId is null)
+        {
+            return Unauthenticated();
+        }
+
+        var profile = await queries
+            .SendAsync(new GetAccountProfileQuery(accountId.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        return profile is null ? Unauthenticated() : Ok(profile);
+    }
+
+    /// <summary>Sätter eller ändrar namnet på kontot.</summary>
+    [HttpPut("profile")]
+    [Authorize]
+    [RequireCsrfToken]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateProfile(
+        AccountNameRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var accountId = CurrentAccountId();
+
+        if (accountId is null)
+        {
+            return Unauthenticated();
+        }
+
+        var profile = await dispatcher
+            .SendAsync(
+                new UpdateAccountNameCommand(accountId.Value, request.FirstName, request.LastName),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return profile is null ? Unauthenticated() : Ok(profile);
+    }
+
     /// <summary>Raderar kontot och allt servern äger om det.</summary>
     /// <remarks>
     /// Direkt, inte som en markering (§KM.6). Spelarkortet berörs inte och kan inte
@@ -179,6 +236,11 @@ public sealed class AuthController(
 
         return NoContent();
     }
+
+    private ObjectResult Unauthenticated() => Problem(
+        statusCode: StatusCodes.Status401Unauthorized,
+        title: "Sessionen gäller inte längre",
+        detail: "Logga in igen.");
 
     /// <summary>
     /// Kontot som är inloggat, ur token.
@@ -233,3 +295,13 @@ public sealed record RequestCodeRequest(string Email);
 
 /// <summary>Koden från mejlet, tillsammans med adressen den skickades till.</summary>
 public sealed record VerifyCodeRequest(string Email, string Code);
+
+/// <summary>
+/// Namnet föräldern skriver in.
+///
+/// <para>
+/// Förnamnet krävs, efternamnet är valfritt. Kraven prövas i valideringen av kommandot och
+/// inte här, så att ingen väg in i tjänsten kan komma runt dem.
+/// </para>
+/// </summary>
+public sealed record AccountNameRequest(string FirstName, string? LastName);

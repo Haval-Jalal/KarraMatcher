@@ -9,6 +9,19 @@ public interface IAccountRepository
     /// <summary>Adressen jämförs normaliserad — se <see cref="Account.Email"/>.</summary>
     public Task<Account?> FindByEmailAsync(string email, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Visningsnamnen för flera konton på en gång.
+    ///
+    /// <para>
+    /// Finns för samåkningen, som ska kunna säga "Anna kör" utan att ställa en fråga per
+    /// rad. Konton utan ifyllt namn saknas i svaret — de har inget att visa, och en tom
+    /// sträng hade sett ut som ett namn.
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyDictionary<Guid, string>> DisplayNamesAsync(
+        IReadOnlyCollection<Guid> accountIds,
+        CancellationToken cancellationToken);
+
     public Task AddAsync(Account account, CancellationToken cancellationToken);
 
     /// <summary>

@@ -24,7 +24,8 @@ public sealed record CarpoolOfferDto(
     int Seats,
     int SeatsTaken,
     string? Note,
-    bool IsMine)
+    bool IsMine,
+    string? DriverName)
 {
     /// <summary>Platser kvar. Aldrig negativt — se <see cref="SeatsTaken"/>.</summary>
     public int SeatsLeft => Math.Max(0, Seats - SeatsTaken);
@@ -40,7 +41,20 @@ public sealed record CarpoolOfferDto(
     /// </summary>
     public bool IsFull => SeatsLeft == 0;
 
-    public static CarpoolOfferDto For(CarpoolOffer offer, Guid? reader, int seatsTaken = 0)
+    /// <summary>
+    /// Bygger svaret för en läsare.
+    ///
+    /// <para>
+    /// <paramref name="driverName"/> lämnas som null för en gäst, precis som notisen. Vem
+    /// som kör är lagets sak och inte hela internets (§KM.3) — och skulle någon anropare
+    /// glömma det står gästen ändå utan namn, eftersom <paramref name="reader"/> avgör.
+    /// </para>
+    /// </summary>
+    public static CarpoolOfferDto For(
+        CarpoolOffer offer,
+        Guid? reader,
+        int seatsTaken = 0,
+        string? driverName = null)
     {
         ArgumentNullException.ThrowIfNull(offer);
 
@@ -53,6 +67,7 @@ public sealed record CarpoolOfferDto(
             offer.Seats,
             seatsTaken,
             reader is null ? null : offer.Note,
-            reader == offer.DriverAccountId);
+            reader == offer.DriverAccountId,
+            reader is null ? null : driverName);
     }
 }

@@ -79,6 +79,18 @@ export function CarpoolOfferCard({
 
       <p className="carpool-card__place">Från {offer.departurePlace}</p>
 
+      {/*
+        Vem som kör. "Du kör" för den egna raden — att läsa sitt eget namn tillbaka från
+        appen är en liten men tydlig signal om att man tittar på fel rad. Saknas namnet är
+        kontot skapat före `#154` och har inte hunnit fylla i något; då sägs ingenting
+        hellre än "okänd", som låter som ett fel.
+      */}
+      {offer.isMine ? (
+        <p className="carpool-card__driver">Du kör</p>
+      ) : (
+        offer.driverName !== null && <p className="carpool-card__driver">{offer.driverName} kör</p>
+      )}
+
       {offer.note !== null && <p className="carpool__message">”{offer.note}”</p>}
 
       {offer.isMine && (

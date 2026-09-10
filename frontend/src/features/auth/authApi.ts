@@ -1,4 +1,4 @@
-import { postJson } from '@/lib/api'
+import { getAuthJson, postJson } from '@/lib/api'
 import { clearSession, setAccessToken } from '@/lib/session'
 
 /** Ber servern skicka en kod. Svaret säger aldrig om adressen fanns. */
@@ -14,6 +14,36 @@ export async function verifyLoginCode(email: string, code: string): Promise<void
   })
 
   setAccessToken(session.accessToken)
+}
+
+/**
+ * Namnet på kontot (`#154`).
+ *
+ * <h3>Varför namnet inte ligger i token</h3>
+ *
+ * Access-token förnyas var femtonde minut, så ett namn där hade dröjt upp till en kvart
+ * med att visa en ändring. Profilen är dessutom det enda stället som behöver den —
+ * samåkningens namn kommer med i erbjudandena, från servern.
+ */
+export interface AccountProfile {
+  firstName: string | null
+  lastName: string | null
+  displayName: string | null
+  /** Sant när kontot ännu inte fyllt i något. Då frågar appen efter det. */
+  needsName: boolean
+}
+
+export function getProfile(): Promise<AccountProfile> {
+  return getAuthJson<AccountProfile>('/api/v1/auth/profile')
+}
+
+/** Sätter eller ändrar namnet. Förnamnet krävs, efternamnet är valfritt. */
+export function updateName(firstName: string, lastName: string | null): Promise<AccountProfile> {
+  return postJson<AccountProfile>(
+    '/api/v1/auth/profile',
+    { firstName, lastName },
+    { method: 'PUT' },
+  )
 }
 
 /**

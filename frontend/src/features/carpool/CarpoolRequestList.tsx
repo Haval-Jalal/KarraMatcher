@@ -98,7 +98,7 @@ function RequestRow({
   return (
     <>
       <p className="carpool__request-lead">
-        <strong>{request.isMine ? 'Din förfrågan' : 'Frågar om skjuts'}</strong>{' '}
+        <strong>{leadFor(request)}</strong>{' '}
         <span className="carpool__request-seats">{seatCountLabel(request.seats)}</span>
       </p>
 
@@ -175,6 +175,23 @@ function RequestRow({
       )}
     </>
   )
+}
+
+/**
+ * Vems förfrågan det är.
+ *
+ * Namnet när det finns — det är hela poängen med `#154`: föraren ska veta vem hen släpper
+ * in i bilen. Saknas det är kontot skapat innan namnen fanns, och då säger raden vad den
+ * vet i stället för att hitta på.
+ */
+function leadFor(request: CarpoolRequest): string {
+  if (request.isMine) {
+    return 'Din förfrågan'
+  }
+
+  return request.requesterName === null
+    ? 'Frågar om skjuts'
+    : `${request.requesterName} frågar om skjuts`
 }
 
 /**

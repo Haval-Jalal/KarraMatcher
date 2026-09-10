@@ -42,6 +42,7 @@ public enum CarpoolRequestOutcome
 public sealed class CarpoolRequestService(
     ICarpoolRequestRepository requests,
     ICarpoolOfferRepository offers,
+    IAccountRepository accounts,
     IAuditLog audit)
 {
     /// <summary>Skickar en förfrågan.</summary>
@@ -135,7 +136,17 @@ public sealed class CarpoolRequestService(
             ? all
             : [.. all.Where(r => r.RequesterAccountId == reader)];
 
-        return [.. visible.Select(r => CarpoolRequestDto.For(r, reader))];
+        var names = await accounts
+            .DisplayNamesAsync([.. visible.Select(r => r.RequesterAccountId).Distinct()], cancellationToken)
+            .ConfigureAwait(false);
+
+        return
+        [
+            .. visible.Select(r => CarpoolRequestDto.For(
+                r,
+                reader,
+                names.TryGetValue(r.RequesterAccountId, out var name) ? name : null)),
+        ];
     }
 
     /// <summary>

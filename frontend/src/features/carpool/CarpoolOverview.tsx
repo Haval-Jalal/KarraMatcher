@@ -88,10 +88,16 @@ function OverviewRow({ match }: { match: TeamCarpoolMatch }) {
       {match.needsDriver ? (
         <p className="carpool-overview__gap">Ingen har erbjudit skjuts än.</p>
       ) : (
-        <p className="carpool-overview__seats">
-          {seatCountLabel(match.seatsOffered)} erbjudna, {String(match.seatsTaken)} bokade,{' '}
-          <strong>{seatsLeftLabel(match.seatsLeft)}</strong>
-        </p>
+        <>
+          {/* Vem som kör — frågan `#55` egentligen ställde, och som `#154` gav svaret på. */}
+          {driverNames(match).length > 0 && (
+            <p className="carpool-overview__drivers">Kör: {driverNames(match).join(', ')}</p>
+          )}
+          <p className="carpool-overview__seats">
+            {seatCountLabel(match.seatsOffered)} erbjudna, {String(match.seatsTaken)} bokade,{' '}
+            <strong>{seatsLeftLabel(match.seatsLeft)}</strong>
+          </p>
+        </>
       )}
 
       {/*
@@ -107,6 +113,13 @@ function OverviewRow({ match }: { match: TeamCarpoolMatch }) {
       )}
     </>
   )
+}
+
+/** Namnen på dem som erbjudit skjuts. Konton utan ifyllt namn hoppas över. */
+function driverNames(match: TeamCarpoolMatch): string[] {
+  return match.offers
+    .map((offer) => offer.driverName)
+    .filter((name): name is string => name !== null)
 }
 
 function seatsLeftLabel(seatsLeft: number): string {

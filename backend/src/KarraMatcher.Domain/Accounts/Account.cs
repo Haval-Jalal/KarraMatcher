@@ -31,6 +31,45 @@ public sealed class Account
     /// </summary>
     public required string Email { get; set; }
 
+    /// <summary>
+    /// Förnamnet, som föräldern själv skrivit det.
+    ///
+    /// <para>
+    /// Finns för att samåkningen ska ha ett ansikte: "Anna frågar om skjuts" i stället för
+    /// "någon frågar om skjuts" (`#154`). Nullbart därför att konton skapade före
+    /// funktionen inte har något — gränssnittet frågar efter det vid nästa inloggning.
+    /// </para>
+    ///
+    /// <para>
+    /// Personuppgift om en <b>vuxen</b>, inte om ett barn — §KM.1:s tak gäller barn och
+    /// berörs inte. Visas bara för inloggade i laget, aldrig för en gäst, och aldrig i
+    /// loggar eller audit-rader (§KM.3, §KM.10).
+    /// </para>
+    /// </summary>
+    public string? FirstName { get; set; }
+
+    /// <summary>
+    /// Efternamnet. Valfritt.
+    ///
+    /// <para>
+    /// Valfritt med flit: i ett föräldralag räcker förnamnet nästan alltid, och det som
+    /// inte behövs ska inte krävas. Den som vill skilja två Anna åt kan fylla i det.
+    /// </para>
+    /// </summary>
+    public string? LastName { get; set; }
+
+    /// <summary>
+    /// Namnet att visa, eller null när kontot inte fyllt i något.
+    ///
+    /// <para>
+    /// Härlett och inte lagrat: ett sparat visningsnamn är ett andra ställe som vet samma
+    /// sak, och det är det som glider isär.
+    /// </para>
+    /// </summary>
+    public string? DisplayName => FirstName is null or ""
+        ? null
+        : string.IsNullOrWhiteSpace(LastName) ? FirstName : $"{FirstName} {LastName}";
+
     public DateTime CreatedUtc { get; set; }
 
     /// <summary>Senaste lyckade inloggning. Används för gallring av vilande konton.</summary>

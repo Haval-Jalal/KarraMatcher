@@ -26,6 +26,7 @@ public sealed class CarpoolOverviewService(
     ITeamRepository teams,
     ICarpoolOfferRepository offers,
     ICarpoolRequestRepository requests,
+    IAccountRepository accounts,
     TimeProvider clock)
 {
     /// <summary>Lagets kommande matcher med sin samåkning. Null när laget inte finns.</summary>
@@ -72,6 +73,12 @@ public sealed class CarpoolOverviewService(
             .CountPendingForOffersAsync(offerIds, cancellationToken)
             .ConfigureAwait(false);
 
+        // Tranaren ar inloggad, sa namnen foljer med. Overblicken var raknad och inte
+        // namngiven fore #154 -- nu kan den svara pa vem som kor.
+        var names = await accounts
+            .DisplayNamesAsync([.. open.Select(offer => offer.DriverAccountId).Distinct()], cancellationToken)
+            .ConfigureAwait(false);
+
         return
         [
             .. upcoming.Select(match =>
@@ -81,7 +88,8 @@ public sealed class CarpoolOverviewService(
                     .Select(offer => CarpoolOfferDto.For(
                         offer,
                         reader,
-                        taken.TryGetValue(offer.Id, out var seats) ? seats : 0))
+                        taken.TryGetValue(offer.Id, out var seats) ? seats : 0,
+                        names.TryGetValue(offer.DriverAccountId, out var name) ? name : null))
                     .ToArray();
 
                 var waiting = forMatch.Sum(offer =>
