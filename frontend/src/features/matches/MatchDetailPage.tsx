@@ -6,8 +6,10 @@ import { teamThemeStyle } from '@/lib/teamTheme'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
-import { CalendarLink } from './CalendarLink'
+import { CarpoolSection } from '@/features/carpool'
 import { MatchReportCard, readCard } from '@/features/playercard'
+
+import { CalendarLink } from './CalendarLink'
 
 import { DirectionsLink } from './DirectionsLink'
 import { MatchWeather } from './MatchWeather'
@@ -152,6 +154,13 @@ export function MatchDetailPage() {
           <CalendarLink match={match} />
         </div>
       )}
+      {/*
+        Samåkningen gäller en match som ska spelas. Är den inställd finns ingen skjuts att
+        erbjuda, och ett formulär för det hade varit att be någon planera en resa till en
+        plan där inget händer.
+      */}
+      {!isCancelled && <CarpoolSection match={match} />}
+
       <MatchReportCard match={match} children={childrenForMatch} />
     </main>
   )

@@ -9,8 +9,8 @@
 
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
-- **Senast uppdaterad:** 2026-09-07 av Haval
-- **Aktuell milstolpe:** M5 — Samåkning (3 av 6 klara). M4 klar 8 av 8
+- **Senast uppdaterad:** 2026-09-10 av Haval
+- **Aktuell milstolpe:** M5 — Samåkning (4 av 6 klara). M4 klar 8 av 8
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -51,6 +51,8 @@
 | Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
 | Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
 
+- `#150` Inloggningen sa att koden inte gick att skicka trots att mejlet var skickat — tomt 202-svar tolkades som fel — 2026-09-10
+- `#148` Huvudmeny, så appens delar går att nå — 2026-09-10
 - `#28` Tillgänglighetsgenomgång: två AA-fel rättade, kraven låsta i test — 2026-08-30
 - `#26` PWA: manifest, ikoner, service worker och offline-läsbart schema — 2026-08-30
 - `#110` Spelplatsernas koordinater rättade — 2026-08-30
@@ -91,7 +93,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#148` Navigering — huvudmeny | Haval | `feature/navigation` | In Review — RootLayout fick en meny |
+| `#53` Samåkningsvy för föräldrar | Haval | `feature/carpool-parent-view` | In Review — hela flödet i gränssnittet, på matchsidan |
 
 ## ➡️ Nästa steg
 
