@@ -44,6 +44,10 @@ builder.Services.AddKarraAuthentication(builder.Environment);
 // CarpoolRetentionWorker for varfor, och for varfor det ar ofarligt att den kors ofta.
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Carpool.CarpoolRetentionWorker>();
 
+// Notisutskicken sker utanfor request-traden (#61). En tranare som flyttar en match ska fa
+// sitt svar direkt, inte efter att femton notiser gatt ivag over internet.
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushDispatchWorker>();
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     /*

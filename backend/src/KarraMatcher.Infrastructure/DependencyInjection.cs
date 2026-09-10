@@ -86,6 +86,21 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
+        services.AddScoped<IPushDeliveryRepository, PushDeliveryRepository>();
+
+        /*
+         * Kon ar en singleton -- den ar ett stalle, inte ett per request. Sandaren far en
+         * egen HttpClient via fabriken, sa att anslutningar ateranvands mot Google och Apple
+         * i stallet for att en ny socket oppnas per notis.
+         */
+        services.AddSingleton<Push.PushOutbox>();
+        services.AddSingleton<Application.Abstractions.Push.IPushOutbox>(
+            provider => provider.GetRequiredService<Push.PushOutbox>());
+        services.AddSingleton<Application.Abstractions.Push.IPushOutboxReader>(
+            provider => provider.GetRequiredService<Push.PushOutbox>());
+
+        services.AddHttpClient<Application.Abstractions.Push.IPushSender, Push.WebPushSender>(
+            client => client.Timeout = TimeSpan.FromSeconds(10));
 
         /*
          * Adressuppslagning mot Nominatim (OpenStreetMap).

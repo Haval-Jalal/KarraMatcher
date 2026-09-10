@@ -99,6 +99,7 @@
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
 | `#60` VAPID-nycklar och prenumerationshantering | Haval | `feature/push-subscriptions` | In Review — grunden för notiser |
+| `#61` Bakgrundsjobb för utskick | Haval | `feature/push-delivery` | In Review — staplad ovanpå `#60` |
 
 ## ➡️ Nästa steg
 
