@@ -118,7 +118,26 @@ export async function postJson<T>(
     throw new ApiError(await messageFor(response), { status: response.status })
   }
 
-  return response.status === 204 ? (undefined as T) : ((await response.json()) as T)
+  return parseBody<T>(response)
+}
+
+/**
+ * Läser svarets kropp, om det finns någon.
+ *
+ * <h3>Varför det inte räcker att titta på statuskoden</h3>
+ *
+ * 204 är inte det enda tomma svaret. `POST /auth/request-code` svarar **202** med tom
+ * kropp — avsiktligt, eftersom svaret aldrig får avslöja om adressen fanns — och
+ * `response.json()` på en tom kropp kastar. Då blev ett lyckat anrop till ett fel: koden
+ * låg redan i inkorgen medan rutan sa ”Kunde inte skicka koden just nu”.
+ *
+ * Därför läses kroppen som text och tolkas bara när det finns något att tolka. Det håller
+ * även för svar som passerat en proxy som strippat `Content-Length`.
+ */
+async function parseBody<T>(response: Response): Promise<T> {
+  const text = await response.text()
+
+  return (text === '' ? undefined : JSON.parse(text)) as T
 }
 
 /**

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
+import { emptyResponse, jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -18,14 +19,6 @@ import { renderRoute } from '@/test/renderRoute'
 /** En token med formen huvud.payload.signatur, där mitten bär adressen. */
 const SIGNED_IN_TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response
-}
-
 /** Svarar som inloggnings-API:t, med valfritt utfall på verifieringen. */
 function stubAuth(options: { verify?: 'ok' | 'fel'; refresh?: 'ok' } = {}) {
   vi.stubGlobal(
@@ -34,7 +27,9 @@ function stubAuth(options: { verify?: 'ok' | 'fel'; refresh?: 'ok' } = {}) {
       const url = String(input)
 
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
-      if (url.includes('/auth/request-code')) return Promise.resolve(jsonResponse(null, 202))
+      // 202 utan kropp — exakt vad servern svarar. En attrapp som svarade med en kropp
+      // höll det här testet grönt medan appen sa att koden inte gick att skicka.
+      if (url.includes('/auth/request-code')) return Promise.resolve(emptyResponse(202))
 
       if (url.includes('/auth/verify-code')) {
         return Promise.resolve(
@@ -44,7 +39,7 @@ function stubAuth(options: { verify?: 'ok' | 'fel'; refresh?: 'ok' } = {}) {
         )
       }
 
-      if (url.includes('/auth/logout')) return Promise.resolve(jsonResponse(null, 204))
+      if (url.includes('/auth/logout')) return Promise.resolve(emptyResponse(204))
       if (url.includes('/auth/refresh')) {
         return Promise.resolve(
           options.refresh === 'ok'

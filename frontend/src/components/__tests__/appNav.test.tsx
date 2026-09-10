@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
+import { jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -30,14 +31,6 @@ const COACH = tokenWith({ email: 'tranare@example.com', coach: ['gul'] })
 
 /** Släpper loss en förnyelse som hålls tillbaka. Sätts av stubben. */
 let releaseRenewal: (() => void) | null = null
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response
-}
 
 /**
  * Svarar som API:t, med förnyelsen som enda rörliga del.

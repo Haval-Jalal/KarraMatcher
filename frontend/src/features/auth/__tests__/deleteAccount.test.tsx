@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DeleteAccountSection } from '@/features/auth'
 import { clearSession, getAccessToken, setAccessToken } from '@/lib/session'
+import { emptyResponse, jsonResponse } from '@/test/apiStub'
 
 /**
  * Radera kontot, från gränssnittets sida (`#33`, §KM.6).
@@ -15,14 +16,6 @@ import { clearSession, getAccessToken, setAccessToken } from '@/lib/session'
  * statistiken försvann eller bli förvånad över att den finns kvar.
  * </para>
  */
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response
-}
 
 function stubApi(options: { deleteFails?: boolean } = {}) {
   const calls: string[] = []
@@ -36,7 +29,7 @@ function stubApi(options: { deleteFails?: boolean } = {}) {
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
 
       return Promise.resolve(
-        options.deleteFails ? jsonResponse({ title: 'Nej' }, 500) : jsonResponse(null, 204),
+        options.deleteFails ? jsonResponse({ title: 'Nej' }, 500) : emptyResponse(204),
       )
     }),
   )

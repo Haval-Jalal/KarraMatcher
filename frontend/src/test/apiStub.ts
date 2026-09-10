@@ -26,11 +26,32 @@ export function testMatch(id: string, kickoffUtc: string, overrides: Partial<Mat
   }
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
+/**
+ * Ett svar som beter sig som fetch gör — inklusive `text()`.
+ *
+ * API-klienten läser kroppen som text för att tomma svar ska gå att skilja från trasiga
+ * (se `parseBody` i `lib/api.ts`). En attrapp som bara kan `json()` ljuger därför om
+ * verkligheten, och ett test på en sådan attrapp kan vara grönt medan appen är trasig —
+ * vilket är precis vad som hände med 202-svaret från `request-code`.
+ */
+export function jsonResponse(body: unknown, status = 200): Response {
+  const text = JSON.stringify(body)
+
   return {
     ok: status >= 200 && status < 300,
     status,
     json: () => Promise.resolve(body),
+    text: () => Promise.resolve(text),
+  } as unknown as Response
+}
+
+/** Ett svar utan kropp, som 202 från `request-code` och 204 från `logout`. */
+export function emptyResponse(status: number): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: () => Promise.reject(new SyntaxError('Unexpected end of JSON input')),
+    text: () => Promise.resolve(''),
   } as unknown as Response
 }
 
