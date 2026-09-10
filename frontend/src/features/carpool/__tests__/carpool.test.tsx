@@ -50,6 +50,7 @@ function offer(overrides: Record<string, unknown> = {}) {
     isFull: false,
     note: null,
     isMine: false,
+    driverName: 'Anna Berg',
     ...overrides,
   }
 }
@@ -65,6 +66,7 @@ function request(overrides: Record<string, unknown> = {}) {
     status: 'Pending',
     createdUtc: '2026-09-19T18:00:00Z',
     isMine: false,
+    requesterName: 'Erik Lund',
     ...overrides,
   }
 }
@@ -181,6 +183,51 @@ describe('erbjudandena går att läsa av', () => {
 
     expect(await screen.findByText(/Ingen anslutning/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
+  })
+})
+
+describe('samåkningen har ett ansikte', () => {
+  it('säger vem som kör', async () => {
+    /*
+     * `#154`. Fore namnen sa kortet ingenting om vem som satt bakom ratten, och en
+     * forfragan gick till "nagon". Mellan grannar som mots pa planen nasta lordag ar det
+     * ett tomrum.
+     */
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer()] })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByText('Anna Berg kör')).toBeInTheDocument()
+  })
+
+  it('säger "Du kör" på den egna raden', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer({ isMine: true })] })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByText('Du kör')).toBeInTheDocument()
+  })
+
+  it('säger inget alls när kontot saknar namn', async () => {
+    // Konton skapade fore `#154` har inget. "Okand kor" hade latit som ett fel.
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer({ driverName: null })] })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
+    expect(screen.queryByText(/kör$/)).not.toBeInTheDocument()
+  })
+
+  it('visar vem som frågar, för föraren som ska svara', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer({ isMine: true })], requests: [request()] })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByText('Erik Lund frågar om skjuts')).toBeInTheDocument()
   })
 })
 

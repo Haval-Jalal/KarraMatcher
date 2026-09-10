@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { postJson } from '@/lib/api'
+import { getAuthJson, getJson, postJson } from '@/lib/api'
+import { clearSession, setAccessToken } from '@/lib/session'
 import { emptyResponse, jsonResponse } from '@/test/apiStub'
 
 /**
@@ -62,5 +63,68 @@ describe('svar med kropp', () => {
     stubFetch(() => jsonResponse({ title: 'Koden stämmer inte' }, 401))
 
     await expect(postJson('/api/v1/auth/verify-code', {})).rejects.toThrow('Koden stämmer inte')
+  })
+})
+
+describe('hämtningar som beror på vem som frågar', () => {
+  it('bär access-token, så servern vet vem som läser', async () => {
+    /*
+     * Regressionsvakt. Samakningens lista ar oppen men svarar olika: en inloggad ser
+     * forarens namn och notis och sitt eget erbjudande som sitt. Utan rubriken sag varje
+     * inloggad foralder listan som en gast -- utan att nagot sag trasigt ut.
+     */
+    setAccessToken('en.access.token')
+
+    const fetchMock = vi.fn((_input: unknown, _init?: RequestInit) =>
+      Promise.resolve(jsonResponse([])),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getAuthJson('/api/v1/nagot')
+
+    const init = fetchMock.mock.calls[0]?.[1] ?? {}
+    const headers = init.headers as Record<string, string>
+
+    expect(headers['Authorization']).toBe('Bearer en.access.token')
+
+    clearSession()
+  })
+
+  it('går utan rubrik för en gäst', async () => {
+    // Samma anrop tjanar bada. Den lagger bara till det den har.
+    clearSession()
+
+    const fetchMock = vi.fn((_input: unknown, _init?: RequestInit) =>
+      Promise.resolve(jsonResponse([])),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getAuthJson('/api/v1/nagot')
+
+    const init = fetchMock.mock.calls[0]?.[1] ?? {}
+
+    expect((init.headers as Record<string, string>)['Authorization']).toBeUndefined()
+  })
+
+  it('lämnar de publika hämtningarna utan token', async () => {
+    /*
+     * Lagets schema cachas pa Vercels edge och svarar da utan att vacka Render (§KM.11).
+     * En Authorization-rubrik hade gjort svaret omojligt att dela mellan lasare, och
+     * kallstarten ar appens dyraste sekunder.
+     */
+    setAccessToken('en.access.token')
+
+    const fetchMock = vi.fn((_input: unknown, _init?: RequestInit) =>
+      Promise.resolve(jsonResponse({})),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getJson('/api/v1/teams/gul/matches')
+
+    const init = fetchMock.mock.calls[0]?.[1] ?? {}
+
+    expect((init.headers as Record<string, string>)['Authorization']).toBeUndefined()
+
+    clearSession()
   })
 })

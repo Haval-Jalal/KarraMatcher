@@ -51,6 +51,7 @@
 | Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
 | Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
 
+- `#55` Tränarens samåkningsöverblick och gallring efter 30 dagar — **M5 klar** — 2026-09-10
 - `#54` Gästen leds till inloggning i stället för att mötas av en saknad knapp — 2026-09-10
 - `#53` Samåkningsvyn: erbjuda, fråga, svara — hela flödet på matchsidan — 2026-09-10
 - `#150` Inloggningen sa att koden inte gick att skicka trots att mejlet var skickat — tomt 202-svar tolkades som fel — 2026-09-10
@@ -95,7 +96,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#55` Tränarens överblick och gallring efter 30 dagar | Haval | `feature/carpool-coach-overview` | In Review — stänger M5 |
+| `#154` Namn på kontot | Haval | `feature/account-name` | In Review — samåkningen får ett ansikte |
 
 ## ➡️ Nästa steg
 
@@ -121,6 +122,7 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2026-08-29 | **Full process** enligt mallen | Målet är ett komplett och granskningsbart projekt | Board, issue, branch och PR för varje ändring — även små |
 | 2026-08-29 | **Statistik privat per familj**, ingen skytteliga | Svensk fotbolls riktlinjer avråder från resultatrapportering och tabeller upp till 12 år; minskar dessutom föräldrapress | Matchresultatet skrivs in av varje familj för sig. Ingen roll, inte ens Admin, kan läsa det |
 | 2026-08-29 | **Barnstatistiken lagras enbart på enheten** — ingen tabell, ingen endpoint | Spelarkortet är tänkt som något föräldern och barnet gör tillsammans efter matchen. Data som aldrig når servern kan inte läcka från den, och kräver varken konto eller samtycke | Servern behandlar **inga uppgifter om barn** vid lansering. Priset: datan går förlorad vid telefonbyte utan säkerhetskopia → backupkod, `storage.persist()` och installationsuppmaning blir funktionskrav (§KM.2) |
+| 2026-09-10 | **Kontot får för- och efternamn** | Servern lagrade bara en mejladress, så samåkningen blev anonym: "någon frågar om skjuts". Mellan grannar som möts på planen nästa lördag är det ett tomrum, och tränarens överblick kunde inte svara på vem som kör | Ny PII-kolumn om en **vuxen** (§KM.1:s tak gäller barn och berörs inte). Förnamn krävs, efternamn valfritt. Namnet visas bara för inloggade — aldrig i den publika erbjudandelistan, aldrig i loggar eller audit-rader, och det raderas med kontot |
 | 2026-09-10 | **Gallringen körs i API-processen, inte som cron** | Vercel Hobby ger ett cronjobb per dygn, och det är lovat till påminnelsen kvällen före match (§KM.11). En gallring som beror på att en annan tjänst hör av sig slutar tyst köra den dag villkoren ändras | `CarpoolRetentionWorker` kör vid uppstart och var 24:e timme. Render free vaknar flera gånger om dagen, så den körs ofta — raderingen är idempotent och kostar en fråga när det inte finns något att ta bort |
 | 2026-09-10 | **Tränarens samåkningsöverblick är räknad, inte namngiven** | Servern lagrar inget namn på en förälder, bara en mejladress — och den visas aldrig för någon annan. Överblickens fråga ("får alla skjuts?") besvaras av siffror | Ingen ny PII-exponering (§KM.1). Vill vi någon gång visa vem som kör krävs ett eget beslut här, inte en tyst utökning av svaret |
 | 2026-08-29 | **Samåkning: förfrågan → accept eller nekande med meddelande** | Föraren ska själv få välja vem som åker med, och ett tyst nej fungerar inte mellan grannar som möts på planen nästa lördag | Ny entitet `CarpoolRequest` med tillståndsmaskin. Nekande utan meddelande avvisas server-side. Kräver inloggning — gäster ser men deltar inte (§KM.12) |

@@ -1808,6 +1808,19 @@ a.match-card:focus-visible .match-card__opponent {
   font-weight: 600;
 }
 
+/* Vem som kör (#154). Står strax under platsen, där ögat redan är. */
+.carpool-card__driver,
+.carpool-overview__drivers {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+.account__name {
+  margin: 0;
+  font-size: var(--text-lg);
+  align-self: center;
+}
+
 /* Radioalternativ i ett formulär: etikett och knapp på samma rad, hela raden klickbar. */
 .form__choice {
   display: flex;

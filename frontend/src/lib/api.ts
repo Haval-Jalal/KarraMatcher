@@ -186,6 +186,61 @@ export function renewSession(): Promise<boolean> {
   return pendingRenewal
 }
 
+/**
+ * Hämtar något som servern får veta vem som frågar efter.
+ *
+ * <h3>Varför det här inte är samma funktion som `getJson`</h3>
+ *
+ * De publika hämtningarna — lagets schema, en match, kalendern — cachas på Vercels edge
+ * och svarar då utan att väcka Render (§KM.11). Det är appens vanligaste sidvisning, och
+ * en `Authorization`-rubrik på just de anropen hade gjort dem omöjliga att dela mellan
+ * läsare. Därför bär bara de anrop som faktiskt beror på vem som frågar en token.
+ *
+ * <h3>Utan token blir det ett vanligt anrop</h3>
+ *
+ * Samåkningens lista är öppen men svarar olika: en inloggad ser förarens namn och notis,
+ * en gäst gör det inte. Samma funktion tjänar alltså båda — den lägger bara till det den
+ * har.
+ */
+export async function getAuthJson<T>(
+  path: string,
+  signal?: AbortSignal,
+  retryOnUnauthorized = true,
+): Promise<T> {
+  const token = getAccessToken()
+
+  let response: Response
+
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      headers: {
+        Accept: 'application/json',
+        ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
+      },
+      credentials: 'same-origin',
+      ...(signal ? { signal } : {}),
+    })
+  } catch {
+    throw new ApiError('Ingen anslutning till servern.', { status: 0, offline: true })
+  }
+
+  // Samma 401-hantering som för skrivningar, och av samma skäl: access-token lever en
+  // kvart, och en förälder som varit borta längre än så ska inte mötas av ett fel.
+  if (response.status === 401 && retryOnUnauthorized && token !== null) {
+    const renewed = await renewSession()
+
+    if (renewed) {
+      return getAuthJson<T>(path, signal, false)
+    }
+  }
+
+  if (!response.ok) {
+    throw new ApiError(await messageFor(response), { status: response.status })
+  }
+
+  return parseBody<T>(response)
+}
+
 export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   let response: Response
 

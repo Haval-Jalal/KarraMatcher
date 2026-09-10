@@ -53,6 +53,7 @@ public sealed class AuditEntry
 public static class AuditActions
 {
     public const string AccountDeleted = "konto.raderat";
+    public const string AccountNameChanged = "konto.namn.andrat";
 
     public const string MatchCreated = "match.skapad";
     public const string MatchUpdated = "match.andrad";

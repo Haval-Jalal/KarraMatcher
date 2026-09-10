@@ -27,6 +27,7 @@ namespace KarraMatcher.Application.Features.Carpool;
 public sealed class CarpoolOfferService(
     ICarpoolOfferRepository offers,
     ICarpoolRequestRepository requests,
+    IAccountRepository accounts,
     IAuditLog audit)
 {
     /// <summary>
@@ -103,12 +104,23 @@ public sealed class CarpoolOfferService(
             .AcceptedSeatsForOffersAsync([.. open.Select(offer => offer.Id)], cancellationToken)
             .ConfigureAwait(false);
 
+        /*
+         * Namnen hamtas bara at en inloggad lasare. En gast far listan utan dem (§KM.3) --
+         * och da finns ingen anledning att fraga databasen efter dem heller.
+         */
+        var names = reader is null
+            ? new Dictionary<Guid, string>()
+            : await accounts
+                .DisplayNamesAsync([.. open.Select(offer => offer.DriverAccountId).Distinct()], cancellationToken)
+                .ConfigureAwait(false);
+
         return
         [
             .. open.Select(offer => CarpoolOfferDto.For(
                 offer,
                 reader,
-                taken.TryGetValue(offer.Id, out var seats) ? seats : 0)),
+                taken.TryGetValue(offer.Id, out var seats) ? seats : 0,
+                names.TryGetValue(offer.DriverAccountId, out var name) ? name : null)),
         ];
     }
 

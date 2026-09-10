@@ -20,6 +20,17 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         // konton för samma person kunnat uppstå genom en enda inloggning med versal.
         builder.HasIndex(a => a.Email).IsUnique();
 
+        /*
+         * Namnet ar valfritt i databasen aven om formularet kraver ett fornamn. Konton som
+         * skapades innan #154 har inget, och en NOT NULL hade tvingat fram ett pahittat
+         * varde for dem -- vilket ar samre an att veta att det saknas.
+         */
+        builder.Property(a => a.FirstName).HasMaxLength(60);
+        builder.Property(a => a.LastName).HasMaxLength(60);
+
+        // Harlett, inte lagrat.
+        builder.Ignore(a => a.DisplayName);
+
         builder.Property(a => a.CreatedUtc).IsRequired();
 
         // Kaskad: raderas kontot ska dess tokens följa med i samma svep (checklistan 1.6).

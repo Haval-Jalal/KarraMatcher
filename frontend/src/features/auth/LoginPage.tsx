@@ -7,7 +7,8 @@ import { z } from 'zod'
 import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
-import { requestLoginCode, verifyLoginCode } from './authApi'
+import { getProfile, requestLoginCode, verifyLoginCode, type AccountProfile } from './authApi'
+import { NameForm } from './NameForm'
 import { useAuth } from './useAuth'
 
 /**
@@ -61,6 +62,12 @@ type CodeForm = z.infer<typeof codeSchema>
 export function LoginPage() {
   const [email, setEmail] = useState<string | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+
+  /*
+   * Namnet fragas bara av den som inte har nagot (`#154`). En atervandande foralder ska
+   * mota noll extra steg -- inloggningen ar redan tva ovanpa en lank hen klickade pa.
+   */
+  const [askName, setAskName] = useState<AccountProfile | null>(null)
   const navigate = useNavigate()
   const search = useSearch({ from: '/logga-in' })
   const { refresh } = useAuth()
@@ -85,11 +92,29 @@ export function LoginPage() {
           }}
           onFailure={setFailure}
         />
+      ) : askName !== null ? (
+        <NameForm
+          profile={askName}
+          submitLabel="Spara och fortsätt"
+          onSaved={() => {
+            void navigate({ to: safeDestination(search.next) })
+          }}
+          onSkip={() => {
+            void navigate({ to: safeDestination(search.next) })
+          }}
+        />
       ) : (
         <CodeStep
           email={email}
-          onVerified={() => {
+          onVerified={(profile) => {
             refresh()
+
+            if (profile !== null && profile.needsName) {
+              setAskName(profile)
+
+              return
+            }
+
             void navigate({ to: safeDestination(search.next) })
           }}
           onFailure={setFailure}
@@ -173,7 +198,7 @@ function CodeStep({
   onStartOver,
 }: {
   email: string
-  onVerified: () => void
+  onVerified: (profile: AccountProfile | null) => void
   onFailure: (message: string) => void
   onStartOver: () => void
 }) {
@@ -191,7 +216,22 @@ function CodeStep({
         void handleSubmit(async ({ code }) => {
           try {
             await verifyLoginCode(email, code)
-            onVerified()
+
+            /*
+             * Profilen hamtas har och inte i sessionssvaret. Ett namn i token hade drojt
+             * upp till en kvart med att visa en andring, och sessionens kontrakt ska handla
+             * om sessionen. Misslyckas hamtningen ar inloggningen anda gjord -- da hoppas
+             * namnfragan over i stallet for att stoppa nagon pa vagen in.
+             */
+            let profile: AccountProfile | null = null
+
+            try {
+              profile = await getProfile()
+            } catch {
+              profile = null
+            }
+
+            onVerified(profile)
           } catch (error) {
             onFailure(
               error instanceof ApiError && error.offline

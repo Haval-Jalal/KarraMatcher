@@ -1,4 +1,4 @@
-import { getJson, postJson } from '@/lib/api'
+import { getAuthJson, postJson } from '@/lib/api'
 
 /**
  * Samåkningen mot API:t (§KM.12).
@@ -43,6 +43,13 @@ export interface CarpoolOffer {
   /** Förarens egen notis. Följer bara med till den som är inloggad. */
   note: string | null
   isMine: boolean
+  /**
+   * Förarens namn, eller null.
+   *
+   * Null för en gäst — vem som kör är lagets sak och inte hela internets (§KM.3) — och
+   * null för ett konto som ännu inte fyllt i något namn.
+   */
+  driverName: string | null
 }
 
 /** En förfrågan så som API:t levererar den. Speglar `CarpoolRequestDto`. */
@@ -55,6 +62,8 @@ export interface CarpoolRequest {
   status: CarpoolRequestStatus
   createdUtc: string
   isMine: boolean
+  /** Namnet på den som frågade, om hen fyllt i ett. Listan når bara de inblandade. */
+  requesterName: string | null
 }
 
 /**
@@ -101,7 +110,7 @@ const base = (matchId: string) => `/api/v1/matches/${encodeURIComponent(matchId)
  * gäst gör det inte, så svaret skiljer sig åt mellan läsare.
  */
 export function listOffers(matchId: string, signal?: AbortSignal): Promise<CarpoolOffer[]> {
-  return getJson<CarpoolOffer[]>(`${base(matchId)}/offers`, signal)
+  return getAuthJson<CarpoolOffer[]>(`${base(matchId)}/offers`, signal)
 }
 
 export function createOffer(matchId: string, input: CarpoolOfferInput): Promise<CarpoolOffer> {
@@ -136,7 +145,7 @@ export function listRequests(
   offerId: string,
   signal?: AbortSignal,
 ): Promise<CarpoolRequest[]> {
-  return getJson<CarpoolRequest[]>(`${base(matchId)}/offers/${offerId}/requests`, signal)
+  return getAuthJson<CarpoolRequest[]>(`${base(matchId)}/offers/${offerId}/requests`, signal)
 }
 
 /** Återtar en egen förfrågan. */
@@ -170,5 +179,8 @@ export function denyRequest(matchId: string, requestId: string, message: string)
  * lagfält att skicka i stället.
  */
 export function listTeamCarpool(slug: string, signal?: AbortSignal): Promise<TeamCarpoolMatch[]> {
-  return getJson<TeamCarpoolMatch[]>(`/api/v1/teams/${encodeURIComponent(slug)}/carpool`, signal)
+  return getAuthJson<TeamCarpoolMatch[]>(
+    `/api/v1/teams/${encodeURIComponent(slug)}/carpool`,
+    signal,
+  )
 }
