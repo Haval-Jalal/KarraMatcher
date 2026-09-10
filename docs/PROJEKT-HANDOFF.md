@@ -10,7 +10,7 @@
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
 - **Senast uppdaterad:** 2026-09-10 av Haval
-- **Aktuell milstolpe:** M5 — Samåkning **klar (6 av 6)**. M4 klar 8 av 8. Nästa: M6 eller M7
+- **Aktuell milstolpe:** M6 — Kallelse, byggd men avstängd (1 av 4 klara). M5 klar 6 av 6, M4 klar 8 av 8
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -51,6 +51,7 @@
 | Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
 | Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
 
+- `#154` Namn på kontot — samåkningen fick ett ansikte. Rättade samtidigt att `getJson` aldrig skickade access-token, så inloggade GET-anrop lästes som gäst — 2026-09-10
 - `#55` Tränarens samåkningsöverblick och gallring efter 30 dagar — **M5 klar** — 2026-09-10
 - `#54` Gästen leds till inloggning i stället för att mötas av en saknad knapp — 2026-09-10
 - `#53` Samåkningsvyn: erbjuda, fråga, svara — hela flödet på matchsidan — 2026-09-10
@@ -96,7 +97,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#154` Namn på kontot | Haval | `feature/account-name` | In Review — samåkningen får ett ansikte |
+| `#56` Feature flag `AttendanceEnabled` | Haval | `feature/attendance-flag` | In Review — grinden som håller kallelsen avstängd |
 
 ## ➡️ Nästa steg
 
