@@ -1762,6 +1762,52 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0 0 12px;
 }
 
+/*
+ * Tränarens överblick (#55). Raden som saknar förare är den som ska fastna i ögat, och
+ * den säger det med ord — inte bara med en färg som en tredjedel av föräldrarna inte
+ * skiljer från de andra (WCAG 1.4.1).
+ */
+.carpool-overview {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.carpool-overview__row {
+  border: 1px solid var(--border-strong);
+  border-left: 5px solid var(--team-accent);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  padding: 12px 14px;
+}
+
+.carpool-overview__match {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.carpool-overview__when {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+}
+
+.carpool-overview__seats,
+.carpool-overview__waiting {
+  margin: 0;
+}
+
+.carpool-overview__gap {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* Radioalternativ i ett formulär: etikett och knapp på samma rad, hela raden klickbar. */
 .form__choice {
   display: flex;

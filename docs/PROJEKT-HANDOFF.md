@@ -10,7 +10,7 @@
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
 - **Senast uppdaterad:** 2026-09-10 av Haval
-- **Aktuell milstolpe:** M5 — Samåkning (5 av 6 klara). M4 klar 8 av 8
+- **Aktuell milstolpe:** M5 — Samåkning **klar (6 av 6)**. M4 klar 8 av 8. Nästa: M6 eller M7
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -51,6 +51,7 @@
 | Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
 | Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
 
+- `#54` Gästen leds till inloggning i stället för att mötas av en saknad knapp — 2026-09-10
 - `#53` Samåkningsvyn: erbjuda, fråga, svara — hela flödet på matchsidan — 2026-09-10
 - `#150` Inloggningen sa att koden inte gick att skicka trots att mejlet var skickat — tomt 202-svar tolkades som fel — 2026-09-10
 - `#148` Huvudmeny, så appens delar går att nå — 2026-09-10
@@ -94,7 +95,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#54` Gäst ser samåkning men leds till inloggning | Haval | `feature/carpool-guest-signin` | In Review — knappen leder till inloggningen och tillbaka |
+| `#55` Tränarens överblick och gallring efter 30 dagar | Haval | `feature/carpool-coach-overview` | In Review — stänger M5 |
 
 ## ➡️ Nästa steg
 
@@ -120,6 +121,8 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2026-08-29 | **Full process** enligt mallen | Målet är ett komplett och granskningsbart projekt | Board, issue, branch och PR för varje ändring — även små |
 | 2026-08-29 | **Statistik privat per familj**, ingen skytteliga | Svensk fotbolls riktlinjer avråder från resultatrapportering och tabeller upp till 12 år; minskar dessutom föräldrapress | Matchresultatet skrivs in av varje familj för sig. Ingen roll, inte ens Admin, kan läsa det |
 | 2026-08-29 | **Barnstatistiken lagras enbart på enheten** — ingen tabell, ingen endpoint | Spelarkortet är tänkt som något föräldern och barnet gör tillsammans efter matchen. Data som aldrig når servern kan inte läcka från den, och kräver varken konto eller samtycke | Servern behandlar **inga uppgifter om barn** vid lansering. Priset: datan går förlorad vid telefonbyte utan säkerhetskopia → backupkod, `storage.persist()` och installationsuppmaning blir funktionskrav (§KM.2) |
+| 2026-09-10 | **Gallringen körs i API-processen, inte som cron** | Vercel Hobby ger ett cronjobb per dygn, och det är lovat till påminnelsen kvällen före match (§KM.11). En gallring som beror på att en annan tjänst hör av sig slutar tyst köra den dag villkoren ändras | `CarpoolRetentionWorker` kör vid uppstart och var 24:e timme. Render free vaknar flera gånger om dagen, så den körs ofta — raderingen är idempotent och kostar en fråga när det inte finns något att ta bort |
+| 2026-09-10 | **Tränarens samåkningsöverblick är räknad, inte namngiven** | Servern lagrar inget namn på en förälder, bara en mejladress — och den visas aldrig för någon annan. Överblickens fråga ("får alla skjuts?") besvaras av siffror | Ingen ny PII-exponering (§KM.1). Vill vi någon gång visa vem som kör krävs ett eget beslut här, inte en tyst utökning av svaret |
 | 2026-08-29 | **Samåkning: förfrågan → accept eller nekande med meddelande** | Föraren ska själv få välja vem som åker med, och ett tyst nej fungerar inte mellan grannar som möts på planen nästa lördag | Ny entitet `CarpoolRequest` med tillståndsmaskin. Nekande utan meddelande avvisas server-side. Kräver inloggning — gäster ser men deltar inte (§KM.12) |
 | 2026-08-29 | **Milstolparna omordnade till M0–M8** | Inloggningen behövs av tränaradmin och samåkning men inte längre av statistiken | Konto och roller blev en egen milstolpe (M2) före tränaradmin (M3). Spelarkortet (M4) är helt frikopplat och kan byggas parallellt |
 | 2026-08-29 | **Öppen läsning, autentiserad skrivning** | En förälder som bara vill se matchtiden ska aldrig mötas av inloggning | Avvikelse §KM.0 A4. Kräver rate limiting från start och att publika endpoints aldrig returnerar PII |

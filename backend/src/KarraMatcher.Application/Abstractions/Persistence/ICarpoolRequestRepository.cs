@@ -47,6 +47,19 @@ public interface ICarpoolRequestRepository
         IReadOnlyCollection<Guid> offerIds,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Antalet förfrågningar som fortfarande väntar på svar, per erbjudande.
+    ///
+    /// <para>
+    /// Tränarens överblick behöver veta att någon står och väntar, men inte vem eller vad
+    /// hen skrivit — hälsningen är fritext och hämtas därför inte alls (§KM.12).
+    /// Erbjudanden utan väntande förfrågningar saknas i svaret.
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyDictionary<Guid, int>> CountPendingForOffersAsync(
+        IReadOnlyCollection<Guid> offerIds,
+        CancellationToken cancellationToken);
+
     public Task AddAsync(CarpoolRequest request, CancellationToken cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken);

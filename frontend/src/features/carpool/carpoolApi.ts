@@ -57,6 +57,26 @@ export interface CarpoolRequest {
   isMine: boolean
 }
 
+/**
+ * En match i tränarens överblick. Speglar `TeamCarpoolMatchDto`.
+ *
+ * Inga namn, och inga hälsningar från dem som frågat: servern lagrar inget namn, och
+ * fritexten hämtas inte alls till en överblick som inte behöver den (§KM.12).
+ */
+export interface TeamCarpoolMatch {
+  matchId: string
+  kickoffUtc: string
+  opponent: string
+  isHome: boolean
+  offers: CarpoolOffer[]
+  pendingRequests: number
+  seatsOffered: number
+  seatsTaken: number
+  seatsLeft: number
+  /** Sant när ingen erbjudit skjuts. Raden tränaren ska reagera på. */
+  needsDriver: boolean
+}
+
 /** Det föraren fyller i. Tiden är redan omräknad till UTC. */
 export interface CarpoolOfferInput {
   direction: CarpoolDirection
@@ -141,4 +161,14 @@ export function acceptRequest(
  */
 export function denyRequest(matchId: string, requestId: string, message: string): Promise<void> {
   return postJson<void>(`${base(matchId)}/requests/${requestId}/deny`, { message })
+}
+
+/**
+ * Lagets samåkning, sedd av tränaren.
+ *
+ * Kräver tränarskap för just det laget — laget står i adressen, så det finns inget
+ * lagfält att skicka i stället.
+ */
+export function listTeamCarpool(slug: string, signal?: AbortSignal): Promise<TeamCarpoolMatch[]> {
+  return getJson<TeamCarpoolMatch[]>(`/api/v1/teams/${encodeURIComponent(slug)}/carpool`, signal)
 }

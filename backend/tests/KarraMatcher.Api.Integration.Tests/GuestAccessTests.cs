@@ -261,6 +261,13 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         string[] allowed =
         [
             "api/v1/matches/{matchId:guid}/carpool/offers/{offerId:guid}/requests",
+
+            /*
+             * Tranarens samakningsoverblick (#55). Schemat ar allas, men vem som kor vem ar
+             * lagets egen sak -- och svaret bar forarnas notiser, som ar fritext och bara
+             * far na de inblandade och lagets tranare (§KM.12).
+             */
+            "api/v1/teams/{slug}/carpool",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

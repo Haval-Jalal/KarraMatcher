@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { CarpoolOverview } from '@/features/carpool'
 import { useAuth } from '@/features/auth'
 import { teamMatchesQueryKey, useTeamMatches, type Match } from '@/features/matches'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -107,6 +108,12 @@ export function CoachMatchesPage() {
           void refresh()
         }}
       />
+
+      {/*
+        Samåkningen står före säsongslistan: den är det som är färskvara. Vem som kör på
+        lördag går inte att läsa ur schemat, och det är den enda frågan som har ett datum.
+      */}
+      <CarpoolOverview slug={slug} enabled={canManage(slug)} />
 
       <h2 className="match-list__title">Hela säsongen</h2>
 

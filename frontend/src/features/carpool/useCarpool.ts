@@ -1,11 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { listOffers, listRequests, type CarpoolOffer, type CarpoolRequest } from './carpoolApi'
+import {
+  listOffers,
+  listRequests,
+  listTeamCarpool,
+  type CarpoolOffer,
+  type CarpoolRequest,
+  type TeamCarpoolMatch,
+} from './carpoolApi'
 
 export const carpoolOffersQueryKey = (matchId: string) => ['carpool', matchId] as const
 
 export const carpoolRequestsQueryKey = (matchId: string, offerId: string) =>
   ['carpool', matchId, 'requests', offerId] as const
+
+export const teamCarpoolQueryKey = (slug: string) => ['carpool', 'team', slug] as const
 
 /**
  * Matchens erbjudanden.
@@ -39,4 +48,19 @@ export function useCarpoolRequests(matchId: string, offerId: string, enabled: bo
   })
 }
 
-export type { CarpoolOffer, CarpoolRequest }
+/**
+ * Lagets samåkning för tränaren.
+ *
+ * Samma korta färskhet som matchens egen lista: överblicken läses inför en helg, och en
+ * plats som redan är tagen ska inte se ledig ut.
+ */
+export function useTeamCarpool(slug: string, enabled: boolean) {
+  return useQuery({
+    queryKey: teamCarpoolQueryKey(slug),
+    queryFn: ({ signal }) => listTeamCarpool(slug, signal),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+export type { CarpoolOffer, CarpoolRequest, TeamCarpoolMatch }

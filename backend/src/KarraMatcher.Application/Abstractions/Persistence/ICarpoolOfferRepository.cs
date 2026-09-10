@@ -22,6 +22,18 @@ public interface ICarpoolOfferRepository
         Guid matchId,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Öppna erbjudanden för flera matcher på en gång, i avgångsordning.
+    ///
+    /// <para>
+    /// Finns för tränarens överblick, som annars hade ställt en fråga per match i
+    /// säsongsresten. Tom lista in ger tom lista ut.
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyList<CarpoolOffer>> ListOpenForMatchesAsync(
+        IReadOnlyCollection<Guid> matchIds,
+        CancellationToken cancellationToken);
+
     public Task AddAsync(CarpoolOffer offer, CancellationToken cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken);
