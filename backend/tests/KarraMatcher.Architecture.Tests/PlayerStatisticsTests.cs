@@ -164,12 +164,18 @@ public partial class PlayerStatisticsTests
          * forfragans antal platser. Fritexten -- forarens notis och fragarens halsning --
          * ar vuxnas egna ord om sin egen resa. Inget barn namns i nagondera (§KM.1), och
          * bada gallras 30 dagar efter matchen (§KM.12).
+         *
+         * AttendanceCalls och AttendanceResponses tillkom i #57 och ar medvetet med.
+         * Kallelsen bar matchens id och nar den oppnades; svaret bar en status (Kommer / Kan
+         * inte / Kanske) och ett antal 0-4. Ingendera har ett falt som pekar ut ett barn --
+         * en vuxen svarar for sin familj, och vilket barn som avses vet bara familjens egen
+         * telefon (§KM.1, beslut 2026-09-10). Svaren raderas med kontot (§KM.6).
          */
         Assert.Equal(
             [
-                "Accounts", "AgeGroups", "AuditEntries", "CarpoolOffers", "CarpoolRequests",
-                "Clubs", "LoginCodes", "Matches", "PushSubscriptions", "RefreshTokens", "TeamRoles",
-                "Teams", "Venues",
+                "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceResponses", "AuditEntries",
+                "CarpoolOffers", "CarpoolRequests", "Clubs", "LoginCodes", "Matches",
+                "PushSubscriptions", "RefreshTokens", "TeamRoles", "Teams", "Venues",
             ],
             DbSetNames());
     }

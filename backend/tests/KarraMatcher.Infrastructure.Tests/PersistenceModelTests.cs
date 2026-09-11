@@ -117,10 +117,61 @@ public class PersistenceModelTests
 
         Assert.Equal(
             [
-                "Account", "AgeGroup", "AuditEntry", "CarpoolOffer", "CarpoolRequest", "Club", "LoginCode", "Match",
+                "Account", "AgeGroup", "AttendanceCall", "AttendanceResponse", "AuditEntry",
+                "CarpoolOffer", "CarpoolRequest", "Club", "LoginCode", "Match",
                 "PushSubscription", "RefreshToken", "Team", "TeamRole", "Venue",
             ],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
+    public void Narvarosvar_ForsvinnerMedSittKonto()
+    {
+        // §KM.6: kontoraderingen forlitar sig pa kaskad (DeleteAccountCommandHandler tar bort
+        // kontot och later databasen ta resten). Restrict eller SetNull hade lamnat kvar ett
+        // svar som pekar pa ett konto som inte finns -- och en radering som inte ar fullstandig.
+        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceResponse))!;
+
+        var toAccount = entity.GetForeignKeys()
+            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(Domain.Accounts.Account));
+
+        Assert.Equal(DeleteBehavior.Cascade, toAccount.DeleteBehavior);
+    }
+
+    [Fact]
+    public void Kallelse_HarUniktIndexPerMatch()
+    {
+        // En match kallas en gang. Oppnandet ar idempotent i handlern; indexet ar garantin
+        // mot att tva samtidiga anrop skapar tva kallelser. Kontrolleras mot Npgsql-modellen,
+        // eftersom InMemory struntar i unika index.
+        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceCall));
+        Assert.NotNull(entity);
+
+        var index = entity.GetIndexes().SingleOrDefault(i =>
+            i.Properties.Count == 1
+            && i.Properties[0].Name == nameof(Domain.Attendance.AttendanceCall.MatchId));
+
+        Assert.NotNull(index);
+        Assert.True(index.IsUnique);
+    }
+
+    [Fact]
+    public void Narvarosvar_HarUniktIndexPerKontoOchMatch()
+    {
+        // Ett svar per konto och match. Handlern uppdaterar det befintliga; indexet ar
+        // garantin mot dubbletter fran tva samtidiga anrop.
+        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceResponse));
+        Assert.NotNull(entity);
+
+        var index = entity.GetIndexes().SingleOrDefault(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(
+                [
+                    nameof(Domain.Attendance.AttendanceResponse.MatchId),
+                    nameof(Domain.Attendance.AttendanceResponse.AccountId),
+                ]));
+
+        Assert.NotNull(index);
+        Assert.True(index.IsUnique);
     }
 
     [Fact]
