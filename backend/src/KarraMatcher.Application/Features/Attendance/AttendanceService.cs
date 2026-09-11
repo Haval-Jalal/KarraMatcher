@@ -54,7 +54,10 @@ public enum SubmitResponseOutcome
 /// de är många, de ändras ofta, och de står inte på §KM.10:s lista över känsliga åtgärder.
 /// </para>
 /// </summary>
-public sealed class AttendanceService(IAttendanceCallRepository calls, IAuditLog audit)
+public sealed class AttendanceService(
+    IAttendanceCallRepository calls,
+    IAccountRepository accounts,
+    IAuditLog audit)
 {
     /// <summary>Öppnar kallelsen för en match. Idempotent.</summary>
     public async Task<OpenCallOutcome> OpenCallAsync(
@@ -185,5 +188,50 @@ public sealed class AttendanceService(IAttendanceCallRepository calls, IAuditLog
             callOpen,
             kickoff.Value,
             mine is null ? null : AttendanceResponseDto.For(mine));
+    }
+
+    /// <summary>
+    /// Tränarens summering för en match (`#58`). Null när matchen inte hör till laget.
+    ///
+    /// <para>
+    /// Räknar bara dem som faktiskt svarat. En lista över dem som <em>inte</em> svarat kräver
+    /// en förälder↔lag-koppling som inte finns (§KM.1), och hör hemma i <c>#63</c>.
+    /// Namnen är de svarande vuxnas (`#154`), aldrig ett barns.
+    /// </para>
+    /// </summary>
+    public async Task<AttendanceSummaryDto?> GetSummaryAsync(
+        string slug,
+        Guid matchId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(slug);
+
+        if (!await calls.MatchBelongsToTeamAsync(matchId, slug, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var responses = await calls.ListResponsesForMatchAsync(matchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var names = await accounts
+            .DisplayNamesAsync([.. responses.Select(r => r.AccountId).Distinct()], cancellationToken)
+            .ConfigureAwait(false);
+
+        var responders = responses
+            .Select(r => new AttendanceResponderDto(
+                r.Id,
+                names.TryGetValue(r.AccountId, out var name) ? name : null,
+                r.Status,
+                r.Count))
+            .ToArray();
+
+        return new AttendanceSummaryDto(
+            responses.Where(r => r.Status == AttendanceStatus.Coming).Sum(r => r.Count),
+            responses.Where(r => r.Status == AttendanceStatus.Maybe).Sum(r => r.Count),
+            responses.Count(r => r.Status == AttendanceStatus.CantCome),
+            responses.Count,
+            responders);
     }
 }

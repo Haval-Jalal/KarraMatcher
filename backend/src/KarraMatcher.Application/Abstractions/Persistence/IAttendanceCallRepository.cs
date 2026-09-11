@@ -41,5 +41,13 @@ public interface IAttendanceCallRepository
 
     public Task AddResponseAsync(AttendanceResponse response, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Alla svar på en match, äldst först — den som svarade först syns först. Endast läsning
+    /// (tränarens summering, `#58`).
+    /// </summary>
+    public Task<IReadOnlyList<AttendanceResponse>> ListResponsesForMatchAsync(
+        Guid matchId,
+        CancellationToken cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

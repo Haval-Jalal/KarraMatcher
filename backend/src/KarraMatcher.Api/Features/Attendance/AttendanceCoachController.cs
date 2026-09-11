@@ -26,12 +26,39 @@ namespace KarraMatcher.Api.Features.Attendance;
 [Route("api/v1/teams/{slug}/matches/{matchId:guid}/attendance")]
 [Produces("application/json")]
 [Authorize(Policy = AuthorizationPolicies.CoachOfTeam)]
-[RequireCsrfToken]
 [RequireAttendanceEnabled]
-public sealed class AttendanceCoachController(ICommandDispatcher commands) : ControllerBase
+public sealed class AttendanceCoachController(
+    ICommandDispatcher commands,
+    IQueryDispatcher queries) : ControllerBase
 {
+    /// <summary>
+    /// Tränarens summering: hur många som kommer, kan inte och kanske, och vilka vuxna som
+    /// svarat (`#58`). Ingen lista över dem som inte svarat — den kräver en förälder↔lag-
+    /// koppling som inte finns (§KM.1), och hör hemma i <c>#63</c>.
+    /// </summary>
+    [HttpGet("summary")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Summary(
+        string slug,
+        Guid matchId,
+        CancellationToken cancellationToken)
+    {
+        var summary = await queries
+            .SendAsync(new GetAttendanceSummaryQuery(slug, matchId), cancellationToken)
+            .ConfigureAwait(false);
+
+        return summary is null
+            ? Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Matchen finns inte",
+                detail: "Kontrollera länken — matchen kan ha tagits bort.")
+            : Ok(summary);
+    }
+
     /// <summary>Öppnar kallelsen för matchen. Idempotent.</summary>
     [HttpPost("call")]
+    [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
