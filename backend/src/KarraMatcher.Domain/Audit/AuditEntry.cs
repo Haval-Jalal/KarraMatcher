@@ -62,6 +62,7 @@ public static class AuditActions
 
     public const string AttendanceEnabled = "narvaro.paslagen";
     public const string AttendanceDisabled = "narvaro.avslagen";
+    public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";
 
     public const string CarpoolOfferCreated = "samakning.erbjudande.skapat";
     public const string CarpoolOfferWithdrawn = "samakning.erbjudande.tillbakadraget";

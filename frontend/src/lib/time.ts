@@ -195,6 +195,20 @@ export function relativeDayLabel(
 }
 
 /**
+ * Har matchen redan börjat?
+ *
+ * <h3>Varför den bor här</h3>
+ *
+ * Jämförelsen läser nuet, och att göra det mitt i en render är precis det som gör en
+ * komponent oren. Samma skäl som att `relativeDayLabel` ligger här: tidslogiken samlas på
+ * ett ställe, och komponenten frågar den i stället för att räkna själv (§KM.5). Referensen
+ * går att skicka in, vilket gör den prövbar utan att vänta på klockan.
+ */
+export function hasKickedOff(value: string | Date, reference: string | Date = new Date()): boolean {
+  return toInstant(value).getTime() <= toInstant(reference).getTime()
+}
+
+/**
  * Svensk lokaltid in, UTC ut — motsatsen till allt annat i den här filen.
  *
  * <h3>Varför det inte räcker att skapa en Date</h3>

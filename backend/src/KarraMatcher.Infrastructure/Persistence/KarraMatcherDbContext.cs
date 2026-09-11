@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
 using KarraMatcher.Domain.Matches;
@@ -36,6 +37,10 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<CarpoolOffer> CarpoolOffers => Set<CarpoolOffer>();
 
     public DbSet<CarpoolRequest> CarpoolRequests => Set<CarpoolRequest>();
+
+    public DbSet<AttendanceCall> AttendanceCalls => Set<AttendanceCall>();
+
+    public DbSet<AttendanceResponse> AttendanceResponses => Set<AttendanceResponse>();
 
     public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
         Set<Domain.Push.PushSubscription>();

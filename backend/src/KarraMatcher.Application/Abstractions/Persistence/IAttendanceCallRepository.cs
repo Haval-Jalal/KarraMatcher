@@ -1,0 +1,45 @@
+using KarraMatcher.Domain.Attendance;
+
+namespace KarraMatcher.Application.Abstractions.Persistence;
+
+/// <summary>
+/// Läser och skriver kallelsen och dess svar (`#57`).
+///
+/// <para>
+/// Skild från <see cref="IAttendanceRepository"/>, som bara rör grindens flagga. Kallelsen
+/// och svaren är den faktiska funktionen bakom grinden — de hör ihop som en enhet: ett svar
+/// utan en kallelse hör ingenstans.
+/// </para>
+/// </summary>
+public interface IAttendanceCallRepository
+{
+    /// <summary>
+    /// Hör matchen till laget med den slugen? Falskt både när matchen inte finns och när
+    /// den tillhör ett annat lag — samma svar, så en tränare inte kan kartlägga andra lags
+    /// matcher genom att prova.
+    /// </summary>
+    public Task<bool> MatchBelongsToTeamAsync(
+        Guid matchId,
+        string slug,
+        CancellationToken cancellationToken);
+
+    /// <summary>Sant när kallelsen redan är öppnad för matchen.</summary>
+    public Task<bool> CallExistsAsync(Guid matchId, CancellationToken cancellationToken);
+
+    public Task AddCallAsync(AttendanceCall attendanceCall, CancellationToken cancellationToken);
+
+    /// <summary>Matchens avspark i UTC, eller null när matchen inte finns.</summary>
+    public Task<DateTime?> FindKickoffUtcAsync(Guid matchId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Kontots svar på matchen, spårat så att det går att ändra. Null när inget finns än.
+    /// </summary>
+    public Task<AttendanceResponse?> FindResponseAsync(
+        Guid matchId,
+        Guid accountId,
+        CancellationToken cancellationToken);
+
+    public Task AddResponseAsync(AttendanceResponse response, CancellationToken cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken);
+}

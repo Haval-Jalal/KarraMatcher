@@ -1833,6 +1833,32 @@ a.match-card:focus-visible .match-card__opponent {
   letter-spacing: normal;
 }
 
+/* Kallelsen på matchsidan (#57). Speglar samåkningens sektion. */
+.attendance {
+  margin-top: 32px;
+}
+
+.attendance__heading {
+  font-family: var(--display);
+  font-size: var(--text-xl);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+}
+
+.attendance__note {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.attendance__current {
+  margin: 0 0 12px;
+}
+
+.attendance__form {
+  margin-top: 12px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

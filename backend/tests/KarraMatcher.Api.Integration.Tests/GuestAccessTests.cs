@@ -276,6 +276,13 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
              * far na de inblandade och lagets tranare (§KM.12).
              */
             "api/v1/teams/{slug}/carpool",
+
+            /*
+             * Narvarolaget for en inloggad vuxen (#57). Ligger under matchens adress men ar
+             * inte schemat: det ar mitt eget svar och om kallelsen ar oppen. Kraver konto,
+             * och ligger dessutom bakom grinden (§KM.7) -- osynligt tills klubben slar pa den.
+             */
+            "api/v1/matches/{matchId:guid}/attendance",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

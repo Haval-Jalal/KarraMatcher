@@ -85,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolRequestRepository, CarpoolRequestRepository>();
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+        services.AddScoped<IAttendanceCallRepository, AttendanceCallRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IPushDeliveryRepository, PushDeliveryRepository>();
 

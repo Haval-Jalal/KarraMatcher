@@ -6,6 +6,7 @@ import { teamThemeStyle } from '@/lib/teamTheme'
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
+import { AttendanceSection } from '@/features/attendance'
 import { CarpoolSection } from '@/features/carpool'
 import { MatchReportCard, readCard } from '@/features/playercard'
 
@@ -160,6 +161,14 @@ export function MatchDetailPage() {
         plan där inget händer.
       */}
       {!isCancelled && <CarpoolSection match={match} />}
+
+      {/*
+        Kallelsen gäller en match som ska spelas, och är dessutom osynlig tills klubben slår
+        på den för laget (§KM.7) — sektionen renderar ingenting när servern svarar 404.
+      */}
+      {!isCancelled && (
+        <AttendanceSection matchId={match.id} teamSlug={team.slug} kickoffUtc={match.kickoffUtc} />
+      )}
 
       <MatchReportCard match={match} children={childrenForMatch} />
     </main>
