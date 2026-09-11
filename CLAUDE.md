@@ -97,11 +97,21 @@ Vad det globala lagret bidrar med:
 | A8 | All data i backend | **Barnstatistiken lagras enbart på enheten** | Spelarkortet är familjens egen sak. Data som aldrig når servern kan inte läcka från den — men den kan gå förlorad, se §KM.2 |
 | A9 | Mediator = MediatR | **Handskriven query-dispatcher** | MediatR ligger sedan v13 under RPL-1.5, som kräver att vår källkod publiceras vid driftsättning. Dispatchern är ~70 rader och har noll licensyta |
 
-### §KM.1 Barn-PII — hårt tak på vad som får lagras
+### §KM.1 Barn-PII — servern lagrar ingenting om ett barn
 
-- **Tillåtet om ett barn:** förnamn (eller smeknamn), tröjnummer, lag-id, aktiv/inaktiv.
+> **Skärpt 2026-09-10.** Tidigare tillät den här paragrafen förnamn, tröjnummer, lag-id och
+> aktiv/inaktiv om ett barn, som förberedelse för kallelsen. Beslutet blev det motsatta:
+> **inga barnuppgifter på servern över huvud taget.** Se *Viktiga beslut* i
+> [`docs/PROJEKT-HANDOFF.md`](./docs/PROJEKT-HANDOFF.md).
+
+- **Tillåtet om ett barn på servern:** ingenting. Det finns ingen `Player`-entitet, ingen
+  trupp och ingen kolumn som beskriver ett barn. Barn existerar bara som lokala poster i
+  familjens egen telefon (§KM.2).
 - **Förbjudet överallt** — databas, loggar, cache, felrapportering, analytics, ICS-feed, push-payload:
-  efternamn, personnummer, födelsedatum, adress, telefonnummer, e-post, foto, hälsouppgifter, position.
+  namn, efternamn, personnummer, födelsedatum, adress, telefonnummer, e-post, foto,
+  hälsouppgifter, position, tröjnummer — allt som pekar ut ett enskilt barn.
+- **Vuxna är en annan sak.** Ett konto har adress och namn (`#154`); det är personuppgifter om
+  en vuxen som själv skrivit in dem, och de lyder under §KM.6 och §KM.10 — inte under taket här.
 - Ny kolumn som kan innehålla personuppgift får **inte** införas utan att beslutet skrivs in i
   `docs/PROJEKT-HANDOFF.md` under *Viktiga beslut* — i samma PR.
 - Fritextfält som en användare kan skriva i (t.ex. samåkningsnotis) räknas som potentiell PII:
@@ -131,8 +141,9 @@ barnet fyller i tillsammans efter matchen. Den datan **lagras uteslutande i fami
      *"Sparas bara på den här telefonen"*.
 - Två vårdnadshavare med varsin telefon får varsin uppsättning statistik. Det är en följd av modellen
   och ska förklaras i gränssnittet, inte "lösas" med en server.
-- `Player` finns på servern **enbart** som tränarens trupp för den vilande kallelsen (§KM.7).
-  Barnet i spelarkortet är en lokal post och har ingen motsvarighet i databasen.
+- **Det finns ingen `Player` på servern alls.** Barnet i spelarkortet är en lokal post och har
+  ingen motsvarighet i databasen — inte heller som tränarens trupp. Kallelsen räknar svar från
+  vuxna konton i stället för att namnge barn (§KM.7).
 
 ### §KM.3 Publik läsning, autentiserad skrivning
 
@@ -162,13 +173,14 @@ barnet fyller i tillsammans efter matchen. Den datan **lagras uteslutande i fami
 
 ### §KM.6 Samtycke och radering
 
-- **På servern** hamnar ett barns förnamn bara genom tränarens trupp (vilande kallelse, §KM.7).
-  Innan en tränare lägger upp truppen ska samtyckesrutinen vara klar; accepterad version och tidsstämpel sparas.
+- **Inget barns uppgifter hamnar på servern alls** (§KM.1, beslut 2026-09-10). Därmed behövs
+  ingen samtyckesrutin för barnuppgifter: det finns inget att samtycka till. Kvar står den
+  begripliga integritetstexten som förklarar var spelarkortet faktiskt ligger.
 - **Spelarkortet kräver inget samtycke från oss** — den datan lämnar aldrig telefonen (§KM.2). Däremot
   ska gränssnittet vara tydligt med var den finns och att den försvinner om telefonen byts utan säkerhetskopia.
-- Radering av ett barn tar bort spelaren, dess närvarosvar och kopplingen — direkt, inte
-  "markerad som raderad". Radering av ett konto tar bort kontot och allt som ägs av det, inklusive
-  samåkningserbjudanden och förfrågningar. Spelarkortet raderas separat på enheten.
+- Radering av ett konto tar bort kontot och allt som ägs av det, inklusive samåkningserbjudanden,
+  förfrågningar och närvarosvar — direkt, inte "markerad som raderad". Spelarkortet raderas separat
+  på enheten, av familjen själv; servern kan inte röra det och har aldrig sett det.
 - Ingen tredjepartsspårning, ingen besöksanalys, inga externa skript i FE utöver väder (Open-Meteo)
   och utgående kartlänkar. Nya tredjeparter kräver beslut i handoff-filen.
 
@@ -177,6 +189,9 @@ barnet fyller i tillsammans efter matchen. Den datan **lagras uteslutande i fami
 - Närvaro/kallelse styrs av `Team.AttendanceEnabled`. Flaggan kontrolleras **serverside i varje handler**,
   inte bara genom att dölja knappar i FE.
 - Är flaggan av returnerar endpointen `404`, och FE visar inte funktionen.
+- **Kallelsen namnger inga barn** (§KM.1, beslut 2026-09-10). En vuxen svarar för sin familj och
+  anger hur många som kommer; tränaren ser summan och vilka *konton* som inte svarat. Vilket barn
+  som avses vet bara familjens egen telefon.
 
 ### §KM.8 Offline och PWA
 

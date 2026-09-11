@@ -86,7 +86,7 @@ rewriten, inte direkt mot Render), har schemat i databasen, och CI är grön.
 - [ ] **Massinlägg:** klistra in → tolka → förhandsgranska med status per rad → spara
 - [ ] Parsern klarar tabb, komma, semikolon och blandade datumformat
 - [ ] Dubblettdetektering mot befintliga matcher
-- [ ] Truppvy: lägg till spelare med förnamn och tröjnummer (förberedelse för M6)
+- ~~Truppvy: lägg till spelare med förnamn och tröjnummer~~ — **utgår 2026-09-10**, `#40` stängd. Inga barnuppgifter lagras på servern (§KM.1)
 - [ ] Tränarens matchöversikt över hela säsongen
 
 **Klar när:** en tränare kan lägga in hela säsongens schema på under fem minuter, ändra en match och ställa in en match — och ändringen syns direkt för föräldrarna.
@@ -133,15 +133,20 @@ rewriten, inte direkt mot Render), har schemat i databasen, och CI är grön.
 
 ## M6 — Kallelse (byggd, avstängd)
 
-- [ ] `Team.AttendanceEnabled` — kontrolleras serverside i varje handler, `404` när av (§KM.7)
-- [ ] Tränaren kallar till match
-- [ ] Föräldern svarar Kommer / Kan inte / Kanske för sitt barn
-- [ ] Närvarosummering per match för tränaren
-- [ ] Påminn dem som inte svarat
-- [ ] Admin kan slå på flaggan per lag
-- [ ] Samtyckesrutin innan en trupp läggs upp (§KM.6)
+> **Omskriven 2026-09-10.** Beslutet blev att inga barnuppgifter lagras på servern (öppen fråga 10).
+> Kallelsen namnger därför inga barn: en vuxen svarar för sin familj och anger antal. Tränaren ser
+> summan och vilka konton som inte svarat. Vilket barn som avses vet bara familjens egen telefon.
+> `#40` truppvyn och `#59` samtyckesrutinen är stängda som inaktuella.
 
-**Klar när:** funktionen fungerar fullt ut i test med flaggan på, och är helt osynlig och otillgänglig med flaggan av.
+- [x] `Team.AttendanceEnabled` — kontrolleras serverside i varje handler, `404` när av (§KM.7) — `#56`
+- [ ] Tränaren kallar till match
+- [ ] Den vuxna svarar Kommer / Kan inte / Kanske, med antal — utan att namnge något barn
+- [ ] Närvarosummering per match för tränaren: summa, och vilka konton som inte svarat
+- [ ] Påminn dem som inte svarat
+- [x] Admin kan slå på flaggan per lag — `#56`
+
+**Klar när:** funktionen fungerar fullt ut i test med flaggan på, är helt osynlig och otillgänglig
+med flaggan av, och ett arkitekturtest visar att ingen tabell eller endpoint beskriver ett barn.
 
 ---
 

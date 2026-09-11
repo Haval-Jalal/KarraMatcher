@@ -8,9 +8,9 @@
 ---
 
 ## 🔎 Snabbstatus
-- **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4) och M2 (6/6) klara. M3 klar 6 av 7** — `#40` truppvyn är blockerad, se öppna frågor. Repot är publikt
+- **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4), M2 (6/6) och M3 klara** — `#40` truppvyn utgick 2026-09-10, se *Viktiga beslut*. Repot är publikt
 - **Senast uppdaterad:** 2026-09-10 av Haval
-- **Aktuell milstolpe:** M7 — Notiser (1 av 6 klara). M6 blockerad efter `#56`: `#57`/`#40` väntar på öppen fråga 10. M5 klar 6 av 6
+- **Aktuell milstolpe:** M7 — Notiser (2 av 6 klara). M5 klar 6 av 6. M6 omskriven 2026-09-10 utan barnuppgifter: `#56` klar, `#57`/`#58` kvar
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
 ## 🧱 Teknikstack (bekräftad)
@@ -51,6 +51,8 @@
 | Offline | Schemat står kvar i flygplansläge på båda, även efter att appen stängts helt |
 | Skärmläsare | VoiceOver och TalkBack: hopplänken först, lagen som "länk", aktuellt lag som "aktuell sida", matchkort läses som tid, datum, motståndare och plats |
 
+- `#61` Bakgrundsjobb för notisutskick, med VAPID-signering och RFC 8291-kryptering — 2026-09-10
+- `#60` VAPID-nycklar och anonym prenumeration per lag — 2026-09-10
 - `#56` Feature flag `AttendanceEnabled` med serverside-grind och adminspak — 2026-09-10
 - `#154` Namn på kontot — samåkningen fick ett ansikte. Rättade samtidigt att `getJson` aldrig skickade access-token, så inloggade GET-anrop lästes som gäst — 2026-09-10
 - `#55` Tränarens samåkningsöverblick och gallring efter 30 dagar — **M5 klar** — 2026-09-10
@@ -98,8 +100,7 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| `#60` VAPID-nycklar och prenumerationshantering | Haval | `feature/push-subscriptions` | In Review — grunden för notiser |
-| `#61` Bakgrundsjobb för utskick | Haval | `feature/push-delivery` | In Review — staplad ovanpå `#60` |
+| Beslut: inga barnuppgifter på servern | Haval | `docs/no-child-data-on-server` | In Review — skriver in svaret på öppen fråga 10 |
 
 ## ➡️ Nästa steg
 
@@ -125,6 +126,7 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 2026-08-29 | **Full process** enligt mallen | Målet är ett komplett och granskningsbart projekt | Board, issue, branch och PR för varje ändring — även små |
 | 2026-08-29 | **Statistik privat per familj**, ingen skytteliga | Svensk fotbolls riktlinjer avråder från resultatrapportering och tabeller upp till 12 år; minskar dessutom föräldrapress | Matchresultatet skrivs in av varje familj för sig. Ingen roll, inte ens Admin, kan läsa det |
 | 2026-08-29 | **Barnstatistiken lagras enbart på enheten** — ingen tabell, ingen endpoint | Spelarkortet är tänkt som något föräldern och barnet gör tillsammans efter matchen. Data som aldrig når servern kan inte läcka från den, och kräver varken konto eller samtycke | Servern behandlar **inga uppgifter om barn** vid lansering. Priset: datan går förlorad vid telefonbyte utan säkerhetskopia → backupkod, `storage.persist()` och installationsuppmaning blir funktionskrav (§KM.2) |
+| 2026-09-10 | **Inga barnuppgifter på servern — alls** | §KM.1 tillät tidigare förnamn och tröjnummer som förberedelse för kallelsen. Men uppgifter som aldrig lagras kan inte läcka, inte begäras ut och inte glömmas bort vid en radering — och en app för ett barnlag har inget behov som väger upp det | Ingen `Player`-entitet och ingen trupp. Kallelsen (M6) byggs om: en vuxen svarar för sin familj och anger antal, tränaren ser summan och vilka konton som inte svarat. `#40` truppvyn och `#59` samtyckesrutinen stängda som inaktuella — det finns inget att samtycka till. §KM.1, §KM.2, §KM.6 och §KM.7 ändrade i samma PR |
 | 2026-09-10 | **Notisprenumerationen kopplas inte till ett konto** | Prenumerationen hör till webbläsaren och ska fungera utan inloggning — annars når notiserna en bråkdel av föräldrarna. En koppling till kontot hade dessutom mött §KM.6: allt som ägs av ett konto raderas med det, och då slutar en enhet tyst få besked om inställda matcher | `PushSubscriptions` har ingen `AccountId`. Samåkningsnotiserna i `#63` behöver kopplingen och får införa den med den avvägningen skriven — en kolumn som inte används ännu ska inte finnas |
 | 2026-09-10 | **Kontot får för- och efternamn** | Servern lagrade bara en mejladress, så samåkningen blev anonym: "någon frågar om skjuts". Mellan grannar som möts på planen nästa lördag är det ett tomrum, och tränarens överblick kunde inte svara på vem som kör | Ny PII-kolumn om en **vuxen** (§KM.1:s tak gäller barn och berörs inte). Förnamn krävs, efternamn valfritt. Namnet visas bara för inloggade — aldrig i den publika erbjudandelistan, aldrig i loggar eller audit-rader, och det raderas med kontot |
 | 2026-09-10 | **Gallringen körs i API-processen, inte som cron** | Vercel Hobby ger ett cronjobb per dygn, och det är lovat till påminnelsen kvällen före match (§KM.11). En gallring som beror på att en annan tjänst hör av sig slutar tyst köra den dag villkoren ändras | `CarpoolRetentionWorker` kör vid uppstart och var 24:e timme. Render free vaknar flera gånger om dagen, så den körs ofta — raderingen är idempotent och kostar en fråga när det inte finns något att ta bort |
@@ -222,7 +224,7 @@ Två spår som kan köras parallellt — de rör inte samma filer.
 | 3 | ~~Var driftas backend?~~ **Besvarad 2026-08-29:** Vercel + Render + Neon, se ADR ovan. | — | ✅ |
 | 4 | ~~**Vilken e-postleverantör** för inloggningskoden?~~ **Besvarad 2026-08-30:** Resend, med dokumenterat undantag från checklistans 9.12 — se ADR ovan. Kravet på EU-hosting är därmed medvetet uppmjukat, inte bortglömt. | — | ✅ |
 | 5 | **Domännamn** — `karramatcher.se` föreslaget, tillgänglighet ej kontrollerad. **Nedgraderad 2026-08-30: blockerar M8, inte M2.** Beslut: vi kör utan domän tills vidare. Effekten är dock inte den man tror — utan verifierad domän svarar Resend **403** och skickar bara till kontots egen adress, alltså inget mejl alls till föräldrarna, inte ens i skräpkorgen. Det räcker ändå för att bygga och testa hela M2 mot Havals egen adress. Domänen behövs först när hundra föräldrar ska få koder. Billigaste vägen dit: en underdomän till `carcheck.se`, som redan ägs och är i drift. | **M8** | Haval |
-| 10 | **Ska barnuppgifter någonsin få finnas på servern?** §KM.1 tillåter i dag förnamn, tröjnummer och lag-id, och §KM.2 förutsätter att `Player` finns som tränarens trupp när kallelsen aktiveras. Haval uttryckte 2026-08-30 en strängare hållning: barn ska bara finnas som lokala poster på enheten. **Beslutet är medvetet uppskjutet till M6**, där kallelsen faktiskt byggs. Blir svaret "nej" måste M6:s fyra issues skrivas om utan namngivna spelare. I dag finns ingen `Player`-entitet i koden — bara vakttesterna som håller spelarstatistiken borta. | M6 | Haval |
+| 10 | ~~**Ska barnuppgifter någonsin få finnas på servern?**~~ **Besvarad 2026-09-10: nej.** Inga uppgifter om barn lagras på servern över huvud taget — ingen `Player`, ingen trupp, ingen kolumn. §KM.1 är skärpt, §KM.2, §KM.6 och §KM.7 följdändrade, och M6 omskriven: kallelsen räknar svar från vuxna konton i stället för att namnge barn. `#40` och `#59` är därmed stängda som inaktuella. | — | ✅ |
 | 6 | **Vem är admin och vilka är tränare?** Riktiga personer krävs före lansering. | M7 | Haval |
 | 7 | **Samtyckestexten** — behövs först när en tränare lägger upp truppen, eftersom servern annars inte behandlar några barnuppgifter alls. Kvar: en begriplig integritetstext. | M6 | Haval + klubben |
 | 9 | **Hur hittar föräldrar varandra vid samåkning?** Vi lagrar inga telefonnummer. Räcker namn plus meddelandefältet? | M5 | Haval — pröva med tränarna |
