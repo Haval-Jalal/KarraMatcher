@@ -61,7 +61,15 @@ onSessionChange(() => {
 })
 
 async function getCsrfToken(): Promise<string> {
-  csrfToken ??= (await getJson<{ token: string }>('/api/v1/auth/csrf')).token
+  // getAuthJson och inte getJson: servern binder anti-forgery-token till den som frågar,
+  // och den bindningen görs av access-token i Authorization-rubriken. Hämtas token utan
+  // rubriken blir den bunden till en anonym användare, och ett inloggat anrop som bär den
+  // svarar 400 -- vilket träffar allt som skriver: lägga upp samåkning, svara på en
+  // förfrågan, spara namn, radera konto. getAuthJson lägger till rubriken när den finns och
+  // låter bli när den saknas, så inloggningens egna anrop (som sker utloggade) får som förr
+  // en anonymt bunden token som matchar. retryOnUnauthorized är av: /csrf kräver ingen
+  // inloggning och kan inte svara 401, och ett ja här hade kunnat gå i baklås mot renewSession.
+  csrfToken ??= (await getAuthJson<{ token: string }>('/api/v1/auth/csrf', undefined, false)).token
 
   return csrfToken
 }

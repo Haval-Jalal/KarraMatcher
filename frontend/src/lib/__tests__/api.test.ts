@@ -106,6 +106,33 @@ describe('hämtningar som beror på vem som frågar', () => {
     expect((init.headers as Record<string, string>)['Authorization']).toBeUndefined()
   })
 
+  it('hämtar CSRF-token med access-token, så inloggade skrivningar inte svarar 400', async () => {
+    /*
+     * Regressionsvakt. Servern binder anti-forgery-token till den som fragar, och
+     * bindningen gors av Authorization-rubriken. Hamtades token utan den blev den bunden
+     * till en anonym anvandare, medan sjalva skrivningen var inloggad -- da svarade servern
+     * 400 pa allt som andrar tillstand, och "Erbjudandet gick inte att spara" mötte den som
+     * loggat in. Kravet ar att /auth/csrf-anropet bar rubriken nar en session finns.
+     */
+    setAccessToken('en.access.token') // nollar CSRF-cachen via onSessionChange
+
+    const fetchMock = vi.fn((input: unknown, _init?: RequestInit) =>
+      Promise.resolve(
+        String(input).includes('/auth/csrf') ? jsonResponse({ token: 'csrf' }) : emptyResponse(204),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await postJson<void>('/api/v1/matches/m1/carpool/offers/o1/withdraw')
+
+    const csrfCall = fetchMock.mock.calls.find(([input]) => String(input).includes('/auth/csrf'))
+    const csrfHeaders = csrfCall?.[1]?.headers as Record<string, string> | undefined
+
+    expect(csrfHeaders?.['Authorization']).toBe('Bearer en.access.token')
+
+    clearSession()
+  })
+
   it('lämnar de publika hämtningarna utan token', async () => {
     /*
      * Lagets schema cachas pa Vercels edge och svarar da utan att vacka Render (§KM.11).
