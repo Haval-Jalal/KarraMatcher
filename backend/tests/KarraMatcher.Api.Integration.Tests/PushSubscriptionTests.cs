@@ -1,7 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
+using KarraMatcher.Application.Abstractions.Security;
+using KarraMatcher.Application.Features.Auth;
+using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 using KarraMatcher.Infrastructure.Security;
@@ -75,6 +79,84 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
             .CountAsync(
                 s => context.Teams.Any(team => team.Id == s.TeamId && team.Slug == slug),
                 CancellationToken.None);
+    }
+
+    private async Task<(string Slug, Guid AccountId)> SeedTeamWithAccountAsync(string suffix)
+    {
+        var slug = await SeedTeamAsync(suffix);
+
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var account = new Account
+        {
+            Id = Guid.NewGuid(),
+            Email = $"foralder-{suffix}@example.com",
+            CreatedUtc = DateTime.UtcNow,
+        };
+        context.Accounts.Add(account);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return (slug, account.Id);
+    }
+
+    private string TokenFor(Guid accountId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
+
+        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [])).Token;
+    }
+
+    private async Task<Guid?> AccountIdOfAsync(string slug, string endpoint)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        // Filtrerat pa laget: endpoint-konstanten delas mellan testen, och det unika indexet
+        // ar (TeamId, Endpoint) -- utan slugen kunde en annan tests rad matchas.
+        return await context.PushSubscriptions
+            .AsNoTracking()
+            .Where(s => s.Endpoint == endpoint
+                && context.Teams.Any(team => team.Id == s.TeamId && team.Slug == slug))
+            .Select(s => s.AccountId)
+            .FirstAsync(CancellationToken.None);
+    }
+
+    // ---- Kontokoppling (#63) ----------------------------------------------------------
+
+    [Fact]
+    public async Task Prenumeration_MedInloggning_KnyterKontot()
+    {
+        // #63: en inloggad webblasares prenumeration knyts till kontot, sa samakningsnotiser
+        // kan na just den foraldern. Adressen kommer aldrig tillbaka -- kopplingen kollas i DB.
+        var (slug, accountId) = await SeedTeamWithAccountAsync("linked");
+
+        using var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{slug}/push")
+        {
+            Content = JsonContent.Create(Subscription()),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenFor(accountId));
+
+        var response = await client.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(accountId, await AccountIdOfAsync(slug, Endpoint));
+    }
+
+    [Fact]
+    public async Task Prenumeration_SomGast_HarIngenKontokoppling()
+    {
+        // En gast prenumererar precis som forr -- ingen koppling, och far anda lagets notiser.
+        var slug = await SeedTeamAsync("guest-link");
+
+        using var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            $"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Null(await AccountIdOfAsync(slug, Endpoint));
     }
 
     // ---- Utan konto ------------------------------------------------------------------

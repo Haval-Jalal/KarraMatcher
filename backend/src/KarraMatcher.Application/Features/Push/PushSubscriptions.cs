@@ -24,7 +24,11 @@ namespace KarraMatcher.Application.Features.Push;
 /// inte ens till den som just skickade in den. Svaret är tomt med flit.
 /// </para>
 /// </summary>
-public sealed record SubscribeToPushCommand(string Slug, PushSubscriptionDraft Draft)
+/// <param name="AccountId">
+/// Kontot bakom webbläsaren, om någon är inloggad — annars null. Bara till för att kunna
+/// rikta en samåkningsnotis (`#63`); en gäst prenumererar precis som förr.
+/// </param>
+public sealed record SubscribeToPushCommand(string Slug, PushSubscriptionDraft Draft, Guid? AccountId)
     : ICommand<bool>;
 
 /// <summary>Slutar prenumerera. Adressen är den enda nyckel webbläsaren har.</summary>
@@ -92,7 +96,8 @@ internal sealed class SubscribeToPushCommandHandler(IPushSubscriptionRepository 
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return subscriptions.SubscribeAsync(command.Slug, command.Draft, cancellationToken);
+        return subscriptions.SubscribeAsync(
+            command.Slug, command.Draft, command.AccountId, cancellationToken);
     }
 }
 

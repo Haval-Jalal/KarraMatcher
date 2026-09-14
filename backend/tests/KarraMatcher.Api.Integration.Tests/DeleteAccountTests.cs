@@ -266,16 +266,17 @@ public sealed class DeleteAccountTests(KarraMatcherApiFactory factory)
     public void AlltSomPekarPaEttKonto_ForsvinnerMedDet()
     {
         /*
-         * Framtidssakringen. Samakningserbjudanden (M5) och push-prenumerationer (M7)
-         * finns inte an, men de kommer att peka pa ett konto -- och §KM.6 kraver att de
-         * forsvinner med det.
+         * Framtidssakringen. En tabell som pekar pa ett konto ska forsvinna med kontot
+         * (§KM.6). I stallet for att lita pa att nagon minns det den dagen raknar testet upp
+         * varje frammande nyckel mot Accounts och kraver kaskad -- den som lagger till en
+         * tabell utan det far reda pa det direkt.
          *
-         * I stallet for att lita pa att nagon minns det den dagen raknar testet upp varje
-         * frammande nyckel mot Accounts och kraver kaskad. Den som lagger till en tabell
-         * utan det far reda pa det direkt, av ett test som skrevs innan tabellen fanns.
-         *
-         * Undantaget ar audit-loggen, som med flit saknar frammande nyckel och darfor
-         * inte dyker upp har alls.
+         * Tva namngivna undantag, bada med flit:
+         *  - Audit-loggen saknar frammande nyckel och dyker inte upp har alls.
+         *  - Push-prenumerationens kontokoppling ar SetNull, inte Cascade (#63, beslut
+         *    2026-09-14). En prenumeration hor till enheten, inte till kontot: raderas kontot
+         *    slapper kopplingen, men enheten ska fortsatta fa lagets matchnotiser. Det kontot
+         *    agde -- vem-ar-vem -- forsvinner anda, vilket ar precis vad §KM.6 kraver.
          */
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
@@ -283,7 +284,7 @@ public sealed class DeleteAccountTests(KarraMatcherApiFactory factory)
         var offenders = context.Model.GetEntityTypes()
             .SelectMany(entity => entity.GetForeignKeys())
             .Where(fk => fk.PrincipalEntityType.ClrType == typeof(Account))
-            .Where(fk => fk.DeleteBehavior != DeleteBehavior.Cascade)
+            .Where(fk => !IsSanctioned(fk))
             .Select(fk => $"{fk.DeclaringEntityType.ClrType.Name}.{fk.Properties[0].Name}")
             .ToArray();
 
@@ -291,5 +292,10 @@ public sealed class DeleteAccountTests(KarraMatcherApiFactory factory)
             offenders.Length == 0,
             "Följande pekar på ett konto utan att försvinna med det (§KM.6): "
                 + string.Join(", ", offenders));
+
+        static bool IsSanctioned(IForeignKey fk) =>
+            fk.DeleteBehavior == DeleteBehavior.Cascade
+            || (fk.DeclaringEntityType.ClrType == typeof(Domain.Push.PushSubscription)
+                && fk.DeleteBehavior == DeleteBehavior.SetNull);
     }
 }

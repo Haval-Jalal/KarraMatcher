@@ -188,6 +188,20 @@ public class PersistenceModelTests
     }
 
     [Fact]
+    public void Pushprenumeration_TapparKontokopplingenNarKontotRaderas()
+    {
+        // §KM.6, beslut 2026-09-14: SetNull, inte Cascade. En prenumeration hor till enheten,
+        // inte till kontot -- raderas kontot slapper bara kopplingen, och enheten fortsatter
+        // fa lagets matchnotiser. Cascade hade tyst tagit bort en notis enheten sjalv bett om.
+        var entity = Model().FindEntityType(typeof(Domain.Push.PushSubscription))!;
+
+        var toAccount = entity.GetForeignKeys()
+            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(Domain.Accounts.Account));
+
+        Assert.Equal(DeleteBehavior.SetNull, toAccount.DeleteBehavior);
+    }
+
+    [Fact]
     public void Sessionstider_LagrasMedTidszon()
     {
         // §KM.5: allt i UTC. En token som gar ut "lokal tid" ar en token som gar ut fel

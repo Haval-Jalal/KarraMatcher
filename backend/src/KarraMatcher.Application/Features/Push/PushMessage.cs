@@ -23,6 +23,39 @@ namespace KarraMatcher.Application.Features.Push;
 public sealed record PushMessage(string Title, string Body, string Url);
 
 /// <summary>
-/// En notis på väg ut: vad som ska sägas, och till vilket lags prenumeranter.
+/// En notis på väg ut: vad som ska sägas, och till vem.
+///
+/// <h3>Två mottagarkretsar</h3>
+///
+/// <para>
+/// <b>Ett helt lag</b> — en matchändring eller ett nytt samåkningserbjudande når alla som
+/// prenumererar på laget. <b>En handfull konton</b> — en åkförfrågan når föraren, ett svar
+/// når den som frågade (`#63`). Exakt en av de två är satt; fabriksmetoderna ser till att
+/// det inte går att blanda ihop.
+/// </para>
 /// </summary>
-public sealed record PushDispatch(Guid TeamId, PushMessage Message);
+public sealed record PushDispatch
+{
+    private PushDispatch(Guid? teamId, IReadOnlyList<Guid>? accountIds, PushMessage message)
+    {
+        TeamId = teamId;
+        AccountIds = accountIds;
+        Message = message;
+    }
+
+    /// <summary>Satt när notisen går till ett helt lags prenumeranter.</summary>
+    public Guid? TeamId { get; }
+
+    /// <summary>Satt när notisen går till bestämda konton (deras alla enheter).</summary>
+    public IReadOnlyList<Guid>? AccountIds { get; }
+
+    public PushMessage Message { get; }
+
+    /// <summary>Till alla som prenumererar på laget.</summary>
+    public static PushDispatch ToTeam(Guid teamId, PushMessage message) =>
+        new(teamId, null, message);
+
+    /// <summary>Till bestämda konton — deras notiser om sin egen samåkning (§KM.12).</summary>
+    public static PushDispatch ToAccounts(IReadOnlyList<Guid> accountIds, PushMessage message) =>
+        new(null, accountIds, message);
+}

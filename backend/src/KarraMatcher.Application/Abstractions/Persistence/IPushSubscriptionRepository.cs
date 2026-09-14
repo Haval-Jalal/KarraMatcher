@@ -23,6 +23,7 @@ public interface IPushSubscriptionRepository
     public Task<bool> SubscribeAsync(
         string slug,
         PushSubscriptionDraft draft,
+        Guid? accountId,
         CancellationToken cancellationToken);
 
     /// <summary>

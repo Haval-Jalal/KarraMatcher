@@ -18,6 +18,25 @@ internal sealed class PushDeliveryRepository(KarraMatcherDbContext context, Time
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<PushTarget>> ListForAccountsAsync(
+        IReadOnlyCollection<Guid> accountIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(accountIds);
+
+        if (accountIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await context.PushSubscriptions
+            .AsNoTracking()
+            .Where(s => s.AccountId != null && accountIds.Contains(s.AccountId.Value))
+            .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task RemoveAsync(
         IReadOnlyCollection<Guid> subscriptionIds,
         CancellationToken cancellationToken)
