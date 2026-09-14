@@ -54,6 +54,16 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
         CancellationToken cancellationToken) =>
         await context.AttendanceResponses.AddAsync(response, cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<AttendanceResponse>> ListResponsesForMatchAsync(
+        Guid matchId,
+        CancellationToken cancellationToken) =>
+        await context.AttendanceResponses
+            .AsNoTracking()
+            .Where(r => r.MatchId == matchId)
+            .OrderBy(r => r.CreatedUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         context.SaveChangesAsync(cancellationToken);
 }

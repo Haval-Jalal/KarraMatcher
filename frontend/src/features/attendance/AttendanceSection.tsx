@@ -7,10 +7,15 @@ import { hasKickedOff } from '@/lib/time'
 
 import { openAttendanceCall, type AttendanceStatus } from './attendanceApi'
 import { AttendanceResponseForm } from './AttendanceResponseForm'
-import { attendanceStateQueryKey, useAttendanceState } from './useAttendance'
+import {
+  attendanceStateQueryKey,
+  attendanceSummaryQueryKey,
+  useAttendanceState,
+  useAttendanceSummary,
+} from './useAttendance'
 
 /**
- * Kallelsen på matchsidan (`#57`, §KM.7).
+ * Kallelsen på matchsidan (`#57`, `#58`, §KM.7).
  *
  * <h3>Osynlig tills klubben slår på den</h3>
  *
@@ -18,11 +23,13 @@ import { attendanceStateQueryKey, useAttendanceState } from './useAttendance'
  * renderar den här sektionen ingenting alls — inte en tom rubrik, inte en inaktiv knapp.
  * Funktionen finns helt enkelt inte förrän en administratör slår på den (§KM.7).
  *
- * <h3>Tränaren kallar, den vuxna svarar</h3>
+ * <h3>Tränaren kallar, den vuxna svarar, tränaren ser summan</h3>
  *
- * Är kallelsen på men inte öppnad för matchen ser en tränare knappen att kalla; en förälder
- * ser ingenting än. När den är öppnad ser alla svarsformuläret — även tränaren, som också
- * kan ha en familj som ska med.
+ * Är kallelsen på men inte öppnad för matchen ser en tränare knappen att kalla. När den är
+ * öppnad ser alla svarsformuläret — även tränaren, som också kan ha en familj som ska med —
+ * och tränaren ser dessutom summeringen: hur många som kommer, och vilka vuxna som svarat
+ * (`#58`). Ingen lista över dem som *inte* svarat: den kräver en koppling som inte finns än
+ * (§KM.1), och byggs i `#63`.
  */
 export function AttendanceSection({
   matchId,
@@ -42,6 +49,14 @@ export function AttendanceSection({
   const isManager = canManage(teamSlug)
 
   const { data, isPending, error } = useAttendanceState(matchId, isSignedIn)
+
+  // Summeringen hämtas bara för en tränare med en öppnad kallelse — annars finns inget att
+  // summera, och anropet skulle ändå svara 403 eller 404.
+  const { data: summary } = useAttendanceSummary(
+    teamSlug,
+    matchId,
+    isSignedIn && isManager && data?.callOpen === true,
+  )
 
   // Gästen och den vars lag saknar kallelsen (404) ser ingenting — funktionen finns inte
   // för dem (§KM.7).
@@ -73,7 +88,10 @@ export function AttendanceSection({
   }
 
   async function reload(): Promise<void> {
-    await queryClient.invalidateQueries({ queryKey: attendanceStateQueryKey(matchId) })
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: attendanceStateQueryKey(matchId) }),
+      queryClient.invalidateQueries({ queryKey: attendanceSummaryQueryKey(matchId) }),
+    ])
   }
 
   async function call(): Promise<void> {
@@ -125,7 +143,7 @@ export function AttendanceSection({
       {data.callOpen && closed && (
         <p className="attendance__note">
           {data.myResponse
-            ? `Du svarade: ${summary(data.myResponse.status, data.myResponse.count)}.`
+            ? `Du svarade: ${summarize(data.myResponse.status, data.myResponse.count)}.`
             : 'Matchen har spelats.'}
         </p>
       )}
@@ -134,8 +152,8 @@ export function AttendanceSection({
         <>
           {data.myResponse && (
             <p className="attendance__current" role="status">
-              Ditt svar: <strong>{summary(data.myResponse.status, data.myResponse.count)}</strong>.
-              Du kan ändra det ända fram till avspark.
+              Ditt svar: <strong>{summarize(data.myResponse.status, data.myResponse.count)}</strong>
+              . Du kan ändra det ända fram till avspark.
             </p>
           )}
           <AttendanceResponseForm
@@ -145,11 +163,36 @@ export function AttendanceSection({
           />
         </>
       )}
+
+      {/* Tränarens summering (#58). Bara den som sköter laget, och bara när kallelsen är öppnad. */}
+      {data.callOpen && isManager && summary && (
+        <div className="attendance__summary">
+          <h3 className="attendance__subheading">Svar hittills</h3>
+          <p className="attendance__totals">
+            <strong>{summary.comingPeople}</strong> kommer
+            {summary.maybePeople > 0 ? `, ${String(summary.maybePeople)} kanske` : ''}
+            {summary.cantComeFamilies > 0 ? `, ${String(summary.cantComeFamilies)} kan inte` : ''}
+          </p>
+
+          {summary.responders.length === 0 ? (
+            <p className="attendance__note">Ingen har svarat än.</p>
+          ) : (
+            <ul className="attendance__responders">
+              {summary.responders.map((responder) => (
+                <li key={responder.id}>
+                  {responder.name ?? 'Namnlöst konto'} —{' '}
+                  {summarize(responder.status, responder.count)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   )
 }
 
-function summary(status: AttendanceStatus, count: number): string {
+function summarize(status: AttendanceStatus, count: number): string {
   switch (status) {
     case 'Coming':
       return `Kommer (${String(count)})`

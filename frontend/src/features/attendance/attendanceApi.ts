@@ -74,3 +74,43 @@ export function submitAttendanceResponse(
 ): Promise<void> {
   return postJson<void>(`${base(matchId)}/response`, { status, count }, { method: 'PUT' })
 }
+
+/** Ett svar så som tränaren ser det i summeringen. Namnet är en vuxens (`#154`). */
+export interface AttendanceResponder {
+  /** Svarets id — en stabil nyckel för listan, inte kontots id. */
+  id: string
+  /** Den svarande vuxnas namn, eller null om hen inte fyllt i något. Aldrig ett barn. */
+  name: string | null
+  status: AttendanceStatus
+  count: number
+}
+
+/**
+ * Tränarens summering för en match. Speglar `AttendanceSummaryDto`.
+ *
+ * Ingen lista över dem som *inte* svarat — den kräver en förälder↔lag-koppling som inte
+ * finns (§KM.1) och hör hemma i `#63`. Summeringen räknar bara dem som svarat.
+ */
+export interface AttendanceSummary {
+  /** Summan av antalen från dem som svarat Kommer — hur många som faktiskt dyker upp. */
+  comingPeople: number
+  maybePeople: number
+  cantComeFamilies: number
+  respondedFamilies: number
+  responders: AttendanceResponder[]
+}
+
+/**
+ * Tränarens summering. Kräver tränarskap för laget (laget står i adressen), och bär de
+ * svarande vuxnas namn — därför aldrig för en gäst och aldrig i en delad cache.
+ */
+export function getAttendanceSummary(
+  teamSlug: string,
+  matchId: string,
+  signal?: AbortSignal,
+): Promise<AttendanceSummary> {
+  return getAuthJson<AttendanceSummary>(
+    `/api/v1/teams/${encodeURIComponent(teamSlug)}/matches/${encodeURIComponent(matchId)}/attendance/summary`,
+    signal,
+  )
+}

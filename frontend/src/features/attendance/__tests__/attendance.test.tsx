@@ -52,7 +52,12 @@ interface StateBody {
  * Svarar som API:t. `/api/v1/matches/m1/attendance` innehåller också `/api/v1/matches/`,
  * så kallelsens adresser måste fångas före matchen.
  */
-function stubApi(options: { token?: string; state?: StateBody | 'gate-off'; kickoffUtc?: string }) {
+function stubApi(options: {
+  token?: string
+  state?: StateBody | 'gate-off'
+  kickoffUtc?: string
+  summary?: unknown
+}) {
   const token = options.token ?? PARENT_TOKEN
   const kickoffUtc = options.kickoffUtc ?? FUTURE
   const sent: { url: string; method: string; body: unknown }[] = []
@@ -72,6 +77,20 @@ function stubApi(options: { token?: string; state?: StateBody | 'gate-off'; kick
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
       if (url.includes('/auth/refresh'))
         return Promise.resolve(jsonResponse({ accessToken: token }))
+
+      if (url.includes('/attendance/summary')) {
+        return Promise.resolve(
+          jsonResponse(
+            options.summary ?? {
+              comingPeople: 0,
+              maybePeople: 0,
+              cantComeFamilies: 0,
+              respondedFamilies: 0,
+              responders: [],
+            },
+          ),
+        )
+      }
 
       if (url.includes('/attendance/call')) return Promise.resolve(emptyResponse(204))
       if (url.includes('/attendance/response')) return Promise.resolve(emptyResponse(204))
@@ -162,6 +181,53 @@ describe('tränaren kallar', () => {
       await screen.findByText('Tränaren har inte kallat till den här matchen än.'),
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Kalla till matchen' })).not.toBeInTheDocument()
+  })
+
+  it('ser summeringen: antal och vilka vuxna som svarat', async () => {
+    setAccessToken(coachToken('gul'))
+    stubApi({
+      token: coachToken('gul'),
+      state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null },
+      summary: {
+        comingPeople: 5,
+        maybePeople: 1,
+        cantComeFamilies: 2,
+        respondedFamilies: 4,
+        responders: [
+          { id: 'a', name: 'Anna Berg', status: 'Coming', count: 3 },
+          { id: 'b', name: 'Bengt Ek', status: 'CantCome', count: 0 },
+        ],
+      },
+    })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByRole('heading', { name: 'Svar hittills' })).toBeInTheDocument()
+    expect(screen.getByText(/5/)).toBeInTheDocument()
+    expect(screen.getByText(/Anna Berg/)).toBeInTheDocument()
+    expect(screen.getByText(/Bengt Ek/)).toBeInTheDocument()
+  })
+
+  it('en förälder ser ingen summering', async () => {
+    // Summeringen bar de svarande vuxnas namn -- lagets egen sak, bara for tranaren (§KM.1).
+    setAccessToken(PARENT_TOKEN)
+    stubApi({
+      state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null },
+      summary: {
+        comingPeople: 5,
+        maybePeople: 0,
+        cantComeFamilies: 0,
+        respondedFamilies: 5,
+        responders: [{ id: 'a', name: 'Anna Berg', status: 'Coming', count: 5 }],
+      },
+    })
+
+    renderRoute('/match/m1')
+
+    // Formuläret finns (föräldern kan svara), men summeringen och namnen gör det inte.
+    expect(await screen.findByRole('button', { name: 'Svara' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Svar hittills' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Anna Berg')).not.toBeInTheDocument()
   })
 })
 

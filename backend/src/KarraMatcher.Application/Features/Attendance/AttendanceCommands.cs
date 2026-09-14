@@ -20,6 +20,10 @@ public sealed record SubmitAttendanceResponseCommand(
 public sealed record GetAttendanceStateQuery(Guid MatchId, Guid AccountId)
     : IQuery<AttendanceStateDto?>;
 
+/// <summary>Tränarens summering för en match. Laget står i adressen (CoachOfTeam).</summary>
+public sealed record GetAttendanceSummaryQuery(string Slug, Guid MatchId)
+    : IQuery<AttendanceSummaryDto?>;
+
 internal sealed class OpenAttendanceCallCommandValidator
     : AbstractValidator<OpenAttendanceCallCommand>
 {
@@ -99,5 +103,28 @@ internal sealed class GetAttendanceStateQueryHandler(AttendanceService service)
         ArgumentNullException.ThrowIfNull(query);
 
         return service.GetStateAsync(query.MatchId, query.AccountId, cancellationToken);
+    }
+}
+
+internal sealed class GetAttendanceSummaryQueryValidator
+    : AbstractValidator<GetAttendanceSummaryQuery>
+{
+    public GetAttendanceSummaryQueryValidator()
+    {
+        RuleFor(q => q.Slug).NotEmpty();
+        RuleFor(q => q.MatchId).NotEmpty();
+    }
+}
+
+internal sealed class GetAttendanceSummaryQueryHandler(AttendanceService service)
+    : IQueryHandler<GetAttendanceSummaryQuery, AttendanceSummaryDto?>
+{
+    public Task<AttendanceSummaryDto?> HandleAsync(
+        GetAttendanceSummaryQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return service.GetSummaryAsync(query.Slug, query.MatchId, cancellationToken);
     }
 }

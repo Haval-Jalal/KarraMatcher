@@ -2,9 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 
 import { ApiError } from '@/lib/api'
 
-import { getAttendanceState } from './attendanceApi'
+import { getAttendanceState, getAttendanceSummary } from './attendanceApi'
 
 export const attendanceStateQueryKey = (matchId: string) => ['attendance', matchId] as const
+
+export const attendanceSummaryQueryKey = (matchId: string) =>
+  ['attendance', matchId, 'summary'] as const
 
 /**
  * Mitt eget närvaroläge på en match.
@@ -28,5 +31,21 @@ export function useAttendanceState(matchId: string, enabled: boolean) {
     staleTime: 0,
     retry: (failureCount, error) =>
       !(error instanceof ApiError && error.status === 404) && failureCount < 2,
+  })
+}
+
+/**
+ * Tränarens summering för en match.
+ *
+ * Aktiveras bara för en tränare med en öppnad kallelse — annars finns inget att summera,
+ * och anropet skulle ändå svara 403 eller 404. Kort färskhet, eftersom svar trillar in
+ * under dagarna före match.
+ */
+export function useAttendanceSummary(teamSlug: string, matchId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: attendanceSummaryQueryKey(matchId),
+    queryFn: ({ signal }) => getAttendanceSummary(teamSlug, matchId, signal),
+    enabled,
+    staleTime: 0,
   })
 }

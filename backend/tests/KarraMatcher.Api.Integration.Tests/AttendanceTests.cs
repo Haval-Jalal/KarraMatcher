@@ -6,6 +6,7 @@ using System.Text.Json;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -320,6 +321,118 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         {
             Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    // ---- Tranarens summering (#58) ---------------------------------------------------
+
+    private async Task<HttpResponseMessage> SummaryAsync(string slug, Guid matchId, string token)
+    {
+        using var client = factory.CreateClient(ClientOptions);
+
+        var request = new HttpRequestMessage(
+          HttpMethod.Get,
+          $"/api/v1/teams/{slug}/matches/{matchId}/attendance/summary");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        return await client.SendAsync(request, CancellationToken.None);
+    }
+
+    private async Task SeedResponsesAsync(
+      Guid matchId,
+      (string Name, AttendanceStatus Status, int Count)[] responders)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+        var now = DateTime.UtcNow;
+
+        context.AttendanceCalls.Add(new AttendanceCall
+        {
+            Id = Guid.NewGuid(),
+            MatchId = matchId,
+            OpenedByAccountId = Guid.NewGuid(),
+            OpenedUtc = now,
+        });
+
+        foreach (var (name, status, count) in responders)
+        {
+            var account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = $"{name.ToLowerInvariant()}-{Guid.NewGuid():N}@example.com",
+                FirstName = name,
+                CreatedUtc = now,
+            };
+            context.Accounts.Add(account);
+            context.AttendanceResponses.Add(new AttendanceResponse
+            {
+                Id = Guid.NewGuid(),
+                MatchId = matchId,
+                AccountId = account.Id,
+                Status = status,
+                Count = count,
+                CreatedUtc = now,
+                UpdatedUtc = now,
+            });
+        }
+
+        await context.SaveChangesAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Tranare_SerSummeringMedAntalOchNamn()
+    {
+        var fixture = await SeedAsync("summary");
+        await SeedResponsesAsync(
+          fixture.MatchId,
+          [
+            ("Anna", AttendanceStatus.Coming, 2),
+        ("Bengt", AttendanceStatus.CantCome, 0),
+        ("Cecilia", AttendanceStatus.Maybe, 1),
+          ]);
+
+        var response = await SummaryAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+
+        Assert.Equal(2, body.GetProperty("comingPeople").GetInt32());
+        Assert.Equal(1, body.GetProperty("maybePeople").GetInt32());
+        Assert.Equal(1, body.GetProperty("cantComeFamilies").GetInt32());
+        Assert.Equal(3, body.GetProperty("respondedFamilies").GetInt32());
+
+        var raw = await response.Content.ReadAsStringAsync(CancellationToken.None);
+        Assert.Contains("Anna", raw, StringComparison.Ordinal);
+        Assert.Contains("Cecilia", raw, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Summering_SomIckeTranare_Nekas()
+    {
+        var fixture = await SeedAsync("summary-parent");
+
+        var response = await SummaryAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.ParentId));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Summering_ForMatchIAnnatLag_GerFyrahundrafyra()
+    {
+        var fixture = await SeedAsync("summary-wrong-team");
+
+        var response = await SummaryAsync(fixture.Slug, Guid.NewGuid(), TokenFor(fixture.CoachId, fixture.Slug));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AvslagenFlagga_SummeringGerFyrahundrafyra()
+    {
+        var fixture = await SeedAsync("summary-gate", enabled: false);
+
+        var response = await SummaryAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private sealed record ResponseView(string Status, int Count);

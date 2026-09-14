@@ -283,6 +283,13 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
              * och ligger dessutom bakom grinden (§KM.7) -- osynligt tills klubben slar pa den.
              */
             "api/v1/matches/{matchId:guid}/attendance",
+
+            /*
+             * Tranarens narvarosummering (#58). Ligger under lagets adress, men bar de svarande
+             * vuxnas namn (#154) -- lagets egen sak, inte hela internets. CoachOfTeam provar
+             * behorigheten, och grinden (§KM.7) haller den osynlig tills flaggan slas pa.
+             */
+            "api/v1/teams/{slug}/matches/{matchId:guid}/attendance/summary",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);
