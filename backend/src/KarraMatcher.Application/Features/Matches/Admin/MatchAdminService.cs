@@ -1,5 +1,7 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Application.Features.Teams;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Matches;
@@ -32,7 +34,10 @@ namespace KarraMatcher.Application.Features.Matches.Admin;
 /// tränare för Gul skicka Blås id och kringgå kontrollen helt.
 /// </para>
 /// </summary>
-public sealed class MatchAdminService(IMatchAdminRepository matches, IAuditLog audit)
+public sealed class MatchAdminService(
+    IMatchAdminRepository matches,
+    IAuditLog audit,
+    IPushOutbox push)
 {
     /// <summary>Lägger upp en ny match i laget som adressen pekar ut.</summary>
     public async Task<MatchDto?> CreateAsync(
@@ -78,7 +83,16 @@ public sealed class MatchAdminService(IMatchAdminRepository matches, IAuditLog a
 
         await matches.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        return await ReloadAsync(match.Id, cancellationToken).ConfigureAwait(false);
+        var created = await ReloadAsync(match.Id, cancellationToken).ConfigureAwait(false);
+
+        // Notisen köas efter att matchen sparats, aldrig i requesten (§KM.11) -- tränaren
+        // får sitt svar direkt, utskicket sköts av bakgrundstjänsten.
+        if (created is not null)
+        {
+            push.Enqueue(new PushDispatch(match.TeamId, MatchNotification.Created(created)));
+        }
+
+        return created;
     }
 
     /// <summary>Ändrar en match. Svarar null när den inte finns eller inte hör till laget.</summary>
@@ -101,6 +115,11 @@ public sealed class MatchAdminService(IMatchAdminRepository matches, IAuditLog a
 
         var before = MatchSummary.Describe(match);
 
+        // Fångas före ändringen: notisen ska kunna säga *vad* som ändrats (§KM.62-texten),
+        // inte bara att något gjorde det.
+        var beforeKickoffUtc = match.KickoffUtc;
+        var beforeVenueId = match.VenueId;
+
         match.KickoffUtc = draft.KickoffUtc;
         match.OpponentName = draft.Opponent.Trim();
         match.VenueId = draft.VenueId;
@@ -118,6 +137,21 @@ public sealed class MatchAdminService(IMatchAdminRepository matches, IAuditLog a
             MatchSummary.Change(before, MatchSummary.Describe(match))).ConfigureAwait(false);
 
         await matches.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Läses om med spelplatsen inläst, så en "ny plats"-notis kan namnge den nya.
+        var reloaded = await ReloadAsync(match.Id, cancellationToken).ConfigureAwait(false);
+
+        if (reloaded is not null)
+        {
+            var message = MatchNotification.Updated(
+                reloaded, beforeKickoffUtc, beforeVenueId, match.VenueId);
+
+            // Null när bara notistexten ändrats: en förälder behöver inte väckas för det.
+            if (message is not null)
+            {
+                push.Enqueue(new PushDispatch(match.TeamId, message));
+            }
+        }
 
         return match.ToDto();
     }
@@ -158,7 +192,13 @@ public sealed class MatchAdminService(IMatchAdminRepository matches, IAuditLog a
 
         await matches.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        return match.ToDto();
+        var dto = match.ToDto();
+
+        // "Åk inte till spelplatsen" är hela poängen med den här notisen — en inställd match
+        // som ingen får veta om är den som får någon att stå ensam på en plan (§KM.4-tanken).
+        push.Enqueue(new PushDispatch(match.TeamId, MatchNotification.Cancelled(dto)));
+
+        return dto;
     }
 
     /// <summary>
