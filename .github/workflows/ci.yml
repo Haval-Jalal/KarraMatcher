@@ -52,6 +52,16 @@ jobs:
       - name: Kör tester
         run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal"
 
+      # Sarbarhetsskanning (sakerhetschecklistan 10.1). `dotnet list` avslutar med 0 aven nar
+      # den hittar nagot, sa vi faller bygget sjalva pa traffordet i utskriften.
+      - name: Skanna beroenden
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln.log
+          if grep -q "has the following vulnerable" vuln.log; then
+            echo "::error::Sårbara NuGet-paket hittades — se listan ovan."
+            exit 1
+          fi
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
@@ -71,6 +81,11 @@ jobs:
 
       - name: Installera beroenden
         run: npm ci
+
+      # Sarbarhetsskanning (sakerhetschecklistan 10.2). Faller bygget vid hog eller allvarlig
+      # sarbarhet; laglig brusniva slapps igenom sa att grinden inte blir en som ignoreras.
+      - name: Skanna beroenden
+        run: npm audit --audit-level=high
 
       - name: Typkoll
         run: npm run typecheck

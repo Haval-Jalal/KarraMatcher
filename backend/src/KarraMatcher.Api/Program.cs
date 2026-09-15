@@ -83,6 +83,10 @@ await app.Services.InitializeDatabaseAsync();
 // inte Vercels edge-adress (§KM.11).
 app.UseForwardedHeaders();
 
+// Sakerhetsheaders tidigt, sa att varje svar bar dem -- aven felhanterarens (§checklista 5.1/5.2/4.2).
+// Efter UseForwardedHeaders, sa att HSTS-beslutet ser requestens riktiga protokoll.
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 // Correlation-ID därefter, så att även felhanterarens egna loggrader får med det.
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
