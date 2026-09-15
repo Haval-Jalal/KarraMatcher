@@ -1,6 +1,7 @@
 using KarraMatcher.Api.Caching;
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Api.Features.Auth;
+using KarraMatcher.Api.Testing;
 using KarraMatcher.Application;
 using KarraMatcher.Infrastructure;
 using KarraMatcher.Infrastructure.Persistence;
@@ -35,6 +36,22 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
+
+// E2E-teststöd (#71): fångar inloggningskoden och exponerar en förberedelse-endpoint.
+// Bara med när Testing:Enabled -- och aldrig i drift; en pa-flagga i Production faller
+// uppstarten med flit, sa att den har testytan inte kan bli kvar oavsiktligt.
+var testingEnabled = builder.Configuration.GetValue<bool>(TestingSupport.EnabledKey);
+
+if (testingEnabled)
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException(
+            "Testing:Enabled får bara vara på i utvecklingsmiljö (E2E). Aldrig i drift.");
+    }
+
+    builder.Services.AddTestingSupport();
+}
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraEdgeCache(builder.Configuration);
@@ -114,6 +131,11 @@ if (app.Environment.IsDevelopment())
 app.MapKarraHealthChecks();
 
 app.MapControllers();
+
+if (testingEnabled)
+{
+    app.MapTestingEndpoints();
+}
 
 app.MapGet("/", () => Results.Ok(new { service = "KarraMatcher.Api", status = "up" }));
 
