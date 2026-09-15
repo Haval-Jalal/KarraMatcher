@@ -86,12 +86,28 @@ internal static class MatchNotification
         return null;
     }
 
-    private static string SideAndOpponent(MatchDto match) =>
-        $"{(match.IsHome ? "hemma" : "borta")} mot {match.Opponent}";
-
-    private static string When(DateTimeOffset kickoffUtc)
+    /// <summary>Kvällspåminnelsen om morgondagens match (`#64`).</summary>
+    public static PushMessage Reminder(DueMatch due)
     {
-        var local = SwedishTime.ToSwedish(kickoffUtc.UtcDateTime);
+        ArgumentNullException.ThrowIfNull(due);
+
+        return new PushMessage(
+            $"Match i morgon {SideAndOpponent(due.IsHome, due.Opponent)}",
+            $"{When(due.KickoffUtc)} · {due.VenueName}",
+            Url(due.MatchId));
+    }
+
+    private static string SideAndOpponent(MatchDto match) =>
+        SideAndOpponent(match.IsHome, match.Opponent);
+
+    private static string SideAndOpponent(bool isHome, string opponent) =>
+        $"{(isHome ? "hemma" : "borta")} mot {opponent}";
+
+    private static string When(DateTimeOffset kickoffUtc) => When(kickoffUtc.UtcDateTime);
+
+    private static string When(DateTime kickoffUtc)
+    {
+        var local = SwedishTime.ToSwedish(kickoffUtc);
 
         // T.ex. "lördag 8 oktober kl. 14:00".
         return local.ToString("dddd d MMMM 'kl.' HH:mm", Swedish);

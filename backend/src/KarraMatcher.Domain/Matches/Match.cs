@@ -40,4 +40,15 @@ public sealed class Match
     public int IcsSequence { get; set; }
 
     public DateTime UpdatedUtc { get; set; }
+
+    /// <summary>
+    /// När kvällspåminnelsen skickades, eller null (`#64`).
+    ///
+    /// <para>
+    /// Markören som gör det schemalagda jobbet idempotent: en match påminns en gång, och en
+    /// dubbelkörning ser att den redan är märkt och hoppar över den. Inget att visa för en
+    /// förälder — den finns bara för jobbet.
+    /// </para>
+    /// </summary>
+    public DateTime? ReminderSentUtc { get; set; }
 }
