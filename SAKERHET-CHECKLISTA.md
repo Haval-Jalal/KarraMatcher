@@ -136,7 +136,7 @@
 | 9.10 | **§KM.6** Ingen besöksanalys, ingen spårning, inga tredjepartsskript utöver väder och kartlänkar | ⬜ |
 | 9.11 | Synlig och begriplig integritetstext i appen, skriven för föräldrar — inte jurister | ⬜ |
 | 9.12 | Data lagras och behandlas inom EU — **med ett beslutat undantag: e-postleverantören**, se 9.14 | ⬜ |
-| 9.13 | Registerutdrag går att lämna ut på begäran (export av en familjs data) | ⬜ |
+| 9.13 | Registerutdrag går att lämna ut på begäran (export av en familjs data) | ✅ |
 | 9.14 | **Undantaget till 9.12 är dokumenterat:** biträdesavtal tecknat med Resend, överföringsgrunden (DPF eller SCC) kontrollerad och namngiven i integritetstexten, och gallringstid för leverantörens loggar kontrollerad | ⬜ |
 
 ## 10. Beroenden & leveranskedja

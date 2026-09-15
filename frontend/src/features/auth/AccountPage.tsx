@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { getProfile, type AccountProfile } from './authApi'
+import { DataExportSection } from './DataExportSection'
 import { DeleteAccountSection } from './DeleteAccountSection'
 import { NameForm } from './NameForm'
 import { useAuth } from './useAuth'
@@ -134,6 +135,8 @@ export function AccountPage() {
           <Link to="/integritet">Så hanteras dina uppgifter</Link>.
         </p>
       </section>
+
+      <DataExportSection />
 
       <DeleteAccountSection
         onDeleted={() => {
