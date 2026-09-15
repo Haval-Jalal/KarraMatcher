@@ -27,11 +27,11 @@ test('spelarkortet lever på enheten och lämnar aldrig den', async ({ page }) =
   await page.getByLabel('Lag (valfritt)').selectOption({ label: 'Gul' })
   await page.getByRole('button', { name: 'Lägg till' }).click()
 
-  await expect(page.getByText(childName)).toBeVisible()
+  await expect(page.getByText(childName, { exact: true })).toBeVisible()
 
   // Överlever en omladdning: datan ligger i enhetens lagring, inte i minnet.
   await page.reload()
-  await expect(page.getByText(childName)).toBeVisible()
+  await expect(page.getByText(childName, { exact: true })).toBeVisible()
 
   // Kärnan i §KM.2: spelarkortssidan har inte rört API:t över huvud taget.
   expect(apiRequests.length).toBe(0)

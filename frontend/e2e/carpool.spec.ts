@@ -25,22 +25,37 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   await login(driver, PARENT_A_EMAIL, matchPath)
   await driver.getByRole('button', { name: 'Erbjud skjuts' }).click()
   await driver.getByLabel('Var åker ni ifrån?').fill(departurePlace)
-  await driver.getByRole('button', { name: 'Lägg upp' }).click()
+  const [offerResponse] = await Promise.all([
+    driver.waitForResponse(
+      (r) => r.url().endsWith('/carpool/offers') && r.request().method() === 'POST',
+    ),
+    driver.getByRole('button', { name: 'Lägg upp' }).click(),
+  ])
+  expect(offerResponse.status()).toBe(201)
   await expect(driver.getByText(departurePlace)).toBeVisible()
 
   // ---- En annan förälder skickar en förfrågan ------------------------------------------
   await login(requester, PARENT_B_EMAIL, matchPath)
   await expect(requester.getByText(departurePlace)).toBeVisible()
   await requester.getByRole('button', { name: 'Fråga om plats' }).click()
-  await requester.getByRole('button', { name: 'Skicka förfrågan' }).click()
-  await expect(requester.getByRole('button', { name: 'Återta förfrågan' })).toBeVisible()
+  const [requestResponse] = await Promise.all([
+    requester.waitForResponse(
+      (r) => r.url().endsWith('/requests') && r.request().method() === 'POST',
+    ),
+    requester.getByRole('button', { name: 'Skicka förfrågan' }).click(),
+  ])
+  expect(requestResponse.status()).toBe(201)
 
   // ---- Föraren nekar med ett meddelande (ett tyst nej får inte förekomma) ---------------
   // Omladdning: refresh-cookien över HTTPS ger föraren en ny token, så förfrågan syns.
   await driver.reload()
   await driver.getByRole('button', { name: 'Neka' }).click()
   await driver.getByLabel('Meddelande').fill('Ändrade planer, kan tyvärr inte köra.')
-  await driver.getByRole('button', { name: 'Skicka nekande' }).click()
+  const [denyResponse] = await Promise.all([
+    driver.waitForResponse((r) => r.url().endsWith('/deny') && r.request().method() === 'POST'),
+    driver.getByRole('button', { name: 'Skicka nekande' }).click(),
+  ])
+  expect(denyResponse.status()).toBe(204)
 
   // ---- Den som frågade ser svaret ------------------------------------------------------
   await requester.reload()
