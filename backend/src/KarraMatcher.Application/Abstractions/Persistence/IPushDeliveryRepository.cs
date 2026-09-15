@@ -1,4 +1,5 @@
 using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
@@ -13,9 +14,19 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 /// </summary>
 public interface IPushDeliveryRepository
 {
-    /// <summary>Lagets prenumeranter, med det som krävs för att kryptera åt dem.</summary>
+    /// <summary>
+    /// Lagets prenumeranter som vill ha den sortens notis (`#65`), med det som krävs för att
+    /// kryptera åt dem.
+    ///
+    /// <para>
+    /// Den som stängt av kategorin för laget lämnas ute. En anonym prenumerant — utan konto —
+    /// har inga inställningar och får allt som förr; det som filtreras är en förälders eget
+    /// val, och en gäst har inte gjort något.
+    /// </para>
+    /// </summary>
     public Task<IReadOnlyList<PushTarget>> ListForTeamAsync(
         Guid teamId,
+        PushCategory category,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -28,7 +39,9 @@ public interface IPushDeliveryRepository
     /// </para>
     /// </summary>
     public Task<IReadOnlyList<PushTarget>> ListForAccountsAsync(
+        Guid teamId,
         IReadOnlyCollection<Guid> accountIds,
+        PushCategory category,
         CancellationToken cancellationToken);
 
     /// <summary>

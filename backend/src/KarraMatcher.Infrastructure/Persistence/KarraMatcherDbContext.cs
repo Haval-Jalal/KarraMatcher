@@ -45,6 +45,9 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
         Set<Domain.Push.PushSubscription>();
 
+    public DbSet<Domain.Push.NotificationPreference> NotificationPreferences =>
+        Set<Domain.Push.NotificationPreference>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

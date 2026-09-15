@@ -89,7 +89,8 @@ public sealed class MatchAdminService(
         // får sitt svar direkt, utskicket sköts av bakgrundstjänsten.
         if (created is not null)
         {
-            push.Enqueue(PushDispatch.ToTeam(match.TeamId, MatchNotification.Created(created)));
+            push.Enqueue(PushDispatch.ToTeam(
+                match.TeamId, PushCategory.MatchChange, MatchNotification.Created(created)));
         }
 
         return created;
@@ -149,7 +150,7 @@ public sealed class MatchAdminService(
             // Null när bara notistexten ändrats: en förälder behöver inte väckas för det.
             if (message is not null)
             {
-                push.Enqueue(PushDispatch.ToTeam(match.TeamId, message));
+                push.Enqueue(PushDispatch.ToTeam(match.TeamId, PushCategory.MatchChange, message));
             }
         }
 
@@ -196,7 +197,8 @@ public sealed class MatchAdminService(
 
         // "Åk inte till spelplatsen" är hela poängen med den här notisen — en inställd match
         // som ingen får veta om är den som får någon att stå ensam på en plan (§KM.4-tanken).
-        push.Enqueue(PushDispatch.ToTeam(match.TeamId, MatchNotification.Cancelled(dto)));
+        push.Enqueue(PushDispatch.ToTeam(
+            match.TeamId, PushCategory.MatchChange, MatchNotification.Cancelled(dto)));
 
         return dto;
     }

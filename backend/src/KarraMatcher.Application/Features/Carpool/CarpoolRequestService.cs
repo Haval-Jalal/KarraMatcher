@@ -108,9 +108,17 @@ public sealed class CarpoolRequestService(
         await requests.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Till föraren, inte till laget (§KM.12). Ingen hälsning -- fritext når aldrig en
-        // låsskärm, bara "öppna för att svara".
-        push.Enqueue(PushDispatch.ToAccounts(
-            [offer.DriverAccountId], CarpoolNotification.NewRequest(offer.MatchId)));
+        // låsskärm, bara "öppna för att svara". Laget står med så att en förare som stängt av
+        // samåkningsnotiser för laget inte nås (#65).
+        var teamId = await offers.FindMatchTeamIdAsync(offer.MatchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (teamId is not null)
+        {
+            push.Enqueue(PushDispatch.ToAccounts(
+                teamId.Value, [offer.DriverAccountId], PushCategory.Carpool,
+                CarpoolNotification.NewRequest(offer.MatchId)));
+        }
 
         return (CarpoolRequestOutcome.Created, CarpoolRequestDto.For(request, requesterAccountId));
     }

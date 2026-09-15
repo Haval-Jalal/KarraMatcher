@@ -57,7 +57,8 @@ public sealed class MatchReminderService(
 
         foreach (var match in due)
         {
-            push.Enqueue(PushDispatch.ToTeam(match.TeamId, MatchNotification.Reminder(match)));
+            push.Enqueue(PushDispatch.ToTeam(
+                match.TeamId, PushCategory.Reminder, MatchNotification.Reminder(match)));
         }
 
         // Märks efter att notiserna köats -- en andra körning hittar dem inte längre.

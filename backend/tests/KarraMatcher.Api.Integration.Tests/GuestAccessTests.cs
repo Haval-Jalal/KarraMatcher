@@ -298,6 +298,13 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
              * behorigheten, och grinden (§KM.7) haller den osynlig tills flaggan slas pa.
              */
             "api/v1/teams/{slug}/matches/{matchId:guid}/attendance/summary",
+
+            /*
+             * En foralders notisinstallningar for laget (#65). Ligger under lagets adress,
+             * men ar kontots egna val -- de hor till den inloggade, inte till schemat, och
+             * en gast har inget att spara pa (§KM.3).
+             */
+            "api/v1/teams/{slug}/notification-settings",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

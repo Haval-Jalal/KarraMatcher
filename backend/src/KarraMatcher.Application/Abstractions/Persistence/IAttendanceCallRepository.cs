@@ -64,5 +64,8 @@ public interface IAttendanceCallRepository
         Guid matchId,
         CancellationToken cancellationToken);
 
+    /// <summary>Matchens lag, eller null när matchen inte finns. För att rikta påminnelsen (`#65`).</summary>
+    public Task<Guid?> FindTeamIdAsync(Guid matchId, CancellationToken cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

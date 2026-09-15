@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Attendance.AttendanceGate>();
         services.AddScoped<Features.Attendance.AttendanceService>();
         services.AddScoped<Features.Jobs.MatchReminderService>();
+        services.AddScoped<Features.Push.NotificationSettingsService>();
 
         return services;
     }

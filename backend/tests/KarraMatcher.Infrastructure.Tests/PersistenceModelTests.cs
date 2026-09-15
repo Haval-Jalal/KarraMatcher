@@ -119,7 +119,8 @@ public class PersistenceModelTests
             [
                 "Account", "AgeGroup", "AttendanceCall", "AttendanceResponse", "AuditEntry",
                 "CarpoolOffer", "CarpoolRequest", "Club", "LoginCode", "Match",
-                "PushSubscription", "RefreshToken", "Team", "TeamRole", "Venue",
+                "NotificationPreference", "PushSubscription", "RefreshToken", "Team", "TeamRole",
+                "Venue",
             ],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());
     }

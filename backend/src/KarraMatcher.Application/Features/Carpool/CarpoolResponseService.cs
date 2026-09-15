@@ -177,8 +177,15 @@ public sealed class CarpoolResponseService(
          * ett nej bär ett skäl i fritext, och fritext når aldrig en låsskärm. "Öppna för att
          * se" tar hen till svaret i appen.
          */
-        push.Enqueue(PushDispatch.ToAccounts(
-            [request.RequesterAccountId], CarpoolNotification.RequestAnswered(offer.MatchId)));
+        var teamId = await offers.FindMatchTeamIdAsync(offer.MatchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (teamId is not null)
+        {
+            push.Enqueue(PushDispatch.ToAccounts(
+                teamId.Value, [request.RequesterAccountId], PushCategory.Carpool,
+                CarpoolNotification.RequestAnswered(offer.MatchId)));
+        }
 
         // SeatsLeft bar bara betydelse tillsammans med NotEnoughSeats -- se metodens summary.
         return (CarpoolResponseOutcome.Answered, 0);
