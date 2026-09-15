@@ -169,7 +169,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(new PushDispatch(teamId, new PushMessage("Matchen ar installd", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, new PushMessage("Matchen ar installd", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(() =>
             Task.FromResult(endpoints.All(sender.Attempts.ContainsKey))));
@@ -194,7 +194,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(new PushDispatch(teamId, new PushMessage("Ny tid", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, new PushMessage("Ny tid", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(async () => await CountAsync(host, teamId) == 2));
 
@@ -219,7 +219,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(new PushDispatch(teamId, new PushMessage("Flyttad match", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, new PushMessage("Flyttad match", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(() =>
             Task.FromResult(sender.Attempts.TryGetValue(endpoints[0], out var attempts) && attempts >= 2)));
@@ -242,7 +242,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(new PushDispatch(teamId, new PushMessage("Ny match", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, new PushMessage("Ny match", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(async () =>
         {
@@ -269,7 +269,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(new PushDispatch(teamId, new PushMessage("Ny match", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, new PushMessage("Ny match", "", "/match/1")));
 
         await Task.Delay(300, CancellationToken.None);
 

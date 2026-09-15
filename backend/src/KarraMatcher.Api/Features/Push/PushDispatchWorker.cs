@@ -67,9 +67,14 @@ internal sealed partial class PushDispatchWorker(
             var repository = scope.ServiceProvider.GetRequiredService<IPushDeliveryRepository>();
             var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
 
-            var targets = await repository
-                .ListForTeamAsync(dispatch.TeamId, cancellationToken)
-                .ConfigureAwait(false);
+            // Ett lag eller en handfull konton -- fabriksmetoderna garanterar att exakt en är
+            // satt (#63). Ett tomt konto-set är inte ett fel: ingen av de inblandade råkade
+            // ha en enhet registrerad, och då finns ingen att nå.
+            var targets = dispatch.TeamId is Guid teamId
+                ? await repository.ListForTeamAsync(teamId, cancellationToken).ConfigureAwait(false)
+                : dispatch.AccountIds is { Count: > 0 } accounts
+                    ? await repository.ListForAccountsAsync(accounts, cancellationToken).ConfigureAwait(false)
+                    : [];
 
             if (targets.Count == 0)
             {

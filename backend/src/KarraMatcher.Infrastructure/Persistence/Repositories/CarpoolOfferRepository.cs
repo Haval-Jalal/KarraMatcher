@@ -10,6 +10,14 @@ internal sealed class CarpoolOfferRepository(KarraMatcherDbContext context) : IC
     public Task<bool> MatchExistsAsync(Guid matchId, CancellationToken cancellationToken) =>
         context.Matches.AsNoTracking().AnyAsync(m => m.Id == matchId, cancellationToken);
 
+    public async Task<Guid?> FindMatchTeamIdAsync(Guid matchId, CancellationToken cancellationToken) =>
+        await context.Matches
+            .AsNoTracking()
+            .Where(m => m.Id == matchId)
+            .Select(m => (Guid?)m.TeamId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     /// <summary>Spårad — det här är skrivvägen.</summary>
     public Task<CarpoolOffer?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
         context.CarpoolOffers.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);

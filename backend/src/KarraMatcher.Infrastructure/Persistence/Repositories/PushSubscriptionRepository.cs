@@ -12,6 +12,7 @@ internal sealed class PushSubscriptionRepository(KarraMatcherDbContext context, 
     public async Task<bool> SubscribeAsync(
         string slug,
         PushSubscriptionDraft draft,
+        Guid? accountId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(slug);
@@ -44,6 +45,13 @@ internal sealed class PushSubscriptionRepository(KarraMatcherDbContext context, 
              */
             existing.P256dh = draft.P256dh;
             existing.Auth = draft.Auth;
+
+            /*
+             * Kopplingen till kontot uppdateras ocksa (#63): en gast som prenumererade och
+             * sedan loggat in ska bli natbar for sina samakningsnotiser. En som loggat ut ger
+             * null och kopplingen slapper -- prenumerationen blir anonym igen, men bor kvar.
+             */
+            existing.AccountId = accountId;
         }
         else
         {
@@ -52,6 +60,7 @@ internal sealed class PushSubscriptionRepository(KarraMatcherDbContext context, 
                 {
                     Id = Guid.NewGuid(),
                     TeamId = teamId.Value,
+                    AccountId = accountId,
                     Endpoint = draft.Endpoint,
                     P256dh = draft.P256dh,
                     Auth = draft.Auth,

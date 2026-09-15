@@ -44,6 +44,30 @@ public sealed class PushSubscription
     /// <summary>Laget prenumerationen gäller. En enhet kan prenumerera på flera lag.</summary>
     public Guid TeamId { get; set; }
 
+    /// <summary>
+    /// Kontot som satt bakom webbläsaren när prenumerationen skapades — eller null (`#63`).
+    ///
+    /// <h3>Varför den är valfri</h3>
+    ///
+    /// <para>
+    /// En prenumeration kräver inget konto (§KM.3): den hör till enheten. Kopplingen till ett
+    /// konto är en <em>extra</em> uppgift, som bara finns för att kunna rikta en
+    /// samåkningsnotis till rätt förälder — "din åkförfrågan fick svar". En gäst som
+    /// prenumererar har därför null här, och får ändå lagets matchnotiser.
+    /// </para>
+    ///
+    /// <h3>Vad som händer när kontot raderas</h3>
+    ///
+    /// <para>
+    /// Fältet sätts till null (<c>OnDelete: SetNull</c>), prenumerationen raderas <b>inte</b>.
+    /// Det som kontot ägde — kopplingen vem-är-vem — försvinner (§KM.6), men enheten
+    /// fortsätter få besked om att lördagens match är inställd. Att i stället radera hela
+    /// prenumerationen vore att tyst ta bort en notis enheten själv bett om, för en uppgift
+    /// den aldrig behövde ett konto för.
+    /// </para>
+    /// </summary>
+    public Guid? AccountId { get; set; }
+
     /// <summary>Push-tjänstens adress till just den här webbläsaren. Personuppgift.</summary>
     public required string Endpoint { get; set; }
 

@@ -1,5 +1,7 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
 
@@ -28,7 +30,8 @@ public sealed class CarpoolOfferService(
     ICarpoolOfferRepository offers,
     ICarpoolRequestRepository requests,
     IAccountRepository accounts,
-    IAuditLog audit)
+    IAuditLog audit,
+    IPushOutbox push)
 {
     /// <summary>
     /// Lägger upp ett erbjudande. Svarar null när matchen inte finns.
@@ -41,7 +44,10 @@ public sealed class CarpoolOfferService(
     {
         ArgumentNullException.ThrowIfNull(draft);
 
-        if (!await offers.MatchExistsAsync(matchId, cancellationToken).ConfigureAwait(false))
+        var teamId = await offers.FindMatchTeamIdAsync(matchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (teamId is null)
         {
             return null;
         }
@@ -73,6 +79,9 @@ public sealed class CarpoolOfferService(
             Describe(offer)).ConfigureAwait(false);
 
         await offers.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Till lagets prenumeranter (§KM.12). Köas, aldrig skickat i requesten (§KM.11).
+        push.Enqueue(PushDispatch.ToTeam(teamId.Value, CarpoolNotification.NewOffer(matchId)));
 
         return CarpoolOfferDto.For(offer, driverAccountId);
     }
@@ -163,6 +172,24 @@ public sealed class CarpoolOfferService(
             offer.Id).ConfigureAwait(false);
 
         await offers.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        /*
+         * Till dem som redan accepterats -- de har planerat en resa som just föll (§KM.12).
+         * Bara accepterade: den som bara frågat har ingen plats att förlora. Ingen fritext,
+         * bara att erbjudandet drogs tillbaka.
+         */
+        var accepted = (await requests.ListForOfferAsync(offer.Id, cancellationToken)
+                .ConfigureAwait(false))
+            .Where(r => r.Status == CarpoolRequestStatus.Accepted)
+            .Select(r => r.RequesterAccountId)
+            .Distinct()
+            .ToArray();
+
+        if (accepted.Length > 0)
+        {
+            push.Enqueue(PushDispatch.ToAccounts(
+                accepted, CarpoolNotification.OfferWithdrawn(offer.MatchId)));
+        }
 
         return true;
     }

@@ -7,6 +7,12 @@ public interface ICarpoolOfferRepository
 {
     public Task<bool> MatchExistsAsync(Guid matchId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Matchens lag, eller null när matchen inte finns. Behövs för att rikta notisen om ett
+    /// nytt erbjudande till rätt lags prenumeranter (`#63`).
+    /// </summary>
+    public Task<Guid?> FindMatchTeamIdAsync(Guid matchId, CancellationToken cancellationToken);
+
     /// <summary>Erbjudandet, spårat för ändring. Även tillbakadragna — ägarkontrollen görs på det.</summary>
     public Task<CarpoolOffer?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken);
 

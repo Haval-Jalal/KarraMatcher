@@ -19,6 +19,19 @@ public interface IPushDeliveryRepository
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Prenumerationerna som hör till bestämda konton — deras alla enheter (`#63`).
+    ///
+    /// <para>
+    /// För en samåkningsnotis som ska nå en viss förälder: föraren vid en ny förfrågan, den
+    /// som frågade vid ett svar. Ett konto utan registrerad enhet saknas helt enkelt i svaret,
+    /// och får då ingen notis — appen visar ändå ändringen när hen öppnar den.
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyList<PushTarget>> ListForAccountsAsync(
+        IReadOnlyCollection<Guid> accountIds,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Tar bort prenumerationer som push-tjänsten sagt är borta.
     /// </summary>
     /// <remarks>

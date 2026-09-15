@@ -1,5 +1,7 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
 
@@ -63,7 +65,8 @@ public enum CarpoolResponseOutcome
 public sealed class CarpoolResponseService(
     ICarpoolRequestRepository requests,
     ICarpoolOfferRepository offers,
-    IAuditLog audit)
+    IAuditLog audit,
+    IPushOutbox push)
 {
     /// <summary>
     /// Föraren säger ja. Meddelandet är valfritt här — ett ja behöver inga ord.
@@ -168,6 +171,14 @@ public sealed class CarpoolResponseService(
             $"{request.Seats} platser").ConfigureAwait(false);
 
         await requests.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        /*
+         * Till den som frågade -- accept och nekande båda (§KM.12). Aldrig meddelandet:
+         * ett nej bär ett skäl i fritext, och fritext når aldrig en låsskärm. "Öppna för att
+         * se" tar hen till svaret i appen.
+         */
+        push.Enqueue(PushDispatch.ToAccounts(
+            [request.RequesterAccountId], CarpoolNotification.RequestAnswered(offer.MatchId)));
 
         // SeatsLeft bar bara betydelse tillsammans med NotEnoughSeats -- se metodens summary.
         return (CarpoolResponseOutcome.Answered, 0);

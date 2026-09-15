@@ -1,5 +1,7 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
 
@@ -43,7 +45,8 @@ public sealed class CarpoolRequestService(
     ICarpoolRequestRepository requests,
     ICarpoolOfferRepository offers,
     IAccountRepository accounts,
-    IAuditLog audit)
+    IAuditLog audit,
+    IPushOutbox push)
 {
     /// <summary>Skickar en förfrågan.</summary>
     public async Task<(CarpoolRequestOutcome Outcome, CarpoolRequestDto? Request)> CreateAsync(
@@ -103,6 +106,11 @@ public sealed class CarpoolRequestService(
             $"{request.Seats} platser").ConfigureAwait(false);
 
         await requests.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Till föraren, inte till laget (§KM.12). Ingen hälsning -- fritext når aldrig en
+        // låsskärm, bara "öppna för att svara".
+        push.Enqueue(PushDispatch.ToAccounts(
+            [offer.DriverAccountId], CarpoolNotification.NewRequest(offer.MatchId)));
 
         return (CarpoolRequestOutcome.Created, CarpoolRequestDto.For(request, requesterAccountId));
     }

@@ -35,12 +35,25 @@ internal sealed class PushSubscriptionConfiguration : IEntityTypeConfiguration<P
          */
         builder.HasIndex(s => new { s.TeamId, s.Endpoint }).IsUnique();
 
-        // Utskicket fragar efter ett lags prenumerationer. Det ar den enda listningen.
+        // Utskicket fragar efter ett lags prenumerationer, och -- for samakning (#63) -- efter
+        // ett kontos. Bada listningarna behover sitt index.
         builder.HasIndex(s => s.TeamId);
+        builder.HasIndex(s => s.AccountId);
 
         builder.HasOne<Domain.Teams.Team>()
             .WithMany()
             .HasForeignKey(s => s.TeamId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        /*
+         * SetNull och inte Cascade (#63, beslut 2026-09-14). Raderas kontot bryts kopplingen,
+         * men prenumerationen bor kvar: den hor till enheten, inte till kontot, och enheten
+         * ska fortsatta fa lagets matchnotiser aven utan konto (§KM.3, §KM.6). Att radera hela
+         * raden vore att tyst ta bort en notis enheten sjalv bett om.
+         */
+        builder.HasOne<Domain.Accounts.Account>()
+            .WithMany()
+            .HasForeignKey(s => s.AccountId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

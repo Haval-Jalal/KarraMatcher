@@ -1,8 +1,11 @@
+using System.Security.Claims;
+
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Push;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace KarraMatcher.Api.Features.Push;
 
@@ -81,8 +84,11 @@ public sealed class PushController(
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        // Endpointen är öppen (§KM.3), men bär anropet en giltig token är webbläsaren
+        // inloggad -- och då knyts prenumerationen till kontot, så samåkningsnotiser (#63)
+        // kan nå just den föräldern. En gäst ger null och prenumererar precis som förr.
         var subscribed = await commands
-            .SendAsync(new SubscribeToPushCommand(slug, request.ToDraft()), cancellationToken)
+            .SendAsync(new SubscribeToPushCommand(slug, request.ToDraft(), ActorId()), cancellationToken)
             .ConfigureAwait(false);
 
         return subscribed ? NoContent() : TeamNotFound();
@@ -115,6 +121,13 @@ public sealed class PushController(
         title: "Laget finns inte",
         detail: "Kontrollera adressen.");
 
+    private Guid? ActorId()
+    {
+        var raw = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return Guid.TryParse(raw, out var id) ? id : null;
+    }
 }
 
 /// <summary>Den publika nyckeln, base64url — den enda av de två som får lämna servern.</summary>
