@@ -44,6 +44,11 @@ builder.Services.AddKarraAuthentication(builder.Environment);
 // CarpoolRetentionWorker for varfor, och for varfor det ar ofarligt att den kors ofta.
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Carpool.CarpoolRetentionWorker>();
 
+// Gallringen av tysta push-prenumerationer (§KM.10, #68). Kors i processen av samma skal
+// som samakningens -- se PushRetentionWorker. Den doda prenumerationen stadas redan reaktivt
+// nar ett utskick far 404/410 (PushDispatchWorker); den har sveper upp de aldrig anvanda.
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushRetentionWorker>();
+
 // Notisutskicken sker utanfor request-traden (#61). En tranare som flyttar en match ska fa
 // sitt svar direkt, inte efter att femton notiser gatt ivag over internet.
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushDispatchWorker>();
