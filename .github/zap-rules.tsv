@@ -1,0 +1,8 @@
+# OWASP ZAP baseline — regelfil (säkerhetschecklistan 12.7, issue #70).
+#
+# Format (tab-separerat): <regel-id>	<WARN|IGNORE|FAIL>	<valfri kommentar>
+# Använd för att tona ner ett känt, medvetet icke-fynd — aldrig för att tysta
+# något verkligt. Skriv alltid varför i kommentaren.
+#
+# Tom tills en skanning gett ett fynd som behöver bedömas. Exempel (bortkommenterat):
+# 10096	IGNORE	Timestamp-disclosure: bara cache-headers, ingen hemlighet.

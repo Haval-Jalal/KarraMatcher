@@ -1,0 +1,57 @@
+# Statisk säkerhetsanalys (SAST) med CodeQL — säkerhetschecklistan 12.7.
+#
+# Gratis på det här publika repot. Kör på varje push och PR mot main, plus en
+# veckovis schemalagd körning så att en ny regel i CodeQL-databasen fångar något
+# även i kod som inte ändrats på ett tag. Fynden hamnar under fliken Security →
+# Code scanning, inte som ett fällt bygge — en människa bedömer och åtgärdar eller
+# avfärdar dem (issue #70:s "åtgärdade eller motiverat avfärdade").
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Måndag 06:00 UTC. En tyst stund, och före veckans arbete.
+    - cron: "0 6 * * 1"
+
+# Läsa koden, och skriva code-scanning-fynd. Inget mer.
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analysera ${{ matrix.language }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # build-mode: none analyserar källkoden direkt, utan att bygga. Det gör
+          # att .NET-versionen inte spelar någon roll för extraktionen, och att
+          # analysen inte kan falla på ett bygge som redan täcks av CI-flödet.
+          - language: csharp
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - name: Hämta koden
+        uses: actions/checkout@v4
+
+      - name: Initiera CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # security-and-quality tar med fler regler än standardsviten — värt det
+          # för en app som hanterar personuppgifter.
+          queries: security-and-quality
+
+      - name: Analysera
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
