@@ -24,6 +24,9 @@ public sealed record GetAttendanceStateQuery(Guid MatchId, Guid AccountId)
 public sealed record GetAttendanceSummaryQuery(string Slug, Guid MatchId)
     : IQuery<AttendanceSummaryDto?>;
 
+/// <summary>Påminner dem som inte svarat. Ger antalet, eller null när matchen inte hör till laget.</summary>
+public sealed record RemindNonRespondersCommand(string Slug, Guid MatchId) : ICommand<int?>;
+
 internal sealed class OpenAttendanceCallCommandValidator
     : AbstractValidator<OpenAttendanceCallCommand>
 {
@@ -126,5 +129,28 @@ internal sealed class GetAttendanceSummaryQueryHandler(AttendanceService service
         ArgumentNullException.ThrowIfNull(query);
 
         return service.GetSummaryAsync(query.Slug, query.MatchId, cancellationToken);
+    }
+}
+
+internal sealed class RemindNonRespondersCommandValidator
+    : AbstractValidator<RemindNonRespondersCommand>
+{
+    public RemindNonRespondersCommandValidator()
+    {
+        RuleFor(c => c.Slug).NotEmpty();
+        RuleFor(c => c.MatchId).NotEmpty();
+    }
+}
+
+internal sealed class RemindNonRespondersCommandHandler(AttendanceService service)
+    : ICommandHandler<RemindNonRespondersCommand, int?>
+{
+    public Task<int?> HandleAsync(
+        RemindNonRespondersCommand command,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.RemindNonRespondersAsync(command.Slug, command.MatchId, cancellationToken);
     }
 }

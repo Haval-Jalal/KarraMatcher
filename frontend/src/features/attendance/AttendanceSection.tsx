@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
 import { hasKickedOff } from '@/lib/time'
 
-import { openAttendanceCall, type AttendanceStatus } from './attendanceApi'
+import { openAttendanceCall, remindNonResponders, type AttendanceStatus } from './attendanceApi'
 import { AttendanceResponseForm } from './AttendanceResponseForm'
 import {
   attendanceStateQueryKey,
@@ -44,6 +44,8 @@ export function AttendanceSection({
   const queryClient = useQueryClient()
   const [calling, setCalling] = useState(false)
   const [callFailed, setCallFailed] = useState(false)
+  const [reminding, setReminding] = useState(false)
+  const [remindResult, setRemindResult] = useState<string | null>(null)
 
   const isSignedIn = status === 'inloggad'
   const isManager = canManage(teamSlug)
@@ -105,6 +107,25 @@ export function AttendanceSection({
       setCallFailed(true)
     } finally {
       setCalling(false)
+    }
+  }
+
+  async function remind(): Promise<void> {
+    setReminding(true)
+    setRemindResult(null)
+
+    try {
+      const result = await remindNonResponders(teamSlug, matchId)
+      setRemindResult(
+        result.reminded === 1
+          ? 'Påminde 1 förälder.'
+          : `Påminde ${String(result.reminded)} föräldrar.`,
+      )
+      await reload()
+    } catch {
+      setRemindResult('Påminnelsen gick inte att skicka just nu. Försök igen om en stund.')
+    } finally {
+      setReminding(false)
     }
   }
 
@@ -185,6 +206,33 @@ export function AttendanceSection({
                 </li>
               ))}
             </ul>
+          )}
+
+          {summary.notAnsweredCount > 0 && (
+            <div className="attendance__unanswered">
+              <p className="attendance__note">
+                {summary.notAnsweredCount} har inte svarat
+                {summary.notAnsweredNames.length > 0
+                  ? `: ${summary.notAnsweredNames.join(', ')}`
+                  : ''}
+                .
+              </p>
+              <button
+                type="button"
+                className="button button--action"
+                disabled={reminding}
+                onClick={() => {
+                  void remind()
+                }}
+              >
+                {reminding ? 'Påminner…' : 'Påminn dem som inte svarat'}
+              </button>
+              {remindResult !== null && (
+                <p className="attendance__note" role="status">
+                  {remindResult}
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
