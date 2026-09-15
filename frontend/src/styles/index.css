@@ -453,6 +453,47 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0;
 }
 
+/* ---- Foten ------------------------------------------------------------ */
+
+/*
+ * Skiljs från innehållet med en tunn linje och dämpad text — den ska finnas, inte ta
+ * uppmärksamhet. Integritetslänken bor här så att även en gäst når den (§KM.6).
+ */
+.app-footer {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: var(--text-sm);
+}
+
+/* ---- Löpande text (integritet m.m.) ------------------------------------ */
+
+/*
+ * En sida som mest är text att läsa i följd, inte kort och knappar. Bredare radavstånd och
+ * tydliga mellanrum mellan avsnitten, så att den går att läsa på en telefon.
+ */
+.prose h2 {
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  margin: 28px 0 8px;
+}
+
+.prose p {
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+.prose ul {
+  line-height: 1.6;
+  padding-left: 20px;
+  margin: 0 0 12px;
+}
+
+.prose li {
+  margin: 0 0 6px;
+}
+
 /* ---- Tränarens vy ------------------------------------------------------------ */
 
 /*

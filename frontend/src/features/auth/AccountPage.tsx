@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -124,6 +124,16 @@ export function AccountPage() {
           Logga ut
         </button>
       </div>
+
+      <section aria-labelledby="integritet">
+        <h2 className="match-list__title" id="integritet">
+          Integritet
+        </h2>
+        <p className="state">
+          Vad appen sparar, var, hur länge och hur du raderar det står i klartext på en egen sida:{' '}
+          <Link to="/integritet">Så hanteras dina uppgifter</Link>.
+        </p>
+      </section>
 
       <DeleteAccountSection
         onDeleted={() => {

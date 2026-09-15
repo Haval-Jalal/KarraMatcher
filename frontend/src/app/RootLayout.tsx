@@ -1,4 +1,4 @@
-import { Outlet, useRouterState } from '@tanstack/react-router'
+import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 
 import { AppNav } from '@/components/AppNav'
@@ -53,6 +53,14 @@ export function RootLayout() {
       <div id="innehall" ref={target} tabIndex={-1}>
         <Outlet />
       </div>
+
+      {/*
+        Foten upprepas på varje sida. Integritetstexten ska gå att nå även för en gäst som
+        inte loggat in (§KM.6), därför bor länken här och inte bara på Mitt konto.
+      */}
+      <footer className="app-footer">
+        <Link to="/integritet">Så hanteras dina uppgifter</Link>
+      </footer>
     </>
   )
 }
