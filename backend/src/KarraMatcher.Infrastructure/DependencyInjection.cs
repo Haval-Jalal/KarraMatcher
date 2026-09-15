@@ -69,6 +69,14 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        /*
+         * Jobb-hemligheten (#64). Inte ValidateOnStart: saknas den ska appen ga att kora --
+         * kvallspaminnelsen ar ett komplement, och en tom hemlighet stanger bara jobbet
+         * (endpointen avvisar allt), den valter inte driftsattningen.
+         */
+        services.Configure<Application.Features.Jobs.JobOptions>(
+            configuration.GetSection(Application.Features.Jobs.JobOptions.SectionName));
+
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
@@ -86,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IAttendanceCallRepository, AttendanceCallRepository>();
+        services.AddScoped<IMatchReminderRepository, MatchReminderRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IPushDeliveryRepository, PushDeliveryRepository>();
 

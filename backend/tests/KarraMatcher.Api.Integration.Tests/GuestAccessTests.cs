@@ -238,6 +238,14 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
              * annan -- det ar webblasarens egen adress, som webblasaren sjalv nyss skapade.
              */
             "api/v1/teams/{slug}/push",
+
+            /*
+             * Kvallspaminnelsens jobb (#64). Anroparen ar Vercels cron, inte en manniska --
+             * det finns ingen session att krava. Skrivningen skyddas av en delad hemlighet i
+             * stallet, kontrollerad i JobsController med konstant tid. Samma sorts undantag
+             * som inloggningens egna endpoints, som skyddas av nagot annat an en token.
+             */
+            "api/v1/jobs/match-reminders",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

@@ -67,6 +67,12 @@ services:
       - key: Push__Subject
         sync: false
 
+      # Delad hemlighet for kvallspaminnelsens jobb-endpoint (#64). Samma varde satts i
+      # Vercel som CRON_SECRET; Vercels cron bar den i Authorization, rewriten skickar den
+      # vidare hit. Tom hemlighet stanger jobbet i stallet for att oppna det.
+      - key: Jobs__Secret
+        sync: false
+
       # Migrationer appliceras vid varje driftsattning.
       - key: Database__ApplyMigrationsOnStartup
         value: "true"

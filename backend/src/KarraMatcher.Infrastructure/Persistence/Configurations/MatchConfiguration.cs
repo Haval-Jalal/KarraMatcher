@@ -18,6 +18,9 @@ internal sealed class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.Property(m => m.KickoffUtc).HasColumnType("timestamp with time zone").IsRequired();
         builder.Property(m => m.UpdatedUtc).HasColumnType("timestamp with time zone").IsRequired();
 
+        // Idempotens-markören för kvällspåminnelsen (#64). Nullbar: null betyder "inte påmind än".
+        builder.Property(m => m.ReminderSentUtc).HasColumnType("timestamp with time zone");
+
         builder.Property(m => m.OpponentName).HasMaxLength(120).IsRequired();
         builder.Property(m => m.AddressOverride).HasMaxLength(200);
         builder.Property(m => m.Note).HasMaxLength(500);
