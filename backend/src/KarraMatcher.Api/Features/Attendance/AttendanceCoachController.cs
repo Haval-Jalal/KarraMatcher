@@ -56,6 +56,31 @@ public sealed class AttendanceCoachController(
             : Ok(summary);
     }
 
+    /// <summary>
+    /// Påminner dem som inte svarat (`#58`). Notisen går bara till lagets prenumeranter med
+    /// konto som ännu inte svarat — den som svarat väcks inte igen.
+    /// </summary>
+    [HttpPost("remind")]
+    [RequireCsrfToken]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Remind(
+        string slug,
+        Guid matchId,
+        CancellationToken cancellationToken)
+    {
+        var reminded = await commands
+            .SendAsync(new RemindNonRespondersCommand(slug, matchId), cancellationToken)
+            .ConfigureAwait(false);
+
+        return reminded is null
+            ? Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Matchen finns inte",
+                detail: "Kontrollera länken — matchen kan ha tagits bort.")
+            : Ok(new AttendanceRemindResult(reminded.Value));
+    }
+
     /// <summary>Öppnar kallelsen för matchen. Idempotent.</summary>
     [HttpPost("call")]
     [RequireCsrfToken]
@@ -105,3 +130,6 @@ public sealed class AttendanceCoachController(
         return Guid.TryParse(raw, out var id) ? id : null;
     }
 }
+
+/// <summary>Hur många konton påminnelsen nådde. Aldrig vilka — bara antalet.</summary>
+public sealed record AttendanceRemindResult(int Reminded);

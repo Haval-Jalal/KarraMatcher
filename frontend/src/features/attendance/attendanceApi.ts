@@ -98,6 +98,13 @@ export interface AttendanceSummary {
   cantComeFamilies: number
   respondedFamilies: number
   responders: AttendanceResponder[]
+  /**
+   * Hur många som förväntas svara men inte gjort det — lagets prenumeranter med konto minus
+   * dem som svarat. Kan nås av en påminnelse.
+   */
+  notAnsweredCount: number
+  /** Namnen på dem som inte svarat och fyllt i ett namn. Aldrig ett barn. */
+  notAnsweredNames: string[]
 }
 
 /**
@@ -112,5 +119,18 @@ export function getAttendanceSummary(
   return getAuthJson<AttendanceSummary>(
     `/api/v1/teams/${encodeURIComponent(teamSlug)}/matches/${encodeURIComponent(matchId)}/attendance/summary`,
     signal,
+  )
+}
+
+/**
+ * Påminner dem som inte svarat. Notisen går bara till lagets prenumeranter med konto som
+ * ännu inte svarat — aldrig till någon som redan svarat. Svarar med antalet som påmindes.
+ */
+export function remindNonResponders(
+  teamSlug: string,
+  matchId: string,
+): Promise<{ reminded: number }> {
+  return postJson<{ reminded: number }>(
+    `/api/v1/teams/${encodeURIComponent(teamSlug)}/matches/${encodeURIComponent(matchId)}/attendance/remind`,
   )
 }

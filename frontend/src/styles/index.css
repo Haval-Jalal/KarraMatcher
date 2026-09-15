@@ -1887,6 +1887,14 @@ a.match-card:focus-visible .match-card__opponent {
   gap: 4px;
 }
 
+.attendance__unanswered {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

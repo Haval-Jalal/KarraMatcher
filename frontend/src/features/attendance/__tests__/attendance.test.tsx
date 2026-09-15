@@ -92,6 +92,10 @@ function stubApi(options: {
         )
       }
 
+      if (url.includes('/attendance/remind')) {
+        return Promise.resolve(jsonResponse({ reminded: 2 }))
+      }
+
       if (url.includes('/attendance/call')) return Promise.resolve(emptyResponse(204))
       if (url.includes('/attendance/response')) return Promise.resolve(emptyResponse(204))
 
@@ -206,6 +210,37 @@ describe('tränaren kallar', () => {
     expect(screen.getByText(/5/)).toBeInTheDocument()
     expect(screen.getByText(/Anna Berg/)).toBeInTheDocument()
     expect(screen.getByText(/Bengt Ek/)).toBeInTheDocument()
+  })
+
+  it('ser vilka som inte svarat och kan påminna dem', async () => {
+    setAccessToken(coachToken('gul'))
+    const sent = stubApi({
+      token: coachToken('gul'),
+      state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null },
+      summary: {
+        comingPeople: 3,
+        maybePeople: 0,
+        cantComeFamilies: 0,
+        respondedFamilies: 1,
+        responders: [{ id: 'a', name: 'Anna Berg', status: 'Coming', count: 3 }],
+        notAnsweredCount: 2,
+        notAnsweredNames: ['Bengt Ek', 'Cecilia Dahl'],
+      },
+    })
+
+    renderRoute('/match/m1')
+
+    expect(await screen.findByText(/2 har inte svarat/)).toBeInTheDocument()
+    expect(screen.getByText(/Bengt Ek, Cecilia Dahl/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Påminn dem som inte svarat' }))
+
+    await waitFor(() =>
+      expect(sent.some((r) => r.method === 'POST' && r.url.includes('/attendance/remind'))).toBe(
+        true,
+      ),
+    )
+    expect(await screen.findByText('Påminde 2 föräldrar.')).toBeInTheDocument()
   })
 
   it('en förälder ser ingen summering', async () => {

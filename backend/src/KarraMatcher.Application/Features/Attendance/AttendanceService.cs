@@ -1,5 +1,7 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
 
@@ -57,7 +59,8 @@ public enum SubmitResponseOutcome
 public sealed class AttendanceService(
     IAttendanceCallRepository calls,
     IAccountRepository accounts,
-    IAuditLog audit)
+    IAuditLog audit,
+    IPushOutbox push)
 {
     /// <summary>Öppnar kallelsen för en match. Idempotent.</summary>
     public async Task<OpenCallOutcome> OpenCallAsync(
@@ -194,9 +197,10 @@ public sealed class AttendanceService(
     /// Tränarens summering för en match (`#58`). Null när matchen inte hör till laget.
     ///
     /// <para>
-    /// Räknar bara dem som faktiskt svarat. En lista över dem som <em>inte</em> svarat kräver
-    /// en förälder↔lag-koppling som inte finns (§KM.1), och hör hemma i <c>#63</c>.
-    /// Namnen är de svarande vuxnas (`#154`), aldrig ett barns.
+    /// Räknar både dem som svarat och dem som inte gjort det. "Inte svarat" mäts mot lagets
+    /// prenumeranter med konto (§KM.1) — den enda konto-baserade lag-kopplingen, och den som
+    /// kan ta emot en påminnelse. Namnen är de svarande och icke-svarande vuxnas (`#154`),
+    /// aldrig ett barns.
     /// </para>
     /// </summary>
     public async Task<AttendanceSummaryDto?> GetSummaryAsync(
@@ -215,8 +219,17 @@ public sealed class AttendanceService(
         var responses = await calls.ListResponsesForMatchAsync(matchId, cancellationToken)
             .ConfigureAwait(false);
 
+        var responded = responses.Select(r => r.AccountId).ToHashSet();
+
+        var expected = await calls
+            .ListExpectedResponderAccountIdsAsync(matchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var notAnswered = expected.Where(id => !responded.Contains(id)).ToArray();
+
+        // Namn för både dem som svarat och dem som inte gjort det, i en fråga.
         var names = await accounts
-            .DisplayNamesAsync([.. responses.Select(r => r.AccountId).Distinct()], cancellationToken)
+            .DisplayNamesAsync([.. responded.Concat(notAnswered).Distinct()], cancellationToken)
             .ConfigureAwait(false);
 
         var responders = responses
@@ -227,11 +240,63 @@ public sealed class AttendanceService(
                 r.Count))
             .ToArray();
 
+        // Bara de som fyllt i ett namn. Den som inte har det syns i antalet, inte i listan.
+        var notAnsweredNames = notAnswered
+            .Select(id => names.TryGetValue(id, out var name) ? name : null)
+            .OfType<string>()
+            .ToArray();
+
         return new AttendanceSummaryDto(
             responses.Where(r => r.Status == AttendanceStatus.Coming).Sum(r => r.Count),
             responses.Where(r => r.Status == AttendanceStatus.Maybe).Sum(r => r.Count),
             responses.Count(r => r.Status == AttendanceStatus.CantCome),
             responses.Count,
-            responders);
+            responders,
+            notAnswered.Length,
+            notAnsweredNames);
+    }
+
+    /// <summary>
+    /// Skickar en påminnelse till dem som inte svarat (`#58`, §KM.12). Null när matchen inte
+    /// hör till laget; annars antalet konton som påmindes.
+    ///
+    /// <para>
+    /// "Inte svarat" är lagets prenumeranter med konto minus dem som redan svarat. Notisen
+    /// går bara till dem — den som svarat väcks inte igen. Ingen fritext, inget barn: bara en
+    /// uppmaning att öppna appen och svara.
+    /// </para>
+    /// </summary>
+    public async Task<int?> RemindNonRespondersAsync(
+        string slug,
+        Guid matchId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(slug);
+
+        if (!await calls.MatchBelongsToTeamAsync(matchId, slug, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var responses = await calls.ListResponsesForMatchAsync(matchId, cancellationToken)
+            .ConfigureAwait(false);
+        var responded = responses.Select(r => r.AccountId).ToHashSet();
+
+        var expected = await calls
+            .ListExpectedResponderAccountIdsAsync(matchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var notAnswered = expected.Where(id => !responded.Contains(id)).ToArray();
+
+        if (notAnswered.Length > 0)
+        {
+            push.Enqueue(PushDispatch.ToAccounts(notAnswered, new PushMessage(
+                "Påminnelse: svara på kallelsen",
+                "Kommer ni på matchen? Öppna för att svara.",
+                $"/match/{matchId}")));
+        }
+
+        return notAnswered.Length;
     }
 }

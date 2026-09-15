@@ -60,14 +60,14 @@ public sealed record AttendanceResponderDto(
 /// tränaren räknar mot elva.
 /// </para>
 ///
-/// <h3>Vad som medvetet inte finns här</h3>
+/// <h3>De som inte svarat</h3>
 ///
 /// <para>
-/// <b>Ingen lista över dem som <em>inte</em> svarat.</b> Den kräver en lista på vilka som
-/// förväntas svara — en förälder↔lag-koppling — och den finns inte, med flit: servern
-/// lagrar inget om vilka barn eller familjer som hör till ett lag (§KM.1, beslut
-/// 2026-09-10). Kopplingen införs först i <c>#63</c>, och då hör "inte svarat" och
-/// påminnelsen hemma. Summeringen räknar bara dem som faktiskt svarat.
+/// <see cref="NotAnsweredCount"/> räknas mot dem som <em>förväntas</em> svara: konton som
+/// följer lagets notiser och alltså kan nås av en påminnelse (kopplingen kom i <c>#63</c>).
+/// En gäst utan konto räknas inte — hen kan varken svara som ett konto eller nås av en
+/// notis. <see cref="NotAnsweredNames"/> är namnen på dem som fyllt i ett (`#154`); den som
+/// inte har ett namn syns bara i antalet. Aldrig ett barn (§KM.1).
 /// </para>
 /// </summary>
 public sealed record AttendanceSummaryDto(
@@ -75,4 +75,6 @@ public sealed record AttendanceSummaryDto(
     int MaybePeople,
     int CantComeFamilies,
     int RespondedFamilies,
-    IReadOnlyList<AttendanceResponderDto> Responders);
+    IReadOnlyList<AttendanceResponderDto> Responders,
+    int NotAnsweredCount,
+    IReadOnlyList<string> NotAnsweredNames);

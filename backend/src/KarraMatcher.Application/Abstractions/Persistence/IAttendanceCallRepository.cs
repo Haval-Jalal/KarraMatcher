@@ -49,5 +49,20 @@ public interface IAttendanceCallRepository
         Guid matchId,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Kontona som förväntas svara på matchen: de som prenumererar på lagets notiser och
+    /// har ett konto (`#58`, §KM.1).
+    ///
+    /// <para>
+    /// Det är den enda konto-baserade lag-kopplingen vi har (den infördes i <c>#63</c>) —
+    /// och den som kan ta emot en påminnelse. "Inte svarat" räknas mot den här mängden: en
+    /// förälder som följer laget men inte svarat. En gäst utan konto räknas inte, och kan
+    /// heller inte nås av en notis.
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyList<Guid>> ListExpectedResponderAccountIdsAsync(
+        Guid matchId,
+        CancellationToken cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }
