@@ -5,6 +5,7 @@ import { RootLayout } from '@/app/RootLayout'
 import { CoachMatchesPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
+import { PrivacyPage } from '@/features/privacy'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
@@ -158,6 +159,16 @@ const playerCardChildRoute = createRoute({
   component: PlayerCardPage,
 })
 
+/**
+ * Integritetstexten (§KM.6). Publik: en gäst ska kunna läsa vad appen sparar innan hen loggar
+ * in, inte efter. Nås från fotens länk och från Mitt konto.
+ */
+const privacyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/integritet',
+  component: PrivacyPage,
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
@@ -167,6 +178,7 @@ export const routeTree = rootRoute.addChildren([
   coachRoute,
   playerCardRoute,
   playerCardChildRoute,
+  privacyRoute,
 ])
 
 export const router = createRouter({
