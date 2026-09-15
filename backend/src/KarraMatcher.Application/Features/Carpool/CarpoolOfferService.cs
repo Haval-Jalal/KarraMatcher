@@ -81,7 +81,8 @@ public sealed class CarpoolOfferService(
         await offers.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Till lagets prenumeranter (§KM.12). Köas, aldrig skickat i requesten (§KM.11).
-        push.Enqueue(PushDispatch.ToTeam(teamId.Value, CarpoolNotification.NewOffer(matchId)));
+        push.Enqueue(PushDispatch.ToTeam(
+            teamId.Value, PushCategory.Carpool, CarpoolNotification.NewOffer(matchId)));
 
         return CarpoolOfferDto.For(offer, driverAccountId);
     }
@@ -185,10 +186,14 @@ public sealed class CarpoolOfferService(
             .Distinct()
             .ToArray();
 
-        if (accepted.Length > 0)
+        var teamId = await offers.FindMatchTeamIdAsync(offer.MatchId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (accepted.Length > 0 && teamId is not null)
         {
             push.Enqueue(PushDispatch.ToAccounts(
-                accepted, CarpoolNotification.OfferWithdrawn(offer.MatchId)));
+                teamId.Value, accepted, PushCategory.Carpool,
+                CarpoolNotification.OfferWithdrawn(offer.MatchId)));
         }
 
         return true;

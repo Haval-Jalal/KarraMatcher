@@ -1,6 +1,7 @@
 import { useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
+import { NotificationSettings } from '@/features/notifications'
 import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
 import { teamThemeStyle } from '@/lib/teamTheme'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -55,6 +56,9 @@ export function TeamSchedulePage() {
       )}
 
       <MatchListSection slug={slug} />
+
+      {/* Notisinställningar (#65). Renderar ingenting för en gäst. */}
+      <NotificationSettings teamSlug={slug} />
     </main>
   )
 }

@@ -89,6 +89,14 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
             .ConfigureAwait(false);
     }
 
+    public async Task<Guid?> FindTeamIdAsync(Guid matchId, CancellationToken cancellationToken) =>
+        await context.Matches
+            .AsNoTracking()
+            .Where(m => m.Id == matchId)
+            .Select(m => (Guid?)m.TeamId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         context.SaveChangesAsync(cancellationToken);
 }

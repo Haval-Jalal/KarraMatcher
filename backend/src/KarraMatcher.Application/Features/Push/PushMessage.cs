@@ -36,26 +36,44 @@ public sealed record PushMessage(string Title, string Body, string Url);
 /// </summary>
 public sealed record PushDispatch
 {
-    private PushDispatch(Guid? teamId, IReadOnlyList<Guid>? accountIds, PushMessage message)
+    private PushDispatch(
+        Guid teamId,
+        IReadOnlyList<Guid>? accountIds,
+        PushCategory category,
+        PushMessage message)
     {
         TeamId = teamId;
         AccountIds = accountIds;
+        Category = category;
         Message = message;
     }
 
-    /// <summary>Satt när notisen går till ett helt lags prenumeranter.</summary>
-    public Guid? TeamId { get; }
+    /// <summary>
+    /// Laget notisen rör. Alltid satt — det är mot laget en förälder ställt in vad hen vill
+    /// ha, så filtreringen (`#65`) behöver det även för en kontoriktad notis.
+    /// </summary>
+    public Guid TeamId { get; }
 
-    /// <summary>Satt när notisen går till bestämda konton (deras alla enheter).</summary>
+    /// <summary>Bestämda konton (deras alla enheter), eller null för hela lagets prenumeranter.</summary>
     public IReadOnlyList<Guid>? AccountIds { get; }
+
+    /// <summary>Vilket slags notis — det en förälder kan välja bort per lag (`#65`).</summary>
+    public PushCategory Category { get; }
 
     public PushMessage Message { get; }
 
-    /// <summary>Till alla som prenumererar på laget.</summary>
-    public static PushDispatch ToTeam(Guid teamId, PushMessage message) =>
-        new(teamId, null, message);
+    /// <summary>Till alla som prenumererar på laget och vill ha den sortens notis.</summary>
+    public static PushDispatch ToTeam(Guid teamId, PushCategory category, PushMessage message) =>
+        new(teamId, null, category, message);
 
-    /// <summary>Till bestämda konton — deras notiser om sin egen samåkning (§KM.12).</summary>
-    public static PushDispatch ToAccounts(IReadOnlyList<Guid> accountIds, PushMessage message) =>
-        new(null, accountIds, message);
+    /// <summary>
+    /// Till bestämda konton, för notiser om deras egen samåkning (§KM.12). Laget står med
+    /// så att den som stängt av samåkning för just det laget inte nås.
+    /// </summary>
+    public static PushDispatch ToAccounts(
+        Guid teamId,
+        IReadOnlyList<Guid> accountIds,
+        PushCategory category,
+        PushMessage message) =>
+        new(teamId, accountIds, category, message);
 }

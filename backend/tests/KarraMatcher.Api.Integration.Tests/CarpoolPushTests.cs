@@ -241,7 +241,7 @@ public sealed class CarpoolPushTests(KarraMatcherApiFactory factory)
         response.EnsureSuccessStatusCode();
 
         Assert.True(outbox.Dispatches.TryDequeue(out var dispatch));
-        Assert.Null(dispatch.TeamId);
+        Assert.Equal(fixture.TeamId, dispatch.TeamId);
         Assert.Equal([fixture.DriverId], dispatch.AccountIds);
         Assert.Contains("Ny åkförfrågan", dispatch.Message.Title, StringComparison.Ordinal);
     }

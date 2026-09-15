@@ -289,12 +289,18 @@ public sealed class AttendanceService(
 
         var notAnswered = expected.Where(id => !responded.Contains(id)).ToArray();
 
-        if (notAnswered.Length > 0)
+        var teamId = await calls.FindTeamIdAsync(matchId, cancellationToken).ConfigureAwait(false);
+
+        if (notAnswered.Length > 0 && teamId is not null)
         {
-            push.Enqueue(PushDispatch.ToAccounts(notAnswered, new PushMessage(
-                "Påminnelse: svara på kallelsen",
-                "Kommer ni på matchen? Öppna för att svara.",
-                $"/match/{matchId}")));
+            push.Enqueue(PushDispatch.ToAccounts(
+                teamId.Value,
+                notAnswered,
+                PushCategory.Reminder,
+                new PushMessage(
+                    "Påminnelse: svara på kallelsen",
+                    "Kommer ni på matchen? Öppna för att svara.",
+                    $"/match/{matchId}")));
         }
 
         return notAnswered.Length;

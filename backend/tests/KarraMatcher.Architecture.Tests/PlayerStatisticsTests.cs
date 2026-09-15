@@ -175,7 +175,8 @@ public partial class PlayerStatisticsTests
             [
                 "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceResponses", "AuditEntries",
                 "CarpoolOffers", "CarpoolRequests", "Clubs", "LoginCodes", "Matches",
-                "PushSubscriptions", "RefreshTokens", "TeamRoles", "Teams", "Venues",
+                "NotificationPreferences", "PushSubscriptions", "RefreshTokens", "TeamRoles",
+                "Teams", "Venues",
             ],
             DbSetNames());
     }

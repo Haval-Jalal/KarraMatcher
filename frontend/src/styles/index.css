@@ -1895,6 +1895,40 @@ a.match-card:focus-visible .match-card__opponent {
   align-items: flex-start;
 }
 
+/* Notisinställningar (#65). */
+.notif-settings {
+  margin-top: 32px;
+}
+
+.notif-settings__lead {
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+.notif-settings__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  min-height: var(--tap-target);
+  font-family: var(--sans);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.notif-settings__row input {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.notif-settings__tip {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
