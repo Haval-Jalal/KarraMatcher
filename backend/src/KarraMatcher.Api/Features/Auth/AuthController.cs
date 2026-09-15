@@ -3,6 +3,7 @@ using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Accounts;
 using KarraMatcher.Application.Features.Auth.DeleteAccount;
+using KarraMatcher.Application.Features.Auth.ExportAccount;
 using KarraMatcher.Application.Features.Auth.RefreshSession;
 using KarraMatcher.Application.Features.Auth.RequestLoginCode;
 using KarraMatcher.Application.Features.Auth.SignOut;
@@ -201,6 +202,33 @@ public sealed class AuthController(
             .ConfigureAwait(false);
 
         return profile is null ? Unauthenticated() : Ok(profile);
+    }
+
+    /// <summary>Registerutdrag: allt servern har om det inloggade kontot (`#67`).</summary>
+    /// <remarks>
+    /// Bara den inloggade får hämta sitt eget — id:t kommer ur token, det finns inget
+    /// kontofält att fråga efter någon annans med. Svaret bär personuppgifter och får
+    /// därför aldrig edge-cachas; det lämnas som <c>private</c> genom att inte begära cache
+    /// (§KM.11, cachning är opt-in). En säker GET behöver ingen CSRF-token.
+    /// </remarks>
+    [HttpGet("export")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Export(CancellationToken cancellationToken)
+    {
+        var accountId = CurrentAccountId();
+
+        if (accountId is null)
+        {
+            return Unauthenticated();
+        }
+
+        var export = await queries
+            .SendAsync(new ExportAccountQuery(accountId.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        return export is null ? Unauthenticated() : Ok(export);
     }
 
     /// <summary>Raderar kontot och allt servern äger om det.</summary>

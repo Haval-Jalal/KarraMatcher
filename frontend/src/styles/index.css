@@ -479,6 +479,12 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 28px 0 8px;
 }
 
+.prose h3 {
+  font-size: var(--text-base);
+  color: var(--text-strong);
+  margin: 20px 0 6px;
+}
+
 .prose p {
   line-height: 1.6;
   margin: 0 0 12px;

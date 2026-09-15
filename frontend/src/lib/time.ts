@@ -59,6 +59,13 @@ const weekdayOnly = new Intl.DateTimeFormat('sv-SE', {
   weekday: 'long',
 })
 
+const fullDate = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: SWEDISH_TIME_ZONE,
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
+
 const monthAndYear = new Intl.DateTimeFormat('sv-SE', {
   timeZone: SWEDISH_TIME_ZONE,
   month: 'long',
@@ -116,6 +123,11 @@ export function formatMatchDate(value: string | Date): string {
 /** Datum utan veckodag, t.ex. `24 oktober`. */
 export function formatDayAndMonth(value: string | Date): string {
   return dayAndMonth.format(toInstant(value))
+}
+
+/** Fullständigt datum med år, t.ex. `24 oktober 2026`. Används i registerutdraget (`#67`). */
+export function formatFullDate(value: string | Date): string {
+  return fullDate.format(toInstant(value))
 }
 
 /** Månadsrubrik i matchlistan, t.ex. `Oktober 2026`. */
