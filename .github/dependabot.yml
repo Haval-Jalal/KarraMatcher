@@ -1,0 +1,30 @@
+# Automatiska uppdaterings-PR:ar (säkerhetschecklistan 10.3).
+#
+# Tre ekosystem: NuGet (backend), npm (frontend) och själva GitHub Actions-flödet.
+# Veckovis — en ensam utvecklare hinner inte med daglig brusnivå, och säsongsappen
+# har inte trafiken som gör en dags fördröjning till en risk. Säkerhetsuppdateringar
+# skickar Dependabot ändå så fort de finns, oavsett schema.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
