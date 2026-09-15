@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Attendance.AttendanceService>();
         services.AddScoped<Features.Jobs.MatchReminderService>();
         services.AddScoped<Features.Push.NotificationSettingsService>();
+        services.AddScoped<Features.Push.PushRetentionService>();
 
         return services;
     }

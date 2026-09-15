@@ -131,7 +131,7 @@
 | 9.5 | **§KM.6** Radering av barn tar bort spelare, rapporter, närvarosvar och koppling — direkt, ej mjuk | ⬜ |
 | 9.6 | **§KM.6** Radering av konto tar bort kontot och allt det äger | ✅ |
 | 9.7 | Laglig grund dokumenterad i `SPEC.md` per uppgiftstyp | ⬜ |
-| 9.8 | Gallringsregler implementerade: push-prenumerationer, **samåkning 30 dagar efter match**, gamla säsonger | ⬜ |
+| 9.8 | Gallringsregler implementerade: push-prenumerationer (döda reaktivt + tysta 12 mån), **samåkning 30 dagar efter match**. *Gamla säsonger behålls medvetet — matchdata är inte PII och kalenderfeeden beror på den (beslut i handoff, `#68`).* | ✅ |
 | 9.9 | Dataminimering — varje fält kan motiveras med en funktion som kräver det | ⬜ |
 | 9.10 | **§KM.6** Ingen besöksanalys, ingen spårning, inga tredjepartsskript utöver väder och kartlänkar | ⬜ |
 | 9.11 | Synlig och begriplig integritetstext i appen, skriven för föräldrar — inte jurister | ⬜ |
