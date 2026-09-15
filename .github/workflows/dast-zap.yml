@@ -1,0 +1,45 @@
+# Dynamisk säkerhetsanalys (DAST) med OWASP ZAP — säkerhetschecklistan 12.7.
+#
+# DAST kräver en *körande* miljö att skanna, så det här flödet är manuellt
+# (workflow_dispatch): kör det mot staging (eller prod) när en sådan finns. En
+# baseline-skanning kryper appen och passivt-testar den — den skickar inga
+# angrepp, så den är trygg att köra mot en driftmiljö.
+#
+# Skanningen öppnar ett issue med fynden och laddar upp en rapport som artefakt.
+# En människa bedömer varje fynd (åtgärda eller motiverat avfärda, issue #70).
+#
+# Att köra: fliken Actions → "DAST (ZAP baseline)" → Run workflow → fyll i URL:en.
+name: DAST (ZAP baseline)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "URL att skanna (t.ex. staging-domänen). Med i klartext i loggen — peka aldrig på något med riktig inloggad data."
+        required: true
+
+# Läsa koden (för regelfilen) och öppna ett issue med fynden.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap:
+    name: ZAP baseline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hämta koden
+        uses: actions/checkout@v4
+
+      - name: ZAP baseline-skanning
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ github.event.inputs.target }}
+          # Ett fynd fäller inte flödet — en baseline-skanning är till för att läsas,
+          # inte för att vara en grind. Grinden är CodeQL och beroende-skanningen i CI.
+          fail_action: false
+          # Regelfilen låter oss tona ner kända, medvetna icke-fynd utan att ta bort
+          # hela larmet. Tom tills något behöver tonas ner.
+          rules_file_name: ".github/zap-rules.tsv"
+          cmd_options: "-a"

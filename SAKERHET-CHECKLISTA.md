@@ -174,7 +174,7 @@
 | 12.4 | **§KM.5** Tidszonstest över sommartidsskiftet i oktober är grönt | ✅ |
 | 12.5 | E2E-test av de fem kritiska flödena i `SPEC.md` §9 — **beroende av `#71`** | ⬜ |
 | 12.6 | A11y-genomgång: tangentbord, skärmläsare, kontrast, fokus (WCAG 2.1 AA) | ✅ |
-| 12.7 | SAST/DAST kört inför lansering; fynd åtgärdade — **beroende av `#70`** | ⬜ |
+| 12.7 | SAST/DAST kört inför lansering; fynd åtgärdade — **SAST (CodeQL) kör i CI ✅** (`#70`); **⚠️ DAST-workflow (ZAP, manuell) finns — körning mot staging + fyndhantering kräver deployad miljö** | 🟡 |
 | 12.8 | Testad på riktig iPhone och riktig Android — inte bara i desktop-emulering — **beroende av `#72`** | ⬜ |
 | 12.9 | Penetrationstest *(vid behov)* | ➖ |
 
@@ -186,6 +186,6 @@
 >
 > **Kvar före lansering (`#69`-revision, 2026-09-15):**
 > - **Externa åtgärder (du):** 7.7 rotera JSONBin-nyckeln · 9.14 biträdesavtal med Resend · 9.12 bekräfta Neon/Render-regioner · 4.6 stäng direktåtkomst till Render-URL:en.
-> - **Beroende av senare issues:** 12.5 (`#71` E2E) · 12.7 (`#70` SAST/DAST) · 12.8 (`#72` enhetstester).
-> - **Verifiering:** 5.1 bekräfta CSP i en Vercel-preview.
+> - **Beroende av senare issues:** 12.5 (`#71` E2E) · 12.8 (`#72` enhetstester).
+> - **Verifiering:** 5.1 bekräfta CSP i en Vercel-preview · 12.7 kör DAST-workflowen (ZAP) mot staging och bedöm fynden · granska CodeQL-fynd under fliken Security.
 > - **Mindre kvar:** 8.4 correlation-ID i audit-raden · 8.5/8.6 larm & felrapportering (efter lansering) · 10.5 NuGet-lockfiler · 11.5 egen maintenance-sida.
