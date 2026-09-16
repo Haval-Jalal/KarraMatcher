@@ -8,6 +8,7 @@ import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
 import { StartPage } from '@/features/start/StartPage'
+import { SuperAdminPage } from '@/features/superadmin'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
 import { renewSession } from '@/lib/api'
 import { getAccessToken, hasSessionHint } from '@/lib/session'
@@ -132,6 +133,29 @@ const coachRoute = createRoute({
 })
 
 /**
+ * Superadmin-konsolen (§KM.3, `#192`).
+ *
+ * Kräver inloggning här; att man faktiskt är superadmin avgör servern (policyn
+ * <c>SuperAdmin</c>) och vyn själv (den göms för andra). Route-grinden kontrollerar bara att
+ * någon är inloggad — samma mönster som tränarvyn.
+ */
+const superadminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/superadmin',
+  beforeLoad: async ({ location }) => {
+    if (getAccessToken() === null && hasSessionHint()) {
+      await renewSession()
+    }
+
+    if (getAccessToken() === null) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
+    }
+  },
+  component: SuperAdminPage,
+})
+
+/**
  * Spelarkortet.
  *
  * Ingen inloggning: kortet ligger på enheten och kräver varken konto eller server
@@ -176,6 +200,7 @@ export const routeTree = rootRoute.addChildren([
   loginRoute,
   accountRoute,
   coachRoute,
+  superadminRoute,
   playerCardRoute,
   playerCardChildRoute,
   privacyRoute,

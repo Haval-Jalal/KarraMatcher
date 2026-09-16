@@ -24,6 +24,19 @@ namespace KarraMatcher.Api.Features.Auth;
 /// </summary>
 public static class AuthorizationPolicies
 {
+    /// <summary>
+    /// Superadmin — global ägare av plattformen (v2). Den enda rollen som får skapa och
+    /// ändra sporter, klubbar, trupper och lag och tillsätta admins (§KM.3, `#192`).
+    ///
+    /// <para>
+    /// Egen policy och inte <see cref="Admin"/>: i dag råkar bara superadmin bära
+    /// <c>role=admin</c> (bakåtkompat), men så fort riktiga trupp-admins tillsätts slutar
+    /// <see cref="Admin"/> vara superadmin-exklusiv. Superadmin-ytan måste låsas mot
+    /// anspråket <c>superadmin</c> självt, inte mot en roll som snart delas.
+    /// </para>
+    /// </summary>
+    public const string SuperAdmin = "superadmin";
+
     /// <summary>Administratör. Får agera på alla lag.</summary>
     public const string Admin = "admin";
 
@@ -51,6 +64,10 @@ public static class AuthorizationPolicies
     public static AuthorizationOptions AddKarraPolicies(this AuthorizationOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+
+        options.AddPolicy(SuperAdmin, policy => policy
+            .RequireAuthenticatedUser()
+            .RequireClaim(AuthClaims.SuperAdmin, "true"));
 
         options.AddPolicy(Admin, policy => policy
             .RequireAuthenticatedUser()

@@ -117,10 +117,22 @@ export function isAdminFromToken(token: string): boolean {
   return role === 'admin' || (Array.isArray(role) && role.includes('admin'))
 }
 
+/**
+ * Sant om kontot är superadmin, ur token (`#192`).
+ *
+ * Samma sak som resten av det här: det avgör bara vad som <em>visas</em> — superadmin-vyn
+ * göms för alla andra. Servern (policyn <c>SuperAdmin</c>) är den riktiga grinden, och den
+ * som ändrar värdet i sin egen webbläsare får se en vy vars alla anrop svarar 403.
+ */
+export function isSuperAdminFromToken(token: string): boolean {
+  return claimsFromToken(token)?.superadmin === 'true'
+}
+
 interface TokenClaims {
   email?: string
   coach?: string | string[]
   role?: unknown
+  superadmin?: unknown
   [key: string]: unknown
 }
 
