@@ -519,6 +519,34 @@ public sealed class CarpoolResponseTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Forfragningarna_GarAttHamtaUtanCsrfToken()
+    {
+        /*
+         * Regression (#71). En GET andrar inget och ska aldrig krava en CSRF-token. Klienten
+         * skickar bara Bearer pa lasningar (getAuthJson), men forarens lista over
+         * forfragningar satt bakom [RequireCsrfToken] pa CarpoolDriverController -- pa
+         * klassniva, sa aven GET:en traffades. Foljden: en forare kunde aldrig hamta sina
+         * inkommande forfragningar i drift. De ovriga testerna dolde det genom att skicka en
+         * CSRF-token aven pa sina GET-anrop, vilket den riktiga klienten aldrig gor.
+         */
+        var fixture = await SeedAsync("get-utan-csrf");
+        await AskedAsync(fixture, fixture.AskerId);
+
+        using var client = factory.CreateClient(ClientOptions);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/v1/matches/{fixture.MatchId}/carpool/offers/{fixture.OfferId}/requests");
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer", TokenFor(factory.Services, fixture.DriverId));
+
+        // Medvetet ingen X-CSRF-TOKEN -- det är just det klienten inte skickar på en GET.
+        var response = await client.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Svaret_HamnarAldrigIAuditloggen()
     {
         // §KM.10: raden bar vad som hande och vem, aldrig foralderns egna ord.

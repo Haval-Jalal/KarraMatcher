@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -41,6 +42,22 @@ internal sealed class RequireCsrfTokenAttribute : Attribute, IFilterFactory
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
+
+            // CSRF skyddar bara tillståndsändrande anrop. En säker metod (GET/HEAD/OPTIONS/TRACE)
+            // ändrar inget och ska aldrig kräva en token -- annars låser ett attribut på
+            // klassnivå även läsningarna på samma controller, och en klient som (korrekt) inte
+            // skickar CSRF på en GET får 400. Det var precis vad som hände med förarens lista
+            // över samåkningsförfrågningar: den satt bakom `[RequireCsrfToken]` på CarpoolDriver-
+            // controllern och gick därför aldrig att hämta.
+            var method = context.HttpContext.Request.Method;
+
+            if (HttpMethods.IsGet(method)
+                || HttpMethods.IsHead(method)
+                || HttpMethods.IsOptions(method)
+                || HttpMethods.IsTrace(method))
+            {
+                return;
+            }
 
             try
             {

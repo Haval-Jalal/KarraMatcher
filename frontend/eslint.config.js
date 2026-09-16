@@ -6,7 +6,19 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules'] },
+  // e2e/ och playwright-config lintas inte här: de körs av Playwrights egen körtid, inte
+  // av vitest/tsc-projekten, och den typade linten kräver ett tsconfig-projekt de inte ingår i.
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'node_modules',
+      'e2e',
+      'playwright.config.ts',
+      'playwright-report',
+      'test-results',
+    ],
+  },
 
   js.configs.recommended,
 

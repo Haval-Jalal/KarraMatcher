@@ -1,7 +1,15 @@
 import { fileURLToPath, URL } from 'node:url'
 
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+
+/*
+ * HTTPS bara nar E2E begar det (E2E_HTTPS=1). Da lagras refresh-cookien (Secure) aven pa
+ * dev-servern, sa att en sida kan laddas om utan att tappa sin inloggning -- det som gor
+ * fleranvandar-flodet (samakning) provbart. Vanlig `npm run dev` paverkas inte.
+ */
+const useHttps = process.env['E2E_HTTPS'] === '1'
 
 // https://vite.dev/config/
 /*
@@ -11,7 +19,7 @@ import { defineConfig } from 'vite'
 const apiTarget = process.env['KARRA_API_PROXY'] ?? 'http://localhost:5066'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), ...(useHttps ? [basicSsl()] : [])],
   resolve: {
     alias: {
       // Speglar "paths" i tsconfig.app.json. Bada maste andras tillsammans.
