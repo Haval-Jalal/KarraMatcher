@@ -12,6 +12,10 @@
 > Rader märkta *(vid behov)* bockas av när triggern i [`STANDARDER-VID-BEHOV.md`](./STANDARDER-VID-BEHOV.md) uppfyllts.
 > Rader märkta **§KM** kommer från projektets egna regler och väger tyngst.
 >
+> **v2-omställning (`#189`, 2026-09-16):** appen blir stängd (inloggning + medlemskap för allt) och
+> lagrar en minimal barnprofil. Rader om **publik läsning** (2.11, 4.7, 5.7) och den publika
+> ICS-feeden revideras när `#191` (stäng appen) landar; §9-raderna om barn är redan uppdaterade nedan.
+>
 > **Reviderad `#69` (2026-09-15):** hela listan gick igenom rad för rad, verifierad mot koden.
 > Kvarvarande icke-gröna rader är antingen **externa åtgärder** (kräver dig, inte kod) eller
 > **beroende av senare issues** (`#70` SAST/DAST, `#71` E2E, `#72` enhetstester). De är märkta i klartext.
@@ -127,12 +131,12 @@
 
 | # | Kontroll | Status |
 |---|----------|:------:|
-| 9.0 | **§KM.2** Vid lansering, med kallelsen avstängd, lagrar servern **inga uppgifter alls om barn** — verifierat med arkitekturtest | ✅ |
-| 9.1 | **§KM.1** Om truppen aktiveras: endast förnamn och tröjnummer — **uppfyllt genom frånvaro: ingen trupp/barn-tabell finns (beslut 2026-09-10); återöppnas om trupp införs** | ✅ |
-| 9.2 | **§KM.1** Inga efternamn, personnummer, födelsedatum, adresser, foton eller positioner någonstans — verifierat mot schemat (kontot lagrar bara e-post + valfritt namn) | ✅ |
+| 9.0 | **§KM.1 (v2)** Servern lagrar en **minimal** barnprofil (förnamn + efternamnets initial, lag/trupp, vårdnadshavarkoppling) — **aldrig mer**; dataminimering verifieras mot schemat (`#190`) | 🟡 |
+| 9.1 | **§KM.1 (v2)** Barnprofilen visar **"Liam J"** (förnamn + initial), aldrig hela efternamnet; ev. tröjnummer bara om en funktion kräver det | 🟡 |
+| 9.2 | **§KM.1** Inget **helt efternamn**, inga personnummer, födelsedatum, adresser, foton eller positioner om ett barn — verifierat mot schemat (`#190`) | 🟡 |
 | 9.3 | **§KM.1** Ny PII-kolumn har beslut infört i `docs/PROJEKT-HANDOFF.md` — processen finns och är använd | ✅ |
-| 9.4 | **§KM.6** Vårdnadshavarsamtycke innan barn kopplas — **uppfyllt genom frånvaro: ingen barnkoppling finns på servern idag; införs trupp krävs samtycke på riktigt + skrivet beslut** | ✅ |
-| 9.5 | **§KM.6** Radering av barn tar bort spelare, rapporter, närvarosvar och koppling — **ingen barn-entitet på servern; spelarkortet raderas på enheten av familjen** | ✅ |
+| 9.4 | **§KM.6 (v2)** Vårdnadshavarsamtycke **obligatoriskt** innan barn kopplas; version + tidsstämpel sparas (`#195`) | ⬜ |
+| 9.5 | **§KM.6 (v2)** Radering av barn / att barn lämnar trupp tar bort profil, kallelsesvar, chattmedlemskap och koppling — direkt (`#203`); spelarkortet raderas separat på enheten | ⬜ |
 | 9.6 | **§KM.6** Radering av konto tar bort kontot och allt det äger | ✅ |
 | 9.7 | Laglig grund dokumenterad i `SPEC.md` per uppgiftstyp *(konsoliderad rad under §10, ej per-fält-tabell)* | ✅ |
 | 9.8 | Gallringsregler implementerade: push-prenumerationer (döda reaktivt + tysta 12 mån), **samåkning 30 dagar efter match**. *Gamla säsonger behålls medvetet — matchdata är inte PII och kalenderfeeden beror på den (beslut i handoff, `#68`).* | ✅ |
