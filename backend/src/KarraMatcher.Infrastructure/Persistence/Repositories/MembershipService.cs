@@ -1,5 +1,6 @@
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Invitations;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -79,7 +80,7 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
 
         var coachTeamIds = roles.Where(r => r.Role == RoleKind.Coach && r.TeamId != null)
             .Select(r => r.TeamId!.Value).ToHashSet();
-        var adminAgeGroupIds = roles.Where(r => r.Role == RoleKind.Admin && r.AgeGroupId != null)
+        var ageGroupIds = roles.Where(r => r.Role == RoleKind.Admin && r.AgeGroupId != null)
             .Select(r => r.AgeGroupId!.Value).ToHashSet();
 
         var guardianTeamIds = await context.Guardianships
@@ -89,11 +90,21 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Accepterade inbjudningar ger medlemskap i truppen (v2, `#193`), alltså i alla dess lag.
+        var invitedAgeGroupIds = await context.Invitations
+            .AsNoTracking()
+            .Where(i => i.AcceptedByAccountId == accountId && i.Status == InvitationStatus.Accepted)
+            .Select(i => i.AgeGroupId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        ageGroupIds.UnionWith(invitedAgeGroupIds);
+
         var teamIds = coachTeamIds.Concat(guardianTeamIds).ToHashSet();
 
         return await context.Teams
             .AsNoTracking()
-            .Where(t => teamIds.Contains(t.Id) || adminAgeGroupIds.Contains(t.AgeGroupId))
+            .Where(t => teamIds.Contains(t.Id) || ageGroupIds.Contains(t.AgeGroupId))
             .Select(t => t.Slug)
             .Distinct()
             .ToListAsync(cancellationToken)
@@ -118,10 +129,26 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             return true;
         }
 
-        return await context.Guardianships
+        var isGuardian = await context.Guardianships
             .AsNoTracking()
             .AnyAsync(
                 g => g.AccountId == accountId && g.Child!.TeamId == teamId,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (isGuardian)
+        {
+            return true;
+        }
+
+        // En accepterad inbjudan till truppen är också ett medlemskap (v2, `#193`) — en
+        // förälder ser sitt lags trupp redan innan barnet kopplats (§KM.1, `#196`).
+        return await context.Invitations
+            .AsNoTracking()
+            .AnyAsync(
+                i => i.AcceptedByAccountId == accountId
+                    && i.AgeGroupId == ageGroupId
+                    && i.Status == InvitationStatus.Accepted,
                 cancellationToken)
             .ConfigureAwait(false);
     }

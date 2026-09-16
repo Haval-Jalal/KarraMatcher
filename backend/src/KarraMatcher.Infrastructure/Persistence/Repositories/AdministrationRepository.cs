@@ -55,6 +55,28 @@ internal sealed class AdministrationRepository(KarraMatcherDbContext context) : 
             .OrderBy(a => a.Club!.Name).ThenBy(a => a.Name).ThenBy(a => a.Season)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<AgeGroup>> GetTrupperForAdminAsync(
+        Guid accountId, bool isSuperAdmin, CancellationToken cancellationToken)
+    {
+        var query = context.AgeGroups.AsNoTracking()
+            .Include(a => a.Club)
+            .Include(a => a.Sport)
+            .AsQueryable();
+
+        if (!isSuperAdmin)
+        {
+            // Bara trupperna kontot är admin för — en TeamRole{Admin, AgeGroupId}.
+            query = query.Where(a => context.TeamRoles.Any(
+                r => r.AccountId == accountId
+                    && r.Role == RoleKind.Admin
+                    && r.AgeGroupId == a.Id));
+        }
+
+        return await query
+            .OrderBy(a => a.Club!.Name).ThenBy(a => a.Name).ThenBy(a => a.Season)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<AgeGroup?> FindTruppAsync(Guid id, CancellationToken cancellationToken) =>
         context.AgeGroups
             .Include(a => a.Club)

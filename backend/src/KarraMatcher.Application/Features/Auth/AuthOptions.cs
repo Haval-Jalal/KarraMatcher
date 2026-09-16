@@ -68,4 +68,28 @@ public sealed class AuthOptions
     /// </para>
     /// </summary>
     public TimeSpan LoginCodeResendCooldown { get; set; } = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// Hur länge en inbjudningslänk går att acceptera (`#193`).
+    ///
+    /// <para>
+    /// Två veckor är avvägt mot verkligheten: en admin bjuder in inför säsongen, en
+    /// förälder hinner se mejlet någon helg, och en länk som blir kvar i en inkorg är död
+    /// långt innan den blir en oavsiktlig bakdörr. Länken är dessutom bunden till adressen
+    /// den skickades till — den som accepterar måste logga in som just den.
+    /// </para>
+    /// </summary>
+    public TimeSpan InvitationLifetime { get; set; } = TimeSpan.FromDays(14);
+
+    /// <summary>
+    /// Appens egen adress, för absoluta länkar i utgående mejl (`#193`).
+    ///
+    /// <para>
+    /// Deep-länkar i appen är annars relativa (§KM.11, en enda origin), men ett mejl behöver
+    /// en klickbar absolut URL. Värdet är Vercel-originet i drift och sätts där som
+    /// miljövariabel; standardvärdet duger bara lokalt. Ingen hemlighet — bara var appen bor.
+    /// </para>
+    /// </summary>
+    [Required]
+    public string AppBaseUrl { get; set; } = "http://localhost:5173";
 }

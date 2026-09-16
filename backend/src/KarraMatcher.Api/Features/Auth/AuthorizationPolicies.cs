@@ -55,6 +55,17 @@ public static class AuthorizationPolicies
     /// </summary>
     public const string CoachOfTeam = "tranare-for-laget";
 
+    /// <summary>
+    /// Admin för <em>den trupp adressen gäller</em>, eller superadmin (v2, `#193`).
+    ///
+    /// <para>
+    /// Som <see cref="CoachOfTeam"/> fast för en trupp: anspråket <c>admin-trupp</c> bär
+    /// truppens id, och routen måste bära samma id — en admin för en trupp når inte en
+    /// annans genom att byta id i kroppen, för det finns inget id i kroppen att byta.
+    /// </para>
+    /// </summary>
+    public const string AdminOfTrupp = "admin-for-truppen";
+
     /// <summary>Medlem av laget i adressen — admin, tränare eller vårdnadshavare (v2, §KM.3).</summary>
     public const string MemberOfTeam = "medlem-av-laget";
 
@@ -80,6 +91,10 @@ public static class AuthorizationPolicies
         options.AddPolicy(CoachOfTeam, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new CoachOfTeamRequirement()));
+
+        options.AddPolicy(AdminOfTrupp, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new AdminOfTruppRequirement()));
 
         options.AddPolicy(MemberOfTeam, policy => policy
             .RequireAuthenticatedUser()

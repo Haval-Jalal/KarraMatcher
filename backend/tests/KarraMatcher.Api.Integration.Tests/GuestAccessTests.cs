@@ -209,6 +209,14 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "api/v1/auth/logout",
 
             /*
+             * Inbjudningens forhandsvisning (#193). En inbjuden foralder ska kunna se vart
+             * lanken leder innan hen loggar in -- token i handen ar det som slapper in, och
+             * svaret bar bara truppens namn och adressen inbjudan galler. Sjalva accepten
+             * kraver daremot inloggning (den ar [Authorize]).
+             */
+            "api/v1/invitations/{token}",
+
+            /*
              * Kvallspaminnelsens jobb (#64). Anroparen ar Vercels cron, inte en manniska --
              * det finns ingen session att krava. Skrivningen skyddas av en delad hemlighet i
              * stallet, kontrollerad i JobsController med konstant tid.
