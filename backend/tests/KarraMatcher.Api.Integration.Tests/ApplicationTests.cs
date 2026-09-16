@@ -292,7 +292,7 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
         using var client = factory.CreateClient(ClientOptions);
         var (csrf, cookie) = await GetCsrfAsync(client, token);
 
-        var request = new HttpRequestMessage(method, path);
+        using var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("X-CSRF-TOKEN", csrf);
         request.Headers.Add("Cookie", cookie);
@@ -303,7 +303,7 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
     private static async Task<(string Token, string Cookie)> GetCsrfAsync(
         HttpClient client, string accessToken)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/csrf");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/csrf");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await client.SendAsync(request, CancellationToken.None);

@@ -27,8 +27,9 @@ public sealed class InvitationsController(
     IQueryDispatcher queries,
     ICommandDispatcher commands) : ControllerBase
 {
-    /// <summary>Vad inbjudan leder till, för landningssidan. Anonym.</summary>
+    /// <summary>Vad inbjudan leder till, för landningssidan. Avsiktligt anonym (§KM.3, allow-listad).</summary>
     [HttpGet("{token}")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<InvitationPreviewDto>> Preview(

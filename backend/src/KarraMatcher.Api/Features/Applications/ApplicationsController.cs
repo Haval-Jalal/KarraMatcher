@@ -25,8 +25,9 @@ public sealed class ApplicationsController(
     IQueryDispatcher queries,
     ICommandDispatcher commands) : AdminControllerBase
 {
-    /// <summary>Vilken trupp länken leder till. Anonym.</summary>
+    /// <summary>Vilken trupp länken leder till. Avsiktligt anonym (§KM.3, allow-listad).</summary>
     [HttpGet("apply-info")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApplyInfoDto>> ApplyInfo(
