@@ -57,6 +57,9 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<Domain.Invitations.Invitation> Invitations => Set<Domain.Invitations.Invitation>();
 
+    public DbSet<Domain.Applications.MembershipApplication> MembershipApplications =>
+        Set<Domain.Applications.MembershipApplication>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
