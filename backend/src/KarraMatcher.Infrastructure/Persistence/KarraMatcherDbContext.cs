@@ -4,6 +4,7 @@ using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 
@@ -14,9 +15,15 @@ namespace KarraMatcher.Infrastructure.Persistence;
 public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext> options)
     : DbContext(options)
 {
+    public DbSet<Sport> Sports => Set<Sport>();
+
     public DbSet<Club> Clubs => Set<Club>();
 
     public DbSet<AgeGroup> AgeGroups => Set<AgeGroup>();
+
+    public DbSet<Child> Children => Set<Child>();
+
+    public DbSet<Guardianship> Guardianships => Set<Guardianship>();
 
     public DbSet<Team> Teams => Set<Team>();
 

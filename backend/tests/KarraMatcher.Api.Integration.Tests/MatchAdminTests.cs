@@ -125,7 +125,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
         Guid actorId,
         object? payload = null)
     {
-        var token = TokenFor(factory.Services, actorId, new AccountRoles(false, [coachOf]));
+        var token = TokenFor(factory.Services, actorId, new AccountRoles(false, [], [coachOf]));
 
         using var client = factory.CreateClient(ClientOptions);
         var (csrf, cookie) = await GetCsrfAsync(client, token);

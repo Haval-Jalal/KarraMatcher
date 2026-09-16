@@ -100,7 +100,7 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, coachOf)).Token;
+        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [], coachOf)).Token;
     }
 
     private static async Task<(string Token, string Cookie)> CsrfAsync(HttpClient client, string token)

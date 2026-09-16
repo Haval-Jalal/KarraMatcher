@@ -121,7 +121,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [slug])).Token;
+        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [], [slug])).Token;
     }
 
     private static async Task SignAsync(HttpClient client, HttpRequestMessage request, string token)

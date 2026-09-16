@@ -118,7 +118,7 @@ public sealed class CarpoolRequestTests(KarraMatcherApiFactory factory)
         using var scope = services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "foralder@example.com", new AccountRoles(false, [])).Token;
+        return issuer.Issue(accountId, "foralder@example.com", new AccountRoles(false, [], [])).Token;
     }
 
     private static async Task<(string Token, string Cookie)> GetCsrfAsync(

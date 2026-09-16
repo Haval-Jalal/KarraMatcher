@@ -26,17 +26,30 @@ internal sealed class TeamRoleConfiguration : IEntityTypeConfiguration<TeamRole>
             .HasForeignKey(r => r.TeamId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Samma roll for samma konto och lag ska bara kunna finnas en gang.
-        builder.HasIndex(r => new { r.AccountId, r.TeamId, r.Role }).IsUnique();
+        // Truppen på samma sätt (v2): en admin-roll pekar på en trupp.
+        builder.HasOne(r => r.AgeGroup)
+            .WithMany()
+            .HasForeignKey(r => r.AgeGroupId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Samma roll for samma konto och scope ska bara kunna finnas en gang.
+        builder.HasIndex(r => new { r.AccountId, r.TeamId, r.AgeGroupId, r.Role }).IsUnique();
 
         /*
-         * Villkoret i databasen och inte bara i koden: en tranare utan lag skulle bli en
-         * tranare for alla lag, och en admin med ett lag skulle se ut att vara begransad
-         * utan att vara det. Bada ar tysta behorighetsfel, och bada ar lattare att skriva
-         * av misstag an att upptacka.
+         * Villkoret i databasen och inte bara i koden (v2): rollens scope maste stamma med
+         * dess sort. En tranare utan lag skulle bli tranare for alla, en admin utan trupp en
+         * global admin, en superadmin med scope en begransad superadmin -- alla tysta
+         * behorighetsfel, lattare att skriva av misstag an att upptacka.
+         *   Coach(1)      -> lag satt, trupp tom
+         *   Admin(2)      -> trupp satt, lag tom
+         *   SuperAdmin(3) -> bada tomma (global)
          */
         builder.ToTable(table => table.HasCheckConstraint(
-            "CK_TeamRoles_LagKravsForTranare",
-            """("Role" = 1 AND "TeamId" IS NOT NULL) OR ("Role" = 2 AND "TeamId" IS NULL)"""));
+            "CK_TeamRoles_ScopePassarRollen",
+            """
+            ("Role" = 1 AND "TeamId" IS NOT NULL AND "AgeGroupId" IS NULL)
+            OR ("Role" = 2 AND "AgeGroupId" IS NOT NULL AND "TeamId" IS NULL)
+            OR ("Role" = 3 AND "TeamId" IS NULL AND "AgeGroupId" IS NULL)
+            """));
     }
 }

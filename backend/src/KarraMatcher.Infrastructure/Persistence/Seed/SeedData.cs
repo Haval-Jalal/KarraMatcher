@@ -6,6 +6,8 @@ namespace KarraMatcher.Infrastructure.Persistence.Seed;
 /// </summary>
 internal static class SeedData
 {
+    public const string SportName = "Fotboll";
+    public const string SportSlug = "fotboll";
     public const string ClubName = "Kärra";
     public const string ClubSlug = "karra";
     public const string AgeGroupName = "P2016";
