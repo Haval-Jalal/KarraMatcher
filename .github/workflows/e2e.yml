@@ -67,6 +67,9 @@ jobs:
           Database__SeedOnStartup: "true"
           Testing__Enabled: "true"
           Auth__SigningKey: e2e-testnyckel-0123456789-0123456789-0123456789
+          # Ingen omsändnings-cooldown i test: varje inloggning (samma konto loggar in
+          # flera gånger i samåkningsflödet) ska alltid få en färsk kod direkt.
+          Auth__LoginCodeResendCooldown: "00:00:00"
         run: |
           dotnet run --project src/KarraMatcher.Api --configuration Release --no-build --no-restore > backend.log 2>&1 &
           echo "startar backend"
