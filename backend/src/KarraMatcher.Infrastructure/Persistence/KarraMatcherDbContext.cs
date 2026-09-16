@@ -55,6 +55,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Domain.Push.NotificationPreference> NotificationPreferences =>
         Set<Domain.Push.NotificationPreference>();
 
+    public DbSet<Domain.Invitations.Invitation> Invitations => Set<Domain.Invitations.Invitation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

@@ -59,6 +59,9 @@ public static class DependencyInjection
         services.AddScoped<Features.Administration.LagAdminService>();
         services.AddScoped<Features.Administration.AdminRoleService>();
 
+        // Inbjudningar (§KM.3, #193).
+        services.AddScoped<Features.Invitations.InvitationService>();
+
         return services;
     }
 

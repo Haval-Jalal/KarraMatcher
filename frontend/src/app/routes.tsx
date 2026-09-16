@@ -7,6 +7,7 @@ import { AccountPage, LoginPage } from '@/features/auth'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
+import { AdminPage, InvitationLandingPage } from '@/features/invitations'
 import { StartPage } from '@/features/start/StartPage'
 import { SuperAdminPage } from '@/features/superadmin'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
@@ -156,6 +157,36 @@ const superadminRoute = createRoute({
 })
 
 /**
+ * Trupp-adminens vy (§KM.3, `#193`). Kräver inloggning; att man är admin för en trupp avgör
+ * servern och vyn (den göms för andra).
+ */
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  beforeLoad: async ({ location }) => {
+    if (getAccessToken() === null && hasSessionHint()) {
+      await renewSession()
+    }
+
+    if (getAccessToken() === null) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
+    }
+  },
+  component: AdminPage,
+})
+
+/**
+ * Inbjudningens landningssida (§KM.3, `#193`). Anonym — en inbjuden förälder ska kunna se
+ * vart länken leder innan hen loggar in. Accepten kräver inloggning, det sköter sidan själv.
+ */
+const invitationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/inbjudan/$token',
+  component: InvitationLandingPage,
+})
+
+/**
  * Spelarkortet.
  *
  * Ingen inloggning: kortet ligger på enheten och kräver varken konto eller server
@@ -201,6 +232,8 @@ export const routeTree = rootRoute.addChildren([
   accountRoute,
   coachRoute,
   superadminRoute,
+  adminRoute,
+  invitationRoute,
   playerCardRoute,
   playerCardChildRoute,
   privacyRoute,

@@ -37,6 +37,10 @@ public interface IAdministrationRepository
     // ---- Trupp (AgeGroup) ------------------------------------------------------------
     public Task<IReadOnlyList<AgeGroup>> GetTrupperAsync(Guid? clubId, CancellationToken cancellationToken);
 
+    /// <summary>Trupperna en admin faktiskt sköter (`#193`) — alla för en superadmin.</summary>
+    public Task<IReadOnlyList<AgeGroup>> GetTrupperForAdminAsync(
+        Guid accountId, bool isSuperAdmin, CancellationToken cancellationToken);
+
     public Task<AgeGroup?> FindTruppAsync(Guid id, CancellationToken cancellationToken);
 
     public Task<bool> TruppExistsAsync(Guid id, CancellationToken cancellationToken);

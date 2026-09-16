@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { InvitationsPanel } from '@/features/invitations'
+
 import type { Trupp } from './superadminApi'
 import { superadminError } from './superadminError'
 import { useAdmins, useCreateLag, useGrantAdmin, useLag, useRevokeAdmin } from './useSuperadmin'
@@ -44,6 +46,7 @@ export function TruppWorkspace({ trupper }: { trupper: Trupp[] }) {
         <>
           <LagPanel truppId={truppId} />
           <AdminPanel truppId={truppId} />
+          <InvitationsPanel truppId={truppId} />
         </>
       )}
     </section>

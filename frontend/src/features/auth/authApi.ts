@@ -128,11 +128,28 @@ export function isSuperAdminFromToken(token: string): boolean {
   return claimsFromToken(token)?.superadmin === 'true'
 }
 
+/**
+ * Trupperna den inloggade är admin för, ur token (`#193`).
+ *
+ * Styr bara vad som visas — admin-vyn och dess länk. Servern (policyn <c>AdminOfTrupp</c>)
+ * avgör vad som faktiskt går att göra i en trupp.
+ */
+export function adminTruppFromToken(token: string): string[] {
+  const claim = claimsFromToken(token)?.['admin-trupp']
+
+  if (typeof claim === 'string') {
+    return [claim]
+  }
+
+  return Array.isArray(claim) ? claim.filter((id) => typeof id === 'string') : []
+}
+
 interface TokenClaims {
   email?: string
   coach?: string | string[]
   role?: unknown
   superadmin?: unknown
+  'admin-trupp'?: unknown
   [key: string]: unknown
 }
 

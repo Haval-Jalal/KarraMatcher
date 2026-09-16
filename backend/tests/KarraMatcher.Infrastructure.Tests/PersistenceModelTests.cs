@@ -118,8 +118,9 @@ public class PersistenceModelTests
         Assert.Equal(
             [
                 "Account", "AgeGroup", "AttendanceCall", "AttendanceResponse", "AuditEntry",
-                "CarpoolOffer", "CarpoolRequest", "Child", "Club", "Guardianship", "LoginCode",
-                "Match", "NotificationPreference", "PushSubscription", "RefreshToken", "Sport",
+                "CarpoolOffer", "CarpoolRequest", "Child", "Club", "Guardianship", "Invitation",
+                "LoginCode", "Match", "NotificationPreference", "PushSubscription", "RefreshToken",
+                "Sport",
                 "Team", "TeamRole", "Venue",
             ],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());

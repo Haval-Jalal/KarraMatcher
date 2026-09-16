@@ -2041,6 +2041,19 @@ a.match-card:focus-visible .match-card__opponent {
   font-size: var(--text-sm);
 }
 
+.admin-muted {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.state--ok {
+  border-color: var(--focus);
+}
+
+.state--ok code {
+  word-break: break-all;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
