@@ -9,19 +9,20 @@ import { API, PARENT_A_EMAIL, PARENT_B_EMAIL, e2eMatchId, login } from './helper
  */
 
 /**
- * Monterar matchsidan på nytt utan omladdning: klicka tillbaka-länken (klientsidigt) och gå
- * sedan bakåt i historiken (popstate, också klientsidigt). Åtkomst-token lever kvar i minnet
- * hela vägen, så samåkningens förfrågnings-lista hämtas om — det är så en part ser vad den
- * andra just gjort, utan en omladdning som skulle tappa inloggningen på den publika sidan.
+ * Monterar matchsidan på nytt utan omladdning: navigera klientsidigt till lagets schema via
+ * tillbaka-länken och sedan tillbaka in i matchen via dess länk. Båda stegen är länkklick, så
+ * åtkomst-token lever kvar i minnet — och eftersom routen lämnas och monteras på nytt hämtas
+ * samåkningen om *inloggad* (den publika erbjudande-listan saknar ägarinfo tills dess). Det är
+ * så en part ser vad den andra just gjort, utan en omladdning som tappar sessionen.
  */
-async function remountMatch(page: Page): Promise<void> {
+async function remountMatch(page: Page, matchId: string): Promise<void> {
   await page
     .getByRole('link', { name: /P2016 Gul/ })
     .first()
     .click()
   await page.waitForURL('**/lag/gul')
-  await page.goBack()
-  await page.waitForURL('**/match/**')
+  await page.locator(`a[href="/match/${matchId}"]`).first().click()
+  await page.waitForURL(`**/match/${matchId}`)
 }
 
 test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
@@ -37,7 +38,8 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   const driver = await driverContext.newPage()
   const requester = await requesterContext.newPage()
 
-  const matchPath = `/match/${await e2eMatchId(driver)}`
+  const matchId = await e2eMatchId(driver)
+  const matchPath = `/match/${matchId}`
   const departurePlace = `Kärra centrum ${Date.now()}`
 
   // ---- Föraren lägger upp en skjuts ----------------------------------------------------
@@ -66,7 +68,7 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   expect(requestResponse.status()).toBe(201)
 
   // ---- Föraren ser förfrågan och nekar med ett meddelande (ett tyst nej får inte ske) ---
-  await remountMatch(driver)
+  await remountMatch(driver, matchId)
   await driver.getByRole('button', { name: 'Neka' }).click()
   await driver.getByLabel('Meddelande').fill('Ändrade planer, kan tyvärr inte köra.')
   const [denyResponse] = await Promise.all([
@@ -76,7 +78,7 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   expect(denyResponse.status()).toBe(204)
 
   // ---- Den som frågade ser svaret ------------------------------------------------------
-  await remountMatch(requester)
+  await remountMatch(requester, matchId)
   await expect(requester.getByText(/Förarens svar/)).toBeVisible()
 
   await driverContext.close()
