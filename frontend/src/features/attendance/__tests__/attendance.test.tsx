@@ -207,7 +207,10 @@ describe('tränaren kallar', () => {
     renderRoute('/match/m1')
 
     expect(await screen.findByRole('heading', { name: 'Svar hittills' })).toBeInTheDocument()
-    expect(screen.getByText(/5/)).toBeInTheDocument()
+    // Exakt "5", inte /5/: matchens relativa dagsetikett ("Om 95 dagar") innehåller också
+    // en femma, och det talet ändras med dagens datum. En delsträngsmatchning blir därför
+    // en tidsinställd bomb — den föll den dag matchen råkade ligga 95 dagar bort.
+    expect(screen.getByText('5', { exact: true })).toBeInTheDocument()
     expect(screen.getByText(/Anna Berg/)).toBeInTheDocument()
     expect(screen.getByText(/Bengt Ek/)).toBeInTheDocument()
   })

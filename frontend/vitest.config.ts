@@ -10,6 +10,13 @@ export default defineConfig({
   },
   test: {
     /*
+     * Bara enhetstesterna under src/. e2e/ innehåller Playwright-specar som körs av
+     * Playwright, inte Vitest — utan den här gränsen plockar Vitest upp dem (de matchar
+     * *.spec.ts) och faller på "test() called here".
+     */
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+
+    /*
      * Utan detta ersätter Vitest CSS-importer med tomma strängar, och kontrasttestet läser
      * en tom stilmall — alltså går grönt utan att ha mätt något. Med css: true når `?raw`
      * den riktiga källan.
