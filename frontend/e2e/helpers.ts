@@ -8,9 +8,6 @@ export const COACH_EMAIL = 'coach-e2e@test.local'
 export const PARENT_A_EMAIL = 'parent-a-e2e@test.local'
 export const PARENT_B_EMAIL = 'parent-b-e2e@test.local'
 
-export const E2E_TEAM_SLUG = 'gul'
-export const E2E_OPPONENT = 'E2E FC'
-
 /** Tömmer brevlådan för en adress, så nästa kod som dyker upp garanterat är den nya. */
 async function clearLoginCode(page: Page, email: string): Promise<void> {
   await page.request.delete(`${API}/api/v1/testing/code?email=${encodeURIComponent(email)}`)
@@ -61,17 +58,17 @@ export async function login(page: Page, email: string, next: string): Promise<vo
   await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe(next)
 }
 
-/** Id:t på den framtida match prepare skapade (motståndare "E2E FC" i lag gul). */
+/**
+ * Id:t på den framtida match prepare skapade (motståndare "E2E FC" i lag gul).
+ *
+ * Läses ur `POST /api/v1/testing/prepare` (idempotent, returnerar `matchId`) i stället för
+ * ur schemat: i den stängda appen (§KM.3, `#191`) kräver `GET /teams/{slug}/matches` nu
+ * inloggning + medlemskap, och id:t ska gå att hämta utan att först logga in.
+ */
 export async function e2eMatchId(page: Page): Promise<string> {
-  const response = await page.request.get(`${API}/api/v1/teams/${E2E_TEAM_SLUG}/matches`)
+  const response = await page.request.post(`${API}/api/v1/testing/prepare`)
   expect(response.ok()).toBeTruthy()
 
-  const body = (await response.json()) as { matches: { id: string; opponent: string }[] }
-  const match = body.matches.find((m) => m.opponent === E2E_OPPONENT)
-
-  if (!match) {
-    throw new Error('E2E-matchen saknas — kördes prepare?')
-  }
-
-  return match.id
+  const body = (await response.json()) as { matchId: string }
+  return body.matchId
 }

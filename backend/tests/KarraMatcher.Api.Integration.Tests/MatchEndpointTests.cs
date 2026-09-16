@@ -10,8 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 namespace KarraMatcher.Api.Integration.Tests;
 
 /// <summary>
-/// Den publika endpointen för en enskild match. Matchdetaljsidan behöver mer än listan
-/// visar: adressen till kartlänken och koordinaterna till väderprognosen.
+/// Endpointen för en enskild match. <b>Stängd i v2 (§KM.3, `#191`):</b> bara medlemmar av
+/// matchens lag ser den — testet använder en superadmin-klient som ser allt. En gäst nekas.
+/// Matchdetaljsidan behöver mer än listan visar: adressen till kartlänken och koordinaterna
+/// till väderprognosen.
 /// </summary>
 public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
 {
@@ -99,9 +101,20 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     }
 
     [Fact]
-    public async Task GetMatch_UtanInloggning_Svarar200()
+    public async Task GetMatch_UtanInloggning_Svarar401()
     {
+        // Stängd app (§KM.3): en gäst når inte längre en enskild match.
         using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMatch_SomMedlem_Svarar200()
+    {
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
 
@@ -111,7 +124,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     [Fact]
     public async Task GetMatch_GerMatchenOchLaget()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
         var json = await ReadJsonAsync(response);
@@ -127,7 +140,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         // Koordinaterna driver väderprognosen och kommer ur vår egen Venue-tabell —
         // aldrig från något anroparen skickat in (SSRF-regeln i CLAUDE.md).
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
         var venue = (await ReadJsonAsync(response)).GetProperty("match").GetProperty("venue");
@@ -139,7 +152,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     [Fact]
     public async Task GetMatch_AvsparkArUtc()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
         var kickoff = (await ReadJsonAsync(response))
@@ -149,24 +162,27 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     }
 
     [Fact]
-    public async Task GetMatch_HarEdgeCache()
+    public async Task GetMatch_ArPrivateNoStore()
     {
-        using var client = _factory.CreateClient();
+        // Stängd app (§KM.3): svaret bär lagets uppgifter och får aldrig hamna på en delad
+        // edge-cache. Den publika edge-cachningen togs bort med `#191`.
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var cacheControl = response.Headers.CacheControl;
 
-        Assert.Contains(
-            "s-maxage=300",
-            response.Headers.CacheControl?.ToString(),
-            StringComparison.Ordinal);
-        Assert.NotNull(response.Headers.ETag);
+        Assert.NotNull(cacheControl);
+        Assert.True(cacheControl.NoStore, "no-store saknas");
+        Assert.True(cacheControl.Private, "private saknas");
+        Assert.Null(cacheControl.SharedMaxAge);
+        Assert.Null(response.Headers.ETag);
     }
 
     [Fact]
     public async Task GetMatch_OkantId_Ger404MedProblemDetails()
     {
         // En gammal kalenderpost från förra säsongen ska ge ett begripligt svar.
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync(
             $"/api/v1/matches/{Guid.NewGuid()}", CancellationToken.None);
@@ -183,7 +199,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         // Routningsvillkoret {id:guid} avvisar skräp innan något körs. Det blir 404 och
         // inte 500 — en felformad länk är inte ett serverfel.
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{id}", CancellationToken.None);
 
@@ -195,11 +211,11 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         // §KM.1 och §KM.3. Matchen i testdatan har en notis som innehåller ett barns namn
         // och en hälsouppgift — precis det en tränare kan råka skriva. Den får inte finnas
-        // i ett publikt, edge-cachat svar.
+        // i svaret, inte ens för en inloggad medlem.
         //
         // Fältuppsättningen låses samtidigt: dyker ett nytt fält upp måste någon ta
         // ställning till det här, inte upptäcka det i produktion.
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
         var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
@@ -214,64 +230,5 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         Assert.Equal(
             ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "venue"],
             matchFields);
-    }
-
-    // ---- Kalenderfilen för en enskild match (#24) -------------------------------------
-
-    [Fact]
-    public async Task GetMatchCalendar_GerEnIcsFil()
-    {
-        using var client = _factory.CreateClient();
-
-        var response = await client.GetAsync(
-            $"/calendar/match/{_matchId}.ics", CancellationToken.None);
-        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("text/calendar", response.Content.Headers.ContentType?.MediaType);
-        Assert.StartsWith("BEGIN:VCALENDAR", body, StringComparison.Ordinal);
-        Assert.Contains("END:VCALENDAR", body, StringComparison.Ordinal);
-        Assert.Contains("Detaljmotstandaren", body, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task GetMatchCalendar_LaddasNerMedLasbartFilnamn()
-    {
-        // attachment och inte inline: filen ska hamna i nedladdningar och öppnas av
-        // kalenderappen, inte visas som text i webbläsaren.
-        using var client = _factory.CreateClient();
-
-        var response = await client.GetAsync(
-            $"/calendar/match/{_matchId}.ics", CancellationToken.None);
-        var disposition = response.Content.Headers.ContentDisposition;
-
-        Assert.Equal("attachment", disposition?.DispositionType);
-        Assert.Equal("karra-detaljlaget-2026-09-20.ics", disposition?.FileNameStar ?? disposition?.FileName);
-    }
-
-    [Fact]
-    public async Task GetMatchCalendar_InnehallerIngenNotis()
-    {
-        // Samma krav som på API-svaret: notisen är tränarens fritext (§KM.1), och en
-        // kalenderfil ligger kvar i en telefon lika länge som en prenumeration.
-        using var client = _factory.CreateClient();
-
-        var response = await client.GetAsync(
-            $"/calendar/match/{_matchId}.ics", CancellationToken.None);
-        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
-
-        Assert.DoesNotContain("Kalle", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("sjuk", body, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task GetMatchCalendar_OkantId_Ger404()
-    {
-        using var client = _factory.CreateClient();
-
-        var response = await client.GetAsync(
-            $"/calendar/match/{Guid.NewGuid()}.ics", CancellationToken.None);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

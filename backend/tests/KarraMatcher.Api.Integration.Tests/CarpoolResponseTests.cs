@@ -7,6 +7,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -102,12 +103,36 @@ public sealed class CarpoolResponseTests(KarraMatcherApiFactory factory)
             UpdatedUtc = Kickoff,
         };
 
+        // Alla tre ar medlemmar av laget (v2, §KM.3): vardnadshavare till varsitt barn i det.
+        // Utan medlemskap kan de inte se matchens samakningslista.
+        var children = new[] { driver, asker, third }
+            .Select((_, i) => new Child
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Barn",
+                LastInitial = ((char)('A' + i)).ToString(),
+                AgeGroupId = ageGroup.Id,
+                TeamId = team.Id,
+                CreatedUtc = Kickoff,
+            })
+            .ToArray();
+        var guardianships = new[] { driver, asker, third }
+            .Select((account, i) => new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = account.Id,
+                ChildId = children[i].Id,
+                GrantedUtc = Kickoff,
+            });
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Matches.Add(match);
         context.Accounts.AddRange(driver, asker, third);
+        context.Children.AddRange(children);
+        context.Guardianships.AddRange(guardianships);
         context.CarpoolOffers.Add(offer);
 
         await context.SaveChangesAsync(CancellationToken.None);
@@ -454,9 +479,11 @@ public sealed class CarpoolResponseTests(KarraMatcherApiFactory factory)
 
         (await AcceptAsync(fixture, requestId, fixture.DriverId)).EnsureSuccessStatusCode();
 
-        using var client = factory.CreateClient();
-        var listed = await client.GetFromJsonAsync<JsonElement>(
-            $"/api/v1/matches/{fixture.MatchId}/carpool/offers", CancellationToken.None);
+        var response = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
+            fixture.AskerId);
+        var listed = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
 
         // Kvar i listan, inte bortfiltrerat -- annars kan ingen fraga om en avhoppad plats.
         Assert.Equal(1, listed.GetArrayLength());
@@ -473,9 +500,11 @@ public sealed class CarpoolResponseTests(KarraMatcherApiFactory factory)
 
         await AskedAsync(fixture, fixture.AskerId);
 
-        using var client = factory.CreateClient();
-        var listed = await client.GetFromJsonAsync<JsonElement>(
-            $"/api/v1/matches/{fixture.MatchId}/carpool/offers", CancellationToken.None);
+        var response = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
+            fixture.AskerId);
+        var listed = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
 
         Assert.False(listed[0].GetProperty("isFull").GetBoolean());
         Assert.Equal(1, listed[0].GetProperty("seatsLeft").GetInt32());

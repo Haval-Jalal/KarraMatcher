@@ -6,6 +6,7 @@ using System.Text.Json;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 using KarraMatcher.Infrastructure.Security;
@@ -19,11 +20,11 @@ namespace KarraMatcher.Api.Integration.Tests;
 /// Notisprenumerationer (`#60`, §KM.3, §KM.10).
 ///
 /// <para>
-/// Två saker prövas. Att prenumerationen fungerar <b>utan konto</b> — kravet är inte
-/// bekvämlighet utan räckvidd: kräver notiser en inloggning når de en bråkdel av
-/// föräldrarna, och att lördagens match är inställd ska nå alla. Och att push-adressen
-/// aldrig kommer tillbaka i ett svar; den identifierar en enskild enhet lika bra som ett
-/// telefonnummer.
+/// <b>Stängd i v2 (`#191`):</b> att prenumerera kräver nu ett konto som är <em>medlem</em>
+/// av laget — man ser lagets information, inklusive notiser, först som medlem. En gäst och
+/// en inloggad utomstående nekas. Utöver det prövas att prenumerationen knyts till kontot
+/// (#63) och att push-adressen aldrig kommer tillbaka i ett svar; den identifierar en
+/// enskild enhet lika bra som ett telefonnummer.
 /// </para>
 /// </summary>
 public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
@@ -81,12 +82,16 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
                 CancellationToken.None);
     }
 
-    private async Task<(string Slug, Guid AccountId)> SeedTeamWithAccountAsync(string suffix)
+    /// <summary>
+    /// Gör ett nytt konto till <b>vårdnadshavare</b> för ett barn i laget — alltså en riktig
+    /// medlem (§KM.3). Barnet lagras minimalt: förnamn och begynnelsebokstav (§KM.1).
+    /// </summary>
+    private async Task<Guid> SeedGuardianAsync(string slug, string suffix)
     {
-        var slug = await SeedTeamAsync(suffix);
-
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var team = await context.Teams.FirstAsync(t => t.Slug == slug, CancellationToken.None);
 
         var account = new Account
         {
@@ -94,10 +99,37 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
             Email = $"foralder-{suffix}@example.com",
             CreatedUtc = DateTime.UtcNow,
         };
+        var child = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = team.AgeGroupId,
+            TeamId = team.Id,
+            CreatedUtc = DateTime.UtcNow,
+        };
+
         context.Accounts.Add(account);
+        context.Children.Add(child);
+        context.Guardianships.Add(new Guardianship
+        {
+            Id = Guid.NewGuid(),
+            AccountId = account.Id,
+            ChildId = child.Id,
+            GrantedUtc = DateTime.UtcNow,
+        });
+
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return (slug, account.Id);
+        return account.Id;
+    }
+
+    /// <summary>Ett lag plus en vårdnadshavare i det. Returnerar slug och kontots id.</summary>
+    private async Task<(string Slug, Guid AccountId)> SeedTeamWithMemberAsync(string suffix)
+    {
+        var slug = await SeedTeamAsync(suffix);
+        var accountId = await SeedGuardianAsync(slug, suffix);
+        return (slug, accountId);
     }
 
     private string TokenFor(Guid accountId)
@@ -106,6 +138,15 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
         return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [], [])).Token;
+    }
+
+    /// <summary>En klient inloggad som ett visst konto (Bearer). Push kräver ingen CSRF.</summary>
+    private HttpClient MemberClient(Guid accountId)
+    {
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", TokenFor(accountId));
+        return client;
     }
 
     private async Task<Guid?> AccountIdOfAsync(string slug, string endpoint)
@@ -126,57 +167,64 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     // ---- Kontokoppling (#63) ----------------------------------------------------------
 
     [Fact]
-    public async Task Prenumeration_MedInloggning_KnyterKontot()
+    public async Task Prenumeration_SomMedlem_KnyterKontot()
     {
-        // #63: en inloggad webblasares prenumeration knyts till kontot, sa samakningsnotiser
+        // #63: en inloggad medlems prenumeration knyts till kontot, sa samakningsnotiser
         // kan na just den foraldern. Adressen kommer aldrig tillbaka -- kopplingen kollas i DB.
-        var (slug, accountId) = await SeedTeamWithAccountAsync("linked");
+        var (slug, accountId) = await SeedTeamWithMemberAsync("linked");
 
-        using var client = factory.CreateClient();
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{slug}/push")
-        {
-            Content = JsonContent.Create(Subscription()),
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenFor(accountId));
-
-        var response = await client.SendAsync(request, CancellationToken.None);
+        using var client = MemberClient(accountId);
+        var response = await client.PostAsJsonAsync(
+            $"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal(accountId, await AccountIdOfAsync(slug, Endpoint));
     }
 
-    [Fact]
-    public async Task Prenumeration_SomGast_HarIngenKontokoppling()
-    {
-        // En gast prenumererar precis som forr -- ingen koppling, och far anda lagets notiser.
-        var slug = await SeedTeamAsync("guest-link");
-
-        using var client = factory.CreateClient();
-        var response = await client.PostAsJsonAsync(
-            $"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
-
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Null(await AccountIdOfAsync(slug, Endpoint));
-    }
-
-    // ---- Utan konto ------------------------------------------------------------------
+    // ---- Stangd for gaster och utomstaende (§KM.3, #191) -----------------------------
 
     [Fact]
-    public async Task Prenumeration_UtanInloggning_Fungerar()
+    public async Task Prenumeration_UtanInloggning_Nekas()
     {
-        /*
-         * Karnan i #60. Kravet ar inte bekvamlighet utan rackvidd -- det har ar den enda
-         * skrivningen i appen som med avsikt star oppen (§KM.3), och undantaget ar infort
-         * i GuestAccessTests med sitt skal.
-         */
+        // Stangd app: en gast kan inte langre prenumerera.
         var slug = await SeedTeamAsync("anon");
 
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync(
-            $"/api/v1/teams/{slug}/push",
-            Subscription(),
-            CancellationToken.None);
+            $"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, await CountAsync(slug));
+    }
+
+    [Fact]
+    public async Task Prenumeration_SomIckeMedlem_Nekas()
+    {
+        // Objektnivaauktorisering: en inloggad foralder som inte ar medlem av just det har
+        // laget nekas (403), inte bara utloggade.
+        var slug = await SeedTeamAsync("utomstaende");
+        var otherTeamSlug = await SeedTeamAsync("annat-lag");
+        var outsiderId = await SeedGuardianAsync(otherTeamSlug, "utomstaende-foralder");
+
+        using var client = MemberClient(outsiderId);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(0, await CountAsync(slug));
+    }
+
+    [Fact]
+    public async Task Prenumeration_SomMedlem_Fungerar()
+    {
+        var (slug, accountId) = await SeedTeamWithMemberAsync("medlem");
+
+        using var client = MemberClient(accountId);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal(1, await CountAsync(slug));
@@ -186,9 +234,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     public async Task Prenumeration_TvaGanger_GerEnRad()
     {
         // En foralder som laddar om sidan ska inte fa tva notiser for samma flyttade match.
-        var slug = await SeedTeamAsync("upprepad");
+        var (slug, accountId) = await SeedTeamWithMemberAsync("upprepad");
 
-        using var client = factory.CreateClient();
+        using var client = MemberClient(accountId);
 
         await client.PostAsJsonAsync($"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
         await client.PostAsJsonAsync($"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
@@ -199,7 +247,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     [Fact]
     public async Task Prenumeration_ForOkantLag_GerFyrahundrafyra()
     {
-        using var client = factory.CreateClient();
+        // Superadmin passerar behorigheten (ser allt), sa vi nar controllerns 404-vag for
+        // ett lag som inte finns -- inte 403.
+        using var client = factory.CreateSuperAdminClient();
 
         var response = await client.PostAsJsonAsync(
             "/api/v1/teams/finns-inte/push",
@@ -217,9 +267,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     {
         // Vardet kommer fran en klient. En relativ eller http-adress ar antingen ett
         // trasigt anrop eller nagon som provar vad servern accepterar.
-        var slug = await SeedTeamAsync($"adress-{endpoint.Length}");
+        var (slug, accountId) = await SeedTeamWithMemberAsync($"adress-{endpoint.Length}");
 
-        using var client = factory.CreateClient();
+        using var client = MemberClient(accountId);
 
         var response = await client.PostAsJsonAsync(
             $"/api/v1/teams/{slug}/push",
@@ -234,9 +284,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     [Fact]
     public async Task Avregistrering_TarBortRaden()
     {
-        var slug = await SeedTeamAsync("bort");
+        var (slug, accountId) = await SeedTeamWithMemberAsync("bort");
 
-        using var client = factory.CreateClient();
+        using var client = MemberClient(accountId);
 
         await client.PostAsJsonAsync($"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
 
@@ -255,9 +305,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     public async Task Avregistrering_AvNagotSomInteFinns_GerSammaSvar()
     {
         // Ett annat svar hade avslojat om en adress ar kand hos oss.
-        var slug = await SeedTeamAsync("okand-bort");
+        var (slug, accountId) = await SeedTeamWithMemberAsync("okand-bort");
 
-        using var client = factory.CreateClient();
+        using var client = MemberClient(accountId);
 
         var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/teams/{slug}/push")
         {
@@ -279,9 +329,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
          * telefonnummer. Att den skickades in av samma klient gor den inte ofarlig att
          * skicka tillbaka -- svaret kan hamna i en proxy-logg eller en felrapport.
          */
-        var slug = await SeedTeamAsync("tystnad");
+        var (slug, accountId) = await SeedTeamWithMemberAsync("tystnad");
 
-        using var client = factory.CreateClient();
+        using var client = MemberClient(accountId);
 
         var response = await client.PostAsJsonAsync(
             $"/api/v1/teams/{slug}/push",
@@ -296,9 +346,9 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     [Fact]
     public async Task Adressen_HamnarAldrigIAuditloggen()
     {
-        var slug = await SeedTeamAsync("audit");
+        var (slug, accountId) = await SeedTeamWithMemberAsync("audit");
 
-        using var client = factory.CreateClient();
+        using var client = MemberClient(accountId);
 
         await client.PostAsJsonAsync($"/api/v1/teams/{slug}/push", Subscription(), CancellationToken.None);
 
@@ -321,14 +371,25 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     // ---- Nyckeln -----------------------------------------------------------------------
 
     [Fact]
+    public async Task Nyckel_UtanInloggning_Nekas()
+    {
+        // Stangd app (§KM.3): aven VAPID-nyckeln ligger bakom inloggning i v2.
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/push/key", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PublikNyckel_UtanKonfiguration_SagerAttPushArAv()
     {
         /*
          * Testmiljon har inga VAPID-nycklar, och det ar ratt lage att prova: appen ska ga
          * att kora utan push. Svaret ar 404 och en text som sager att resten fungerar --
-         * inte ett femhundrafel som ser ut som att appen ar trasig.
+         * inte ett femhundrafel som ser ut som att appen ar trasig. Kraver inloggning i v2.
          */
-        using var client = factory.CreateClient();
+        using var client = factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/push/key", CancellationToken.None);
 

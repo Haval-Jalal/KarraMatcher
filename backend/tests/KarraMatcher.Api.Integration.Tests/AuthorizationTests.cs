@@ -175,19 +175,20 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    // ---- Gasten ar orord --------------------------------------------------------------
+    // ---- Gasten nekas -----------------------------------------------------------------
 
     [Fact]
-    public async Task Schemat_ArFortfarandeOppetUtanToken()
+    public async Task Schemat_KraverInloggning_UtanToken()
     {
-        // Policyerna får inte ha smugit sig på den publika delen. GuestAccessTests vaktar
-        // detta bredare; den här raden fångar det i samma fil som infört reglerna.
+        // Stängd app i v2 (§KM.3, #191): schemat är inte längre öppet. Utan token är svaret
+        // 401. GuestAccessTests vaktar detta bredare; den här raden fångar det i samma fil
+        // som infört reglerna.
         using var host = CreateHost();
         using var client = host.CreateClient();
 
         var response = await client.GetAsync("/api/v1/teams", CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }
 

@@ -7,6 +7,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -105,12 +106,32 @@ public sealed class AccountNameTests(KarraMatcherApiFactory factory)
             UpdatedUtc = now,
         };
 
+        // Foraren ar medlem av laget (v2, §KM.3): vardnadshavare till ett barn i det. Utan
+        // medlemskap kan hen inte se matchens samakningslista.
+        var child = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = now,
+        };
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Matches.Add(match);
         context.Accounts.Add(driver);
+        context.Children.Add(child);
+        context.Guardianships.Add(new Guardianship
+        {
+            Id = Guid.NewGuid(),
+            AccountId = driver.Id,
+            ChildId = child.Id,
+            GrantedUtc = now,
+        });
         context.CarpoolOffers.Add(offer);
 
         await context.SaveChangesAsync(CancellationToken.None);
@@ -182,21 +203,18 @@ public sealed class AccountNameTests(KarraMatcherApiFactory factory)
     // ---- Namnet nar aldrig en gast ----------------------------------------------------
 
     [Fact]
-    public async Task Erbjudande_ForEnGast_BarInteForarensNamn()
+    public async Task Erbjudande_ForEnGast_Nekas()
     {
         /*
-         * Karnan i #154:s integritetsdel. Erbjudandelistan ar oppen for vem som helst med
-         * lanken (§KM.3) -- att lagga in ett namn dar hade gjort matchsidan till en lista
-         * over vilka foraldrar som finns i laget, lasbar for hela internet.
+         * Karnan i #154:s integritetsdel, skarpt i v2 (§KM.3, #191). Erbjudandelistan var
+         * forr oppen och baregde inget namn; nu ar hela listan stangd, sa foraldrarnas namn
+         * kan aldrig na nagon utanfor laget -- en gast far 401.
          */
         var fixture = await SeedAsync("gast");
 
         var response = await GetAsync($"/api/v1/matches/{fixture.MatchId}/carpool/offers", null);
-        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
 
-        response.EnsureSuccessStatusCode();
-        Assert.DoesNotContain(FirstName, body, StringComparison.Ordinal);
-        Assert.DoesNotContain(LastName, body, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]

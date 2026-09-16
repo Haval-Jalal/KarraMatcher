@@ -1,39 +1,36 @@
 using System.Security.Claims;
 
+using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Carpool;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace KarraMatcher.Api.Features.Carpool;
 
 /// <summary>
-/// Samåkningen som vem som helst får se (§KM.3).
-///
-/// <h3>Skild från skrivningen, inte av prydlighet</h3>
+/// Samåkningens erbjudanden för en match.
 ///
 /// <para>
-/// Samma uppdelning som <c>MatchesController</c> och <c>MatchAdminController</c>: den ena
-/// läser och är öppen, den andra skriver och kräver konto. Att blanda dem i en klass med
-/// <c>[Authorize]</c> plus <c>[AllowAnonymous]</c> hade fungerat vid körning — men då bär
-/// den publika läsningen auktoriseringsmetadata, och gästvakten kan inte längre skilja en
-/// öppen endpoint från en som råkat bli stängd.
+/// <b>Stängd i v2 (§KM.3, `#191`):</b> bara medlemmar av matchens lag ser erbjudandena —
+/// det finns inte längre någon publik gäst. Föräldrarnas fritext (förarens notis) syns
+/// därmed aldrig utanför laget.
 /// </para>
 ///
 /// <h3>Svaret får inte hamna i en delad cache</h3>
 ///
 /// <para>
-/// Listan innehåller olika mycket beroende på vem som frågar: en inloggad ser förarens
-/// notis, en gäst gör det inte. Endpointen är därför medvetet <b>inte</b> märkt med
-/// <c>WithEdgeCache</c> och får då <c>private</c> som allt annat. Kallstarten på Render får
-/// kosta här — alternativet är att en förälders fritext levereras till någon annan från
-/// Vercels edge.
+/// Listan bär föräldrafritext och är per medlem. Som alla svar i den stängda appen får den
+/// <c>private, no-store</c> — den kan aldrig hamna på Vercels delade edge och levereras till
+/// någon annan.
 /// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/matches/{matchId:guid}/carpool")]
 [Produces("application/json")]
+[Authorize(Policy = AuthorizationPolicies.MemberOfMatch)]
 public sealed class CarpoolController(IQueryDispatcher queries) : ControllerBase
 {
     /// <summary>Matchens öppna erbjudanden.</summary>
@@ -42,13 +39,15 @@ public sealed class CarpoolController(IQueryDispatcher queries) : ControllerBase
     /// </remarks>
     [HttpGet("offers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<CarpoolOfferDto>>> List(
         Guid matchId,
         CancellationToken cancellationToken)
     {
         /*
-         * Lasaren far identifiera sig frivilligt. Ar token giltig kommer notisen med, annars
-         * inte -- en gast far alltsa erbjudandet utan fritexten, inte ett avslag.
+         * Lasaren ar alltid en inloggad medlem av matchens lag (v2). ActorId har darfor
+         * ett varde och notisen foljer med -- ingen gast langre.
          */
         var offers = await queries
             .SendAsync(new ListCarpoolOffersQuery(matchId, ActorId()), cancellationToken)

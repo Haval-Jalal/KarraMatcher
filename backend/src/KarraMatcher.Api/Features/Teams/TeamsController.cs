@@ -1,44 +1,62 @@
-using KarraMatcher.Api.Caching;
+using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
+using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Teams;
 using KarraMatcher.Application.Features.Teams.GetTeamMatches;
 using KarraMatcher.Application.Features.Teams.GetTeams;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KarraMatcher.Api.Features.Teams;
 
 /// <summary>
-/// Lagen och deras matcher. Appens mest anropade yta.
+/// Lagen och deras matcher.
 ///
 /// <para>
-/// Publik och oautentiserad (§KM.3 och §KM.0 A4): en förälder som bara vill se matchtiden
-/// ska aldrig mötas av en inloggning. Svaren innehåller därför inga personuppgifter alls
-/// och är cachebara utan att någon användares data blandas in.
+/// <b>Stängd i v2 (§KM.3, `#191`):</b> inloggning räcker inte — man ser bara de lag man är
+/// medlem av (admin, tränare eller vårdnadshavare). Superadmin ser alla. Ingen publik
+/// läsning, ingen edge-cache.
 /// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/teams")]
 [Produces("application/json")]
-public sealed class TeamsController(IQueryDispatcher dispatcher) : ControllerBase
+[Authorize]
+public sealed class TeamsController(
+    IQueryDispatcher dispatcher,
+    IMembershipService membership) : ControllerBase
 {
-    /// <summary>Alla lag, för lagväljaren.</summary>
+    /// <summary>Lagen den inloggade är medlem av — för lagväljaren.</summary>
     [HttpGet]
-    [EdgeCache(EdgeCacheProfile.Reference)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<TeamDto>>> GetTeams(
         CancellationToken cancellationToken)
     {
+        var accountId = Membership.AccountId(User);
+
+        if (accountId is null)
+        {
+            return Unauthorized();
+        }
+
         var teams = await dispatcher
             .SendAsync(new GetTeamsQuery(), cancellationToken)
             .ConfigureAwait(false);
 
-        return Ok(teams);
+        var memberSlugs = await membership
+            .MemberTeamSlugsAsync(accountId.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        var visible = new HashSet<string>(memberSlugs, StringComparer.Ordinal);
+
+        return Ok(teams.Where(t => visible.Contains(t.Slug)).ToArray());
     }
 
-    /// <summary>Ett lags matcher, sorterade på avspark.</summary>
+    /// <summary>Ett lags matcher, sorterade på avspark. Kräver medlemskap i laget.</summary>
     [HttpGet("{slug}/matches")]
-    [EdgeCache(EdgeCacheProfile.Schedule)]
+    [Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TeamMatchesDto>> GetTeamMatches(

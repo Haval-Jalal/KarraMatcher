@@ -9,7 +9,8 @@
 
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4), M2 (6/6) och M3 klara** — `#40` truppvyn utgick 2026-09-10, se *Viktiga beslut*. Repot är publikt
-- **Senast uppdaterad:** 2026-09-10 av Haval
+- **v2 (epic `#205`):** `#189` (§KM-omskrivning) och `#190` (domänmodell) klara. **`#191` (stäng appen) klar backend-sidan** — se *Viktiga beslut* och *Nästa steg*: FE:s inloggnings-/medlemskaps-grind är nästa och krävs innan v2 kan driftsättas.
+- **Senast uppdaterad:** 2026-09-16 av Haval
 - **Aktuell milstolpe:** M7 — Notiser (2 av 6 klara). M5 klar 6 av 6. M6 omskriven 2026-09-10 utan barnuppgifter: `#56` klar, `#57`/`#58` kvar
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 
@@ -100,23 +101,31 @@
 ## 🚧 Pågår nu
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
-| Beslut: inga barnuppgifter på servern | Haval | `docs/no-child-data-on-server` | In Review — skriver in svaret på öppen fråga 10 |
+| `#191` Stäng appen (backend) | Haval | `feature/v2-close-app` | In Review — inloggning + medlemskap krävs för allt; ICS + publik edge-cache borttagna; 542 tester gröna |
 
 ## ➡️ Nästa steg
 
-Två spår som kan köras parallellt — de rör inte samma filer.
+**v2 pågår (epic `#205`).** `#189`, `#190`, `#191` klara. Ordningen framåt: `#192` (superadmin CRUD),
+`#193` (inbjudningar), `#194` (ansökningar), `#195` (samtycke), `#196` (barn + sortering i lag),
+`#197` (tränare), `#198` (event-modell), `#199` (riktad kallelse), `#200` (notiser), `#201`/`#202`
+(chatt trupp/lag), `#203` (gallring/radering), `#204` (audit), `#206` (sportquiz).
 
-**M1.5 — Utseende** ✅ **klar 2026-08-30, 4 av 4.** Appen är funktionellt klar men saknar gestaltad identitet: `--sans` pekar på Barlow, men typsnittet laddas aldrig och Barlow Condensed används ingenstans. Fyra issues, alla frontend, ingen backend-koppling. Börja med `#115` — typsnittet ändrar helhetsintrycket mest, och de tre andra ska gestaltas med Condensed på plats.
+**Två saker att bära med efter `#191`:**
 
-**M2 — Konto och roller.** Öppen fråga 4 är besvarad (Resend) och fråga 5 är nedgraderad: bygget kan gå vidare utan domän, eftersom Resend skickar till kontots egen adress och det räcker för att testa flödet. Domänen blockerar först lanseringen. Två saker att bära med in i milstolpen:
-
-1. **Gästen ska fortsatt kunna allt i M1 utan konto** — ett uttryckligt kriterium, och värt ett test som fäller bygget snarare än en avsikt.
-2. **Checklistans rad 9.14 följer med valet av Resend** och ska vara avbockad före lansering, inte efter.
+1. **Frontend är delvis stängd.** `#191` gav FE:n token på läsanrop, så en inloggad medlem ser sitt
+   innehåll — men FE:n saknar fortfarande **gäst-grinden**: en gäst möter `401` utan att omdirigeras till
+   inloggning. Nästa FE-arbete: skyddade routes + "logga in"-vy för gäster, borttagning av döda
+   ICS-/kalenderlänkar (`CalendarLink`, `TeamCalendarLink`, feeden retirerad §KM.4), och omprövning av
+   service workerns offline-cache nu när schemat är autentiserat (§KM.8). **Krävs innan v2 driftsätts.**
+2. **Driftsätt inte den stängda backend förrän FE-grinden finns.** Merge till `main` bryter inget, men en
+   driftsättning av `#191`-backend mot dagens öppna FE skulle låsa ute alla föräldrar direkt. Backend och
+   FE måste driftsättas samordnat.
 
 ## 🧭 Viktiga beslut (ADR-light)
 
 | Datum | Beslut | Motivering | Konsekvens |
 |-------|--------|------------|-----------|
+| 2026-09-16 | **v2: appen stängd — inloggning + medlemskap krävs för allt (backend)** (`#191`) | §KM.3 v2: en öppen läsning går inte att förena med en plattform som hanterar barn och vuxna medlemskap. Object-level auktorisering på varje resurs, inte bara `[Authorize]` | **Medlemskapstjänst** `IMembershipService` (auktoritativ mot DB, inte token): superadmin ser allt, annars admin→trupp, tränare→lag, vårdnadshavare→barn-i-lag. Två nya policyer **`MemberOfTeam`** (route `slug`) och **`MemberOfMatch`** (route `matchId`/`id`), superadmin kortsluts via anspråk. Stängda: lag-lista (filtreras per medlem), lag-schema, matchdetalj, samåkningslista **och skrivningarna** (samåkning, närvaro, notisinställningar, push-prenumeration) — gäst `401`, icke-medlem `403`. **ICS-feeden borttagen** (§KM.4): `CalendarController` + hela `Application/Features/Calendar` (queries, `IcsWriter`, builder) + tester raderade. **Publik edge-cache borttagen:** `EdgeCache` reducerad till en enda regel — `private, no-store` på allt; `EdgeCacheProfile`/`EdgeCacheOptions` + opt-in-maskineriet borta. Gästvakts-testet vändes: vaktar nu att *ingen* api-endpoint saknar auktorisering utom en kort allow-lista (auth-bootstrap + cron). Testfixturer seedar medlemskap (vårdnadshavare) för att nå de stängda ytorna. **FE fick en nödvändig ändring:** `getJson` (läsvägen för lag/schema/match) skickade i v1 avsiktligt ingen token (för edge-delning) — nu bär den access-token som `getAuthJson`, annars ser en inloggad medlem `401`/tomt. E2E-sviten gjordes om till inloggade medlemmar (ICS-specen borttagen, `prepare` seedar föräldrarnas medlemskap). Backend 542 + FE 541 tester gröna, **alla CI-checks (inkl. Playwright) gröna**. **Kvar (egna issues):** FE:ns gäst-grind (route guards + "logga in"-vy — en gäst får i dag `401` utan omdirigering), borttagning av döda ICS-länkar (`CalendarLink`/`TeamCalendarLink`), och omprövning av service workerns offline-cache för nu autentiserat schema (§KM.8). Driftsätt samordnat (se *Nästa steg*) |
 | 2026-09-16 | **v2 domänmodell: Sport, Child, Guardianship, roller med scope** (`#190`) | Grunden för plattformen. Behöll kodnamnen `AgeGroup` (= Trupp) och `Team` (= Lag) för att slippa döpa om dussintals filer/tester/migrationer — mappas i UI | Nya entiteter: `Sport` (fristående), `Child` (§KM.1 minimal: `FirstName` + `LastInitial`, trupp + valfritt lag), `Guardianship` (konto↔barn, många-till-många). `AgeGroup` fick `SportId`. **Rollmodell:** `TeamRole` utökad med `AgeGroupId` + ny `RoleKind.SuperAdmin`; Coach→lag, Admin→trupp, SuperAdmin→global, bevakat av CHECK-villkoret `CK_TeamRoles_ScopePassarRollen`. Guardian är relationen, inte en roll. `AccountRoles`/`RoleRepository`/JWT bär nu `IsSuperAdmin` + `AdminOf` (trupp-id) + `CoachOf` (lag-slug); `IsAdmin` behålls som kompat = superadmin tills **hård gating byggs i `#191`**. **Migration** `AddV2DomainModel` (handredigerad: skapar default-sporten Fotboll och backfiller befintliga trupper innan FK:n läggs till). **Seed:** Fotboll + superadmin via konfig `SuperAdmin__Email` (aldrig hårdkodad). Fastlåsta testlistor (arkitektur + persistens) utökade i samma PR. Delete: barn→trupp Cascade, barn→lag SetNull, guardianship→konto/barn Cascade. Testat: seed (sport/superadmin idempotent), modellen mot Npgsql, alla befintliga tester gröna |
 | 2026-09-16 | **v2: stängd, inbjudningsbaserad flerklubbs-plattform — reverserar §KM.1/§KM.3/§KM.4/§KM.7** (`#189`, epic `#205`) | Produkten växer från ett öppet matchschema till en plattform: superadmin (bara ägaren) skapar sporter/klubbar/trupper/lag och tillsätter admins; admins bjuder in vårdnadshavare (och föräldrar kan ansöka), sorterar truppens ~40 barn i färg-lag (Gul/Blå/Vit/Svart), och riktar kallelser till trupp/lag/utvalda barn; chatt per trupp och per lag. Kräver barn på servern och en stängd app | **Medvetet regel-brott, väger tungt (barn under 13).** §KM omskrivet: **§KM.1** tillåter nu en *minimal* barnprofil — **förnamn + efternamnets initial ("Liam J"), aldrig hela efternamnet**, lag/trupp, vårdnadshavarkoppling; dataminimering är regeln. **§KM.2 oförändrad:** spelarkortet (resultat, mål, milstolpar + ev. sportquiz) förblir **device-only och privat** — aldrig på servern, aldrig publikt, aldrig kopplat till trupp-profilen. **§KM.3** stänger appen: inloggning **och** medlemskap för allt; **§KM.4** (publik ICS-feed) utgår; **§KM.6** kräver nu vårdnadshavarsamtycke (version + tid) innan barn kopplas; **§KM.7** låter kallelsen namnge barn (minimalt) och riktas mot målgrupp. Roller med scope: SuperAdmin/Admin/Coach/Guardian. Bygg-ordning i epic `#205` (#189→#204). Kvar att bevaka: kallstart-UX (edge-cache för publika GET försvinner, §KM.11), samtyckestextens juridiska grund, och gallring när barn lämnar |
 | 2026-08-29 | **Bas = webb-PWA**, mallen `StrukturBackendFrontend` | Föräldrar installerar inte en app från App Store för ett matchschema; en länk räcker och uppdateringar slår igenom direkt | Ingen app store-avgift eller granskning. Push kräver hemskärm-installation på iOS — kalenderfeeden är fallbacken |

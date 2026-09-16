@@ -42,6 +42,12 @@ public static class AuthorizationPolicies
     /// </summary>
     public const string CoachOfTeam = "tranare-for-laget";
 
+    /// <summary>Medlem av laget i adressen — admin, tränare eller vårdnadshavare (v2, §KM.3).</summary>
+    public const string MemberOfTeam = "medlem-av-laget";
+
+    /// <summary>Medlem av matchens lag (v2, §KM.3).</summary>
+    public const string MemberOfMatch = "medlem-av-matchen";
+
     public static AuthorizationOptions AddKarraPolicies(this AuthorizationOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -57,6 +63,14 @@ public static class AuthorizationPolicies
         options.AddPolicy(CoachOfTeam, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new CoachOfTeamRequirement()));
+
+        options.AddPolicy(MemberOfTeam, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new MemberOfTeamRequirement()));
+
+        options.AddPolicy(MemberOfMatch, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new MemberOfMatchRequirement()));
 
         return options;
     }

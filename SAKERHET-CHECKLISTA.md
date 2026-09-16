@@ -12,9 +12,10 @@
 > Rader märkta *(vid behov)* bockas av när triggern i [`STANDARDER-VID-BEHOV.md`](./STANDARDER-VID-BEHOV.md) uppfyllts.
 > Rader märkta **§KM** kommer från projektets egna regler och väger tyngst.
 >
-> **v2-omställning (`#189`, 2026-09-16):** appen blir stängd (inloggning + medlemskap för allt) och
-> lagrar en minimal barnprofil. Rader om **publik läsning** (2.11, 4.7, 5.7) och den publika
-> ICS-feeden revideras när `#191` (stäng appen) landar; §9-raderna om barn är redan uppdaterade nedan.
+> **v2-omställning (`#191`, 2026-09-16):** appen är nu **stängd** — inloggning + medlemskap krävs
+> för allt innehåll (policy `MemberOfTeam`/`MemberOfMatch`, objektnivå). Den publika ICS-feeden är
+> **borttagen** (§KM.4) och den publika edge-cachningen med den; varje svar är `private, no-store`.
+> Raderna om publik läsning (2.11, 4.7, 5.7, 6.4, 11.7) är omskrivna nedan för den stängda appen.
 >
 > **Reviderad `#69` (2026-09-15):** hela listan gick igenom rad för rad, verifierad mot koden.
 > Kvarvarande icke-gröna rader är antingen **externa åtgärder** (kräver dig, inte kod) eller
@@ -48,9 +49,9 @@
 | 2.8 | **§KM.12** Endast erbjudandets ägare kan acceptera eller neka dess förfrågningar | ✅ |
 | 2.9 | **§KM.12** Platsräkning sker server-side; accept som spränger antalet avvisas | ✅ |
 | 2.10 | **§KM.12** Nekande utan meddelande avvisas server-side | ✅ |
-| 2.11 | **§KM.3** Gäst kan läsa samåkning men får `401` på att lägga upp eller skicka förfrågan | ✅ |
+| 2.11 | **§KM.3** Stängd app: gäst får `401` och icke-medlem `403` på lagets/matchens innehåll — samåkning, schema, notiser (`#191`) | ✅ |
 | 2.12 | Ingen "mass assignment" — DTOs (records), aldrig entiteter, i API-in/ut | ✅ |
-| 2.13 | Principen om minsta behörighet genomgående (policy-baserat, ingen fallback-policy, gäst-läs/inloggad-skriv) | ✅ |
+| 2.13 | Principen om minsta behörighet genomgående (policy-baserat, ingen fallback-policy; stängd app: inloggning + medlemskap för allt innehåll) | ✅ |
 
 ## 3. Datalagring i klienten (webb / PWA)
 | # | Kontroll | Status |
@@ -77,7 +78,7 @@
 | 4.5 | **§KM.11** Refresh-cookien är förstapart: `HttpOnly`, `Secure`, `SameSite=Lax` | ✅ |
 | 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin — **⚠️ EXTERN: kräver att direktåtkomst till Render-URL:en stängs i drift** | 🟡 |
 | 4.6b | Rate limiting partitioneras på klientens IP från `X-Forwarded-For`, med en opartitionerad skyddsgräns som inte går att kringgå genom att förfalska adressen | ✅ |
-| 4.7 | **§KM.3** Publika endpoints returnerar aldrig personuppgifter | ✅ |
+| 4.7 | **§KM.3** Inget svar returnerar barn-PII, och ingen publik yta finns kvar — allt innehåll kräver medlemskap (`#191`) | ✅ |
 | 4.8 | SSRF-skydd: väder-API anropas med koordinater från egen databas, aldrig från användarindata | ✅ |
 | 4.9 | Web Push använder egna VAPID-nycklar; payload innehåller ingen PII | ✅ |
 
@@ -90,7 +91,7 @@
 | 5.4 | Service worker registreras bara över HTTPS och har begränsat scope | ✅ |
 | 5.5 | Uppdatering av service worker hanteras — användaren fastnar inte på gammal version | ✅ |
 | 5.6 | Utgående länkar (kartor) använder `rel="noopener noreferrer"` | ✅ |
-| 5.7 | ICS-feeden är publik men innehåller **enbart** matchdata (§KM.4) | ✅ |
+| 5.7 | **§KM.4** ICS-feeden är **borttagen** i den stängda appen (`#191`) — en publik, oautentiserad feed går inte att förena med "medlemskap för allt" | ✅ |
 | 5.8 | Öppen omdirigering omöjlig — inga redirect-mål från query-parametrar (`next` valideras: bara interna vägar) | ✅ |
 
 ## 6. Indata, kod & vanliga sårbarheter
@@ -99,7 +100,7 @@
 | 6.1 | All input valideras server-side (FluentValidation); klientvalidering är endast UX | ✅ |
 | 6.2 | Parametriserade queries / EF Core → ingen SQL-injection (ingen rå SQL) | ✅ |
 | 6.3 | Massinläggs-parsern hanterar skadlig och trasig indata utan att krascha eller injicera | ✅ |
-| 6.4 | Rate limiting på publika endpoints och inloggning; `429` med `Retry-After` (**§KM.0 A1**) | ✅ |
+| 6.4 | Rate limiting på oautentiserade endpoints (inloggning, cron) och global gräns; `429` med `Retry-After` (**§KM.0 A1**). Den publika innehållsytan finns inte längre (`#191`) | ✅ |
 | 6.5 | CSRF-skydd aktivt (anti-forgery + `SameSite`) eftersom refresh-token ligger i cookie | ✅ |
 | 6.6 | Inga interna fel eller stack traces läcker till klient (ProblemDetails) | ✅ |
 | 6.7 | Filuppladdning saknas — eller, om den införs, typ-, storleks- och innehållsvalideras | ➖ |
@@ -165,7 +166,7 @@
 | 11.4 | Planerat underhåll läggs aldrig fredag–söndag under säsong *(dokumenterad policy i `SPEC.md`, ej teknisk grind)* | ✅ |
 | 11.5 | Maintenance-läge visar en begriplig svensk text, inte ett serverfel — **svensk kallstartstext finns; ingen egen maintenance-sida** | 🟡 |
 | 11.6 | **§KM.11** Databasen ligger på Neon — inte på en gratisnivå som upphör efter 30 dagar | ✅ |
-| 11.7 | **§KM.11** Kallstart maskerad: publika GET-svar besvaras av Vercels edge utan att väcka backend | ✅ |
+| 11.7 | **§KM.11** Kallstart: den publika edge-cachningen är borttagen med den stängda appen (`#191`) — inget innehåll får ligga på delad edge. Kallstarten mildras nu av uppetidspingen (11.8) och ärlig svensk väntetext, inte av edge-svar | 🟡 |
 | 11.8 | **§KM.11** Uppetidsverktyg pingar `/health` och larmar när backend inte svarar | ✅ |
 | 11.9 | Docker-containern kör som **non-root** och exponerar bara port 8080 (`USER $APP_UID`, `EXPOSE 8080`) | ✅ |
 

@@ -1,8 +1,10 @@
 using System.Security.Claims;
 
+using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Push;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -12,14 +14,13 @@ namespace KarraMatcher.Api.Features.Push;
 /// <summary>
 /// Prenumerationer på ett lags notiser (`#60`).
 ///
-/// <h3>Öppen, och det är hela poängen</h3>
+/// <h3>Stängd i v2 (§KM.3, `#191`)</h3>
 ///
 /// <para>
-/// Det här är den enda skrivningen i appen som inte kräver konto (§KM.3). Undantaget är
-/// motiverat och infört i <c>GuestAccessTests</c>: kräver notiser en inloggning når de en
-/// bråkdel av föräldrarna, och att lördagens match är inställd är precis det slags
-/// upplysning som ska nå alla. Det som skrivs är dessutom inte någons uppgifter om någon
-/// annan — det är webbläsarens egen adress, som webbläsaren själv nyss skapade.
+/// Notiser är inte längre öppna. Man ser lagets information — matcher, träningar,
+/// aviseringar — först som medlem, och då knyts prenumerationen till kontot. Att bara
+/// medlemmar kan prenumerera betyder också att en push-adress aldrig registreras av någon
+/// utanför laget.
 /// </para>
 ///
 /// <h3>Vad som aldrig kommer tillbaka</h3>
@@ -29,24 +30,11 @@ namespace KarraMatcher.Api.Features.Push;
 /// identifierar en enskild enhet lika bra som ett telefonnummer (§KM.10). Svaren är
 /// därför tomma med flit, och lika oavsett om adressen var känd sedan tidigare.
 /// </para>
-///
-/// <h3>Rate limiting</h3>
-///
-/// <para>
-/// Oautentiserad skrivning på öppet internet, alltså §KM.0 A1. Den allmänna gränsen gäller
-/// — den ligger som <c>GlobalLimiter</c> och behöver inget attribut här.
-/// </para>
-///
-/// <para>
-/// Inloggningens hårdare gräns vore fel: den är satt för att stoppa gissningar mot en
-/// sexsiffrig kod, och en prenumeration är inget att gissa på. En familj med barn i flera
-/// lag registrerar sig flera gånger i följd, och åtta i minuten hade slagit till mot den
-/// som gör precis rätt.
-/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1")]
 [Produces("application/json")]
+[Authorize]
 public sealed class PushController(
     ICommandDispatcher commands,
     IOptions<PushOptions> options) : ControllerBase
@@ -72,8 +60,9 @@ public sealed class PushController(
                 detail: "Kalendern och schemat fungerar som vanligt.");
     }
 
-    /// <summary>Börjar prenumerera på lagets notiser.</summary>
+    /// <summary>Börjar prenumerera på lagets notiser. Kräver medlemskap i laget.</summary>
     [HttpPost("teams/{slug}/push")]
+    [Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -84,9 +73,8 @@ public sealed class PushController(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Endpointen är öppen (§KM.3), men bär anropet en giltig token är webbläsaren
-        // inloggad -- och då knyts prenumerationen till kontot, så samåkningsnotiser (#63)
-        // kan nå just den föräldern. En gäst ger null och prenumererar precis som förr.
+        // Anroparen är en inloggad medlem av laget (v2). Prenumerationen knyts till kontot,
+        // så samåkningsnotiser (#63) kan nå just den föräldern.
         var subscribed = await commands
             .SendAsync(new SubscribeToPushCommand(slug, request.ToDraft(), ActorId()), cancellationToken)
             .ConfigureAwait(false);
@@ -100,6 +88,7 @@ public sealed class PushController(
     /// är inte ett fel — och ett annat svar hade avslöjat om en adress är känd hos oss.
     /// </remarks>
     [HttpDelete("teams/{slug}/push")]
+    [Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Unsubscribe(

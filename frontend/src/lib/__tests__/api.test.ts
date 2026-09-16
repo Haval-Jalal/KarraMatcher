@@ -133,11 +133,11 @@ describe('hämtningar som beror på vem som frågar', () => {
     clearSession()
   })
 
-  it('lämnar de publika hämtningarna utan token', async () => {
+  it('bär token på innehållsläsningar för en inloggad medlem (stängd app)', async () => {
     /*
-     * Lagets schema cachas pa Vercels edge och svarar da utan att vacka Render (§KM.11).
-     * En Authorization-rubrik hade gjort svaret omojligt att dela mellan lasare, och
-     * kallstarten ar appens dyraste sekunder.
+     * Stängd app i v2 (§KM.3, #191): den publika, edge-cachade läsningen finns inte längre.
+     * En inloggad medlems läsning måste bära access-token, annars svarar servern 401 och
+     * medlemmen ser ingenting.
      */
     setAccessToken('en.access.token')
 
@@ -150,8 +150,22 @@ describe('hämtningar som beror på vem som frågar', () => {
 
     const init = fetchMock.mock.calls[0]?.[1] ?? {}
 
-    expect((init.headers as Record<string, string>)['Authorization']).toBeUndefined()
+    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer en.access.token')
 
     clearSession()
+  })
+
+  it('lämnar innehållsläsningar utan token för en gäst', async () => {
+    // Ingen inloggning: inget Authorization-huvud. Servern svarar 401, vilket är rätt.
+    const fetchMock = vi.fn((_input: unknown, _init?: RequestInit) =>
+      Promise.resolve(jsonResponse({})),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getJson('/api/v1/teams/gul/matches')
+
+    const init = fetchMock.mock.calls[0]?.[1] ?? {}
+
+    expect((init.headers as Record<string, string>)['Authorization']).toBeUndefined()
   })
 })

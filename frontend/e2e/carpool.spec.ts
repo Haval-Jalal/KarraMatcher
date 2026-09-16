@@ -9,9 +9,10 @@ import { API, PARENT_A_EMAIL, PARENT_B_EMAIL, e2eMatchId, login } from './helper
  * <h3>En färsk kontext per inloggad matchvy</h3>
  *
  * Appen avgör ägarskap av ett erbjudande server-side utifrån den inloggade sessionen
- * (`offer.isMine`), och matchsidan är publik. Att nå den som ägare kräver alltså att token
- * redan finns i minnet när listan hämtas — vilket en *första* inloggning på en *färsk*
- * kontext ger (den landar på matchen med token satt). En andra inloggning på en redan
+ * (`offer.isMine`). I den stängda appen (§KM.3, `#191`) kräver matchsidan dessutom
+ * medlemskap — föräldrarna är vårdnadshavare i laget via prepare. Att nå matchen som ägare
+ * kräver att token redan finns i minnet när listan hämtas — vilket en *första* inloggning på
+ * en *färsk* kontext ger (den landar på matchen med token satt). En andra inloggning på en redan
  * inloggad kontext hänger i stället: appen klientsidigt-omdirigerar bort från inloggningen,
  * utan en `load`-händelse att vänta på. Därför en ny kontext varje gång en part behöver se
  * matchen inloggad.
@@ -36,7 +37,7 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
 
   await request.post(`${API}/api/v1/testing/reset-carpool`)
 
-  // Matchens id via det publika API:t (ingen inloggning behövs för att läsa).
+  // Matchens id från prepare (idempotent, returnerar matchId) — ingen schemaläsning behövs.
   const probe = await browser.newContext({ ignoreHTTPSErrors: true })
   const probePage = await probe.newPage()
   const matchId = await e2eMatchId(probePage)

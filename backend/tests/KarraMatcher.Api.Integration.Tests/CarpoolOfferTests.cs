@@ -8,6 +8,7 @@ using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -25,7 +26,7 @@ namespace KarraMatcher.Api.Integration.Tests;
 /// Appens enda funktion där föräldrar gör något med varandra. Fyra saker vaktas: att det
 /// krävs konto för att lägga upp, att platserna hålls inom 1–4, att bara ägaren kan dra
 /// tillbaka sitt eget — och att förarens fritext varken loggas eller lämnas ut till någon
-/// som inte är inloggad.
+/// utanför laget (stängd app i v2, §KM.3).
 /// </para>
 /// </summary>
 public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
@@ -90,12 +91,49 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
         var driver = new Account { Id = Guid.NewGuid(), Email = $"forare-{suffix}@example.com" };
         var other = new Account { Id = Guid.NewGuid(), Email = $"annan-{suffix}@example.com" };
 
+        // Bada ar medlemmar av laget (v2, §KM.3): vardnadshavare till varsitt barn i det. Utan
+        // det kan de inte se matchens samakningslista -- appen ar stangd.
+        var driverChild = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = Kickoff,
+        };
+        var otherChild = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Noah",
+            LastInitial = "K",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = Kickoff,
+        };
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Matches.Add(match);
         context.Accounts.AddRange(driver, other);
+        context.Children.AddRange(driverChild, otherChild);
+        context.Guardianships.AddRange(
+            new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = driver.Id,
+                ChildId = driverChild.Id,
+                GrantedUtc = Kickoff,
+            },
+            new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = other.Id,
+                ChildId = otherChild.Id,
+                GrantedUtc = Kickoff,
+            });
 
         await context.SaveChangesAsync(CancellationToken.None);
 
@@ -323,11 +361,11 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
         var fixture = await SeedAsync("borta");
         var offerId = await CreateOfferAsync(fixture);
 
-        using var client = factory.CreateClient();
-
-        var before = await client.GetFromJsonAsync<JsonElement>(
+        var beforeResponse = await SendAsync(
+            HttpMethod.Get,
             $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
-            CancellationToken.None);
+            fixture.OtherId);
+        var before = await beforeResponse.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
 
         Assert.Equal(1, before.GetArrayLength());
 
@@ -336,9 +374,11 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
             $"/api/v1/matches/{fixture.MatchId}/carpool/offers/{offerId}/withdraw",
             fixture.DriverId);
 
-        var after = await client.GetFromJsonAsync<JsonElement>(
+        var afterResponse = await SendAsync(
+            HttpMethod.Get,
             $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
-            CancellationToken.None);
+            fixture.OtherId);
+        var after = await afterResponse.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
 
         Assert.Equal(0, after.GetArrayLength());
     }
@@ -389,28 +429,22 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
-    public async Task Notisen_LamnasInteUtTillEnGast()
+    public async Task Lista_UtanInloggning_Nekas()
     {
         /*
-         * Erbjudandet far ses av vem som helst (§KM.3), men fritext ar potentiell PII och
-         * ska bara na de inblandade (§KM.12). Gasten far alltsa erbjudandet utan notisen --
-         * inte ett avslag.
+         * Stangd app (§KM.3, #191): fritext ar potentiell PII och nar nu bara medlemmar,
+         * eftersom hela listan gor det. En gast far 401 -- inte erbjudandet utan notisen.
          */
         var fixture = await SeedAsync("gast");
         await CreateOfferAsync(fixture);
 
         using var client = factory.CreateClient();
 
-        var offers = await client.GetFromJsonAsync<JsonElement>(
+        var response = await client.GetAsync(
             $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
             CancellationToken.None);
 
-        var first = offers[0];
-
-        Assert.Equal(JsonValueKind.Null, first.GetProperty("note").ValueKind);
-        Assert.Equal(3, first.GetProperty("seats").GetInt32());
-        Assert.Equal("Karra centrum", first.GetProperty("departurePlace").GetString());
-        Assert.False(first.GetProperty("isMine").GetBoolean());
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -456,12 +490,12 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
          * edge kunde en foralders fritext levereras till nagon annan.
          */
         var fixture = await SeedAsync("cache");
+        await CreateOfferAsync(fixture);
 
-        using var client = factory.CreateClient();
-
-        var response = await client.GetAsync(
+        var response = await SendAsync(
+            HttpMethod.Get,
             $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
-            CancellationToken.None);
+            fixture.OtherId);
 
         var cacheControl = response.Headers.CacheControl?.ToString() ?? string.Empty;
 
@@ -472,8 +506,11 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
     // ---- Matchen maste finnas ---------------------------------------------------------
 
     [Fact]
-    public async Task Erbjudande_PaEnMatchSomInteFinns_Avvisas()
+    public async Task Erbjudande_PaEnMatchSomInteFinns_Nekas()
     {
+        // Stangd app (§KM.3, #191): erbjudandet ligger under matchens adress och kraver
+        // medlemskap i matchens lag. En okand match har inga medlemmar, sa svaret ar 403 --
+        // objektnivaauktoriseringen fanger den innan validatorn hinner saga "matchen finns inte".
         var fixture = await SeedAsync("ingen-match");
 
         var response = await SendAsync(
@@ -482,6 +519,6 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
             fixture.DriverId,
             Offer());
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }
