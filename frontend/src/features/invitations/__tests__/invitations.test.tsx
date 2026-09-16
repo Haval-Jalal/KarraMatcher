@@ -31,10 +31,15 @@ function stub(token: string, routes: (url: string, method: string) => unknown): 
     vi.fn((input: unknown, init?: RequestInit) => {
       const url = String(input)
       const method = init?.method ?? 'GET'
-      sent.push({ url, method, body: typeof init?.body === 'string' ? JSON.parse(init.body) : null })
+      sent.push({
+        url,
+        method,
+        body: typeof init?.body === 'string' ? JSON.parse(init.body) : null,
+      })
 
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
-      if (url.includes('/auth/refresh')) return Promise.resolve(jsonResponse({ accessToken: token }))
+      if (url.includes('/auth/refresh'))
+        return Promise.resolve(jsonResponse({ accessToken: token }))
 
       return Promise.resolve(jsonResponse(routes(url, method)))
     }),
@@ -71,7 +76,9 @@ describe('Inbjudningens landningssida', () => {
 
     expect(await screen.findByRole('heading', { name: 'Du är med!' })).toBeInTheDocument()
     expect(
-      sent.some((r) => r.url.includes(`/api/v1/invitations/${TOKEN}/accept`) && r.method === 'POST'),
+      sent.some(
+        (r) => r.url.includes(`/api/v1/invitations/${TOKEN}/accept`) && r.method === 'POST',
+      ),
     ).toBe(true)
   })
 
