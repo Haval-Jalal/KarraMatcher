@@ -10,12 +10,13 @@ using Microsoft.Extensions.DependencyInjection;
 namespace KarraMatcher.Api.Integration.Tests;
 
 /// <summary>
-/// De publika endpointsen för lag och matcher — appens mest anropade yta.
+/// Endpointsen för lag och matcher — appens mest anropade yta.
 ///
 /// <para>
-/// Testerna körs mot hela pipelinen, eftersom det är där kraven faktiskt bor: anonym
-/// åtkomst (§KM.3), inga personuppgifter i svaret, och cache-headers som låter Vercels
-/// edge svara utan att väcka Render (§KM.11).
+/// <b>Stängd i v2 (§KM.3, `#191`):</b> man ser bara de lag man är medlem av. Testerna kör
+/// mot hela pipelinen med en superadmin-klient (ser allt), och kontrollerar det som är kvar
+/// av kraven: en gäst nekas, inga personuppgifter i svaret, och inget svar får hamna på en
+/// delad edge-cache.
 /// </para>
 /// </summary>
 public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
@@ -113,20 +114,20 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     // ---- Lagen -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetTeams_UtanInloggning_Svarar200()
+    public async Task GetTeams_UtanInloggning_Svarar401()
     {
-        // §KM.0 A4: en förälder som bara vill se matchtiden ska aldrig mötas av inloggning.
+        // Stängd app (§KM.3): utan inloggning ser man inga lag alls.
         using var client = _factory.CreateClient();
 
         var response = await client.GetAsync("/api/v1/teams", CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task GetTeams_GerLagenMedFargOchAldersgrupp()
+    public async Task GetTeams_SomMedlem_GerLagenMedFargOchAldersgrupp()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams", CancellationToken.None);
         var json = await ReadJsonAsync(response);
@@ -139,16 +140,19 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     }
 
     [Fact]
-    public async Task GetTeams_HarEdgeCacheOchEtag()
+    public async Task GetTeams_ArPrivateNoStore()
     {
-        using var client = _factory.CreateClient();
+        // Stängd app (§KM.3): lagvalslistan är per medlem och får aldrig delas av edge.
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams", CancellationToken.None);
-        var cacheControl = response.Headers.CacheControl?.ToString();
+        var cacheControl = response.Headers.CacheControl;
 
         Assert.NotNull(cacheControl);
-        Assert.Contains("s-maxage=3600", cacheControl, StringComparison.Ordinal);
-        Assert.NotNull(response.Headers.ETag);
+        Assert.True(cacheControl.NoStore, "no-store saknas");
+        Assert.True(cacheControl.Private, "private saknas");
+        Assert.Null(cacheControl.SharedMaxAge);
+        Assert.Null(response.Headers.ETag);
     }
 
     // ---- Matcherna -------------------------------------------------------------------
@@ -156,7 +160,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     [Fact]
     public async Task GetTeamMatches_GerMatcherSorteradePaAvspark()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
         var json = await ReadJsonAsync(response);
@@ -171,7 +175,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     [Fact]
     public async Task GetTeamMatches_InstalldMatchArMarkt()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
         var json = await ReadJsonAsync(response);
@@ -186,7 +190,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     public async Task GetTeamMatches_AvsparkArUtc()
     {
         // §KM.5. Skulle backend börja skicka lokaltid vore felet osynligt halva året.
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
         var json = await ReadJsonAsync(response);
@@ -198,35 +202,26 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     }
 
     [Fact]
-    public async Task GetTeamMatches_HarEdgeCacheForSchema()
+    public async Task GetTeamMatches_ArPrivateNoStore()
     {
-        using var client = _factory.CreateClient();
+        // Stängd app (§KM.3): schemat är per medlem — den publika edge-cachningen togs bort
+        // med `#191`.
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
+        var cacheControl = response.Headers.CacheControl;
 
-        Assert.Contains(
-            "s-maxage=300",
-            response.Headers.CacheControl?.ToString(),
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task GetTeamMatches_OforandratSchema_Ger304()
-    {
-        using var client = _factory.CreateClient();
-
-        var first = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/teams/gul/matches");
-        request.Headers.TryAddWithoutValidation("If-None-Match", first.Headers.ETag!.ToString());
-        var second = await client.SendAsync(request, CancellationToken.None);
-
-        Assert.Equal(HttpStatusCode.NotModified, second.StatusCode);
+        Assert.NotNull(cacheControl);
+        Assert.True(cacheControl.NoStore, "no-store saknas");
+        Assert.True(cacheControl.Private, "private saknas");
+        Assert.Null(cacheControl.SharedMaxAge);
+        Assert.Null(response.Headers.ETag);
     }
 
     [Fact]
     public async Task GetTeamMatches_OkantLag_Ger404MedProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams/finns-inte/matches", CancellationToken.None);
         var json = await ReadJsonAsync(response);
@@ -242,7 +237,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     public async Task GetTeamMatches_OgiltigSlug_Ger400(string slug)
     {
         // Skräp avvisas av validatorn innan det når databasen, och blir 400 — inte 500.
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/teams/{slug}/matches", CancellationToken.None);
 
@@ -252,10 +247,10 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     [Fact]
     public async Task GetTeamMatches_SvaretInnehallerIngaPersonuppgifter()
     {
-        // §KM.3 och säkerhetschecklistan 4.7: publika endpoints returnerar aldrig PII.
-        // Testet låser fältuppsättningen — dyker ett nytt fält upp måste någon ta
-        // ställning till det här, inte upptäcka det i produktion.
-        using var client = _factory.CreateClient();
+        // §KM.3 och säkerhetschecklistan 4.7: endpoints returnerar aldrig barn-PII, inte
+        // ens för en inloggad medlem. Testet låser fältuppsättningen — dyker ett nytt fält
+        // upp måste någon ta ställning till det här, inte upptäcka det i produktion.
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
         var json = await ReadJsonAsync(response);

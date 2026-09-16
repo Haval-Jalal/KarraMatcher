@@ -8,6 +8,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Push;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -50,10 +51,30 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         };
         var account = new Account { Id = Guid.NewGuid(), Email = $"foralder-n-{suffix}@example.com", CreatedUtc = DateTime.UtcNow };
 
+        // Kontot ar medlem av laget (v2, §KM.3): vardnadshavare till ett barn i det. Utan
+        // medlemskap kommer man inte at lagets notisinstallningar.
+        var child = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = DateTime.UtcNow,
+        };
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Accounts.Add(account);
+        context.Children.Add(child);
+        context.Guardianships.Add(new Guardianship
+        {
+            Id = Guid.NewGuid(),
+            AccountId = account.Id,
+            ChildId = child.Id,
+            GrantedUtc = DateTime.UtcNow,
+        });
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(team.Slug, team.Id, account.Id);
@@ -200,13 +221,15 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
-    public async Task OkantLag_Ger404()
+    public async Task OkantLag_Nekas()
     {
+        // Stangd app (§KM.3, #191): ett okant lag har inga medlemmar, sa medlemskapskravet
+        // nekar med 403 innan controllern hinner svara 404 -- existensen avslojas inte.
         var fixture = await SeedAsync("unknown");
 
         var response = await GetAsync("finns-inte", TokenFor(fixture.AccountId));
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

@@ -24,7 +24,7 @@ namespace KarraMatcher.Api.Features.Push;
 [ApiController]
 [Route("api/v1/teams/{slug}/notification-settings")]
 [Produces("application/json")]
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
 public sealed class NotificationSettingsController(
     ICommandDispatcher commands,
     IQueryDispatcher queries) : ControllerBase

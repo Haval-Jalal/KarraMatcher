@@ -98,7 +98,7 @@ public class PlayerStatisticsEndpointTests(KarraMatcherApiFactory factory)
     [InlineData("/api/v1/teams/{teamId}/matches")]
     [InlineData("/api/v1/matches/{id}")]
     [InlineData("/api/v1/venues")]
-    [InlineData("/api/v1/teams/{teamId}/calendar.ics")]
+    [InlineData("/api/v1/matches/{matchId}/carpool/offers")]
     public void LooksLikePlayerStatistics_Legitim_GerFalse(string pattern)
     {
         Assert.False(LooksLikePlayerStatistics(pattern), $"{pattern} är ett falskt alarm");

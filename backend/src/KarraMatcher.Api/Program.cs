@@ -54,7 +54,6 @@ if (testingEnabled)
 }
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
-builder.Services.AddKarraEdgeCache(builder.Configuration);
 builder.Services.AddKarraAuthentication(builder.Environment);
 
 // Gallringen av samakning (§KM.12). Kors i processen och inte som cron -- se

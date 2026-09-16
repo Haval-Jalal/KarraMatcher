@@ -7,6 +7,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -83,12 +84,33 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         var coach = new Account { Id = Guid.NewGuid(), Email = $"tranare-n-{suffix}@example.com", CreatedUtc = now };
         var parent = new Account { Id = Guid.NewGuid(), Email = $"foralder-n-{suffix}@example.com", CreatedUtc = now };
 
+        // Foraldern ar medlem av laget (v2, §KM.3): vardnadshavare till ett barn i det. Utan
+        // medlemskap kan hen inte na narvaroendpointen. Tranaren nar sina endpoints via
+        // CoachOfTeam-anspraket och behover ingen vardnadskoppling.
+        var child = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = now,
+        };
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Matches.Add(match);
         context.Accounts.AddRange(coach, parent);
+        context.Children.Add(child);
+        context.Guardianships.Add(new Guardianship
+        {
+            Id = Guid.NewGuid(),
+            AccountId = parent.Id,
+            ChildId = child.Id,
+            GrantedUtc = now,
+        });
 
         await context.SaveChangesAsync(CancellationToken.None);
 

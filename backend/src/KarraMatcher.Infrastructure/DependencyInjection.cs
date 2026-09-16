@@ -100,6 +100,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();
         services.AddScoped<IAccountExportRepository, AccountExportRepository>();
         services.AddScoped<IPushRetentionRepository, PushRetentionRepository>();
+        services.AddScoped<IMembershipService, MembershipService>();
 
         /*
          * Kon ar en singleton -- den ar ett stalle, inte ett per request. Sandaren far en

@@ -1,14 +1,20 @@
-using KarraMatcher.Api.Caching;
+using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Matches;
 using KarraMatcher.Application.Features.Matches.GetMatch;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KarraMatcher.Api.Features.Matches;
 
 /// <summary>
-/// Enskilda matcher. Publik och oautentiserad (§KM.3).
+/// Enskilda matcher.
+///
+/// <para>
+/// <b>Stängd i v2 (§KM.3, `#191`):</b> bara medlemmar av matchens lag ser den. Superadmin
+/// ser allt. Ingen publik läsning, ingen edge-cache.
+/// </para>
 ///
 /// <para>
 /// Matchdetaljsidan behöver mer än listan visar: adressen till kartlänken och
@@ -20,11 +26,12 @@ namespace KarraMatcher.Api.Features.Matches;
 [ApiController]
 [Route("api/v1/matches")]
 [Produces("application/json")]
+[Authorize]
 public sealed class MatchesController(IQueryDispatcher dispatcher) : ControllerBase
 {
-    /// <summary>En match med spelplats, koordinater och lag.</summary>
+    /// <summary>En match med spelplats, koordinater och lag. Kräver medlemskap i matchens lag.</summary>
     [HttpGet("{id:guid}")]
-    [EdgeCache(EdgeCacheProfile.MatchDetail)]
+    [Authorize(Policy = AuthorizationPolicies.MemberOfMatch)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MatchDetailDto>> GetMatch(

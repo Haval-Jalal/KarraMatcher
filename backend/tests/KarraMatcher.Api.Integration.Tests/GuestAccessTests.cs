@@ -14,21 +14,22 @@ using Microsoft.Extensions.Options;
 namespace KarraMatcher.Api.Integration.Tests;
 
 /// <summary>
-/// Gästen behåller full åtkomst till den publika delen (§KM.3, §KM.0 A4).
+/// Den stängda appen (§KM.3, v2 `#191`): en gäst utan inloggning ser ingenting.
 ///
 /// <para>
-/// Testerna är skrivna <em>innan</em> inloggningen byggs, och det är hela poängen. Det
-/// vanligaste misstaget när auth införs är att för mycket blir skyddat: en global
-/// fallback-policy, ett <c>[Authorize]</c> på fel klass, en middleware i fel ordning. Då
-/// möts en förälder som bara vill se matchtiden av en inloggningsruta, och produktlöftet
-/// är brutet utan att något ser trasigt ut.
+/// I v1 var det motsatt — schemat var öppet och testet vaktade att inget råkade bli
+/// <em>stängt</em>. I v2 vändes kravet: allt innehåll (matcher, träningar, samåkning,
+/// notiser) kräver en inloggad medlem, och den vanligaste risken är nu att något råkar bli
+/// <em>öppet</em> — en ny endpoint utan <c>[Authorize]</c>, en glömd policy. Därför vaktar
+/// testet att varje endpoint under <c>api/</c> kräver auktorisering, med undantag bara för
+/// en kort, försvarbar lista (inloggningen själv och cron-jobbet).
 /// </para>
 ///
 /// <para>
-/// Två sorters kontroll, eftersom de fångar olika fel. HTTP-anropen visar att ytan svarar
-/// i dag. Kontrollen av routernas metadata visar <em>varför</em> den gör det, och fäller
-/// bygget den dag någon skyddar en route som ska vara öppen — även om ingen råkar köra
-/// just det anropet.
+/// Två sorters kontroll, eftersom de fångar olika fel. HTTP-anropen visar att en gäst
+/// faktiskt nekas i dag. Kontrollen av routernas metadata visar <em>varför</em>, och fäller
+/// bygget den dag någon lägger till en oskyddad route — även om ingen råkar köra just det
+/// anropet.
 /// </para>
 /// </summary>
 public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
@@ -107,204 +108,112 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         return match.Id;
     }
 
-    /// <summary>Hela den yta som ska vara öppen för vem som helst med länken.</summary>
-    public static TheoryData<string> PublicPathTemplates =>
+    /// <summary>Innehållsytan som numera kräver inloggning — allt en gäst förr kunde se.</summary>
+    public static TheoryData<string> ClosedPathTemplates =>
         [
             "/api/v1/teams",
             "/api/v1/teams/gast/matches",
             "/api/v1/matches/{0}",
-            "/calendar/gast.ics",
-            "/calendar/match/{0}.ics",
+            "/api/v1/matches/{0}/carpool/offers",
+            "/api/v1/push/key",
         ];
 
-    // ---- Åtkomst utan inloggning -----------------------------------------------------
+    // ---- En gäst nekas ---------------------------------------------------------------
 
     [Theory]
-    [MemberData(nameof(PublicPathTemplates))]
-    public async Task PublikEndpoint_UtanToken_KraverIngenInloggning(string template)
+    [MemberData(nameof(ClosedPathTemplates))]
+    public async Task Gast_UtanToken_Nekas(string template)
     {
-        // Assertionen är att svaret inte är 401 eller 403 — alltså exakt det en införd
-        // inloggning skulle göra fel. Ett 404 hade varit ett annat fel och fångas nedan.
+        // Stängd app (§KM.3): utan token är svaret 401 på hela innehållsytan.
         using var client = _factory.CreateClient();
 
         var response = await client.GetAsync(
             string.Format(System.Globalization.CultureInfo.InvariantCulture, template, _matchId),
             CancellationToken.None);
 
-        Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
-        Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Theory]
-    [MemberData(nameof(PublicPathTemplates))]
-    public async Task PublikEndpoint_UtanToken_Svarar200(string template)
-    {
-        using var client = _factory.CreateClient();
-
-        var response = await client.GetAsync(
-            string.Format(System.Globalization.CultureInfo.InvariantCulture, template, _matchId),
-            CancellationToken.None);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task PublikEndpoint_MedTrasigToken_SlapperAndaIgenom()
+    public async Task Gast_MedTrasigToken_Nekas()
     {
-        // En gammal eller trasig token i en telefon som legat i fickan sedan förra
-        // säsongen får inte göra schemat oläsbart. Anonymt och trasigt ska bete sig lika.
+        // En gammal eller trasig token i en telefon som legat i fickan sedan förra säsongen
+        // autentiserar inte — och en gäst ska mötas av 401, inte av ett tyst fel.
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("Authorization", "Bearer inte-en-riktig-token");
 
         var response = await client.GetAsync("/api/v1/teams", CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    // ---- Varför den är öppen ---------------------------------------------------------
+    // ---- Varför den är stängd --------------------------------------------------------
 
     [Fact]
-    public void PublikLasning_HarIngenAuktoriseringsmetadata()
+    public void VarjeApiEndpoint_UtomAllowlist_KraverAuktorisering()
     {
         /*
-         * Testet som faller bygget nar inloggningen infors fel. Det behover inget anrop
-         * och marker aven en route som ingen rakar testa.
+         * Testet som faller bygget nar en ny endpoint glommer sitt [Authorize]. Det behover
+         * inget anrop och marker aven en route som ingen rakar testa.
          *
-         * Bara sakra metoder raknas. §KM.3 ar "publik lasning, autentiserad skrivning" --
-         * en POST under samma adress ar alltsa inte den publika ytan. Forsta versionen av
-         * det har testet matchade pa sokvag oavsett metod, och fallde nar tranarens
-         * endpoints kom i #35. Den hade ratt att titta, men fel upplosning.
+         * I den stangda appen ar detta bade las- och skrivvakten i ett: allt under api/ ska
+         * krava auktorisering, utom den korta allow-listan (inloggningen sjalv och cron).
          */
-        var protectedReads = PublicRouteEndpoints()
-            .Where(IsSafeMethod)
-            .Where(e => !IsAuthenticatedByDesign(e))
-            .Where(e => e.Metadata.GetOrderedMetadata<IAuthorizeData>().Count > 0)
-            .Select(e => e.RoutePattern.RawText)
-            .ToArray();
-
-        Assert.True(
-            protectedReads.Length == 0,
-            "Publik läsning har fått krav på inloggning, vilket bryter §KM.3: "
-                + string.Join(", ", protectedReads));
-    }
-
-    [Fact]
-    public void Skrivning_ArAldrigOppen()
-    {
-        /*
-         * Den omvanda kontrollen, och lika viktig. §KM.3 kraver inloggning for allt som
-         * skriver -- en oskyddad POST under en publik adress ar precis lika illa som en
-         * skyddad GET, och betydligt lattare att skriva av misstag.
-         */
-        /*
-         * Varje route, inte bara de under de publika prefixen. Forsta versionen tittade
-         * bara dar den publika lasningen bor, och hade darfor missat en oskyddad
-         * /api/v1/venues -- alltsa precis det slags nya endpoint kontrollen finns for.
-         */
-        var openWrites = AllRouteEndpoints()
-            .Where(e => !IsSafeMethod(e))
+        var open = AllRouteEndpoints()
             .Where(e => !IsAnonymousByDesign(e))
             .Where(e => e.Metadata.GetOrderedMetadata<IAuthorizeData>().Count == 0)
             .Select(e => $"{Methods(e)} {e.RoutePattern.RawText}")
             .ToArray();
 
         Assert.True(
-            openWrites.Length == 0,
-            "Endpoints som ändrar tillstånd saknar krav på inloggning (§KM.3): "
-                + string.Join(", ", openWrites));
+            open.Length == 0,
+            "Endpoints saknar krav på inloggning i den stängda appen (§KM.3): "
+                + string.Join(", ", open));
+    }
+
+    [Fact]
+    public void Auktorisering_HarIngenFallbackPolicy()
+    {
+        // Ingen fallback-policy behövs — varje endpoint säger sitt eget krav. Kontrollen
+        // finns kvar från v1: en fallback vore ett trubbigt sätt att låsa allt på en rad,
+        // och skulle dölja en enskild endpoint som glömt sitt [Authorize].
+        var options = _factory.Services.GetService<IOptions<AuthorizationOptions>>();
+
+        Assert.Null(options?.Value.FallbackPolicy);
     }
 
     /// <summary>
-    /// Endpoints som ändrar tillstånd utan inloggning, med avsikt.
+    /// Endpoints som är öppna med avsikt.
     ///
     /// <para>
-    /// Alla hör till inloggningen själv: man kan inte kräva en session för att skapa en.
-    /// Listan är kort med flit — varje rad här är ett undantag någon måste kunna försvara.
+    /// Alla hör till inloggningen själv (man kan inte kräva en session för att skapa en)
+    /// eller till cron-jobbet (anroparen är Vercels cron, inte en människa — det skyddas av
+    /// en delad hemlighet i stället). Listan är kort med flit: varje rad är ett undantag
+    /// någon måste kunna försvara.
     /// </para>
     /// </summary>
     private static bool IsAnonymousByDesign(RouteEndpoint endpoint)
     {
         string[] allowed =
         [
+            /*
+             * Anti-forgery-token: double-submit-halvan som klienten laser innan den kan
+             * skriva. Maste ga att hamta innan sessionen ar helt pa plats -- den ar en del
+             * av inloggningens bootstrap, inte innehall.
+             */
+            "api/v1/auth/csrf",
+
             "api/v1/auth/request-code",
             "api/v1/auth/verify-code",
             "api/v1/auth/refresh",
             "api/v1/auth/logout",
 
             /*
-             * Notisprenumerationen (#60). Kraver notiser ett konto nar de en brakdel av
-             * foraldrarna, och att lordagens match ar installd ar precis det slags
-             * upplysning som ska na alla. Det som skrivs ar inte nagons uppgifter om nagon
-             * annan -- det ar webblasarens egen adress, som webblasaren sjalv nyss skapade.
-             */
-            "api/v1/teams/{slug}/push",
-
-            /*
              * Kvallspaminnelsens jobb (#64). Anroparen ar Vercels cron, inte en manniska --
              * det finns ingen session att krava. Skrivningen skyddas av en delad hemlighet i
-             * stallet, kontrollerad i JobsController med konstant tid. Samma sorts undantag
-             * som inloggningens egna endpoints, som skyddas av nagot annat an en token.
+             * stallet, kontrollerad i JobsController med konstant tid.
              */
             "api/v1/jobs/match-reminders",
-        ];
-
-        return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);
-    }
-
-    /// <summary>
-    /// Läsningar under en publik sökväg som ändå kräver inloggning, med avsikt.
-    ///
-    /// <para>
-    /// Spegelbilden av <see cref="IsAnonymousByDesign"/>, och lika kort med flit. Prefixen
-    /// i <see cref="PublicRouteEndpoints"/> beskriver schemat — lag, matcher, kalender — och
-    /// allt <em>det</em> handlar om ska vara öppet.
-    /// </para>
-    ///
-    /// <para>
-    /// Åkförfrågningarna ligger under samma adress som matchen men är något annat: en sak
-    /// mellan två föräldrar. Hälsningen är fritext och får bara nå de inblandade (§KM.12),
-    /// så listan filtreras dessutom på vem som frågar — föraren ser alla, alla andra bara
-    /// sina egna. Erbjudandena är däremot fortsatt öppna för alla, precis som §KM.3 kräver.
-    /// </para>
-    ///
-    /// <para>
-    /// Jämförelsen är exakt och inte på prefix: undantaget ska gälla den här routen, inte
-    /// allt som en dag råkar börja likadant.
-    /// </para>
-    /// </summary>
-    private static bool IsAuthenticatedByDesign(RouteEndpoint endpoint)
-    {
-        string[] allowed =
-        [
-            "api/v1/matches/{matchId:guid}/carpool/offers/{offerId:guid}/requests",
-
-            /*
-             * Tranarens samakningsoverblick (#55). Schemat ar allas, men vem som kor vem ar
-             * lagets egen sak -- och svaret bar forarnas notiser, som ar fritext och bara
-             * far na de inblandade och lagets tranare (§KM.12).
-             */
-            "api/v1/teams/{slug}/carpool",
-
-            /*
-             * Narvarolaget for en inloggad vuxen (#57). Ligger under matchens adress men ar
-             * inte schemat: det ar mitt eget svar och om kallelsen ar oppen. Kraver konto,
-             * och ligger dessutom bakom grinden (§KM.7) -- osynligt tills klubben slar pa den.
-             */
-            "api/v1/matches/{matchId:guid}/attendance",
-
-            /*
-             * Tranarens narvarosummering (#58). Ligger under lagets adress, men bar de svarande
-             * vuxnas namn (#154) -- lagets egen sak, inte hela internets. CoachOfTeam provar
-             * behorigheten, och grinden (§KM.7) haller den osynlig tills flaggan slas pa.
-             */
-            "api/v1/teams/{slug}/matches/{matchId:guid}/attendance/summary",
-
-            /*
-             * En foralders notisinstallningar for laget (#65). Ligger under lagets adress,
-             * men ar kontots egna val -- de hor till den inloggade, inte till schemat, och
-             * en gast har inget att spara pa (§KM.3).
-             */
-            "api/v1/teams/{slug}/notification-settings",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);
@@ -321,44 +230,15 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
     private static string Methods(RouteEndpoint endpoint) =>
         string.Join("/", endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? []);
 
-    private static bool IsSafeMethod(RouteEndpoint endpoint) =>
-        endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods
-            .All(method => method is "GET" or "HEAD" or "OPTIONS") ?? true;
-
-    [Fact]
-    public void Auktorisering_HarIngenFallbackPolicy()
-    {
-        // En fallback-policy skyddar allt som inte uttryckligen sagt något annat, och är
-        // det snabbaste sättet att låsa hela den publika delen med en rad. Införs auth ska
-        // varje skyddad endpoint säga det själv.
-        var options = _factory.Services.GetService<IOptions<AuthorizationOptions>>();
-
-        Assert.True(
-            options?.Value.FallbackPolicy is null,
-            "En fallback-policy är satt. Den låser den publika delen (§KM.3) — "
-                + "skydda endpoints var för sig i stället.");
-    }
-
-    private IEnumerable<RouteEndpoint> PublicRouteEndpoints()
-    {
-        var open = new[] { "api/v1/teams", "api/v1/matches", "calendar" };
-
-        return _factory.Services
-            .GetRequiredService<EndpointDataSource>()
-            .Endpoints
-            .OfType<RouteEndpoint>()
-            .Where(e => open.Any(prefix =>
-                (e.RoutePattern.RawText ?? string.Empty).StartsWith(prefix, StringComparison.Ordinal)));
-    }
-
-    // ---- Inga personuppgifter i publika svar ------------------------------------------
+    // ---- Inga personuppgifter i svaren ------------------------------------------------
 
     [Theory]
     [InlineData("/api/v1/teams")]
     [InlineData("/api/v1/teams/gast/matches")]
-    public async Task PubliktSvar_InnehallerIngaPersonuppgifter(string path)
+    public async Task Svar_InnehallerIngaPersonuppgifter(string path)
     {
-        using var client = _factory.CreateClient();
+        // Inte ens för en inloggad medlem läcker barn-PII (§KM.1). Testet läser fältnamnen.
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync(path, CancellationToken.None);
         var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
@@ -368,16 +248,16 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
 
         Assert.True(
             offenders.Length == 0,
-            "Publikt svar innehåller fält som ser ut som personuppgifter (§KM.1): "
+            "Svar innehåller fält som ser ut som personuppgifter (§KM.1): "
                 + string.Join(", ", offenders));
     }
 
     [Fact]
     public async Task MatchSvar_LamnarAldrigUtNotisen()
     {
-        // Notisen är tränarens fritext och räknas som potentiell PII (ADR 2026-08-30).
-        // Publika svar cachas dessutom på Vercels edge.
-        using var client = _factory.CreateClient();
+        // Notisen är tränarens fritext och räknas som potentiell PII (ADR 2026-08-30) — den
+        // får inte finnas i svaret, inte ens för en inloggad medlem.
+        using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
         var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
@@ -386,21 +266,8 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         Assert.DoesNotContain(SecretNote, body, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task IcsFeed_LamnarAldrigUtNotisen()
-    {
-        using var client = _factory.CreateClient();
-
-        var response = await client.GetAsync("/calendar/gast.ics", CancellationToken.None);
-        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
-
-        // §KM.4: feeden innehåller matchdata och ingenting annat.
-        Assert.DoesNotContain("Elias", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(SecretNote, body, StringComparison.OrdinalIgnoreCase);
-    }
-
     /// <summary>
-    /// Fältnamn som inte får förekomma i ett publikt svar.
+    /// Fältnamn som inte får förekomma i ett svar.
     ///
     /// <para>
     /// Jämförelsen sker mot <em>fältnamn</em> och inte mot hela svarskroppen. En

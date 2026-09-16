@@ -9,6 +9,7 @@ using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -96,12 +97,48 @@ public sealed class CarpoolPushTests(KarraMatcherApiFactory factory)
         var driver = new Account { Id = Guid.NewGuid(), Email = $"forare-c-{suffix}@example.com", CreatedUtc = now };
         var requester = new Account { Id = Guid.NewGuid(), Email = $"fragare-c-{suffix}@example.com", CreatedUtc = now };
 
+        // Bada ar medlemmar av laget (v2, §KM.3): vardnadshavare till varsitt barn i det.
+        var driverChild = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = now,
+        };
+        var requesterChild = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Noah",
+            LastInitial = "K",
+            AgeGroupId = ageGroup.Id,
+            TeamId = team.Id,
+            CreatedUtc = now,
+        };
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Matches.Add(match);
         context.Accounts.AddRange(driver, requester);
+        context.Children.AddRange(driverChild, requesterChild);
+        context.Guardianships.AddRange(
+            new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = driver.Id,
+                ChildId = driverChild.Id,
+                GrantedUtc = now,
+            },
+            new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = requester.Id,
+                ChildId = requesterChild.Id,
+                GrantedUtc = now,
+            });
 
         await context.SaveChangesAsync(CancellationToken.None);
 

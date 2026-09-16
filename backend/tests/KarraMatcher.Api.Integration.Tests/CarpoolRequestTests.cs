@@ -7,6 +7,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -100,12 +101,35 @@ public sealed class CarpoolRequestTests(KarraMatcherApiFactory factory)
             UpdatedUtc = Kickoff,
         };
 
+        // Alla tre ar medlemmar av laget (v2, §KM.3): vardnadshavare till varsitt barn i det.
+        var children = new[] { driver, asker, third }
+            .Select((_, i) => new Child
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Barn",
+                LastInitial = ((char)('A' + i)).ToString(),
+                AgeGroupId = ageGroup.Id,
+                TeamId = team.Id,
+                CreatedUtc = Kickoff,
+            })
+            .ToArray();
+        var guardianships = new[] { driver, asker, third }
+            .Select((account, i) => new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = account.Id,
+                ChildId = children[i].Id,
+                GrantedUtc = Kickoff,
+            });
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Matches.Add(match);
         context.Accounts.AddRange(driver, asker, third);
+        context.Children.AddRange(children);
+        context.Guardianships.AddRange(guardianships);
         context.CarpoolOffers.Add(offer);
 
         await context.SaveChangesAsync(CancellationToken.None);
