@@ -195,20 +195,20 @@ export function renewSession(): Promise<boolean> {
 }
 
 /**
- * Hämtar något som servern får veta vem som frågar efter.
+ * Hämtar något från API:t och skickar med access-token när den finns.
  *
- * <h3>Varför det här inte är samma funktion som `getJson`</h3>
+ * <h3>Stängd app i v2 (§KM.3, `#191`)</h3>
  *
- * De publika hämtningarna — lagets schema, en match, kalendern — cachas på Vercels edge
- * och svarar då utan att väcka Render (§KM.11). Det är appens vanligaste sidvisning, och
- * en `Authorization`-rubrik på just de anropen hade gjort dem omöjliga att dela mellan
- * läsare. Därför bär bara de anrop som faktiskt beror på vem som frågar en token.
+ * Appen är stängd: allt innehåll kräver inloggning och medlemskap, och det finns ingen
+ * publik, edge-cachad läsning kvar. Därför bär varje läsning en token när användaren är
+ * inloggad. Utan token blir det ett vanligt anrop som servern svarar `401` på — vilket är
+ * rätt för en gäst.
  *
- * <h3>Utan token blir det ett vanligt anrop</h3>
+ * <h3>401 förnyar sessionen</h3>
  *
- * Samåkningens lista är öppen men svarar olika: en inloggad ser förarens namn och notis,
- * en gäst gör det inte. Samma funktion tjänar alltså båda — den lägger bara till det den
- * har.
+ * Access-token lever en kvart. En inloggad som varit borta längre ska inte mötas av ett fel:
+ * ett `401` med en token i minnet försöker förnya sessionen via refresh-cookien och gör om
+ * anropet en gång.
  */
 export async function getAuthJson<T>(
   path: string,
@@ -249,23 +249,17 @@ export async function getAuthJson<T>(
   return parseBody<T>(response)
 }
 
+/**
+ * Hämtar innehåll från API:t.
+ *
+ * <h3>Stängd app i v2 (§KM.3, `#191`)</h3>
+ *
+ * I v1 var det här den <em>publika</em> hämtningen — schema, match, lag — som avsiktligt
+ * gick utan token så att Vercels edge kunde dela svaret mellan läsare. Den öppna ytan finns
+ * inte längre: allt innehåll kräver inloggning och medlemskap. Därför bär varje läsning nu
+ * access-token när den finns, precis som <see cref="getAuthJson"/> — utan den ser en inloggad
+ * medlem ingenting. Funktionen är kvar under sitt namn för de rena innehålls-GET:arna.
+ */
 export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  let response: Response
-
-  try {
-    response = await fetch(`${baseUrl}${path}`, {
-      headers: { Accept: 'application/json' },
-      ...(signal ? { signal } : {}),
-    })
-  } catch {
-    // fetch kastar bara när anropet inte gick att genomföra alls: nätet är nere, eller
-    // servern gick inte att nå. Ett HTTP-fel hamnar aldrig här — det syns på response.ok.
-    throw new ApiError('Ingen anslutning till servern.', { status: 0, offline: true })
-  }
-
-  if (!response.ok) {
-    throw new ApiError(await messageFor(response), { status: response.status })
-  }
-
-  return (await response.json()) as T
+  return getAuthJson<T>(path, signal)
 }
