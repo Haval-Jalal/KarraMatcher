@@ -47,7 +47,9 @@ export async function login(page: Page, email: string, next: string): Promise<vo
   await page.getByLabel('Kod från mejlet').fill(code)
   await page.getByRole('button', { name: 'Logga in', exact: true }).click()
 
-  await page.waitForURL(`**${next}`)
+  // Poll:a sökvägen i stället för waitForURL: navigeringen till `next` sker klientsidigt
+  // (pushState, ingen `load`-händelse), och waitForURL('load') hänger då ibland.
+  await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe(next)
 }
 
 /** Id:t på den framtida match prepare skapade (motståndare "E2E FC" i lag gul). */
