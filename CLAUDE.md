@@ -97,30 +97,45 @@ Vad det globala lagret bidrar med:
 | A8 | All data i backend | **Barnstatistiken lagras enbart på enheten** | Spelarkortet är familjens egen sak. Data som aldrig når servern kan inte läcka från den — men den kan gå förlorad, se §KM.2 |
 | A9 | Mediator = MediatR | **Handskriven query-dispatcher** | MediatR ligger sedan v13 under RPL-1.5, som kräver att vår källkod publiceras vid driftsättning. Dispatchern är ~70 rader och har noll licensyta |
 
-### §KM.1 Barn-PII — servern lagrar ingenting om ett barn
+### §KM.1 Barn-PII — minimal barnprofil på servern, aldrig mer än den behöver
 
-> **Skärpt 2026-09-10.** Tidigare tillät den här paragrafen förnamn, tröjnummer, lag-id och
-> aktiv/inaktiv om ett barn, som förberedelse för kallelsen. Beslutet blev det motsatta:
-> **inga barnuppgifter på servern över huvud taget.** Se *Viktiga beslut* i
-> [`docs/PROJEKT-HANDOFF.md`](./docs/PROJEKT-HANDOFF.md).
+> **Omvänt 2026-09-16 (v2, `#189`).** Tidigare lagrade servern **ingenting** om ett barn.
+> V2 är en stängd, inbjudningsbaserad plattform där en admin sorterar truppens barn i lag och
+> riktar kallelser till dem — det kräver att barn finns på servern. Beslutet är medvetet och
+> väger tungt eftersom det rör barn under 13; det vilar på **vårdnadshavarsamtycke** (§KM.6).
+> Se *Viktiga beslut* i [`docs/PROJEKT-HANDOFF.md`](./docs/PROJEKT-HANDOFF.md).
 
-- **Tillåtet om ett barn på servern:** ingenting. Det finns ingen `Player`-entitet, ingen
-  trupp och ingen kolumn som beskriver ett barn. Barn existerar bara som lokala poster i
-  familjens egen telefon (§KM.2).
-- **Förbjudet överallt** — databas, loggar, cache, felrapportering, analytics, ICS-feed, push-payload:
-  namn, efternamn, personnummer, födelsedatum, adress, telefonnummer, e-post, foto,
-  hälsouppgifter, position, tröjnummer — allt som pekar ut ett enskilt barn.
-- **Vuxna är en annan sak.** Ett konto har adress och namn (`#154`); det är personuppgifter om
-  en vuxen som själv skrivit in dem, och de lyder under §KM.6 och §KM.10 — inte under taket här.
-- Ny kolumn som kan innehålla personuppgift får **inte** införas utan att beslutet skrivs in i
-  `docs/PROJEKT-HANDOFF.md` under *Viktiga beslut* — i samma PR.
-- Fritextfält som en användare kan skriva i (t.ex. samåkningsnotis) räknas som potentiell PII:
-  de får inte loggas, inte indexeras och inte visas för fler än den avsedda mottagarkretsen.
+- **Tillåtet om ett barn på servern — och inget mer:** förnamn, **efternamnets initial**
+  (visas som t.ex. *"Liam J"*, aldrig hela efternamnet), trupp- och lag-tillhörighet, samt
+  koppling till en eller flera vårdnadshavare. Ett valfritt tröjnummer får förekomma om en
+  funktion kräver det.
+- **Förbjudet överallt** — databas, loggar, cache, felrapportering, analytics, push-payload:
+  **hela efternamnet**, personnummer, födelsedatum, adress, telefonnummer, e-post, foto,
+  hälsouppgifter, position. Dataminimering är regeln: lägg aldrig till ett fält om ett barn
+  utan att en konkret funktion kräver det.
+- **Statistiken är fortfarande förbjuden på servern.** Matchresultat, mål, assist, spelade
+  matcher och märken lagras **aldrig** på servern — de bor uteslutande på enheten (§KM.2).
+  Barnprofilen här är en trupp-post (vem hör till vilket lag), inte ett spelarkort.
+- **Vuxna är en annan sak.** Ett konto har namn och mejladress som en vuxen själv skrivit in;
+  de lyder under §KM.6 och §KM.10.
+- Ny kolumn som kan innehålla personuppgift om ett barn får **inte** införas utan att beslutet
+  skrivs in i `docs/PROJEKT-HANDOFF.md` under *Viktiga beslut* — i samma PR.
+- Fritextfält som en användare kan skriva i (chatt, kallelse-hälsning, samåkningsnotis) räknas
+  som potentiell PII: de får inte loggas, inte indexeras och inte visas för fler än den
+  avsedda mottagarkretsen.
 
-### §KM.2 Barnets statistik lämnar aldrig enheten
+### §KM.2 Barnets statistik lämnar aldrig enheten (oförändrat i v2)
 
-Spelarkortet — matchresultat, mål, assist, spelade matcher, märken — är tänkt som något föräldern och
-barnet fyller i tillsammans efter matchen. Den datan **lagras uteslutande i familjens egen telefon**.
+> **Bekräftat 2026-09-16 (v2).** Även när trupp-profilen (§KM.1) flyttar in på servern
+> **stannar spelarkortet kvar enbart på enheten.** Det är en privat kul-grej mellan förälder
+> och barn — resultat och milstolpar ska aldrig bli publika eller nå en server. Den här
+> paragrafen är alltså den enda delen som inte stängs eller flyttas i v2.
+
+Spelarkortet — matchresultat, mål, assist, spelade matcher, märken (och en eventuell
+**sportquiz** i samma vy) — är tänkt som något föräldern och barnet fyller i tillsammans efter
+matchen. Den datan **lagras uteslutande i familjens egen telefon**. Den är åtskild från
+trupp-profilen i §KM.1: den senare säger *vem som hör till vilket lag*, den här är *familjens
+egna siffror och skoj* och delas med ingen.
 
 - **Det finns ingen tabell, ingen entitet och ingen endpoint för barnstatistik på servern.**
   Backend kan inte läsa den, kan inte ta emot den och kan inte råka logga den — därför att den aldrig
@@ -141,29 +156,35 @@ barnet fyller i tillsammans efter matchen. Den datan **lagras uteslutande i fami
      *"Sparas bara på den här telefonen"*.
 - Två vårdnadshavare med varsin telefon får varsin uppsättning statistik. Det är en följd av modellen
   och ska förklaras i gränssnittet, inte "lösas" med en server.
-- **Det finns ingen `Player` på servern alls.** Barnet i spelarkortet är en lokal post och har
-  ingen motsvarighet i databasen — inte heller som tränarens trupp. Kallelsen räknar svar från
-  vuxna konton i stället för att namnge barn (§KM.7).
+- **Spelarkortet kopplas aldrig till trupp-profilen på servern.** Barnet kan finnas som en
+  trupp-post (§KM.1, för lag och kallelse), men dess *statistik* har ingen motsvarighet i
+  databasen och de två får inte synkas ihop. Testkravet ovan skyddar just den gränsen.
 
-### §KM.3 Publik läsning, autentiserad skrivning
+### §KM.3 Stängd app — inloggning och medlemskap krävs för allt (v2)
 
-- **Anonymt tillåtet:** lagens matchlista, enskild match, spelplatser, ICS-feed, appens statiska innehåll,
-  **att se lagets samåkningserbjudanden**, och att prenumerera på notiser om matchändringar.
-- **Kräver inloggning:** allt som skriver — inklusive att lägga upp samåkning och att skicka en
-  åkförfrågan — samt all tränarfunktion.
-- **En gäst kan titta, men inte delta.** Knappar för att lägga upp eller begära skjuts visas för gäster
-  med en uppmaning att logga in — de får aldrig ett tyst fel.
-- Anonyma endpoints ska ha rate limiting (§KM.0 A1), får aldrig returnera personuppgifter,
-  och ska vara cachebara utan att någon användares data blandas in.
-- Auktorisering är **policy-baserad**: `Coach` (per lag), `Admin`, `Guardian` (per spelare).
+> **Omvänt 2026-09-16 (v2, `#189`).** Tidigare var läsning publik (matchtider för vem som
+> helst). V2 är stängd: ingen ser något utan att vara inloggad **och** medlem i den aktuella
+> truppen/laget. Det följer av att servern nu bär barn-profiler och intern info.
+
+- **Anonymt tillåtet:** endast det som krävs för att logga in eller acceptera en inbjudan
+  (inloggningsflödet, inbjudningslänkens landningssida). Inget innehåll — inga matcher, inga
+  trupper, inga barn, ingen chatt — nås utan medlemskap.
+- **Allt innehåll kräver medlemskap.** En inloggad som inte är medlem i en trupp ser inte den
+  truppens data. Åtkomst avgörs av **medlemskap + roll**, inte bara av att vara inloggad.
+- **Ingen publik ICS-feed** (§KM.4 utgår i v2). Kalenderdelning, om den återinförs, sker bakom
+  medlemskap.
+- Auktorisering är **policy-baserad** med scope: `SuperAdmin` (global), `Admin` (per trupp),
+  `Coach` (per lag), `Guardian` (per barn). Objektnivå-auktorisering i varje handler.
   Rollkontroller hårdkodas aldrig i controllers.
+- **Följd för drift (§KM.11):** eftersom inga publika GET-svar finns kvar försvinner
+  edge-cachningen som maskerade Renders kallstart. Kallstart-UX (tydligt svenskt besked,
+  uppetidsping) blir viktigare, inte mindre.
 
-### §KM.4 ICS-feeden
+### §KM.4 ICS-feeden — utgår i v2
 
-- Publik, oautentiserad, per lag. Innehåller **enbart** matchdata: lag, motståndare, tid, plats, adress, status.
-- Aldrig barnnamn, aldrig närvaro, aldrig samåkning.
-- Uppdaterad match måste öka `SEQUENCE` och inställd match sätta `STATUS:CANCELLED`, annars uppdateras
-  inte föräldrarnas kalendrar.
+> **Utgått 2026-09-16 (v2, `#189`).** Den publika, oautentiserade kalenderfeeden var själva
+> kärnan i den öppna appen. I en stängd app (§KM.3) finns ingen publik feed. Om kalender-
+> integration återinförs sker den bakom medlemskap och får ett eget beslut här.
 
 ### §KM.5 Tid och tidszon
 
@@ -171,27 +192,33 @@ barnet fyller i tillsammans efter matchen. Den datan **lagras uteslutande i fami
 - Konvertering sker på ett ställe i BE och ett ställe i FE — aldrig utspritt.
 - **Testkrav:** minst ett testfall som passerar sommartidsskiftet i oktober (säsongen sträcker sig dit).
 
-### §KM.6 Samtycke och radering
+### §KM.6 Samtycke och radering (obligatoriskt samtycke i v2)
 
-- **Inget barns uppgifter hamnar på servern alls** (§KM.1, beslut 2026-09-10). Därmed behövs
-  ingen samtyckesrutin för barnuppgifter: det finns inget att samtycka till. Kvar står den
-  begripliga integritetstexten som förklarar var spelarkortet faktiskt ligger.
+- **Vårdnadshavarsamtycke krävs innan ett barn kopplas** (v2). Eftersom en barn-profil nu bor
+  på servern (§KM.1) måste vårdnadshavaren godkänna en begriplig samtyckestext; **version och
+  tidsstämpel sparas**. Utan samtycke kopplas inget barn.
 - **Spelarkortet kräver inget samtycke från oss** — den datan lämnar aldrig telefonen (§KM.2). Däremot
   ska gränssnittet vara tydligt med var den finns och att den försvinner om telefonen byts utan säkerhetskopia.
-- Radering av ett konto tar bort kontot och allt som ägs av det, inklusive samåkningserbjudanden,
-  förfrågningar och närvarosvar — direkt, inte "markerad som raderad". Spelarkortet raderas separat
-  på enheten, av familjen själv; servern kan inte röra det och har aldrig sett det.
+- **Radering är direkt, aldrig mjuk.** Radering av ett konto tar bort kontot och allt det äger.
+  När ett barn tas bort ur en trupp raderas dess profil och kopplingar direkt. Ett raderat barn
+  försvinner ur kallelser, målgrupper och chattmedlemskap. Spelarkortet raderas separat på
+  enheten, av familjen själv; servern har aldrig sett det.
 - Ingen tredjepartsspårning, ingen besöksanalys, inga externa skript i FE utöver väder (Open-Meteo)
   och utgående kartlänkar. Nya tredjeparter kräver beslut i handoff-filen.
 
-### §KM.7 Feature flags — kallelsen är byggd men avstängd
+### §KM.7 Kallelsen — riktad mot trupp, lag eller utvalda barn (v2)
 
-- Närvaro/kallelse styrs av `Team.AttendanceEnabled`. Flaggan kontrolleras **serverside i varje handler**,
-  inte bara genom att dölja knappar i FE.
-- Är flaggan av returnerar endpointen `404`, och FE visar inte funktionen.
-- **Kallelsen namnger inga barn** (§KM.1, beslut 2026-09-10). En vuxen svarar för sin familj och
-  anger hur många som kommer; tränaren ser summan och vilka *konton* som inte svarat. Vilket barn
-  som avses vet bara familjens egen telefon.
+> **Ändrat 2026-09-16 (v2, `#189`).** I den öppna appen namngav kallelsen aldrig barn — en
+> vuxen svarade med ett antal. I v2, med barn-profiler på servern, riktas kallelsen mot en
+> **målgrupp**: hela truppen, ett färg-lag, eller utvalda barn.
+
+- **Målgrupp:** hela truppen / ett lag / utvalda barn. Samma målgruppsmodell återanvänds för
+  aviseringar och chatt-scope.
+- **Kallelsen får namnge barn** — men bara med den minimala profilen (§KM.1: *"Liam J"*), och
+  bara för medlemmar med rätt roll/medlemskap i den truppen (§KM.3). Aldrig hela efternamnet.
+- **Vårdnadshavaren svarar per barn.** Tränaren/adminen ser vilka barn som svarat och vad.
+- Objektnivå-auktorisering i varje handler: en tränare når bara sitt lags kallelser, en
+  vårdnadshavare bara sina barns.
 
 ### §KM.8 Offline och PWA
 

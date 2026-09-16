@@ -282,13 +282,14 @@ LocalChild 1—* LocalMatchReport               ← spelarkortet
 ## 10. Icke-funktionella krav
 - **Prestanda:** Schemat för ett lag laddar under 500 ms på 4G. Appskalet är interaktivt under 2 s på en fem år gammal telefon. ICS-feeden svarar under 300 ms och är cachad.
 - **Säkerhet:** Baslinjen i `CLAUDE.md` plus §KM. Spelarkortet lagras enbart på enheten och passerar aldrig servern (§KM.2). Rate limiting på publika endpoints från start.
-- **GDPR/PII:**
-  - **Personuppgifter vi behandlar på servern:** vårdnadshavarens e-post och visningsnamn; push-endpoint (enhetsidentifierare); fritext i samåkning; audit-logg med användar-id. Dessutom barnets förnamn och tröjnummer **först när en tränare lägger upp truppen** för den vilande kallelsen.
-  - **Personuppgifter vi INTE behandlar:** spelarkortet — barnets namn, resultat, mål och assist — stannar på familjens egen enhet och når aldrig servern (§KM.2). Vid lansering, med kallelsen avstängd, behandlar servern alltså **inga uppgifter alls om barn**.
-  - **Laglig grund:** berättigat intresse/avtal för kontot och samåkningen; samtycke från vårdnadshavare den dag truppen läggs upp.
-  - **Gallring:** push-prenumerationer rensas när de blir ogiltiga eller efter 12 månaders inaktivitet. **Samåkning gallras 30 dagar efter matchen** (§KM.12). Matchdata gallras efter avslutad säsong + 2 år, eller vid begäran.
-  - **Radering:** i appen, direkt, av både konto och trupp (§KM.6). Spelarkortet raderas separat på enheten och kan raderas när som helst utan att någon behöver kontaktas.
-  - **Ingen data lämnar EU.** Ingen spårning, ingen besöksanalys.
+- **GDPR/PII (v2 — stängd plattform, se `#189`):**
+  - **Personuppgifter vi behandlar på servern:** vårdnadshavarens e-post och visningsnamn; en **minimal barnprofil** (förnamn + efternamnets initial, t.ex. *"Liam J"*, lag/trupp-tillhörighet, koppling till vårdnadshavare — aldrig hela efternamnet, personnummer, födelsedatum, adress eller foto); medlemskap och inbjudningar; kallelsesvar per barn; chattmeddelanden; push-endpoint (enhetsidentifierare); audit-logg med användar-id.
+  - **Personuppgifter vi INTE behandlar:** spelarkortet — barnets resultat, mål, assist och märken (samt en ev. sportquiz) — stannar på familjens egen enhet och når aldrig servern (§KM.2). Det är den enda barndata som är device-only i v2, och den kopplas aldrig till barnprofilen på servern.
+  - **Laglig grund:** **samtycke från vårdnadshavare** för barnprofilen (version + tidsstämpel sparas, krävs innan koppling); berättigat intresse/avtal för konto, medlemskap och intern kommunikation inom truppen.
+  - **Gallring:** push-prenumerationer rensas när de blir ogiltiga eller efter 12 månaders inaktivitet. **Samåkning gallras 30 dagar efter matchen** (§KM.12). Chatt och kallelser gallras enligt beslutad tid. När ett barn lämnar en trupp raderas dess profil och kopplingar direkt.
+  - **Radering:** i appen, direkt, av konto, medlemskap och barnprofil (§KM.6). Spelarkortet raderas separat på enheten och kan raderas när som helst utan att någon behöver kontaktas.
+  - **Ingen data lämnar EU** utöver det dokumenterade e-postundantaget (Resend/DPF). Ingen spårning, ingen besöksanalys.
+  - **Stängd app:** allt innehåll kräver inloggning **och** medlemskap (§KM.3). Ingen publik läsning, ingen publik kalenderfeed (§KM.4 utgår).
 - **Tillgänglighet:** WCAG 2.1 AA som eget krav (§KM.0 A3).
 - **Skalbarhet/drift:** ~130 användare, ~200 matcher per säsong. En instans räcker med marginal.
   Frontend på Vercel, backend som Docker-container på Render, databas på Neon — allt på fria nivåer (§KM.11).
