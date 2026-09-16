@@ -90,6 +90,15 @@ public static class TestingSupport
             var code = mailbox.Latest(email);
             return code is null ? Results.NotFound() : Results.Ok(new CodeResult(code));
         });
+
+        // Tömmer brevlådan för en adress. Testet anropar det före varje "skicka kod", så att
+        // nästa kod som dyker upp garanterat är den nya -- inte en kvarliggande från en
+        // tidigare inloggning med samma konto.
+        group.MapDelete("/code", (string email, TestMailbox mailbox) =>
+        {
+            mailbox.Clear(email);
+            return Results.NoContent();
+        });
     }
 
     private static async Task<Account> EnsureAccountAsync(
@@ -208,6 +217,8 @@ public sealed class TestMailbox
     public void Store(string email, string code) => _codes[email] = code;
 
     public string? Latest(string email) => _codes.TryGetValue(email, out var code) ? code : null;
+
+    public void Clear(string email) => _codes.TryRemove(email, out _);
 }
 
 /// <summary>

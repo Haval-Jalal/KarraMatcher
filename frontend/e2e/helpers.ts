@@ -11,44 +11,27 @@ export const PARENT_B_EMAIL = 'parent-b-e2e@test.local'
 export const E2E_TEAM_SLUG = 'gul'
 export const E2E_OPPONENT = 'E2E FC'
 
-/** Den kod brevlådan har för en adress just nu, eller null om ingen. */
-async function peekLoginCode(page: Page, email: string): Promise<string | null> {
-  const response = await page.request.get(
-    `${API}/api/v1/testing/code?email=${encodeURIComponent(email)}`,
-  )
-
-  if (!response.ok()) {
-    return null
-  }
-
-  const body = (await response.json()) as { code: string }
-  return body.code
+/** Tömmer brevlådan för en adress, så nästa kod som dyker upp garanterat är den nya. */
+async function clearLoginCode(page: Page, email: string): Promise<void> {
+  await page.request.delete(`${API}/api/v1/testing/code?email=${encodeURIComponent(email)}`)
 }
 
-/**
- * Hämtar en <em>ny</em> inloggningskod — en som skiljer sig från <paramref>excluding</paramref>.
- *
- * Brevlådan är nycklad per adress och återanvänds över flera inloggningar med samma konto.
- * En enkel "läs senaste" skulle därför kunna returnera den <em>förra</em> inloggningens kod
- * innan den nya hunnit lagras, och verifieringen skulle misslyckas. Genom att vänta på en kod
- * som skiljer sig från den föregående får testet alltid den färska.
- */
-export async function fetchFreshLoginCode(
-  page: Page,
-  email: string,
-  excluding: string | null,
-): Promise<string> {
+/** Pollar tills en kod finns i brevlådan (den tömdes precis, så det är den färska). */
+export async function fetchLoginCode(page: Page, email: string): Promise<string> {
   for (let attempt = 0; attempt < 80; attempt++) {
-    const code = await peekLoginCode(page, email)
+    const response = await page.request.get(
+      `${API}/api/v1/testing/code?email=${encodeURIComponent(email)}`,
+    )
 
-    if (code !== null && code !== excluding) {
-      return code
+    if (response.ok()) {
+      const body = (await response.json()) as { code: string }
+      return body.code
     }
 
     await page.waitForTimeout(100)
   }
 
-  throw new Error(`Ingen ny inloggningskod fångades för ${email}.`)
+  throw new Error(`Ingen inloggningskod fångades för ${email}.`)
 }
 
 /**
@@ -61,14 +44,14 @@ export async function fetchFreshLoginCode(
 export async function login(page: Page, email: string, next: string): Promise<void> {
   await page.goto(`/logga-in?next=${encodeURIComponent(next)}`)
 
-  // Den kod som eventuellt ligger kvar från en tidigare inloggning med samma konto — vi
-  // väntar sedan på en som skiljer sig från den, så vi aldrig fyller i en förbrukad kod.
-  const previous = await peekLoginCode(page, email)
+  // Töm en eventuell kvarliggande kod från en tidigare inloggning med samma konto, så att
+  // koden vi sedan hämtar garanterat är den nya och inte en redan förbrukad.
+  await clearLoginCode(page, email)
 
   await page.getByLabel('Mejladress').fill(email)
   await page.getByRole('button', { name: 'Skicka kod' }).click()
 
-  const code = await fetchFreshLoginCode(page, email, previous)
+  const code = await fetchLoginCode(page, email)
 
   await page.getByLabel('Kod från mejlet').fill(code)
   await page.getByRole('button', { name: 'Logga in', exact: true }).click()
