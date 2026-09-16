@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
+import { ConsentSection } from '@/features/consent'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { getProfile, type AccountProfile } from './authApi'
@@ -135,6 +136,8 @@ export function AccountPage() {
           <Link to="/integritet">Så hanteras dina uppgifter</Link>.
         </p>
       </section>
+
+      <ConsentSection />
 
       <DataExportSection />
 

@@ -2050,6 +2050,17 @@ a.match-card:focus-visible .match-card__opponent {
   border-color: var(--focus);
 }
 
+/* Samtyckestexten (§KM.6, #195): bevara radbrytningarna i den lagrade texten. */
+.consent-text {
+  white-space: pre-wrap;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
 .state--ok code {
   word-break: break-all;
 }

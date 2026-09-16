@@ -82,6 +82,9 @@ public static class AuditActions
     public const string ApplicationApproved = "ansokan.godkand";
     public const string ApplicationDenied = "ansokan.nekad";
 
+    // Vårdnadshavarsamtycke (§KM.6, `#195`).
+    public const string ConsentGranted = "samtycke.givet";
+
     public const string AttendanceEnabled = "narvaro.paslagen";
     public const string AttendanceDisabled = "narvaro.avslagen";
     public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";

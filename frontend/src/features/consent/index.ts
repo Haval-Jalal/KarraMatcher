@@ -1,0 +1,1 @@
+export { ConsentSection } from './ConsentSection'
