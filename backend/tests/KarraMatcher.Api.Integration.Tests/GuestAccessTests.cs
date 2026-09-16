@@ -217,13 +217,6 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "api/v1/invitations/{token}",
 
             /*
-             * Ansokningssidans trupp-info (#194). En forälder ska kunna se vilken trupp en
-             * delad ansokningslank leder till innan hen loggar in. Sjalva ansokan kraver
-             * daremot inloggning (den ar [Authorize]).
-             */
-            "api/v1/trupper/{truppId:guid}/apply-info",
-
-            /*
              * Kvallspaminnelsens jobb (#64). Anroparen ar Vercels cron, inte en manniska --
              * det finns ingen session att krava. Skrivningen skyddas av en delad hemlighet i
              * stallet, kontrollerad i JobsController med konstant tid.

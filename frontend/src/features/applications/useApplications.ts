@@ -15,10 +15,11 @@ export const applicationKeys = {
   list: (truppId: string) => ['admin', 'applications', truppId] as const,
 }
 
-export function useApplyInfo(truppId: string) {
+export function useApplyInfo(truppId: string, enabled: boolean) {
   return useQuery({
     queryKey: applicationKeys.applyInfo(truppId),
     queryFn: () => getApplyInfo(truppId),
+    enabled,
     retry: false,
   })
 }

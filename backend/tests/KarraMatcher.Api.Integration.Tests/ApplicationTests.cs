@@ -25,16 +25,28 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
 {
     private static WebApplicationFactoryClientOptions ClientOptions => new() { HandleCookies = true };
 
-    // ---- Ansökningssidan (anonym) ----------------------------------------------------
+    // ---- Ansökningssidan (kräver inloggning, §KM.3) ----------------------------------
 
     [Fact]
-    public async Task ApplyInfo_ArAnonymOchVisarTruppen()
+    public async Task ApplyInfo_UtanInloggning_Nekas()
     {
-        var trupp = await SeedTruppAsync("info");
+        var trupp = await SeedTruppAsync("info-anon");
 
         using var client = factory.CreateClient();
         var response = await client.GetAsync(
             $"/api/v1/trupper/{trupp.AgeGroupId}/apply-info", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ApplyInfo_SomInloggad_VisarTruppen()
+    {
+        var trupp = await SeedTruppAsync("info");
+
+        var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/trupper/{trupp.AgeGroupId}/apply-info",
+            PlainToken("nyfiken@example.com"));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var dto = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
@@ -44,9 +56,9 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
     [Fact]
     public async Task ApplyInfo_OkantTrupp_Ger404()
     {
-        using var client = factory.CreateClient();
-        var response = await client.GetAsync(
-            $"/api/v1/trupper/{Guid.NewGuid()}/apply-info", CancellationToken.None);
+        var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/trupper/{Guid.NewGuid()}/apply-info",
+            PlainToken("nyfiken@example.com"));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

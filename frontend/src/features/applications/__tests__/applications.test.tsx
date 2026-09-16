@@ -80,7 +80,8 @@ describe('Ansökningssidan', () => {
 
     renderRoute('/ansok/trupp-1')
 
-    expect(await screen.findByRole('link', { name: 'Logga in' })).toBeInTheDocument()
+    // Sidans egen uppmaning (skild från menyns "Logga in"-länk).
+    expect(await screen.findByText('Logga in för att ansöka.')).toBeInTheDocument()
   })
 })
 

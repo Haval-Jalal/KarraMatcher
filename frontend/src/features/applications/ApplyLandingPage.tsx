@@ -15,12 +15,38 @@ import { useApply, useApplyInfo } from './useApplications'
 export function ApplyLandingPage() {
   const { truppId } = useParams({ from: '/ansok/$truppId' })
   const { status } = useAuth()
-  const info = useApplyInfo(truppId)
+  // Trupp-infon kräver inloggning (§KM.3) — hämtas därför först när man är inloggad.
+  const info = useApplyInfo(truppId, status === 'inloggad')
   const apply = useApply(truppId)
   const [submitted, setSubmitted] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
 
-  if (info.isLoading || status === 'okand') {
+  if (status === 'okand') {
+    return (
+      <main className="page">
+        <p className="state">Hämtar…</p>
+      </main>
+    )
+  }
+
+  if (status === 'utloggad') {
+    return (
+      <main className="page">
+        <header className="app-header">
+          <h1>Gå med i en trupp</h1>
+          <p>Ansök om medlemskap som vårdnadshavare.</p>
+        </header>
+        <div className="admin-section">
+          <p>Logga in för att ansöka.</p>
+          <Link className="button" to="/logga-in" search={{ next: `/ansok/${truppId}` }}>
+            Logga in
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
+  if (info.isLoading) {
     return (
       <main className="page">
         <p className="state">Hämtar…</p>
@@ -59,44 +85,33 @@ export function ApplyLandingPage() {
         <p>Ansök om att bli medlem som vårdnadshavare.</p>
       </header>
 
-      {status === 'utloggad' && (
-        <div className="admin-section">
-          <p>Logga in för att ansöka.</p>
-          <Link className="button" to="/logga-in" search={{ next: `/ansok/${truppId}` }}>
-            Logga in
-          </Link>
-        </div>
-      )}
-
-      {status === 'inloggad' && (
-        <div className="admin-section">
-          {failure !== null && (
-            <p className="state state--error" role="alert">
-              {failure}
-            </p>
-          )}
-          <button
-            type="button"
-            className="button"
-            disabled={apply.isPending}
-            onClick={() => {
-              setFailure(null)
-              void apply
-                .mutateAsync()
-                .then(() => setSubmitted(true))
-                .catch((error: unknown) => {
-                  setFailure(
-                    error instanceof ApiError
-                      ? error.message
-                      : 'Det gick inte att ansöka just nu. Försök igen.',
-                  )
-                })
-            }}
-          >
-            {apply.isPending ? 'Skickar…' : 'Ansök om att gå med'}
-          </button>
-        </div>
-      )}
+      <div className="admin-section">
+        {failure !== null && (
+          <p className="state state--error" role="alert">
+            {failure}
+          </p>
+        )}
+        <button
+          type="button"
+          className="button"
+          disabled={apply.isPending}
+          onClick={() => {
+            setFailure(null)
+            void apply
+              .mutateAsync()
+              .then(() => setSubmitted(true))
+              .catch((error: unknown) => {
+                setFailure(
+                  error instanceof ApiError
+                    ? error.message
+                    : 'Det gick inte att ansöka just nu. Försök igen.',
+                )
+              })
+          }}
+        >
+          {apply.isPending ? 'Skickar…' : 'Ansök om att gå med'}
+        </button>
+      </div>
     </main>
   )
 }

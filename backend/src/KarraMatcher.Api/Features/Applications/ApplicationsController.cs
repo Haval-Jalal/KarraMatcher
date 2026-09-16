@@ -13,9 +13,9 @@ namespace KarraMatcher.Api.Features.Applications;
 /// Förälderns sida av en ansökan (`#194`, §KM.3).
 ///
 /// <para>
-/// Trupp-infon är anonym — en förälder ska kunna se vilken trupp en delad ansökningslänk
-/// leder till innan hen loggar in. Själva ansökan kräver inloggning. Truppens id står i
-/// adressen (från länken klubben delat).
+/// Både trupp-infon och ansökan kräver inloggning — en självansökande förälder har ändå ett
+/// konto (till skillnad från en inbjuden, §KM.3). Truppens id står i adressen (från länken
+/// klubben delat).
 /// </para>
 /// </summary>
 [ApiController]
@@ -25,9 +25,17 @@ public sealed class ApplicationsController(
     IQueryDispatcher queries,
     ICommandDispatcher commands) : AdminControllerBase
 {
-    /// <summary>Vilken trupp länken leder till. Avsiktligt anonym (§KM.3, allow-listad).</summary>
+    /// <summary>
+    /// Vilken trupp länken leder till.
+    ///
+    /// <para>
+    /// Kräver inloggning (§KM.3): till skillnad från en inbjudan, där den inbjudne kan sakna
+    /// konto, har en självansökande förälder ändå ett konto för att kunna ansöka — så
+    /// truppnamnet visas efter inloggning, och ingen anonym yta öppnas i den stängda appen.
+    /// </para>
+    /// </summary>
     [HttpGet("apply-info")]
-    [AllowAnonymous]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApplyInfoDto>> ApplyInfo(
