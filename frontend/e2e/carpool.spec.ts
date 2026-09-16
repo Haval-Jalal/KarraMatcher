@@ -73,15 +73,26 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   await requester.close()
 
   // ---- Föraren ser förfrågan och nekar med ett meddelande (ett tyst nej får inte ske) ---
-  const respondingDriver = await loggedInMatch(browser, PARENT_A_EMAIL, matchPath)
-  await respondingDriver.page.waitForTimeout(2000)
+  const respCtx = await browser.newContext({ ignoreHTTPSErrors: true })
+  const respPage = await respCtx.newPage()
+  respPage.on('response', (r) => {
+    if (r.url().includes('/requests') && r.request().method() === 'GET') {
+      void r
+        .text()
+        .then((t) => console.log('DRIVER REQUESTS GET', r.status(), t))
+        .catch(() => {})
+    }
+  })
+  await login(respPage, PARENT_A_EMAIL, matchPath)
+  await respPage.waitForTimeout(3000)
   console.log(
-    'RESPONDING DRIVER SAMAKNING:',
-    await respondingDriver.page
+    'RESPONDING DRIVER REGION:',
+    await respPage
       .getByRole('region', { name: 'Samåkning' })
       .innerText()
       .catch(() => 'INGEN region'),
   )
+  const respondingDriver = { page: respPage, close: () => respCtx.close() }
   await respondingDriver.page.getByRole('button', { name: 'Neka' }).click()
   await respondingDriver.page.getByLabel('Meddelande').fill('Ändrade planer, kan tyvärr inte köra.')
   const [denyResponse] = await Promise.all([
