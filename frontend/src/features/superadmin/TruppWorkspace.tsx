@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { ApplicationsPanel } from '@/features/applications'
 import { InvitationsPanel } from '@/features/invitations'
 
 import type { Trupp } from './superadminApi'
@@ -47,6 +48,7 @@ export function TruppWorkspace({ trupper }: { trupper: Trupp[] }) {
           <LagPanel truppId={truppId} />
           <AdminPanel truppId={truppId} />
           <InvitationsPanel truppId={truppId} />
+          <ApplicationsPanel truppId={truppId} />
         </>
       )}
     </section>

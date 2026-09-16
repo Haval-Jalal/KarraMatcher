@@ -7,6 +7,7 @@ import { AccountPage, LoginPage } from '@/features/auth'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
+import { ApplyLandingPage } from '@/features/applications'
 import { AdminPage, InvitationLandingPage } from '@/features/invitations'
 import { StartPage } from '@/features/start/StartPage'
 import { SuperAdminPage } from '@/features/superadmin'
@@ -187,6 +188,16 @@ const invitationRoute = createRoute({
 })
 
 /**
+ * Ansökningssidan (§KM.3, `#194`). Anonym — en förälder ska kunna se vilken trupp en delad
+ * ansökningslänk leder till innan hen loggar in. Ansökan kräver inloggning, det sköter sidan.
+ */
+const applyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/ansok/$truppId',
+  component: ApplyLandingPage,
+})
+
+/**
  * Spelarkortet.
  *
  * Ingen inloggning: kortet ligger på enheten och kräver varken konto eller server
@@ -234,6 +245,7 @@ export const routeTree = rootRoute.addChildren([
   superadminRoute,
   adminRoute,
   invitationRoute,
+  applyRoute,
   playerCardRoute,
   playerCardChildRoute,
   privacyRoute,
