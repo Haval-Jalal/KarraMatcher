@@ -7,6 +7,7 @@ import {
   coachTeamsFromToken,
   emailFromToken,
   isAdminFromToken,
+  isSuperAdminFromToken,
   signOut as signOutRequest,
 } from './authApi'
 import { AuthContext, type AuthState, type AuthStatus } from './authContext'
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null)
   const [coachOf, setCoachOf] = useState<string[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   const read = useCallback(() => {
     const token = getAccessToken()
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmail(token === null ? null : emailFromToken(token))
     setCoachOf(token === null ? [] : coachTeamsFromToken(token))
     setIsAdmin(token === null ? false : isAdminFromToken(token))
+    setIsSuperAdmin(token === null ? false : isSuperAdminFromToken(token))
   }, [])
 
   useEffect(() => {
@@ -67,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       coachOf,
       isAdmin,
+      isSuperAdmin,
       canManage: (teamSlug: string) => isAdmin || coachOf.includes(teamSlug),
       refresh: read,
       signOut: async () => {
@@ -74,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         read()
       },
     }),
-    [status, email, coachOf, isAdmin, read],
+    [status, email, coachOf, isAdmin, isSuperAdmin, read],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

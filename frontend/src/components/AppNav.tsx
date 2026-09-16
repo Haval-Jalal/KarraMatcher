@@ -18,7 +18,7 @@ import { useAuth } from '@/features/auth'
  * sidan — auktoriseringen ligger i backend, precis som `coachTeamsFromToken` redan påpekar.
  */
 export function AppNav() {
-  const { status, coachOf, isAdmin } = useAuth()
+  const { status, coachOf, isAdmin, isSuperAdmin } = useAuth()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   const teamInPath = /^\/lag\/([^/]+)/.exec(pathname)?.[1] ?? null
@@ -89,6 +89,18 @@ export function AppNav() {
           </li>
         )}
 
+        {status === 'inloggad' && isSuperAdmin && (
+          <li>
+            <Link
+              className="app-nav__link"
+              to="/superadmin"
+              aria-current={current === 'superadmin' ? 'page' : undefined}
+            >
+              Superadmin
+            </Link>
+          </li>
+        )}
+
         {status === 'inloggad' && (
           <li>
             <Link
@@ -105,7 +117,7 @@ export function AppNav() {
   )
 }
 
-type Section = 'matcher' | 'spelarkort' | 'tranare' | 'logga-in' | 'konto' | null
+type Section = 'matcher' | 'spelarkort' | 'tranare' | 'logga-in' | 'konto' | 'superadmin' | null
 
 /**
  * Vilken meny­post adressen hör till.
@@ -121,6 +133,7 @@ function sectionOf(pathname: string): Section {
   if (pathname.startsWith('/spelarkort')) return 'spelarkort'
   if (pathname === '/logga-in') return 'logga-in'
   if (pathname === '/konto') return 'konto'
+  if (pathname === '/superadmin') return 'superadmin'
 
   if (pathname === '/' || pathname.startsWith('/lag/') || pathname.startsWith('/match/')) {
     return 'matcher'
