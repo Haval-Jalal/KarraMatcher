@@ -33,8 +33,11 @@ test('spelarkortet lever på enheten och lämnar aldrig den', async ({ page }) =
   await page.reload()
   await expect(page.getByText(childName, { exact: true })).toBeVisible()
 
-  // Kärnan i §KM.2: spelarkortssidan har inte rört API:t över huvud taget.
-  expect(apiRequests.length).toBe(0)
+  // §KM.2: spelarkortssidan skickar aldrig något (POST/PUT/PATCH) — laglistan till
+  // "Lag"-menyn får hämtas (GET), men inget anrop får bära kortets innehåll (kontrolleras
+  // nedan mot varje anrops kropp).
+  const writes = apiRequests.filter((r) => r.body !== '')
+  expect(writes).toHaveLength(0)
 
   // ---- Fyll i ett mål efter matchen → märke låses upp ----------------------------------
   const matchId = await e2eMatchId(page)

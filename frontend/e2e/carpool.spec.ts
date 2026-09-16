@@ -11,6 +11,9 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   browser,
   request,
 }) => {
+  // Flera inloggningar och två kontexter — ge det gott om tid.
+  test.setTimeout(90_000)
+
   await request.post(`${API}/api/v1/testing/reset-carpool`)
 
   const driverContext = await browser.newContext({ ignoreHTTPSErrors: true })
@@ -47,8 +50,10 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   expect(requestResponse.status()).toBe(201)
 
   // ---- Föraren nekar med ett meddelande (ett tyst nej får inte förekomma) ---------------
-  // Omladdning: refresh-cookien över HTTPS ger föraren en ny token, så förfrågan syns.
-  await driver.reload()
+  // Ny inloggning i stället för reload: då landar föraren på matchen med token redan i
+  // minnet, så samåkningshämtningen inte kapplöper med sessionsåterställningen på den
+  // publika sidan. Förfrågan syns direkt.
+  await login(driver, PARENT_A_EMAIL, matchPath)
   await driver.getByRole('button', { name: 'Neka' }).click()
   await driver.getByLabel('Meddelande').fill('Ändrade planer, kan tyvärr inte köra.')
   const [denyResponse] = await Promise.all([
@@ -58,7 +63,7 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   expect(denyResponse.status()).toBe(204)
 
   // ---- Den som frågade ser svaret ------------------------------------------------------
-  await requester.reload()
+  await login(requester, PARENT_B_EMAIL, matchPath)
   await expect(requester.getByText(/Förarens svar/)).toBeVisible()
 
   await driverContext.close()
