@@ -19,6 +19,8 @@ export interface AuthState {
   isAdmin: boolean
   /** Sant om den inloggade är superadmin (§KM.3, `#192`). Styr bara vad som visas. */
   isSuperAdmin: boolean
+  /** Trupp-id:n den inloggade är admin för (§KM.3, `#193`). Styr bara vad som visas. */
+  adminOf: string[]
   /** Sant om den inloggade får sköta laget — tränare för det, eller administratör. */
   canManage: (teamSlug: string) => boolean
   /** Anropas när en inloggning just lyckats, så appen märker det direkt. */
