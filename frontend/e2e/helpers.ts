@@ -13,7 +13,7 @@ export const E2E_OPPONENT = 'E2E FC'
 
 /** Hämtar den senaste inloggningskoden ur testbrevlådan. Pollar — mejlet "skickas" async. */
 export async function fetchLoginCode(page: Page, email: string): Promise<string> {
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < 50; attempt++) {
     const response = await page.request.get(
       `${API}/api/v1/testing/code?email=${encodeURIComponent(email)}`,
     )
@@ -23,7 +23,7 @@ export async function fetchLoginCode(page: Page, email: string): Promise<string>
       return body.code
     }
 
-    await page.waitForTimeout(250)
+    await page.waitForTimeout(100)
   }
 
   throw new Error(`Ingen inloggningskod fångades för ${email}.`)
