@@ -65,6 +65,9 @@ public static class DependencyInjection
         // Ansökningar (§KM.3, #194).
         services.AddScoped<Features.Applications.ApplicationService>();
 
+        // Vårdnadshavarsamtycke (§KM.6, #195).
+        services.AddScoped<Features.Consent.ConsentService>();
+
         return services;
     }
 

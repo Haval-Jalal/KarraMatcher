@@ -60,6 +60,9 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Domain.Applications.MembershipApplication> MembershipApplications =>
         Set<Domain.Applications.MembershipApplication>();
 
+    public DbSet<Domain.Consent.GuardianConsent> GuardianConsents =>
+        Set<Domain.Consent.GuardianConsent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
