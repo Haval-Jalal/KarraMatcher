@@ -21,6 +21,9 @@ public static class RateLimiting
 {
     public const string PermitKey = "RateLimiting:PermitPerMinute";
 
+    /// <summary>Inloggningens gräns, konfigurerbar på samma sätt som den allmänna.</summary>
+    public const string LoginPermitKey = "RateLimiting:LoginPermitPerMinute";
+
     /// <summary>
     /// Egen, hårdare gräns för inloggningen.
     ///
@@ -54,6 +57,12 @@ public static class RateLimiting
             && configured > 0
                 ? configured
                 : DefaultPermitPerMinute;
+
+        var loginPermitPerMinute =
+            int.TryParse(configuration[LoginPermitKey], CultureInfo.InvariantCulture, out var loginConfigured)
+            && loginConfigured > 0
+                ? loginConfigured
+                : LoginPermitPerMinute;
 
         // Vercel och Render sätter X-Forwarded-For. Utan det här ser vi bara proxyns
         // adress. Att rensa KnownProxies krävs eftersom proxyns IP inte är känd i
@@ -103,7 +112,7 @@ public static class RateLimiting
                 ClientKey(context),
                 _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = LoginPermitPerMinute,
+                    PermitLimit = loginPermitPerMinute,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));

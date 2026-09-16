@@ -70,6 +70,10 @@ jobs:
           # Ingen omsändnings-cooldown i test: varje inloggning (samma konto loggar in
           # flera gånger i samåkningsflödet) ska alltid få en färsk kod direkt.
           Auth__LoginCodeResendCooldown: "00:00:00"
+          # Höjda rate limits: hela sviten loggar in många gånger på en dryg minut från en
+          # och samma IP, vilket annars slår i inloggnings- och den allmänna gränsen.
+          RateLimiting__LoginPermitPerMinute: "1000"
+          RateLimiting__PermitPerMinute: "1000"
         run: |
           dotnet run --project src/KarraMatcher.Api --configuration Release --no-build --no-restore > backend.log 2>&1 &
           echo "startar backend"
