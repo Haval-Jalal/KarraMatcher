@@ -1,19 +1,25 @@
 import { expect, test } from '@playwright/test'
 
-import { e2eMatchId } from './helpers'
+import { PARENT_A_EMAIL, e2eMatchId, login } from './helpers'
 
 /**
- * Flöde 4 (SPEC.md §9): förälder lägger till sitt barn på enheten → fyller i mål efter
- * matchen → ett märke låses upp. **Inget konto, inget nätverksanrop** (§KM.2).
+ * Flöde 4 (SPEC.md §9), v2: en inloggad förälder lägger till sitt barn på enheten → fyller
+ * i mål efter matchen → ett märke låses upp. **Spelarkortet lämnar aldrig enheten (§KM.2).**
  *
- * Två saker vaktas: att spelarkortet fungerar helt utan att röra `/api`, och — när
- * resultatet fylls i på matchsidan (som i sig hämtar matchdata) — att inget anrop bär
- * barnets namn eller kortets innehåll.
+ * I v1 kördes flödet helt utan konto. I v2 är appen stängd (§KM.3, `#191`): lagmenyn och
+ * matchvyn kräver medlemskap, så föräldern loggar in. Det viktiga §KM.2-kravet är oförändrat
+ * och vaktas här: spelarkortet skickar inget (POST/PUT/PATCH) och **inget anrop bär barnets
+ * namn eller kortets innehåll** — inte ens för en inloggad medlem. Anrop fångas därför först
+ * *efter* inloggningen, så att inloggningens egna anrop inte räknas med.
  */
 test('spelarkortet lever på enheten och lämnar aldrig den', async ({ page }) => {
   const childName = 'E2E Barn'
-  const apiRequests: { url: string; body: string }[] = []
 
+  // Föräldern är medlem i laget (via prepare) — annars når hen inte lagmenyn eller matchen.
+  await login(page, PARENT_A_EMAIL, '/lag/gul')
+
+  // Fånga anrop först nu: inloggningens request-code/verify-code ska inte räknas.
+  const apiRequests: { url: string; body: string }[] = []
   page.on('request', (request) => {
     if (request.url().includes('/api/')) {
       apiRequests.push({ url: request.url(), body: request.postData() ?? '' })

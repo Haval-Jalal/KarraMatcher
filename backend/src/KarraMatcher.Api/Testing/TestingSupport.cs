@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 
 using KarraMatcher.Application.Abstractions.Email;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -53,8 +54,8 @@ public static class TestingSupport
         group.MapPost("/prepare", async (KarraMatcherDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
             var coach = await EnsureAccountAsync(db, CoachEmail, clock, ct).ConfigureAwait(false);
-            await EnsureAccountAsync(db, ParentAEmail, clock, ct).ConfigureAwait(false);
-            await EnsureAccountAsync(db, ParentBEmail, clock, ct).ConfigureAwait(false);
+            var parentA = await EnsureAccountAsync(db, ParentAEmail, clock, ct).ConfigureAwait(false);
+            var parentB = await EnsureAccountAsync(db, ParentBEmail, clock, ct).ConfigureAwait(false);
 
             var team = await db.Teams.AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Slug == E2eTeamSlug, ct).ConfigureAwait(false);
@@ -65,6 +66,13 @@ public static class TestingSupport
             }
 
             await EnsureCoachRoleAsync(db, coach.Id, team.Id, clock, ct).ConfigureAwait(false);
+
+            // Stängd app (§KM.3, `#191`): föräldrarna måste vara medlemmar för att se lagets
+            // innehåll. Gör dem till vårdnadshavare för ett barn i laget.
+            await EnsureGuardianMemberAsync(db, parentA.Id, team.AgeGroupId, team.Id, clock, ct)
+                .ConfigureAwait(false);
+            await EnsureGuardianMemberAsync(db, parentB.Id, team.AgeGroupId, team.Id, clock, ct)
+                .ConfigureAwait(false);
 
             var matchId = await EnsureFutureMatchAsync(db, team.Id, clock, ct).ConfigureAwait(false);
 
@@ -154,6 +162,47 @@ public static class TestingSupport
                 TeamId = teamId,
                 Role = RoleKind.Coach,
                 GrantedUtc = clock.GetUtcNow().UtcDateTime,
+            },
+            ct).ConfigureAwait(false);
+    }
+
+    private static async Task EnsureGuardianMemberAsync(
+        KarraMatcherDbContext db,
+        Guid accountId,
+        Guid ageGroupId,
+        Guid teamId,
+        TimeProvider clock,
+        CancellationToken ct)
+    {
+        var alreadyMember = await db.Guardianships
+            .AnyAsync(g => g.AccountId == accountId && g.Child!.TeamId == teamId, ct)
+            .ConfigureAwait(false);
+
+        if (alreadyMember)
+        {
+            return;
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+
+        var child = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "E2E",
+            LastInitial = "B",
+            AgeGroupId = ageGroupId,
+            TeamId = teamId,
+            CreatedUtc = now,
+        };
+
+        await db.Children.AddAsync(child, ct).ConfigureAwait(false);
+        await db.Guardianships.AddAsync(
+            new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = accountId,
+                ChildId = child.Id,
+                GrantedUtc = now,
             },
             ct).ConfigureAwait(false);
     }
