@@ -121,7 +121,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(actor, "tranare@example.com", new AccountRoles(false, [slug])).Token;
+        return issuer.Issue(actor, "tranare@example.com", new AccountRoles(false, [], [slug])).Token;
     }
 
     /// <summary>Utfall som inte är fel: klara rader och överhoppade.</summary>

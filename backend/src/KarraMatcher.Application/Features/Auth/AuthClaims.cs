@@ -15,6 +15,15 @@ public static class AuthClaims
     /// <summary>Ett anspråk per lag en tränare ansvarar för. Värdet är lagets slug.</summary>
     public const string Coach = "coach";
 
-    /// <summary>Värdet i standardanspråket för roll när kontot är administratör.</summary>
+    /// <summary>Ett anspråk per trupp en admin ansvarar för. Värdet är truppens id (v2).</summary>
+    public const string AdminOfTrupp = "admin-trupp";
+
+    /// <summary>Sätts (till <c>true</c>) när kontot är superadmin — global ägare (v2).</summary>
+    public const string SuperAdmin = "superadmin";
+
+    /// <summary>
+    /// Värdet i standardanspråket för roll när kontot är (super)administratör. Behålls för
+    /// bakåtkompatibilitet med befintliga <c>[Authorize(Admin)]</c>-endpoints (§KM.3, v2).
+    /// </summary>
     public const string AdminRole = "admin";
 }

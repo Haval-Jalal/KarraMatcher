@@ -105,7 +105,7 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [])).Token;
+        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [], [])).Token;
     }
 
     private async Task<Guid?> AccountIdOfAsync(string slug, string endpoint)

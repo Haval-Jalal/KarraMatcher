@@ -174,9 +174,9 @@ public partial class PlayerStatisticsTests
         Assert.Equal(
             [
                 "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceResponses", "AuditEntries",
-                "CarpoolOffers", "CarpoolRequests", "Clubs", "LoginCodes", "Matches",
-                "NotificationPreferences", "PushSubscriptions", "RefreshTokens", "TeamRoles",
-                "Teams", "Venues",
+                "CarpoolOffers", "CarpoolRequests", "Children", "Clubs", "Guardianships",
+                "LoginCodes", "Matches", "NotificationPreferences", "PushSubscriptions",
+                "RefreshTokens", "Sports", "TeamRoles", "Teams", "Venues",
             ],
             DbSetNames());
     }

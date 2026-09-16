@@ -1,10 +1,12 @@
 using System.Globalization;
 
+using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Common;
 using KarraMatcher.Domain.Matches;
 using KarraMatcher.Domain.Teams;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace KarraMatcher.Infrastructure.Persistence.Seed;
 
@@ -13,20 +15,84 @@ namespace KarraMatcher.Infrastructure.Persistence.Seed;
 /// som efter en körning, eftersom varje rad slås upp på sin naturliga nyckel.
 /// Det är ett krav — seeden körs vid varje driftsättning.
 /// </summary>
-public sealed class DatabaseSeeder(KarraMatcherDbContext context)
+public sealed class DatabaseSeeder(KarraMatcherDbContext context, IConfiguration configuration)
 {
+    /// <summary>Konfignyckeln för superadminens mejladress. Sätts som miljövariabel i drift.</summary>
+    public const string SuperAdminEmailKey = "SuperAdmin:Email";
+
     public async Task<SeedResult> SeedAsync(CancellationToken cancellationToken = default)
     {
+        var sport = await EnsureSportAsync(cancellationToken).ConfigureAwait(false);
         var club = await EnsureClubAsync(cancellationToken).ConfigureAwait(false);
-        var ageGroup = await EnsureAgeGroupAsync(club, cancellationToken).ConfigureAwait(false);
+        var ageGroup = await EnsureAgeGroupAsync(club, sport, cancellationToken).ConfigureAwait(false);
         var teams = await EnsureTeamsAsync(ageGroup, cancellationToken).ConfigureAwait(false);
         var venues = await EnsureVenuesAsync(cancellationToken).ConfigureAwait(false);
         var matchesAdded = await EnsureMatchesAsync(teams, venues, cancellationToken)
             .ConfigureAwait(false);
 
+        await EnsureSuperAdminAsync(cancellationToken).ConfigureAwait(false);
+
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return new SeedResult(teams.Count, venues.Count, matchesAdded);
+    }
+
+    private async Task<Sport> EnsureSportAsync(CancellationToken cancellationToken)
+    {
+        var sport = await context.Sports
+            .FirstOrDefaultAsync(s => s.Slug == SeedData.SportSlug, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (sport is not null)
+        {
+            return sport;
+        }
+
+        sport = new Sport { Name = SeedData.SportName, Slug = SeedData.SportSlug };
+        context.Sports.Add(sport);
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return sport;
+    }
+
+    /// <summary>
+    /// Superadmin — bara ägaren, och bara om <c>SuperAdmin:Email</c> är satt. Aldrig hårdkodad
+    /// i repot. Idempotent: kontot slås upp på adressen, rollen på (konto, SuperAdmin).
+    /// </summary>
+    private async Task EnsureSuperAdminAsync(CancellationToken cancellationToken)
+    {
+        var email = configuration[SuperAdminEmailKey]?.Trim().ToLowerInvariant();
+
+        if (string.IsNullOrEmpty(email))
+        {
+            return;
+        }
+
+        var account = await context.Accounts
+            .FirstOrDefaultAsync(a => a.Email == email, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (account is null)
+        {
+            account = new Account { Email = email, CreatedUtc = DateTime.UtcNow };
+            context.Accounts.Add(account);
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var hasRole = await context.TeamRoles
+            .AnyAsync(
+                r => r.AccountId == account.Id && r.Role == RoleKind.SuperAdmin,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!hasRole)
+        {
+            context.TeamRoles.Add(new TeamRole
+            {
+                AccountId = account.Id,
+                Role = RoleKind.SuperAdmin,
+                GrantedUtc = DateTime.UtcNow,
+            });
+        }
     }
 
     private async Task<Club> EnsureClubAsync(CancellationToken cancellationToken)
@@ -46,7 +112,8 @@ public sealed class DatabaseSeeder(KarraMatcherDbContext context)
         return club;
     }
 
-    private async Task<AgeGroup> EnsureAgeGroupAsync(Club club, CancellationToken cancellationToken)
+    private async Task<AgeGroup> EnsureAgeGroupAsync(
+        Club club, Sport sport, CancellationToken cancellationToken)
     {
         var ageGroup = await context.AgeGroups
             .FirstOrDefaultAsync(
@@ -58,12 +125,20 @@ public sealed class DatabaseSeeder(KarraMatcherDbContext context)
 
         if (ageGroup is not null)
         {
+            // Backa in sporten på en trupp som fanns före v2 (SportId hann bli tomt).
+            if (ageGroup.SportId == Guid.Empty)
+            {
+                ageGroup.SportId = sport.Id;
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             return ageGroup;
         }
 
         ageGroup = new AgeGroup
         {
             ClubId = club.Id,
+            SportId = sport.Id,
             Name = SeedData.AgeGroupName,
             Season = SeedData.Season,
         };

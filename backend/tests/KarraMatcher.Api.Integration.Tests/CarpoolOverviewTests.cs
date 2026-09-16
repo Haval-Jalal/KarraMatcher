@@ -145,7 +145,7 @@ public sealed class CarpoolOverviewTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "tranare@example.com", new AccountRoles(false, coachOf)).Token;
+        return issuer.Issue(accountId, "tranare@example.com", new AccountRoles(false, [], coachOf)).Token;
     }
 
     private async Task<HttpResponseMessage> GetAsync(string slug, string? token)

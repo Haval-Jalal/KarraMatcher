@@ -15,7 +15,17 @@ namespace KarraMatcher.Application.Features.Auth;
 /// så det är ett byte vi kan leva med.
 /// </para>
 /// </summary>
-public sealed record AccountRoles(bool IsAdmin, IReadOnlyList<string> CoachOf)
+public sealed record AccountRoles(
+    bool IsSuperAdmin,
+    IReadOnlyList<string> AdminOf,
+    IReadOnlyList<string> CoachOf)
 {
-    public static readonly AccountRoles None = new(false, []);
+    public static readonly AccountRoles None = new(false, [], []);
+
+    /// <summary>
+    /// Bakåtkompatibel global admin (v2): superadmin är den globala administratören tills
+    /// den per-trupp-baserade auktoriseringen kopplas in i `#191`. Låter befintliga
+    /// <c>[Authorize(Admin)]</c>-endpoints fortsätta gälla superadmin.
+    /// </summary>
+    public bool IsAdmin => IsSuperAdmin;
 }

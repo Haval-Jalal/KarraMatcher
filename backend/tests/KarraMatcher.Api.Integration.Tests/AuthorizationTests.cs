@@ -69,7 +69,7 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
         using var host = CreateHost();
         using var client = Authenticated(
             host.CreateClient(),
-            TokenFor(host.Services, new AccountRoles(IsAdmin: false, CoachOf: ["gul"])));
+            TokenFor(host.Services, new AccountRoles(false, [], ["gul"])));
 
         var response = await client.PostAsync("/probe/teams/gul/matches", null, CancellationToken.None);
 
@@ -87,7 +87,7 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
         using var host = CreateHost();
         using var client = Authenticated(
             host.CreateClient(),
-            TokenFor(host.Services, new AccountRoles(IsAdmin: false, CoachOf: ["gul"])));
+            TokenFor(host.Services, new AccountRoles(false, [], ["gul"])));
 
         var response = await client.PostAsync("/probe/teams/bla/matches", null, CancellationToken.None);
 
@@ -130,7 +130,7 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
         using var host = CreateHost();
         using var client = Authenticated(
             host.CreateClient(),
-            TokenFor(host.Services, new AccountRoles(IsAdmin: true, CoachOf: [])));
+            TokenFor(host.Services, new AccountRoles(true, [], [])));
 
         var response = await client.PostAsync(
             $"/probe/teams/{slug}/matches", null, CancellationToken.None);
@@ -145,7 +145,7 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
         using var host = CreateHost();
         using var client = Authenticated(
             host.CreateClient(),
-            TokenFor(host.Services, new AccountRoles(IsAdmin: false, CoachOf: ["gul"])));
+            TokenFor(host.Services, new AccountRoles(false, [], ["gul"])));
 
         var response = await client.GetAsync("/probe/admin", CancellationToken.None);
 
@@ -168,7 +168,7 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
         using var host = CreateHost();
         using var client = Authenticated(
             host.CreateClient(),
-            TokenFor(host.Services, new AccountRoles(IsAdmin: false, CoachOf: ["gul"])));
+            TokenFor(host.Services, new AccountRoles(false, [], ["gul"])));
 
         var response = await client.PostAsync("/probe/glomt-lag", null, CancellationToken.None);
 

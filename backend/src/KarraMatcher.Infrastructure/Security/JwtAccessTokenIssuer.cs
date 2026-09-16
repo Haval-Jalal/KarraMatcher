@@ -77,9 +77,18 @@ internal sealed class JwtAccessTokenIssuer(
         // personuppgift behöver loggas (§KM.10).
         yield return new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString());
 
-        if (roles.IsAdmin)
+        if (roles.IsSuperAdmin)
         {
+            yield return new Claim(AuthClaims.SuperAdmin, "true");
+
+            // Bakåtkompatibelt: superadmin är den globala administratören tills den
+            // per-trupp-baserade auktoriseringen kopplas in i #191.
             yield return new Claim(ClaimTypes.Role, AuthClaims.AdminRole);
+        }
+
+        foreach (var truppId in roles.AdminOf)
+        {
+            yield return new Claim(AuthClaims.AdminOfTrupp, truppId);
         }
 
         foreach (var slug in roles.CoachOf)
