@@ -69,6 +69,14 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
 
   // ---- Föraren ser förfrågan och nekar med ett meddelande (ett tyst nej får inte ske) ---
   await remountMatch(driver, matchId)
+  // Diagnostik: vad ser föraren i samåkningssektionen efter omnavigeringen?
+  console.log(
+    'DRIVER SAMAKNING:',
+    await driver
+      .locator('#samakning')
+      .innerText()
+      .catch(() => 'INGEN #samakning'),
+  )
   await driver.getByRole('button', { name: 'Neka' }).click()
   await driver.getByLabel('Meddelande').fill('Ändrade planer, kan tyvärr inte köra.')
   const [denyResponse] = await Promise.all([
