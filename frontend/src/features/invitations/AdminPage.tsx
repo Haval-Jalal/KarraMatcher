@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
 
 import { InvitationsPanel } from './InvitationsPanel'
@@ -78,7 +79,12 @@ export function AdminPage() {
           </div>
         )}
 
-        {truppId !== null && <InvitationsPanel truppId={truppId} />}
+        {truppId !== null && (
+          <>
+            <InvitationsPanel truppId={truppId} />
+            <ApplicationsPanel truppId={truppId} />
+          </>
+        )}
       </section>
     </main>
   )

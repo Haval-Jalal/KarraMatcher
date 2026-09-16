@@ -77,6 +77,11 @@ public static class AuditActions
     public const string InvitationAccepted = "inbjudan.accepterad";
     public const string InvitationRevoked = "inbjudan.aterkallad";
 
+    // Ansökningar (§KM.3, `#194`).
+    public const string ApplicationSubmitted = "ansokan.inskickad";
+    public const string ApplicationApproved = "ansokan.godkand";
+    public const string ApplicationDenied = "ansokan.nekad";
+
     public const string AttendanceEnabled = "narvaro.paslagen";
     public const string AttendanceDisabled = "narvaro.avslagen";
     public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";

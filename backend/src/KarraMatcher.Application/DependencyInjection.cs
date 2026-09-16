@@ -62,6 +62,9 @@ public static class DependencyInjection
         // Inbjudningar (§KM.3, #193).
         services.AddScoped<Features.Invitations.InvitationService>();
 
+        // Ansökningar (§KM.3, #194).
+        services.AddScoped<Features.Applications.ApplicationService>();
+
         return services;
     }
 

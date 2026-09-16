@@ -1,5 +1,6 @@
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Applications;
 using KarraMatcher.Domain.Invitations;
 
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,16 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
 
         ageGroupIds.UnionWith(invitedAgeGroupIds);
 
+        // Godkända ansökningar likaså (v2, `#194`).
+        var approvedAgeGroupIds = await context.MembershipApplications
+            .AsNoTracking()
+            .Where(a => a.AccountId == accountId && a.Status == ApplicationStatus.Approved)
+            .Select(a => a.AgeGroupId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        ageGroupIds.UnionWith(approvedAgeGroupIds);
+
         var teamIds = coachTeamIds.Concat(guardianTeamIds).ToHashSet();
 
         return await context.Teams
@@ -143,12 +154,27 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
 
         // En accepterad inbjudan till truppen är också ett medlemskap (v2, `#193`) — en
         // förälder ser sitt lags trupp redan innan barnet kopplats (§KM.1, `#196`).
-        return await context.Invitations
+        var invited = await context.Invitations
             .AsNoTracking()
             .AnyAsync(
                 i => i.AcceptedByAccountId == accountId
                     && i.AgeGroupId == ageGroupId
                     && i.Status == InvitationStatus.Accepted,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (invited)
+        {
+            return true;
+        }
+
+        // En godkänd ansökan är samma sorts medlemskap som en accepterad inbjudan (v2, `#194`).
+        return await context.MembershipApplications
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.AccountId == accountId
+                    && a.AgeGroupId == ageGroupId
+                    && a.Status == ApplicationStatus.Approved,
                 cancellationToken)
             .ConfigureAwait(false);
     }
