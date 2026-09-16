@@ -73,9 +73,9 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   console.log(
     'DRIVER SAMAKNING:',
     await driver
-      .locator('#samakning')
+      .getByRole('region', { name: 'Samåkning' })
       .innerText()
-      .catch(() => 'INGEN #samakning'),
+      .catch(() => 'INGEN region'),
   )
   await driver.getByRole('button', { name: 'Neka' }).click()
   await driver.getByLabel('Meddelande').fill('Ändrade planer, kan tyvärr inte köra.')
