@@ -52,6 +52,13 @@ public static class DependencyInjection
         services.AddScoped<Features.Push.NotificationSettingsService>();
         services.AddScoped<Features.Push.PushRetentionService>();
 
+        // Superadmins plattformshantering (§KM.3, #192).
+        services.AddScoped<Features.Administration.SportAdminService>();
+        services.AddScoped<Features.Administration.ClubAdminService>();
+        services.AddScoped<Features.Administration.TruppAdminService>();
+        services.AddScoped<Features.Administration.LagAdminService>();
+        services.AddScoped<Features.Administration.AdminRoleService>();
+
         return services;
     }
 

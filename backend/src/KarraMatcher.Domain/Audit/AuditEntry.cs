@@ -60,6 +60,18 @@ public static class AuditActions
     public const string MatchCancelled = "match.installd";
     public const string MatchDeleted = "match.raderad";
 
+    // Superadmins plattformshantering (§KM.3, `#192`).
+    public const string SportCreated = "sport.skapad";
+    public const string SportUpdated = "sport.andrad";
+    public const string ClubCreated = "klubb.skapad";
+    public const string ClubUpdated = "klubb.andrad";
+    public const string TruppCreated = "trupp.skapad";
+    public const string TruppUpdated = "trupp.andrad";
+    public const string LagCreated = "lag.skapat";
+    public const string LagUpdated = "lag.andrat";
+    public const string AdminGranted = "admin.tilldelad";
+    public const string AdminRevoked = "admin.aterkallad";
+
     public const string AttendanceEnabled = "narvaro.paslagen";
     public const string AttendanceDisabled = "narvaro.avslagen";
     public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";
