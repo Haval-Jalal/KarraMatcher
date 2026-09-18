@@ -69,6 +69,14 @@ public interface IAdministrationRepository
 
     public Task<IReadOnlyList<TeamRole>> GetAdminsAsync(Guid truppId, CancellationToken cancellationToken);
 
+    // ---- Tränartillsättning (`#197`) -------------------------------------------------
+    public Task<TeamRole?> FindCoachRoleAsync(
+        Guid accountId, Guid teamId, CancellationToken cancellationToken);
+
+    /// <summary>Alla tränarroller i truppen (lag vars trupp är <paramref name="truppId"/>).</summary>
+    public Task<IReadOnlyList<TeamRole>> GetCoachesForTruppAsync(
+        Guid truppId, CancellationToken cancellationToken);
+
     public Task AddRoleAsync(TeamRole role, CancellationToken cancellationToken);
 
     public void RemoveRole(TeamRole role);
