@@ -28,7 +28,7 @@ namespace KarraMatcher.Api.Features.Carpool;
 [ApiController]
 [Route("api/v1/matches/{matchId:guid}/carpool")]
 [Produces("application/json")]
-[Authorize(Policy = AuthorizationPolicies.MemberOfMatch)]
+[Authorize(Policy = AuthorizationPolicies.MemberOfEvent)]
 [RequireCsrfToken]
 public sealed class CarpoolDriverController(
     ICommandDispatcher commands,

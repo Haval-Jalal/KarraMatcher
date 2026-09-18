@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -53,7 +53,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        var existing = context.Matches.FirstOrDefault(m => m.Note != null);
+        var existing = context.Events.FirstOrDefault(m => m.Note != null);
 
         if (existing is not null)
         {
@@ -85,7 +85,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             Longitude = 11.94,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -93,7 +93,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             Note = SecretNote,
             UpdatedUtc = Kickoff,
         };
@@ -102,7 +102,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         context.SaveChanges();
 
         return match.Id;
@@ -112,8 +112,8 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
     public static TheoryData<string> ClosedPathTemplates =>
         [
             "/api/v1/teams",
-            "/api/v1/teams/gast/matches",
-            "/api/v1/matches/{0}",
+            "/api/v1/teams/gast/events",
+            "/api/v1/events/{0}",
             "/api/v1/matches/{0}/carpool/offers",
             "/api/v1/push/key",
         ];
@@ -242,7 +242,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
 
     [Theory]
     [InlineData("/api/v1/teams")]
-    [InlineData("/api/v1/teams/gast/matches")]
+    [InlineData("/api/v1/teams/gast/events")]
     public async Task Svar_InnehallerIngaPersonuppgifter(string path)
     {
         // Inte ens för en inloggad medlem läcker barn-PII (§KM.1). Testet läser fältnamnen.
@@ -267,7 +267,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         // får inte finnas i svaret, inte ens för en inloggad medlem.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
         var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
 
         Assert.DoesNotContain("Elias", body, StringComparison.OrdinalIgnoreCase);

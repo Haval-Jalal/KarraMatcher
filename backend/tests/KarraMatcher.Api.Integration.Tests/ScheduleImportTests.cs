@@ -5,7 +5,7 @@ using System.Text.Json;
 
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -140,7 +140,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var world = await SeedAsync("granska");
 
         await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import/preview",
+            $"/api/v1/teams/{world.GulSlug}/events/import/preview",
             world.GulSlug,
             world.Actor,
             Pasted("granska", $"Gul granska"));
@@ -148,7 +148,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        Assert.Empty(await context.Matches
+        Assert.Empty(await context.Events
             .Where(m => m.Team!.Slug == world.GulSlug)
             .ToListAsync(CancellationToken.None));
     }
@@ -159,7 +159,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var world = await SeedAsync("markera");
 
         var result = await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import/preview",
+            $"/api/v1/teams/{world.GulSlug}/events/import/preview",
             world.GulSlug,
             world.Actor,
             Pasted("markera", "Gul markera"));
@@ -184,7 +184,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var world = await SeedAsync("import");
 
         var result = await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import",
+            $"/api/v1/teams/{world.GulSlug}/events/import",
             world.GulSlug,
             world.Actor,
             Pasted("import", "Gul import"));
@@ -194,7 +194,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        Assert.Equal(2, await context.Matches
+        Assert.Equal(2, await context.Events
             .CountAsync(m => m.Team!.Slug == world.GulSlug, CancellationToken.None));
     }
 
@@ -210,7 +210,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var world = await SeedAsync("annat");
 
         var result = await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import",
+            $"/api/v1/teams/{world.GulSlug}/events/import",
             world.GulSlug,
             world.Actor,
             Pasted("annat", "Bla annat"));
@@ -221,7 +221,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        Assert.Empty(await context.Matches
+        Assert.Empty(await context.Events
             .Where(m => m.Team!.Slug == world.BlaSlug)
             .ToListAsync(CancellationToken.None));
     }
@@ -235,7 +235,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var text = Pasted("delvis", "Gul delvis") + "det här är inte en matchrad\n";
 
         var result = await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import",
+            $"/api/v1/teams/{world.GulSlug}/events/import",
             world.GulSlug,
             world.Actor,
             text);
@@ -251,10 +251,10 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var world = await SeedAsync("dubblett");
         var text = Pasted("dubblett", "Gul dubblett");
 
-        await PostAsync($"/api/v1/teams/{world.GulSlug}/matches/import", world.GulSlug, world.Actor, text);
+        await PostAsync($"/api/v1/teams/{world.GulSlug}/events/import", world.GulSlug, world.Actor, text);
 
         var second = await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import", world.GulSlug, world.Actor, text);
+            $"/api/v1/teams/{world.GulSlug}/events/import", world.GulSlug, world.Actor, text);
 
         Assert.Equal(0, second.GetProperty("imported").GetInt32());
         Assert.Equal(2, Outcomes(second).Count(outcome => outcome == "Duplicate"));
@@ -268,7 +268,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         var world = await SeedAsync("tid");
 
         await PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import",
+            $"/api/v1/teams/{world.GulSlug}/events/import",
             world.GulSlug,
             world.Actor,
             Pasted("tid", "Gul tid"));
@@ -276,7 +276,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        var first = await context.Matches
+        var first = await context.Events
             .Where(m => m.Team!.Slug == world.GulSlug)
             .OrderBy(m => m.KickoffUtc)
             .FirstAsync(CancellationToken.None);
@@ -292,7 +292,7 @@ public sealed class ScheduleImportTests(KarraMatcherApiFactory factory)
         using var client = factory.CreateClient(ClientOptions);
 
         var response = await client.PostAsync(
-            $"/api/v1/teams/{world.GulSlug}/matches/import", null, CancellationToken.None);
+            $"/api/v1/teams/{world.GulSlug}/events/import", null, CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

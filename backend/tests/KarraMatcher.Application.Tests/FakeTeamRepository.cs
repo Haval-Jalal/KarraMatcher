@@ -1,5 +1,5 @@
 using KarraMatcher.Application.Abstractions.Persistence;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 
 namespace KarraMatcher.Application.Tests;
@@ -13,7 +13,7 @@ internal sealed class FakeTeamRepository : ITeamRepository
 {
     public List<Team> Teams { get; } = [];
 
-    public List<Match> Matches { get; } = [];
+    public List<Event> Matches { get; } = [];
 
     /// <summary>Vilket lag-id som senast efterfrågades — så att tester kan kontrollera det.</summary>
     public Guid? LastRequestedTeamId { get; private set; }
@@ -24,11 +24,11 @@ internal sealed class FakeTeamRepository : ITeamRepository
     public Task<Team?> FindBySlugAsync(string slug, CancellationToken cancellationToken) =>
         Task.FromResult(Teams.FirstOrDefault(t => string.Equals(t.Slug, slug, StringComparison.Ordinal)));
 
-    public Task<IReadOnlyList<Match>> GetMatchesAsync(Guid teamId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<Event>> GetEventsAsync(Guid teamId, CancellationToken cancellationToken)
     {
         LastRequestedTeamId = teamId;
 
-        return Task.FromResult<IReadOnlyList<Match>>(
+        return Task.FromResult<IReadOnlyList<Event>>(
             [.. Matches.Where(m => m.TeamId == teamId).OrderBy(m => m.KickoffUtc)]);
     }
 
@@ -58,15 +58,15 @@ internal sealed class FakeTeamRepository : ITeamRepository
         return team;
     }
 
-    public Match AddMatch(
+    public Event AddMatch(
         Team team,
         DateTime kickoffUtc,
         string opponent = "Motstandarna",
-        MatchStatus status = MatchStatus.Scheduled,
+        EventStatus status = EventStatus.Scheduled,
         string? addressOverride = null,
         Venue? venue = null)
     {
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,

@@ -1,20 +1,20 @@
-using KarraMatcher.Application.Features.Matches.GetMatch;
+using KarraMatcher.Application.Features.Events.GetEvent;
 
 namespace KarraMatcher.Application.Tests;
 
-public class GetMatchQueryValidatorTests
+public class GetEventQueryValidatorTests
 {
-    private readonly GetMatchQueryValidator _validator = new();
+    private readonly GetEventQueryValidator _validator = new();
 
     [Fact]
     public void Validate_TomtId_ArUnderkant()
     {
-        Assert.False(_validator.Validate(new GetMatchQuery(Guid.Empty)).IsValid);
+        Assert.False(_validator.Validate(new GetEventQuery(Guid.Empty)).IsValid);
     }
 
     [Fact]
     public void Validate_RiktigtId_ArGodkant()
     {
-        Assert.True(_validator.Validate(new GetMatchQuery(Guid.NewGuid())).IsValid);
+        Assert.True(_validator.Validate(new GetEventQuery(Guid.NewGuid())).IsValid);
     }
 }

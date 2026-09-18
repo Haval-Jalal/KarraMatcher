@@ -1,6 +1,6 @@
 using System.Globalization;
 
-using KarraMatcher.Application.Features.Matches.Import;
+using KarraMatcher.Application.Features.Events.Import;
 
 namespace KarraMatcher.Application.Tests;
 

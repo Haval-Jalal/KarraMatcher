@@ -11,7 +11,7 @@ public sealed record VenueDto(
 
 internal static class VenueMapping
 {
-    public static VenueDto ToDto(this Domain.Matches.Venue venue) => new(
+    public static VenueDto ToDto(this Domain.Events.Venue venue) => new(
         venue.Id,
         venue.Name,
         venue.Address,

@@ -69,8 +69,8 @@ public static class AuthorizationPolicies
     /// <summary>Medlem av laget i adressen — admin, tränare eller vårdnadshavare (v2, §KM.3).</summary>
     public const string MemberOfTeam = "medlem-av-laget";
 
-    /// <summary>Medlem av matchens lag (v2, §KM.3).</summary>
-    public const string MemberOfMatch = "medlem-av-matchen";
+    /// <summary>Medlem av händelsens lag (v2, §KM.3, `#198`).</summary>
+    public const string MemberOfEvent = "medlem-av-handelsen";
 
     public static AuthorizationOptions AddKarraPolicies(this AuthorizationOptions options)
     {
@@ -100,9 +100,9 @@ public static class AuthorizationPolicies
             .RequireAuthenticatedUser()
             .AddRequirements(new MemberOfTeamRequirement()));
 
-        options.AddPolicy(MemberOfMatch, policy => policy
+        options.AddPolicy(MemberOfEvent, policy => policy
             .RequireAuthenticatedUser()
-            .AddRequirements(new MemberOfMatchRequirement()));
+            .AddRequirements(new MemberOfEventRequirement()));
 
         return options;
     }

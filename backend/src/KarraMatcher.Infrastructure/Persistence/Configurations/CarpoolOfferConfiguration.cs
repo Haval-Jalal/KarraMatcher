@@ -43,7 +43,7 @@ internal sealed class CarpoolOfferConfiguration : IEntityTypeConfiguration<Carpo
          * kontot ager, inklusive samakningserbjudanden -- och en rad som blir kvar med ett
          * id som pekar pa ingenting ar inte raderad, den ar bara svar att hitta.
          */
-        builder.HasOne<Domain.Matches.Match>()
+        builder.HasOne<Domain.Events.Event>()
             .WithMany()
             .HasForeignKey(o => o.MatchId)
             .OnDelete(DeleteBehavior.Cascade);

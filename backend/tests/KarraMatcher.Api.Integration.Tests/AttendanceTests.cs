@@ -8,7 +8,7 @@ using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Children;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -68,7 +68,7 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -76,7 +76,7 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = now,
         };
@@ -101,7 +101,7 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         context.Accounts.AddRange(coach, parent);
         context.Children.Add(child);
         context.Guardianships.Add(new Guardianship

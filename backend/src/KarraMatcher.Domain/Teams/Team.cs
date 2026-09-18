@@ -22,5 +22,5 @@ public sealed class Team
     /// </summary>
     public bool AttendanceEnabled { get; set; }
 
-    public ICollection<Matches.Match> Matches { get; } = [];
+    public ICollection<Events.Event> Events { get; } = [];
 }

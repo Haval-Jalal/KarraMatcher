@@ -1,5 +1,5 @@
 using KarraMatcher.Domain.Attendance;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -27,7 +27,7 @@ internal sealed class AttendanceCallConfiguration : IEntityTypeConfiguration<Att
          * kallelsen overleva att tranarens konto raderas (§KM.6) -- vem som kallade ar en
          * anteckning, inte en agare. Kallelsen tillhor matchen.
          */
-        builder.HasOne<Match>()
+        builder.HasOne<Event>()
             .WithMany()
             .HasForeignKey(c => c.MatchId)
             .OnDelete(DeleteBehavior.Cascade);

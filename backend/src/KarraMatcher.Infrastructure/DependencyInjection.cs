@@ -79,14 +79,14 @@ public static class DependencyInjection
 
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
-        services.AddScoped<IMatchRepository, MatchRepository>();
+        services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddScoped<ILoginCodeRepository, LoginCodeRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IAuditLog, AuditLog>();
-        services.AddScoped<IMatchAdminRepository, MatchAdminRepository>();
+        services.AddScoped<IEventAdminRepository, EventAdminRepository>();
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IScheduleImportRepository, ScheduleImportRepository>();
         services.AddScoped<ICarpoolOfferRepository, CarpoolOfferRepository>();
@@ -94,7 +94,7 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IAttendanceCallRepository, AttendanceCallRepository>();
-        services.AddScoped<IMatchReminderRepository, MatchReminderRepository>();
+        services.AddScoped<IEventReminderRepository, EventReminderRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IPushDeliveryRepository, PushDeliveryRepository>();
         services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();

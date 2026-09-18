@@ -1,5 +1,5 @@
 using KarraMatcher.Application.Abstractions.Persistence;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Features.Carpool;
 
@@ -44,9 +44,13 @@ public sealed class CarpoolOverviewService(
 
         var now = clock.GetUtcNow().UtcDateTime;
 
-        var upcoming = (await teams.GetMatchesAsync(team.Id, cancellationToken).ConfigureAwait(false))
-            .Where(match => match.KickoffUtc >= now && match.Status != MatchStatus.Cancelled)
-            .OrderBy(match => match.KickoffUtc)
+        // Samåkningen gäller matcher (§KM.12). Träningar och övriga händelser ligger i samma
+        // tabell sedan `#198`, men samåkningsöverblicken är matchorienterad — filtrera hit.
+        var upcoming = (await teams.GetEventsAsync(team.Id, cancellationToken).ConfigureAwait(false))
+            .Where(item => item.Type == EventType.Match
+                && item.KickoffUtc >= now
+                && item.Status != EventStatus.Cancelled)
+            .OrderBy(item => item.KickoffUtc)
             .ToList();
 
         if (upcoming.Count == 0)
@@ -98,8 +102,8 @@ public sealed class CarpoolOverviewService(
                 return new TeamCarpoolMatchDto(
                     match.Id,
                     match.KickoffUtc,
-                    match.OpponentName,
-                    match.IsHome,
+                    match.OpponentName ?? string.Empty,
+                    match.IsHome ?? false,
                     forMatch,
                     waiting);
             }),

@@ -1,5 +1,5 @@
 using KarraMatcher.Application.Abstractions.Persistence;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 
 using Microsoft.EntityFrameworkCore;
@@ -31,17 +31,17 @@ internal sealed class TeamRepository(KarraMatcherDbContext context) : ITeamRepos
             .FirstOrDefaultAsync(team => team.Slug == slug, cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<Match>> GetMatchesAsync(
+    public async Task<IReadOnlyList<Event>> GetEventsAsync(
         Guid teamId,
         CancellationToken cancellationToken) =>
-        await context.Matches
+        await context.Events
             .AsNoTracking()
-            .Include(match => match.Venue)
-            .Where(match => match.TeamId == teamId)
+            .Include(item => item.Venue)
+            .Where(item => item.TeamId == teamId)
 
             // Sorteringen sker i databasen och inte i minnet. Ordningen är en del av
-            // kontraktet -- appen visar matcherna i tidsordning och sorterar inte om.
-            .OrderBy(match => match.KickoffUtc)
+            // kontraktet -- appen visar händelserna i tidsordning och sorterar inte om.
+            .OrderBy(item => item.KickoffUtc)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 }

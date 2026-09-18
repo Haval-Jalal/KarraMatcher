@@ -28,7 +28,7 @@ public partial class PlayerStatisticsTests
 {
     /// <summary>
     /// Ord som beskriver barnstatistik. Matchningen sker på hela PascalCase-ord, aldrig på
-    /// delsträngar — annars hade <c>MatchStatus</c> fastnat på "Stat", och en regel som
+    /// delsträngar — annars hade <c>EventStatus</c> fastnat på "Stat", och en regel som
     /// larmar falskt blir en regel någon stänger av.
     /// </summary>
     private static readonly string[] ForbiddenWords =
@@ -174,9 +174,9 @@ public partial class PlayerStatisticsTests
         Assert.Equal(
             [
                 "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceResponses", "AuditEntries",
-                "CarpoolOffers", "CarpoolRequests", "Children", "Clubs", "GuardianConsents",
+                "CarpoolOffers", "CarpoolRequests", "Children", "Clubs", "Events", "GuardianConsents",
                 "Guardianships",
-                "Invitations", "LoginCodes", "Matches", "MembershipApplications",
+                "Invitations", "LoginCodes", "MembershipApplications",
                 "NotificationPreferences", "PushSubscriptions",
                 "RefreshTokens", "Sports", "TeamRoles", "Teams", "Venues",
             ],
@@ -203,7 +203,7 @@ public partial class PlayerStatisticsTests
     }
 
     [Theory]
-    [InlineData("MatchStatus")]
+    [InlineData("EventStatus")]
     [InlineData("Match")]
     [InlineData("Team")]
     [InlineData("Venue")]
@@ -224,7 +224,7 @@ public partial class PlayerStatisticsTests
     [Fact]
     public void SplitWords_DelarPascalCaseInklusiveAkronymer()
     {
-        Assert.Equal(["match", "status"], SplitWords("MatchStatus"));
+        Assert.Equal(["event", "status"], SplitWords("EventStatus"));
         Assert.Equal(["ics", "sequence"], SplitWords("IcsSequence"));
         Assert.Equal(["karra", "matcher", "db", "context"], SplitWords("KarraMatcherDbContext"));
         Assert.Empty(SplitWords(string.Empty));

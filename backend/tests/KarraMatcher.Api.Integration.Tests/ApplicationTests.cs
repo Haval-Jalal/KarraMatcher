@@ -153,7 +153,7 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
 
         // Före godkännande: inte medlem.
         var before = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/matches", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.Forbidden, before.StatusCode);
 
         var approve = await SendAsync(
@@ -164,7 +164,7 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
 
         // Efter godkännande: medlem.
         var after = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/matches", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.OK, after.StatusCode);
     }
 
@@ -187,7 +187,7 @@ public sealed class ApplicationTests(KarraMatcherApiFactory factory)
         await AssertAuditedAsync(AuditActions.ApplicationDenied, id);
 
         var matches = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/matches", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.Forbidden, matches.StatusCode);
     }
 

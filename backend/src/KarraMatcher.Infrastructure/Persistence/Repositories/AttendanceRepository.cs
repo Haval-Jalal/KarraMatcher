@@ -23,7 +23,7 @@ internal sealed class AttendanceRepository(KarraMatcherDbContext context) : IAtt
     }
 
     public async Task<bool?> IsEnabledForMatchAsync(Guid matchId, CancellationToken cancellationToken) =>
-        await context.Matches
+        await context.Events
             .AsNoTracking()
             .Where(match => match.Id == matchId)
             .Select(match => (bool?)match.Team!.AttendanceEnabled)

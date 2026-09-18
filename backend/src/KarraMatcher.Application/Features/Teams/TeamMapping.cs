@@ -1,12 +1,12 @@
-using KarraMatcher.Application.Features.Matches;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Application.Features.Events;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 
 namespace KarraMatcher.Application.Features.Teams;
 
 /// <summary>
 /// Enda stället där entiteter blir DTO:er. Att hålla mappningen samlad gör det svårt att
-/// råka exponera ett fält som inte hör hemma i ett publikt svar (§KM.3).
+/// råka exponera ett fält som inte hör hemma i ett svar (§KM.3).
 /// </summary>
 internal static class TeamMapping
 {
@@ -16,22 +16,24 @@ internal static class TeamMapping
         team.AgeGroup?.Name ?? string.Empty,
         team.ColorHex);
 
-    public static MatchDto ToDto(this Match match) => new(
-        match.Id,
-        new DateTimeOffset(match.KickoffUtc, TimeSpan.Zero),
-        match.OpponentName,
-        match.IsHome,
-        match.Status.ToString(),
+    public static EventDto ToDto(this Event item) => new(
+        item.Id,
+        item.Type.ToString(),
+        new DateTimeOffset(item.KickoffUtc, TimeSpan.Zero),
+        item.Title,
+        item.OpponentName,
+        item.IsHome,
+        item.Status.ToString(),
 
         // Avvikande adress vinner över spelplatsens. Tom sträng räknas som "ingen
         // avvikelse" -- annars hade en tom textruta i tränarvyn raderat adressen.
-        string.IsNullOrWhiteSpace(match.AddressOverride)
-            ? match.Venue?.Address ?? string.Empty
-            : match.AddressOverride,
+        string.IsNullOrWhiteSpace(item.AddressOverride)
+            ? item.Venue?.Address ?? string.Empty
+            : item.AddressOverride,
 
         new VenueDto(
-            match.Venue?.Name ?? string.Empty,
-            match.Venue?.Address ?? string.Empty,
-            match.Venue?.Latitude ?? 0,
-            match.Venue?.Longitude ?? 0));
+            item.Venue?.Name ?? string.Empty,
+            item.Venue?.Address ?? string.Empty,
+            item.Venue?.Latitude ?? 0,
+            item.Venue?.Longitude ?? 0));
 }

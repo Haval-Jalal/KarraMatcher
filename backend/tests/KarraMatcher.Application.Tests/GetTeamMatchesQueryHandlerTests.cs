@@ -1,9 +1,9 @@
-using KarraMatcher.Application.Features.Teams.GetTeamMatches;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Application.Features.Teams.GetTeamEvents;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Tests;
 
-public class GetTeamMatchesQueryHandlerTests
+public class GetTeamEventsQueryHandlerTests
 {
     private static readonly DateTime Kickoff =
         new(2026, 8, 29, 12, 30, 0, DateTimeKind.Utc);
@@ -15,9 +15,9 @@ public class GetTeamMatchesQueryHandlerTests
         // inte" och controllern gör 404 av det — aldrig ett tomt schema, som hade sett
         // ut som en avslutad säsong.
         var repository = new FakeTeamRepository();
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("finns-inte"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("finns-inte"), CancellationToken.None);
 
         Assert.Null(result);
     }
@@ -27,13 +27,13 @@ public class GetTeamMatchesQueryHandlerTests
     {
         var repository = new FakeTeamRepository();
         repository.AddTeam("gul", "Gul");
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("gul"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("gul"), CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.Equal("Gul", result.Team.Name);
-        Assert.Empty(result.Matches);
+        Assert.Empty(result.Events);
     }
 
     [Fact]
@@ -44,12 +44,12 @@ public class GetTeamMatchesQueryHandlerTests
         var bla = repository.AddTeam("bla", "Bla");
         repository.AddMatch(gul, Kickoff);
         repository.AddMatch(bla, Kickoff);
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("gul"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("gul"), CancellationToken.None);
 
         Assert.NotNull(result);
-        Assert.Single(result.Matches);
+        Assert.Single(result.Events);
         Assert.Equal(gul.Id, repository.LastRequestedTeamId);
     }
 
@@ -62,11 +62,11 @@ public class GetTeamMatchesQueryHandlerTests
         var repository = new FakeTeamRepository();
         var team = repository.AddTeam("gul", "Gul");
         repository.AddMatch(team, Kickoff);
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("gul"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("gul"), CancellationToken.None);
 
-        var match = Assert.Single(result!.Matches);
+        var match = Assert.Single(result!.Events);
         Assert.Equal(TimeSpan.Zero, match.KickoffUtc.Offset);
         Assert.Equal(Kickoff, match.KickoffUtc.UtcDateTime);
     }
@@ -76,12 +76,12 @@ public class GetTeamMatchesQueryHandlerTests
     {
         var repository = new FakeTeamRepository();
         var team = repository.AddTeam("gul", "Gul");
-        repository.AddMatch(team, Kickoff, status: MatchStatus.Cancelled);
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        repository.AddMatch(team, Kickoff, status: EventStatus.Cancelled);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("gul"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("gul"), CancellationToken.None);
 
-        var match = Assert.Single(result!.Matches);
+        var match = Assert.Single(result!.Events);
         Assert.Equal("Cancelled", match.Status);
     }
 
@@ -99,11 +99,11 @@ public class GetTeamMatchesQueryHandlerTests
         var repository = new FakeTeamRepository();
         var team = repository.AddTeam("gul", "Gul");
         repository.AddMatch(team, Kickoff, addressOverride: addressOverride);
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("gul"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("gul"), CancellationToken.None);
 
-        var match = Assert.Single(result!.Matches);
+        var match = Assert.Single(result!.Events);
         Assert.Equal(expected, match.Address);
         Assert.Equal("Idrottsvagen 1, Goteborg", match.Venue.Address);
     }
@@ -116,12 +116,12 @@ public class GetTeamMatchesQueryHandlerTests
         repository.AddMatch(team, Kickoff.AddDays(7), "Sist");
         repository.AddMatch(team, Kickoff, "Forst");
         repository.AddMatch(team, Kickoff.AddDays(3), "Mitten");
-        var handler = new GetTeamMatchesQueryHandler(repository);
+        var handler = new GetTeamEventsQueryHandler(repository);
 
-        var result = await handler.HandleAsync(new GetTeamMatchesQuery("gul"), CancellationToken.None);
+        var result = await handler.HandleAsync(new GetTeamEventsQuery("gul"), CancellationToken.None);
 
         Assert.Equal(
             ["Forst", "Mitten", "Sist"],
-            result!.Matches.Select(m => m.Opponent));
+            result!.Events.Select(m => m.Opponent));
     }
 }

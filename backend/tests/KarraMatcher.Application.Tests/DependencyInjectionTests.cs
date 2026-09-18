@@ -2,7 +2,7 @@ using FluentValidation;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Teams;
-using KarraMatcher.Application.Features.Teams.GetTeamMatches;
+using KarraMatcher.Application.Features.Teams.GetTeamEvents;
 using KarraMatcher.Application.Features.Teams.GetTeams;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -50,7 +50,7 @@ public class DependencyInjectionTests
         Assert.NotNull(scope.ServiceProvider
             .GetService<IQueryHandler<GetTeamsQuery, IReadOnlyList<TeamDto>>>());
         Assert.NotNull(scope.ServiceProvider
-            .GetService<IQueryHandler<GetTeamMatchesQuery, TeamMatchesDto?>>());
+            .GetService<IQueryHandler<GetTeamEventsQuery, TeamEventsDto?>>());
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class DependencyInjectionTests
         using var provider = services.BuildServiceProvider(validateScopes: true);
         using var scope = provider.CreateScope();
 
-        Assert.NotEmpty(scope.ServiceProvider.GetServices<IValidator<GetTeamMatchesQuery>>());
+        Assert.NotEmpty(scope.ServiceProvider.GetServices<IValidator<GetTeamEventsQuery>>());
     }
 
     [Fact]
@@ -93,6 +93,6 @@ public class DependencyInjectionTests
         using var scope = provider.CreateScope();
 
         Assert.NotEmpty(scope.ServiceProvider
-            .GetServices<IQueryBehavior<GetTeamMatchesQuery, TeamMatchesDto?>>());
+            .GetServices<IQueryBehavior<GetTeamEventsQuery, TeamEventsDto?>>());
     }
 }

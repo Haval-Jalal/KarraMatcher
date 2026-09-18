@@ -38,9 +38,9 @@ public static class DependencyInjection
 
         services.AddScoped<SessionIssuer>();
         services.AddScoped<LoginCodeService>();
-        services.AddScoped<Features.Matches.Admin.MatchAdminService>();
+        services.AddScoped<Features.Events.Admin.EventAdminService>();
         services.AddScoped<Features.Venues.VenueRegistry>();
-        services.AddScoped<Features.Matches.Import.ScheduleImportService>();
+        services.AddScoped<Features.Events.Import.ScheduleImportService>();
         services.AddScoped<Features.Carpool.CarpoolOfferService>();
         services.AddScoped<Features.Carpool.CarpoolRequestService>();
         services.AddScoped<Features.Carpool.CarpoolResponseService>();
@@ -48,7 +48,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Carpool.CarpoolRetentionService>();
         services.AddScoped<Features.Attendance.AttendanceGate>();
         services.AddScoped<Features.Attendance.AttendanceService>();
-        services.AddScoped<Features.Jobs.MatchReminderService>();
+        services.AddScoped<Features.Jobs.EventReminderService>();
         services.AddScoped<Features.Push.NotificationSettingsService>();
         services.AddScoped<Features.Push.PushRetentionService>();
 

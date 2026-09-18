@@ -1,10 +1,10 @@
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
 /// <summary>
-/// Läsåtkomst till lag och deras matcher. Interfacet bor i Application och
+/// Läsåtkomst till lag och deras händelser. Interfacet bor i Application och
 /// implementeras i Infrastructure — beroendet pekar inåt.
 /// </summary>
 public interface ITeamRepository
@@ -15,6 +15,6 @@ public interface ITeamRepository
     /// <summary>Ett lag på dess slug, eller null om det inte finns.</summary>
     public Task<Team?> FindBySlugAsync(string slug, CancellationToken cancellationToken);
 
-    /// <summary>Lagets matcher med spelplats inläst, sorterade på avspark.</summary>
-    public Task<IReadOnlyList<Match>> GetMatchesAsync(Guid teamId, CancellationToken cancellationToken);
+    /// <summary>Lagets händelser med spelplats inläst, sorterade på starttid.</summary>
+    public Task<IReadOnlyList<Event>> GetEventsAsync(Guid teamId, CancellationToken cancellationToken);
 }

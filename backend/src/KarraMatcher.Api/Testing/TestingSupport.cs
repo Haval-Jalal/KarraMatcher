@@ -4,12 +4,12 @@ using System.Text.RegularExpressions;
 using KarraMatcher.Application.Abstractions.Email;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Children;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 
-using DomainMatch = KarraMatcher.Domain.Matches.Match;
+using DomainEvent = KarraMatcher.Domain.Events.Event;
 
 namespace KarraMatcher.Api.Testing;
 
@@ -213,7 +213,7 @@ public static class TestingSupport
         TimeProvider clock,
         CancellationToken ct)
     {
-        var existing = await db.Matches.AsNoTracking()
+        var existing = await db.Events.AsNoTracking()
             .Where(m => m.TeamId == teamId && m.OpponentName == E2eOpponent)
             .Select(m => (Guid?)m.Id)
             .FirstOrDefaultAsync(ct).ConfigureAwait(false);
@@ -230,20 +230,21 @@ public static class TestingSupport
 
         var kickoff = clock.GetUtcNow().UtcDateTime.AddDays(7);
 
-        var match = new DomainMatch
+        var match = new DomainEvent
         {
             Id = Guid.NewGuid(),
             TeamId = teamId,
+            Type = EventType.Match,
             KickoffUtc = kickoff,
             OpponentName = E2eOpponent,
             VenueId = venueId,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = kickoff,
         };
 
-        await db.Matches.AddAsync(match, ct).ConfigureAwait(false);
+        await db.Events.AddAsync(match, ct).ConfigureAwait(false);
 
         return match.Id;
     }

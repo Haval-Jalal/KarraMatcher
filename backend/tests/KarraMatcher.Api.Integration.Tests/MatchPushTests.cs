@@ -8,7 +8,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Accounts;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -90,7 +90,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
             Longitude = 11.98,
             IsHome = false,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -98,7 +98,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = now,
         };
@@ -108,7 +108,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.AddRange(venue, other);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         context.Accounts.Add(coach);
 
         await context.SaveChangesAsync(CancellationToken.None);
@@ -145,6 +145,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
     private static object MatchBody(DateTime kickoffUtc, Guid venueId, bool isHome = true, string? note = null) =>
         new
         {
+            type = "Match",
             kickoffUtc,
             opponent = "Torslanda",
             venueId,
@@ -162,7 +163,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         var (app, outbox) = WithRecordingOutbox();
         using var client = app.CreateClient(ClientOptions);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{fixture.Slug}/matches")
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{fixture.Slug}/events")
         {
             Content = JsonContent.Create(MatchBody(DateTime.UtcNow.AddDays(7), fixture.VenueId)),
         };
@@ -185,7 +186,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
 
         var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}")
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}")
         {
             Content = JsonContent.Create(MatchBody(DateTime.UtcNow.AddDays(9), fixture.VenueId)),
         };
@@ -210,12 +211,12 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         using (var scope = factory.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
-            kickoff = context.Matches.Single(m => m.Id == fixture.MatchId).KickoffUtc;
+            kickoff = context.Events.Single(m => m.Id == fixture.MatchId).KickoffUtc;
         }
 
         var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}")
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}")
         {
             Content = JsonContent.Create(MatchBody(kickoff, fixture.OtherVenueId)),
         };
@@ -238,7 +239,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
 
         var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}/cancel");
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}/cancel");
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 
         var response = await client.SendAsync(request, CancellationToken.None);
@@ -248,7 +249,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         Assert.Contains("Inställt", dispatch.Message.Title, StringComparison.Ordinal);
 
         // Klick på notisen öppnar rätt match.
-        Assert.Equal($"/match/{fixture.MatchId}", dispatch.Message.Url);
+        Assert.Equal($"/handelse/{fixture.MatchId}", dispatch.Message.Url);
     }
 
     // ---- Det som inte ska köa en notis -----------------------------------------------
@@ -266,12 +267,12 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         using (var scope = factory.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
-            kickoff = context.Matches.Single(m => m.Id == fixture.MatchId).KickoffUtc;
+            kickoff = context.Events.Single(m => m.Id == fixture.MatchId).KickoffUtc;
         }
 
         var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}")
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}")
         {
             Content = JsonContent.Create(MatchBody(kickoff, fixture.VenueId, note: "Elias mamma kör kiosken")),
         };
@@ -294,7 +295,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
 
         var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}");
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}");
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 
         var response = await client.SendAsync(request, CancellationToken.None);
@@ -312,7 +313,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         var (app, outbox) = WithRecordingOutbox();
         using var client = app.CreateClient(ClientOptions);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{fixture.Slug}/matches")
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{fixture.Slug}/events")
         {
             Content = JsonContent.Create(
                 MatchBody(DateTime.UtcNow.AddDays(7), fixture.VenueId, note: "Elias har feber, ring mamma 070")),

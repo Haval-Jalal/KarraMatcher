@@ -5,7 +5,7 @@ using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
 using KarraMatcher.Domain.Children;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +29,7 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<Venue> Venues => Set<Venue>();
 
-    public DbSet<Match> Matches => Set<Match>();
+    public DbSet<Event> Events => Set<Event>();
 
     public DbSet<Account> Accounts => Set<Account>();
 

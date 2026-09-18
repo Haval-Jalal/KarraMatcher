@@ -10,7 +10,7 @@ using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
 using KarraMatcher.Domain.Children;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -82,7 +82,7 @@ public sealed class CarpoolPushTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -90,7 +90,7 @@ public sealed class CarpoolPushTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = now,
         };
@@ -121,7 +121,7 @@ public sealed class CarpoolPushTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         context.Accounts.AddRange(driver, requester);
         context.Children.AddRange(driverChild, requesterChild);
         context.Guardianships.AddRange(

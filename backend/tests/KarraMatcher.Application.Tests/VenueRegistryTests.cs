@@ -1,7 +1,7 @@
 using KarraMatcher.Application.Abstractions.Geocoding;
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Venues;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Tests;
 

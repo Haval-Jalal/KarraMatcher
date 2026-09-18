@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Domain.Common;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Architecture.Tests;
 
@@ -155,7 +155,7 @@ public class EntityExposureTests
     {
         // Utan den här kontrollen kan regeln ovan gå grön av fel skäl den dag typfiltret
         // slutar hitta något: noll kända entiteter kan aldrig exponeras.
-        Assert.Contains(typeof(Match), DomainEntities);
+        Assert.Contains(typeof(Event), DomainEntities);
         Assert.Contains(typeof(Venue), DomainEntities);
     }
 
@@ -168,7 +168,7 @@ public class EntityExposureTests
 
     private sealed class ReturnerarEntitetController : ControllerBase
     {
-        public Match Hamta(Guid id) => throw new NotSupportedException(nameof(id));
+        public Event Hamta(Guid id) => throw new NotSupportedException(nameof(id));
     }
 
     private sealed class GomdEntitetController : ControllerBase
@@ -178,21 +178,21 @@ public class EntityExposureTests
 
     private sealed class TarEmotEntitetController : ControllerBase
     {
-        public void Spara(Match match) => throw new NotSupportedException(nameof(match));
+        public void Spara(Event match) => throw new NotSupportedException(nameof(match));
     }
 
-    private sealed record MatchDto(Guid Id, string OpponentName);
+    private sealed record EventDto(Guid Id, string OpponentName);
 
     private sealed class ArtigController : ControllerBase
     {
-        public Task<IReadOnlyList<MatchDto>> Lista() => throw new NotSupportedException();
+        public Task<IReadOnlyList<EventDto>> Lista() => throw new NotSupportedException();
     }
 
     [Fact]
     public void IsController_ArverControllerBase_GerTrue()
     {
         Assert.True(IsController(typeof(ArtigController)));
-        Assert.False(IsController(typeof(MatchDto)));
+        Assert.False(IsController(typeof(EventDto)));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class EntityExposureTests
     {
         var offenders = ForbiddenExposures(typeof(ReturnerarEntitetController));
 
-        Assert.Contains(offenders, o => o.Contains("returnerar Match", StringComparison.Ordinal));
+        Assert.Contains(offenders, o => o.Contains("returnerar Event", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public class EntityExposureTests
     {
         var offenders = ForbiddenExposures(typeof(TarEmotEntitetController));
 
-        Assert.Contains(offenders, o => o.Contains("tar emot Match", StringComparison.Ordinal));
+        Assert.Contains(offenders, o => o.Contains("tar emot Event", StringComparison.Ordinal));
     }
 
     [Fact]
