@@ -72,6 +72,10 @@ public static class AuditActions
     public const string AdminGranted = "admin.tilldelad";
     public const string AdminRevoked = "admin.aterkallad";
 
+    // Tränartillsättning per lag (§KM.3, `#197`).
+    public const string CoachGranted = "tranare.tillsatt";
+    public const string CoachRevoked = "tranare.avsatt";
+
     // Inbjudningar (§KM.3, `#193`).
     public const string InvitationCreated = "inbjudan.skapad";
     public const string InvitationAccepted = "inbjudan.accepterad";

@@ -125,3 +125,26 @@ internal sealed class RevokeAdminCommandValidator : AbstractValidator<RevokeAdmi
         RuleFor(c => c.AccountId).NotEmpty();
     }
 }
+
+internal sealed class GrantCoachCommandValidator : AbstractValidator<GrantCoachCommand>
+{
+    public GrantCoachCommandValidator()
+    {
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.TeamId).NotEmpty().WithMessage("Välj ett lag.");
+        RuleFor(c => c.Email)
+            .NotEmpty().WithMessage("Fyll i adressen till den som ska bli tränare.")
+            .EmailAddress().WithMessage("Adressen ser inte giltig ut.")
+            .MaximumLength(200);
+    }
+}
+
+internal sealed class RevokeCoachCommandValidator : AbstractValidator<RevokeCoachCommand>
+{
+    public RevokeCoachCommandValidator()
+    {
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.TeamId).NotEmpty();
+        RuleFor(c => c.AccountId).NotEmpty();
+    }
+}

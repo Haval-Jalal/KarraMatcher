@@ -144,6 +144,23 @@ internal sealed class AdministrationRepository(KarraMatcherDbContext context) : 
             .OrderBy(r => r.GrantedUtc)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    // ---- Tränartillsättning (`#197`) -------------------------------------------------
+    public Task<TeamRole?> FindCoachRoleAsync(
+        Guid accountId, Guid teamId, CancellationToken cancellationToken) =>
+        context.TeamRoles.FirstOrDefaultAsync(
+            r => r.AccountId == accountId
+                && r.TeamId == teamId
+                && r.Role == RoleKind.Coach,
+            cancellationToken);
+
+    public async Task<IReadOnlyList<TeamRole>> GetCoachesForTruppAsync(
+        Guid truppId, CancellationToken cancellationToken) =>
+        await context.TeamRoles.AsNoTracking()
+            .Include(r => r.Account)
+            .Where(r => r.Role == RoleKind.Coach && r.Team!.AgeGroupId == truppId)
+            .OrderBy(r => r.GrantedUtc)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task AddRoleAsync(TeamRole role, CancellationToken cancellationToken) =>
         await context.TeamRoles.AddAsync(role, cancellationToken).ConfigureAwait(false);
 

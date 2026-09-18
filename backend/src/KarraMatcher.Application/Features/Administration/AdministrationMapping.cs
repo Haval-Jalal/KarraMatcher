@@ -39,4 +39,18 @@ internal static class AdministrationMapping
             account?.Email ?? string.Empty,
             new DateTimeOffset(role.GrantedUtc, TimeSpan.Zero));
     }
+
+    /// <summary>En tränar-rad byggd av rollen och dess konto (`#197`).</summary>
+    public static TeamCoachDto ToCoachDto(this TeamRole role)
+    {
+        ArgumentNullException.ThrowIfNull(role);
+
+        var account = role.Account;
+
+        return new TeamCoachDto(
+            role.AccountId,
+            account?.DisplayName,
+            account?.Email ?? string.Empty,
+            new DateTimeOffset(role.GrantedUtc, TimeSpan.Zero));
+    }
 }
