@@ -68,6 +68,9 @@ public static class DependencyInjection
         // Vårdnadshavarsamtycke (§KM.6, #195).
         services.AddScoped<Features.Consent.ConsentService>();
 
+        // Barnhantering (§KM.1, #196).
+        services.AddScoped<Features.Children.ChildAdminService>();
+
         return services;
     }
 
