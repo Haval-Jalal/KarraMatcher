@@ -1,27 +1,26 @@
 import { LoadingState } from '@/components/LoadingState'
 import { ApiError } from '@/lib/api'
 
-import { MatchList } from './MatchList'
+import { EventList } from './EventList'
 import { ScheduleSkeleton } from './ScheduleSkeleton'
-import { NextMatchCard } from './NextMatchCard'
+import { NextEventCard } from './NextEventCard'
 import { TeamCalendarLink } from './TeamCalendarLink'
-import { selectNextMatch } from './selectNextMatch'
-import { useTeamMatches } from './useTeamMatches'
+import { selectNextEvent } from './selectNextEvent'
+import { useTeamEvents } from './useTeamEvents'
 
 /**
- * Containern runt schemat: nästa match-kortet och matchlistan. Hämtar en gång och äger
- * ordningen dem emellan, så att kortet alltid hamnar överst.
+ * Containern runt schemat: nästa händelse-kortet och händelselistan. Hämtar en gång och
+ * äger ordningen dem emellan, så att kortet alltid hamnar överst.
  *
- * Fyra utfall kräver olika text, eftersom de kräver olika saker av läsaren: nätet är
- * nere, laget finns inte, servern strular, eller allt fungerar. "Något gick fel" hade
- * varit enklare att skriva och sämre att läsa.
+ * Fyra utfall kräver olika text: nätet är nere, laget finns inte, servern strular, eller
+ * allt fungerar. "Något gick fel" hade varit enklare att skriva och sämre att läsa.
  */
-export function MatchListSection({ slug }: { slug: string }) {
-  const { data, isPending, error, refetch, isFetching } = useTeamMatches(slug)
+export function EventListSection({ slug }: { slug: string }) {
+  const { data, isPending, error, refetch, isFetching } = useTeamEvents(slug)
 
   if (isPending) {
     return (
-      <LoadingState label="Hämtar matcherna…">
+      <LoadingState label="Hämtar schemat…">
         <ScheduleSkeleton />
       </LoadingState>
     )
@@ -43,7 +42,7 @@ export function MatchListSection({ slug }: { slug: string }) {
         <p>
           {apiError?.offline
             ? 'Ingen anslutning. Schemat kan inte hämtas just nu.'
-            : 'Kunde inte hämta matcherna just nu.'}
+            : 'Kunde inte hämta schemat just nu.'}
         </p>
         <button
           type="button"
@@ -60,14 +59,14 @@ export function MatchListSection({ slug }: { slug: string }) {
   }
 
   // Väljs en gång och matas till båda. Kortet och listan kan därmed aldrig bli oense om
-  // vilken match som är nästa — vilket är vad som gjorde att den visades två gånger.
-  const next = selectNextMatch(data.matches)
+  // vilken händelse som är nästa.
+  const next = selectNextEvent(data.events)
 
   return (
     <>
-      {next && <NextMatchCard match={next} />}
-      <h2 className="match-list__title">Matcher</h2>
-      <MatchList matches={data.matches} {...(next ? { excludeId: next.id } : {})} />
+      {next && <NextEventCard event={next} />}
+      <h2 className="match-list__title">Schema</h2>
+      <EventList events={data.events} {...(next ? { excludeId: next.id } : {})} />
       <TeamCalendarLink slug={slug} />
     </>
   )

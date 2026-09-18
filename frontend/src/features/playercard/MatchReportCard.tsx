@@ -1,4 +1,4 @@
-import type { Match } from '@/features/matches'
+import type { TeamEvent } from '@/features/events'
 
 import { BadgeCelebration } from './badges/BadgeCelebration'
 import type { Child, MatchReport } from './storage/schema'
@@ -23,10 +23,10 @@ import { useMatchReports } from './useMatchReports'
  *
  * §KM.2. Komponenten når lagringen, aldrig API-lagret.
  */
-export function MatchReportCard({ match, children }: { match: Match; children: Child[] }) {
+export function MatchReportCard({ match, children }: { match: TeamEvent; children: Child[] }) {
   const { card, reportFor, adjust, setResult, acknowledgeBadges } = useMatchReports(
     match.id,
-    match.opponent,
+    match.opponent ?? '',
   )
 
   if (match.status === 'Cancelled') {

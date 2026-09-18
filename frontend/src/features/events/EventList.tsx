@@ -1,54 +1,52 @@
 import { useId, useState } from 'react'
 
-import { MatchCard } from './MatchCard'
-import { groupMatches } from './groupMatches'
-import type { Match } from './types'
+import { EventCard } from './EventCard'
+import { groupEvents } from './groupEvents'
+import type { TeamEvent } from './types'
 
 /**
- * Lagets matcher: dagens först, sedan kommande per månad, och tidigare hopfällda.
+ * Lagets händelser: dagens först, sedan kommande per månad, och tidigare hopfällda.
  *
- * Historiken är hopfälld eftersom föräldern vill se nästa match först och slippa bläddra
- * förbi halva säsongen. Knappen anger antalet, så att man vet vad som väntar bakom den
- * innan man trycker.
+ * Historiken är hopfälld eftersom föräldern vill se nästa händelse först och slippa bläddra
+ * förbi halva säsongen. Knappen anger antalet, så att man vet vad som väntar bakom den.
  */
-export function MatchList({
-  matches,
+export function EventList({
+  events,
   now,
   excludeId,
 }: {
-  matches: Match[]
+  events: TeamEvent[]
   now?: Date | string
   /**
-   * Matchen som redan visas i kortet ovanför. Utesluts på **id** och inte som "första
-   * posten" — kortet hoppar över inställda matcher, så första posten är inte alltid den
-   * kortet visar, och att ta bort fel post hade dolt en inställd match.
+   * Händelsen som redan visas i kortet ovanför. Utesluts på **id** och inte som "första
+   * posten" — kortet hoppar över inställda händelser, så första posten är inte alltid den
+   * kortet visar.
    */
   excludeId?: string
 }) {
   const [showPast, setShowPast] = useState(false)
   const pastId = useId()
 
-  if (matches.length === 0) {
+  if (events.length === 0) {
     return (
       <p className="state">
-        Inga matcher är inlagda för det här laget än. Schemat läggs in inför säsongen — då dyker
-        matcherna upp här av sig själva.
+        Inga händelser är inlagda för det här laget än. Schemat läggs in inför säsongen — då dyker
+        de upp här av sig själva.
       </p>
     )
   }
 
-  const shown = excludeId === undefined ? matches : matches.filter((m) => m.id !== excludeId)
-  const { today, upcoming, past } = groupMatches(shown, now)
-  const pastCount = past.reduce((total, group) => total + group.matches.length, 0)
+  const shown = excludeId === undefined ? events : events.filter((e) => e.id !== excludeId)
+  const { today, upcoming, past } = groupEvents(shown, now)
+  const pastCount = past.reduce((total, group) => total + group.events.length, 0)
 
   if (shown.length === 0) {
-    // Kortet ovanför visar den enda match som fanns. Utan det här beskedet hade
-    // rubriken "Matcher" stått ensam över tomrum och sett trasig ut.
-    return <p className="state">Inga fler matcher är inlagda.</p>
+    // Kortet ovanför visar den enda händelse som fanns.
+    return <p className="state">Inga fler händelser är inlagda.</p>
   }
 
   // Med ett kort ovanför är en tom framtid inte "säsongen är slut" — det står redan en
-  // kommande match på sidan. Beskedet gäller bara när listan är allt som finns.
+  // kommande händelse på sidan. Beskedet gäller bara när listan är allt som finns.
   const seasonOver = today.length === 0 && upcoming.length === 0 && excludeId === undefined
 
   return (
@@ -59,8 +57,8 @@ export function MatchList({
             Idag
           </h3>
           <ul className="match-list__items">
-            {today.map((match) => (
-              <MatchCard key={match.id} match={match} />
+            {today.map((event) => (
+              <EventCard key={event.id} event={event} />
             ))}
           </ul>
         </section>
@@ -72,14 +70,14 @@ export function MatchList({
             {group.heading}
           </h3>
           <ul className="match-list__items">
-            {group.matches.map((match) => (
-              <MatchCard key={match.id} match={match} />
+            {group.events.map((event) => (
+              <EventCard key={event.id} event={event} />
             ))}
           </ul>
         </section>
       ))}
 
-      {seasonOver && <p className="state">Säsongen är slut. Inga fler matcher är inlagda.</p>}
+      {seasonOver && <p className="state">Säsongen är slut. Inga fler händelser är inlagda.</p>}
 
       {pastCount > 0 && (
         <div className="match-list__past">
@@ -93,8 +91,8 @@ export function MatchList({
             }}
           >
             {showPast
-              ? 'Dölj tidigare matcher'
-              : `Visa ${String(pastCount)} tidigare ${pastCount === 1 ? 'match' : 'matcher'}`}
+              ? 'Dölj tidigare händelser'
+              : `Visa ${String(pastCount)} tidigare ${pastCount === 1 ? 'händelse' : 'händelser'}`}
           </button>
 
           <div id={pastId} hidden={!showPast}>
@@ -104,8 +102,8 @@ export function MatchList({
                   {group.heading}
                 </h3>
                 <ul className="match-list__items">
-                  {group.matches.map((match) => (
-                    <MatchCard key={match.id} match={match} />
+                  {group.events.map((event) => (
+                    <EventCard key={event.id} event={event} />
                   ))}
                 </ul>
               </section>

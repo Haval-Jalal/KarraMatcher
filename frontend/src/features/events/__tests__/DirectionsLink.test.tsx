@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { DirectionsLink } from '@/features/matches/DirectionsLink'
+import { DirectionsLink } from '@/features/events/DirectionsLink'
 import { renderWithRouter } from '@/test/renderWithRouter'
 
 afterEach(() => {

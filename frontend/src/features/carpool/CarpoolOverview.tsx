@@ -75,7 +75,7 @@ function OverviewRow({ match }: { match: TeamCarpoolMatch }) {
   return (
     <>
       <p className="carpool-overview__match">
-        <Link to="/match/$id" params={{ id: match.matchId }}>
+        <Link to="/handelse/$id" params={{ id: match.matchId }}>
           {match.isHome ? 'Hemma mot ' : 'Borta mot '}
           {match.opponent}
         </Link>

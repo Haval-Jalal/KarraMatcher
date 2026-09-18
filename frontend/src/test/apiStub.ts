@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { Match, MatchDetail, TeamMatches } from '@/features/matches'
+import type { TeamEvent } from '@/features/events'
 import type { Team } from '@/features/teams'
 
 export const testTeams: Team[] = [
@@ -8,10 +8,16 @@ export const testTeams: Team[] = [
   { slug: 'bla', name: 'Blå', ageGroup: 'P2016', colorHex: '#1E3F8A' },
 ]
 
-export function testMatch(id: string, kickoffUtc: string, overrides: Partial<Match> = {}): Match {
+export function testEvent(
+  id: string,
+  kickoffUtc: string,
+  overrides: Partial<TeamEvent> = {},
+): TeamEvent {
   return {
     id,
+    type: 'Match',
     kickoffUtc,
+    title: null,
     opponent: `Motstandare ${id}`,
     isHome: true,
     status: 'Scheduled',
@@ -30,9 +36,7 @@ export function testMatch(id: string, kickoffUtc: string, overrides: Partial<Mat
  * Ett svar som beter sig som fetch gör — inklusive `text()`.
  *
  * API-klienten läser kroppen som text för att tomma svar ska gå att skilja från trasiga
- * (se `parseBody` i `lib/api.ts`). En attrapp som bara kan `json()` ljuger därför om
- * verkligheten, och ett test på en sådan attrapp kan vara grönt medan appen är trasig —
- * vilket är precis vad som hände med 202-svaret från `request-code`.
+ * (se `parseBody` i `lib/api.ts`).
  */
 export function jsonResponse(body: unknown, status = 200): Response {
   const text = JSON.stringify(body)
@@ -56,38 +60,50 @@ export function emptyResponse(status: number): Response {
 }
 
 /**
- * Svarar som API:t gör, per adress. Utan detta skulle varje test behöva veta i vilken
- * ordning komponenterna råkar hämta — vilket är en ordning som inte bör spela roll.
+ * Svarar som API:t gör, per adress (`#198`).
+ *
+ * Fixturnycklarna heter fortfarande `matches`/`match` (och bär den inre nyckeln likaså) —
+ * det är bara testhjälparens egna namn. Ut serialiseras svaret på den riktiga formen:
+ * `{ team, events }` respektive `{ team, event }`, mot `/api/v1/events`.
  */
 export function stubApi(options: {
   teams?: Team[] | 'error'
-  matches?: TeamMatches | 'error' | 'notFound'
-  match?: MatchDetail | 'error' | 'notFound'
+  matches?: { team: Team; matches: TeamEvent[] } | 'error' | 'notFound'
+  match?: { team: Team; match: TeamEvent } | 'error' | 'notFound'
 }) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: unknown) => {
       const url = String(input)
 
-      // Enskild match först: /api/v1/matches/{id} innehåller också "/matches".
-      if (url.includes('/api/v1/matches/')) {
+      // Enskild händelse först: /api/v1/events/{id} innehåller också "/events".
+      if (url.includes('/api/v1/events/')) {
         if (options.match === 'error') return Promise.reject(new TypeError('Failed to fetch'))
         if (options.match === 'notFound') {
-          return Promise.resolve(jsonResponse({ title: 'Matchen finns inte' }, 404))
+          return Promise.resolve(jsonResponse({ title: 'Händelsen finns inte' }, 404))
         }
-        return Promise.resolve(
-          jsonResponse(
-            options.match ?? { team: testTeams[0], match: testMatch('a', '2026-09-20T12:00:00Z') },
-          ),
-        )
+        const detail = options.match ?? {
+          team: testTeams[0],
+          match: testEvent('a', '2026-09-20T12:00:00Z'),
+        }
+        return Promise.resolve(jsonResponse({ team: detail.team, event: detail.match }))
       }
 
-      if (url.includes('/matches')) {
+      if (url.includes('/events')) {
         if (options.matches === 'error') return Promise.reject(new TypeError('Failed to fetch'))
         if (options.matches === 'notFound') {
           return Promise.resolve(jsonResponse({ title: 'Laget finns inte' }, 404))
         }
-        return Promise.resolve(jsonResponse(options.matches ?? { team: testTeams[0], matches: [] }))
+        const schedule = options.matches ?? { team: testTeams[0], matches: [] }
+        return Promise.resolve(jsonResponse({ team: schedule.team, events: schedule.matches }))
+      }
+
+      // Samåkning och kallelse ligger kvar under /api/v1/matches/{id}/… (kvarhållet
+      // MatchId, §KM.12). En detaljsida som renderas i ett test som inte bryr sig om dem
+      // ska inte krascha: tomt för samåkning, 404 (ej påslagen kallelse) för närvaro.
+      if (url.includes('/carpool')) return Promise.resolve(jsonResponse([]))
+      if (url.includes('/attendance')) {
+        return Promise.resolve(jsonResponse({ title: 'Kallelsen är inte påslagen' }, 404))
       }
 
       if (options.teams === 'error') return Promise.reject(new TypeError('Failed to fetch'))

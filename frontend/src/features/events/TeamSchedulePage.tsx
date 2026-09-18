@@ -6,7 +6,7 @@ import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
 import { teamThemeStyle } from '@/lib/teamTheme'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
-import { MatchListSection } from './MatchListSection'
+import { EventListSection } from './EventListSection'
 
 /**
  * Ett lags schema på egen adress, t.ex. `/lag/gul`.
@@ -55,7 +55,7 @@ export function TeamSchedulePage() {
         </>
       )}
 
-      <MatchListSection slug={slug} />
+      <EventListSection slug={slug} />
 
       {/* Notisinställningar (#65). Renderar ingenting för en gäst. */}
       <NotificationSettings teamSlug={slug} />

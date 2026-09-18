@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { readCard, useMatchReports, writeCard } from '@/features/playercard'
 import { emptyCard } from '@/features/playercard/storage/schema'
-import { stubApi, testMatch, testTeams } from '@/test/apiStub'
+import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 // Källan läses som text för kopplingskontrollen, inte för beteendet.
@@ -31,13 +31,13 @@ function openMatch(options: { cancelled?: boolean } = {}) {
   stubApi({
     match: {
       team: testTeams[0]!,
-      match: testMatch(MATCH_ID, '2026-09-20T12:00:00Z', {
+      match: testEvent(MATCH_ID, '2026-09-20T12:00:00Z', {
         ...(options.cancelled === true ? { status: 'Cancelled' as const } : {}),
       }),
     },
   })
 
-  return renderRoute(`/match/${MATCH_ID}`)
+  return renderRoute(`/handelse/${MATCH_ID}`)
 }
 
 beforeEach(() => {

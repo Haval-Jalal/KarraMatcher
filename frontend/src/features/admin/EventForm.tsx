@@ -3,47 +3,68 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import type { Match } from '@/features/matches'
+import type { TeamEvent } from '@/features/events'
 import { ApiError } from '@/lib/api'
 import { swedishLocalToUtc, utcToSwedishLocalInput } from '@/lib/time'
 
-import { searchVenues, type MatchInput, type Venue } from './adminApi'
+import { searchVenues, type EventInput, type Venue } from './adminApi'
 
 /**
- * Tränarens matchformulär.
+ * Tränarens formulär för en händelse — match, träning eller övrigt (`#198`).
+ *
+ * <h3>Typen styr fälten</h3>
+ *
+ * En match har motståndare och hemma/borta; en träning eller övrig händelse har i stället
+ * en rubrik. Väljaren högst upp bestämmer vilka fält som visas, och valideringen kräver rätt
+ * fält för rätt typ.
  *
  * <h3>Tiden skrivs i svensk tid och sparas i UTC</h3>
  *
- * Tränaren skriver "14:00" och menar 14:00 på planen. Omräkningen sker i `lib/time.ts`,
- * som är frontendens enda ställe där UTC möter svensk tid (§KM.5) — här görs den bara,
- * aldrig på egen hand.
+ * Omräkningen sker i `lib/time.ts`, frontendens enda ställe där UTC möter svensk tid (§KM.5).
  *
  * <h3>Vad som är utelämnat med flit</h3>
  *
- * Inget fält för koordinater. De härleds ur spelplatsens adress när platsen läggs upp,
- * eftersom handinmatade koordinater visade sig ligga upp till 2,2 km fel (`#110`).
+ * Inget fält för koordinater — de härleds ur spelplatsens adress (`#110`).
  */
 
-const schema = z.object({
-  kickoffLocal: z
-    .string()
-    .min(1, 'Fyll i datum och tid.')
-    .refine((value) => swedishLocalToUtc(value) !== null, 'Datum och tid ser inte riktiga ut.'),
-  opponent: z.string().trim().min(1, 'Fyll i motståndarlaget.').max(120, 'Namnet är för långt.'),
-  venueId: z.string().min(1, 'Välj en spelplats.'),
-  isHome: z.boolean(),
-  note: z.string().max(500, 'Notisen är för lång.'),
-})
+const schema = z
+  .object({
+    type: z.enum(['Match', 'Training', 'Other']),
+    kickoffLocal: z
+      .string()
+      .min(1, 'Fyll i datum och tid.')
+      .refine((value) => swedishLocalToUtc(value) !== null, 'Datum och tid ser inte riktiga ut.'),
+    opponent: z.string().max(120, 'Namnet är för långt.'),
+    isHome: z.boolean(),
+    title: z.string().max(120, 'Rubriken är för lång.'),
+    venueId: z.string().min(1, 'Välj en spelplats.'),
+    note: z.string().max(500, 'Notisen är för lång.'),
+  })
+  .superRefine((values, ctx) => {
+    if (values.type === 'Match') {
+      if (values.opponent.trim() === '') {
+        ctx.addIssue({ path: ['opponent'], code: 'custom', message: 'Fyll i motståndarlaget.' })
+      }
+    } else if (values.title.trim() === '') {
+      ctx.addIssue({ path: ['title'], code: 'custom', message: 'Fyll i en rubrik.' })
+    }
+  })
 
 type FormValues = z.infer<typeof schema>
 
-export function MatchForm({
+const TYPE_LABELS: Record<FormValues['type'], string> = {
+  Match: 'Match',
+  Training: 'Träning',
+  Other: 'Övrigt',
+}
+
+export function EventForm({
   existing,
   onSubmit,
   onCancel,
 }: {
-  existing?: Match
-  onSubmit: (input: MatchInput) => Promise<void>
+  existing?: TeamEvent
+  onSubmit: (input: EventInput) => Promise<void>
   onCancel: () => void
 }) {
   const [failure, setFailure] = useState<string | null>(null)
@@ -56,13 +77,20 @@ export function MatchForm({
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      type: existing?.type ?? 'Match',
       kickoffLocal: existing ? utcToSwedishLocalInput(existing.kickoffUtc) : '',
       opponent: existing?.opponent ?? '',
-      venueId: '',
       isHome: existing?.isHome ?? true,
+      title: existing?.title ?? '',
+      venueId: '',
       note: '',
     },
   })
+
+  // Typen styr vilka fält som visas. Hålls i lokal state i stället för RHF:s watch(), som
+  // React Compiler inte kan memoisera säkert; setValue håller formulärvärdet i takt.
+  const [type, setType] = useState<FormValues['type']>(existing?.type ?? 'Match')
+  const isMatch = type === 'Match'
 
   return (
     <form
@@ -78,12 +106,16 @@ export function MatchForm({
             return
           }
 
+          const matchType = values.type === 'Match'
+
           try {
             await onSubmit({
+              type: values.type,
               kickoffUtc,
-              opponent: values.opponent.trim(),
+              title: matchType ? null : values.title.trim(),
+              opponent: matchType ? values.opponent.trim() : null,
               venueId: values.venueId,
-              isHome: values.isHome,
+              isHome: matchType ? values.isHome : null,
               note: values.note.trim() === '' ? null : values.note.trim(),
             })
             setFailure(null)
@@ -91,14 +123,33 @@ export function MatchForm({
             setFailure(
               error instanceof ApiError && error.offline
                 ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
-                : 'Matchen gick inte att spara just nu. Försök igen om en stund.',
+                : 'Händelsen gick inte att spara just nu. Försök igen om en stund.',
             )
           }
         })(event)
       }}
     >
       <div className="form__field">
-        <label htmlFor="avspark">Avspark (svensk tid)</label>
+        <label htmlFor="handelsetyp">Typ</label>
+        <select
+          id="handelsetyp"
+          value={type}
+          onChange={(event) => {
+            const next = event.target.value as FormValues['type']
+            setType(next)
+            setValue('type', next, { shouldValidate: false })
+          }}
+        >
+          {(['Match', 'Training', 'Other'] as const).map((value) => (
+            <option key={value} value={value}>
+              {TYPE_LABELS[value]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form__field">
+        <label htmlFor="avspark">{isMatch ? 'Avspark (svensk tid)' : 'Start (svensk tid)'}</label>
         <input
           id="avspark"
           type="datetime-local"
@@ -113,22 +164,49 @@ export function MatchForm({
         )}
       </div>
 
-      <div className="form__field">
-        <label htmlFor="motstandare">Motståndare</label>
-        <input
-          id="motstandare"
-          type="text"
-          autoComplete="off"
-          aria-describedby={errors.opponent ? 'motstandare-fel' : undefined}
-          aria-invalid={errors.opponent ? true : undefined}
-          {...register('opponent')}
-        />
-        {errors.opponent && (
-          <p className="form__error" id="motstandare-fel">
-            {errors.opponent.message}
-          </p>
-        )}
-      </div>
+      {isMatch ? (
+        <>
+          <div className="form__field">
+            <label htmlFor="motstandare">Motståndare</label>
+            <input
+              id="motstandare"
+              type="text"
+              autoComplete="off"
+              aria-describedby={errors.opponent ? 'motstandare-fel' : undefined}
+              aria-invalid={errors.opponent ? true : undefined}
+              {...register('opponent')}
+            />
+            {errors.opponent && (
+              <p className="form__error" id="motstandare-fel">
+                {errors.opponent.message}
+              </p>
+            )}
+          </div>
+
+          <div className="form__field form__field--checkbox">
+            <label htmlFor="hemma">
+              <input id="hemma" type="checkbox" {...register('isHome')} /> Hemmamatch
+            </label>
+          </div>
+        </>
+      ) : (
+        <div className="form__field">
+          <label htmlFor="rubrik">Rubrik</label>
+          <input
+            id="rubrik"
+            type="text"
+            autoComplete="off"
+            aria-describedby={errors.title ? 'rubrik-fel' : undefined}
+            aria-invalid={errors.title ? true : undefined}
+            {...register('title')}
+          />
+          {errors.title && (
+            <p className="form__error" id="rubrik-fel">
+              {errors.title.message}
+            </p>
+          )}
+        </div>
+      )}
 
       <VenuePicker
         {...(errors.venueId?.message === undefined ? {} : { error: errors.venueId.message })}
@@ -151,7 +229,7 @@ export function MatchForm({
 
       <div className="actions">
         <button type="submit" className="button" disabled={isSubmitting}>
-          {isSubmitting ? 'Sparar…' : existing ? 'Spara ändringen' : 'Lägg till matchen'}
+          {isSubmitting ? 'Sparar…' : existing ? 'Spara ändringen' : 'Lägg till händelsen'}
         </button>
         <button type="button" className="button" onClick={onCancel}>
           Avbryt
@@ -164,11 +242,9 @@ export function MatchForm({
 /**
  * Spelplats med förslag medan man skriver.
  *
- * <para>
  * Förslagen kommer ur registret och inte ur fritext. En felstavad plats bryter både
  * vägbeskrivningen och väderprognosen, så tränaren väljer alltid en befintlig plats —
  * nya läggs upp i spelplatsregistret, där adressen geokodas.
- * </para>
  */
 function VenuePicker({ error, onSelect }: { error?: string; onSelect: (venue: Venue) => void }) {
   const [term, setTerm] = useState('')
@@ -178,10 +254,6 @@ function VenuePicker({ error, onSelect }: { error?: string; onSelect: (venue: Ve
   useEffect(() => {
     let cancelled = false
 
-    /*
-     * Kort fordrojning innan uppslagningen: tranaren skriver pa en telefon, och ett anrop
-     * per tangenttryckning ar bade langsamt och onodigt.
-     */
     const timer = setTimeout(() => {
       void searchVenues(term)
         .then((found) => {
@@ -190,7 +262,6 @@ function VenuePicker({ error, onSelect }: { error?: string; onSelect: (venue: Ve
           }
         })
         .catch(() => {
-          // Uteblivna förslag är en olägenhet, inte ett fel att avbryta formuläret för.
           if (!cancelled) {
             setOptions([])
           }

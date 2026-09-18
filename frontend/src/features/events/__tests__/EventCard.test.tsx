@@ -1,9 +1,9 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { MatchList } from '@/features/matches'
+import { EventList } from '@/features/events'
 import CSS_SOURCE from '@/styles/index.css?raw'
-import { testMatch } from '@/test/apiStub'
+import { testEvent } from '@/test/apiStub'
 import { renderWithRouter } from '@/test/renderWithRouter'
 
 /**
@@ -41,9 +41,9 @@ function rule(selector: string): string {
 describe('kortet läses upp i den ordning som prövats på riktiga telefoner', () => {
   it('ger länken tid, datum, motståndare och plats i den följden', async () => {
     await renderWithRouter(
-      <MatchList
-        matches={[
-          testMatch('a', '2026-09-20T12:00:00Z', {
+      <EventList
+        events={[
+          testEvent('a', '2026-09-20T12:00:00Z', {
             opponent: 'Hisingsbacka FC',
             venue: {
               name: 'Klarebergsvallen',
@@ -67,10 +67,10 @@ describe('kortet läses upp i den ordning som prövats på riktiga telefoner', (
 describe('hemma och borta går att skilja åt utan att läsa', () => {
   it('märker korten olika', async () => {
     await renderWithRouter(
-      <MatchList
-        matches={[
-          testMatch('hemma', '2026-09-20T12:00:00Z', { opponent: 'Hemmalaget', isHome: true }),
-          testMatch('borta', '2026-09-27T12:00:00Z', { opponent: 'Bortalaget', isHome: false }),
+      <EventList
+        events={[
+          testEvent('hemma', '2026-09-20T12:00:00Z', { opponent: 'Hemmalaget', isHome: true }),
+          testEvent('borta', '2026-09-27T12:00:00Z', { opponent: 'Bortalaget', isHome: false }),
         ]}
         now={now}
       />,
@@ -90,19 +90,41 @@ describe('hemma och borta går att skilja åt utan att läsa', () => {
 
   it('säger det i text också', async () => {
     await renderWithRouter(
-      <MatchList matches={[testMatch('b', '2026-09-20T12:00:00Z', { isHome: false })]} now={now} />,
+      <EventList events={[testEvent('b', '2026-09-20T12:00:00Z', { isHome: false })]} now={now} />,
     )
 
     expect(screen.getByText(/Borta mot/)).toBeInTheDocument()
   })
 })
 
+describe('träning och övrigt visas med rubrik i stället för motståndare (#198)', () => {
+  it('visar rubriken och ingen hemma/borta för en träning', async () => {
+    await renderWithRouter(
+      <EventList
+        events={[
+          testEvent('t', '2026-09-20T12:00:00Z', {
+            type: 'Training',
+            title: 'Lagträning',
+            opponent: null,
+            isHome: null,
+          }),
+        ]}
+        now={now}
+      />,
+    )
+
+    const link = screen.getByRole('link', { name: /Lagträning/ })
+    expect(link).toHaveAccessibleName(/Träning.*Lagträning/s)
+    expect(screen.queryByText(/mot/)).not.toBeInTheDocument()
+  })
+})
+
 describe('inställd match är omisskännlig', () => {
   it('märks med text före motståndaren', async () => {
     await renderWithRouter(
-      <MatchList
-        matches={[
-          testMatch('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda', status: 'Cancelled' }),
+      <EventList
+        events={[
+          testEvent('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda', status: 'Cancelled' }),
         ]}
         now={now}
       />,
@@ -116,8 +138,8 @@ describe('inställd match är omisskännlig', () => {
 
   it('får en egen märkning på kortet', async () => {
     await renderWithRouter(
-      <MatchList
-        matches={[testMatch('a', '2026-09-20T12:00:00Z', { status: 'Cancelled' })]}
+      <EventList
+        events={[testEvent('a', '2026-09-20T12:00:00Z', { status: 'Cancelled' })]}
         now={now}
       />,
     )

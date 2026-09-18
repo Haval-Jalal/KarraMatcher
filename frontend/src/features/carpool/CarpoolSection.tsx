@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { SignInLink } from '@/components/SignInLink'
 import { useAuth } from '@/features/auth'
-import type { Match } from '@/features/matches'
+import type { TeamEvent } from '@/features/events'
 import { ApiError } from '@/lib/api'
 
 import { createOffer } from './carpoolApi'
@@ -25,7 +25,7 @@ import { carpoolOffersQueryKey, useCarpoolOffers } from './useCarpool'
  * Att det ska vara enklare än att skriva i föräldrachatten. Är det inte det används den
  * inte, och då spelar det ingen roll vad den kan.
  */
-export function CarpoolSection({ match }: { match: Match }) {
+export function CarpoolSection({ match }: { match: TeamEvent }) {
   const { status } = useAuth()
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)

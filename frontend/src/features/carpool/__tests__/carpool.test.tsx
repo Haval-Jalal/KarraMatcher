@@ -21,7 +21,9 @@ const SIGNED_IN_TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
 
 const match = {
   id: 'm1',
+  type: 'Match',
   kickoffUtc: '2026-09-20T11:00:00Z',
+  title: null,
   opponent: 'Torslanda',
   isHome: false,
   status: 'Scheduled',
@@ -130,8 +132,10 @@ function stubApi(
         )
       }
 
-      if (url.includes('/api/v1/matches/')) {
-        return Promise.resolve(jsonResponse(options.matchDetail ?? { match, team }))
+      // Detaljsidan hämtar händelsen på /api/v1/events/{id} (`#198`). Samåkningens egna
+      // adresser ligger kvar under /api/v1/matches/ och fångas ovan.
+      if (url.includes('/api/v1/events/')) {
+        return Promise.resolve(jsonResponse(options.matchDetail ?? { team, event: match }))
       }
 
       return Promise.resolve(jsonResponse({}))
@@ -156,7 +160,7 @@ describe('erbjudandena går att läsa av', () => {
     // America/Los_Angeles, så en implementation som använder webbläsarens zon faller här.
     stubApi({ offers: [offer()] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByRole('heading', { name: 'Samåkning' })).toBeInTheDocument()
     expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
@@ -168,7 +172,7 @@ describe('erbjudandena går att läsa av', () => {
   it('säger ifrån när ingen erbjudit skjuts', async () => {
     stubApi({ offers: [] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(
       await screen.findByText('Ingen har erbjudit skjuts till den här matchen än.'),
@@ -179,7 +183,7 @@ describe('erbjudandena går att läsa av', () => {
     // Appen används på fotbollsplaner med dålig täckning. Resten av matchen står kvar.
     stubApi({ offers: 'error' })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText(/Ingen anslutning/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
@@ -196,7 +200,7 @@ describe('samåkningen har ett ansikte', () => {
     setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: [offer()] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('Anna Berg kör')).toBeInTheDocument()
   })
@@ -205,7 +209,7 @@ describe('samåkningen har ett ansikte', () => {
     setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: [offer({ isMine: true })] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('Du kör')).toBeInTheDocument()
   })
@@ -215,7 +219,7 @@ describe('samåkningen har ett ansikte', () => {
     setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: [offer({ driverName: null })] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
     expect(screen.queryByText(/kör$/)).not.toBeInTheDocument()
@@ -225,7 +229,7 @@ describe('samåkningen har ett ansikte', () => {
     setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: [offer({ isMine: true })], requests: [request()] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('Erik Lund frågar om skjuts')).toBeInTheDocument()
   })
@@ -243,7 +247,7 @@ describe('ett fullt erbjudande är märkt men inte stängt', () => {
     })
 
     const user = userEvent.setup()
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('Fullt')).toBeInTheDocument()
 
@@ -274,7 +278,7 @@ describe('ett nekande kan inte bli tyst', () => {
     })
 
     const user = userEvent.setup()
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     await user.click(await screen.findByRole('button', { name: 'Neka' }))
 
@@ -303,7 +307,7 @@ describe('ett nekande kan inte bli tyst', () => {
       ],
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('Nekad')).toBeInTheDocument()
     expect(screen.getByText(/Bilen är tyvärr full/)).toBeInTheDocument()
@@ -320,11 +324,11 @@ describe('att lägga upp en skjuts', () => {
     setAccessToken(SIGNED_IN_TOKEN)
     const sent = stubApi({
       offers: [],
-      matchDetail: { match: { ...match, kickoffUtc: '2026-10-31T13:00:00Z' }, team },
+      matchDetail: { team, event: { ...match, kickoffUtc: '2026-10-31T13:00:00Z' } },
     })
 
     const user = userEvent.setup()
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     await user.click(await screen.findByRole('button', { name: 'Erbjud skjuts' }))
 
@@ -353,7 +357,7 @@ describe('att lägga upp en skjuts', () => {
     // Gästen ser samåkningen men deltar inte (§KM.3).
     stubApi({ offers: [offer()] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Erbjud skjuts' })).not.toBeInTheDocument()
@@ -369,7 +373,7 @@ describe('gästen leds till inloggning i stället för in i en vägg', () => {
      */
     stubApi({ offers: [offer()] })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Logga in för att samåka' })).toBeInTheDocument()
@@ -383,7 +387,7 @@ describe('gästen leds till inloggning i stället för in i en vägg', () => {
     stubApi({ offers: [offer()] })
 
     const user = userEvent.setup()
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     await user.click(await screen.findByRole('link', { name: 'Logga in för att fråga om plats' }))
 
@@ -408,7 +412,7 @@ describe('föraren svarar på sina förfrågningar', () => {
     const sent = stubApi({ offers: [offer({ isMine: true })], requests: [request()] })
 
     const user = userEvent.setup()
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText('Väntar på svar')).toBeInTheDocument()
 

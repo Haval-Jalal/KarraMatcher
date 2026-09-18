@@ -56,7 +56,7 @@ function stubApi(token: string) {
       }
       if (url.includes('/api/v1/venues')) return Promise.resolve(jsonResponse([venue]))
 
-      if (url.includes('/matches')) {
+      if (url.includes('/events')) {
         return Promise.resolve(
           jsonResponse({
             team: { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
@@ -97,18 +97,52 @@ describe('tiden skrivs i svensk tid och skickas i UTC', () => {
     const user = userEvent.setup()
     renderRoute('/lag/gul/tranare')
 
-    await user.click(await screen.findByRole('button', { name: 'Lägg till match' }))
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
 
     await user.type(await screen.findByLabelText(/Avspark/), '2026-09-20T14:00')
     await user.type(screen.getByLabelText('Motståndare'), 'Torslanda')
 
     await user.click(await screen.findByRole('button', { name: /Klarebergsvallen/ }))
-    await user.click(screen.getByRole('button', { name: 'Lägg till matchen' }))
+    await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
 
     await waitFor(() => {
-      const created = sent.find((call) => call.method === 'POST' && call.url.endsWith('/matches'))
+      const created = sent.find((call) => call.method === 'POST' && call.url.endsWith('/events'))
 
       expect(created?.body).toMatchObject({ kickoffUtc: '2026-09-20T12:00:00.000Z' })
+    })
+  })
+
+  it('lägger upp en träning med rubrik i stället för motståndare (#198)', async () => {
+    // Träning och övrigt har ingen motståndare — typväljaren byter ut fälten mot en rubrik,
+    // och anropet bär type=Training med opponent null.
+    const token = coachToken('gul')
+    const sent = stubApi(token)
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
+    await user.selectOptions(await screen.findByLabelText('Typ'), 'Training')
+
+    await user.type(await screen.findByLabelText(/Start/), '2026-09-22T18:00')
+    await user.type(screen.getByLabelText('Rubrik'), 'Lagträning')
+
+    // Motståndare och hemma/borta finns inte för en träning.
+    expect(screen.queryByLabelText('Motståndare')).not.toBeInTheDocument()
+
+    await user.click(await screen.findByRole('button', { name: /Klarebergsvallen/ }))
+    await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
+
+    await waitFor(() => {
+      const created = sent.find((call) => call.method === 'POST' && call.url.endsWith('/events'))
+
+      expect(created?.body).toMatchObject({
+        type: 'Training',
+        title: 'Lagträning',
+        opponent: null,
+        isHome: null,
+      })
     })
   })
 })
@@ -123,7 +157,7 @@ describe('spelplatsen väljs ur registret', () => {
     const user = userEvent.setup()
     renderRoute('/lag/gul/tranare')
 
-    await user.click(await screen.findByRole('button', { name: 'Lägg till match' }))
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
     await user.type(await screen.findByLabelText('Spelplats'), 'klare')
 
     expect(await screen.findByText('Klarebergsvallen, Göteborg')).toBeInTheDocument()
@@ -137,10 +171,10 @@ describe('spelplatsen väljs ur registret', () => {
     const user = userEvent.setup()
     renderRoute('/lag/gul/tranare')
 
-    await user.click(await screen.findByRole('button', { name: 'Lägg till match' }))
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
     await user.type(await screen.findByLabelText(/Avspark/), '2026-09-20T14:00')
     await user.type(screen.getByLabelText('Motståndare'), 'Torslanda')
-    await user.click(screen.getByRole('button', { name: 'Lägg till matchen' }))
+    await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
 
     expect(await screen.findByText('Välj en spelplats.')).toBeInTheDocument()
   })
@@ -155,8 +189,8 @@ describe('fel visas på svenska och pekar på rätt fält', () => {
     const user = userEvent.setup()
     renderRoute('/lag/gul/tranare')
 
-    await user.click(await screen.findByRole('button', { name: 'Lägg till match' }))
-    await user.click(screen.getByRole('button', { name: 'Lägg till matchen' }))
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
+    await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
 
     const message = await screen.findByText('Fyll i motståndarlaget.')
 

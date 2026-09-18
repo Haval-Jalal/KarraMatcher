@@ -1,8 +1,8 @@
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { MatchDetail } from '@/features/matches'
-import { stubApi, testMatch, testTeams } from '@/test/apiStub'
+import type { TeamEvent } from '@/features/events'
+import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 afterEach(() => {
@@ -15,10 +15,10 @@ const MATCH_ID = '11111111-2222-3333-4444-555555555555'
 const FUTURE_KICKOFF = new Date(Date.now() + 2 * 86_400_000).toISOString()
 const FUTURE_HOUR = `${FUTURE_KICKOFF.slice(0, 13)}:00`
 
-function detail(overrides: Partial<MatchDetail['match']> = {}): MatchDetail {
+function detail(overrides: Partial<TeamEvent> = {}) {
   return {
     team: testTeams[0]!,
-    match: testMatch(MATCH_ID, '2026-09-20T12:00:00Z', overrides),
+    match: testEvent(MATCH_ID, '2026-09-20T12:00:00Z', overrides),
   }
 }
 
@@ -26,7 +26,7 @@ describe('Matchdetaljsidan — innehåll', () => {
   it('visar alla fält från API:t', async () => {
     stubApi({ match: detail() })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(
       await screen.findByRole('heading', { name: /Hemma mot Motstandare/ }),
@@ -42,7 +42,7 @@ describe('Matchdetaljsidan — innehåll', () => {
   it('skiljer bortamatch från hemmamatch', async () => {
     stubApi({ match: detail({ isHome: false }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(await screen.findByRole('heading', { name: /Borta mot/ })).toBeInTheDocument()
     expect(screen.getByText('Bortamatch')).toBeInTheDocument()
@@ -51,7 +51,7 @@ describe('Matchdetaljsidan — innehåll', () => {
   it('länkar tillbaka till lagets schema', async () => {
     stubApi({ match: detail() })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     const back = await screen.findByRole('link', { name: /P2016 Gul/ })
     expect(back).toHaveAttribute('href', '/lag/gul')
@@ -64,25 +64,25 @@ describe('Matchdetaljsidan — status', () => {
     // en färgad ram som inte når fram till alla (WCAG 1.4.1).
     stubApi({ match: detail({ status: 'Cancelled' }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
-    expect(await screen.findByText(/Matchen är inställd/)).toBeInTheDocument()
+    expect(await screen.findByText(/Händelsen är inställd/)).toBeInTheDocument()
     expect(screen.getByText(/Åk inte till spelplatsen/)).toBeInTheDocument()
   })
 
   it('varnar för att tiden är den gamla när matchen är framflyttad', async () => {
     stubApi({ match: detail({ status: 'Postponed' }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
-    expect(await screen.findByText(/Matchen är framflyttad/)).toBeInTheDocument()
+    expect(await screen.findByText(/Händelsen är framflyttad/)).toBeInTheDocument()
     expect(screen.getByText(/tiden nedan är den som gällde tidigare/)).toBeInTheDocument()
   })
 
   it('visar ingen statusruta för en match som spelas', async () => {
     stubApi({ match: detail() })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     await screen.findByText('Hemmamatch')
     expect(screen.queryByText(/inställd/i)).not.toBeInTheDocument()
@@ -95,16 +95,16 @@ describe('Matchdetaljsidan — tillstånd', () => {
     // En gammal kalenderpost från förra säsongen är något normalt.
     stubApi({ match: 'notFound' })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Matchen finns inte')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Händelsen finns inte')
   })
 
   it('erbjuder inget nytt försök när matchen inte finns', async () => {
     // Att försöka igen ger samma 404. Knappen hade bara sett ut som en väg framåt.
     stubApi({ match: 'notFound' })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     await screen.findByRole('alert')
     expect(screen.queryByRole('button', { name: /Försök igen/ })).not.toBeInTheDocument()
@@ -113,7 +113,7 @@ describe('Matchdetaljsidan — tillstånd', () => {
   it('skiljer uteblivet nät från övriga fel och låter användaren försöka igen', async () => {
     stubApi({ match: 'error' })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ingen anslutning')
     expect(screen.getByRole('button', { name: 'Försök igen' })).toBeInTheDocument()
@@ -122,7 +122,7 @@ describe('Matchdetaljsidan — tillstånd', () => {
   it('erbjuder en väg tillbaka även när matchen inte gick att hämta', async () => {
     stubApi({ match: 'notFound' })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(await screen.findByRole('link', { name: 'Till startsidan' })).toBeInTheDocument()
   })
@@ -131,14 +131,14 @@ describe('Matchdetaljsidan — tillstånd', () => {
 describe('Matchlistan länkar till matchen', () => {
   it('gör hela matchkortet till en länk', async () => {
     stubApi({
-      matches: { team: testTeams[0]!, matches: [testMatch(MATCH_ID, '2099-09-20T12:00:00Z')] },
+      matches: { team: testTeams[0]!, matches: [testEvent(MATCH_ID, '2099-09-20T12:00:00Z')] },
     })
 
     renderRoute('/lag/gul')
 
     // Kortet ligger i "nästa match"-kortet; listan är tom eftersom matchen visas där.
     const link = await screen.findByRole('link', { name: 'Visa matchen' })
-    expect(link).toHaveAttribute('href', `/match/${MATCH_ID}`)
+    expect(link).toHaveAttribute('href', `/handelse/${MATCH_ID}`)
   })
 })
 
@@ -146,7 +146,7 @@ describe('Matchdetaljsidan — vägbeskrivning', () => {
   it('erbjuder vägbeskrivning för en match som spelas', async () => {
     stubApi({ match: detail() })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(await screen.findByRole('link', { name: /Vägbeskrivning/ })).toBeInTheDocument()
   })
@@ -156,9 +156,9 @@ describe('Matchdetaljsidan — vägbeskrivning', () => {
     // leder någon till en plan där ingen match äger rum.
     stubApi({ match: detail({ status: 'Cancelled' }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
-    await screen.findByText(/Matchen är inställd/)
+    await screen.findByText(/Händelsen är inställd/)
     expect(screen.queryByRole('link', { name: /Vägbeskrivning/ })).not.toBeInTheDocument()
   })
 
@@ -166,16 +166,16 @@ describe('Matchdetaljsidan — vägbeskrivning', () => {
     // Utan nytt datum vet vi inte när matchen spelas, bara att det inte är nu.
     stubApi({ match: detail({ status: 'Postponed' }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
-    await screen.findByText(/Matchen är framflyttad/)
+    await screen.findByText(/Händelsen är framflyttad/)
     expect(screen.queryByRole('link', { name: /Vägbeskrivning/ })).not.toBeInTheDocument()
   })
 
   it('pekar vägbeskrivningen på matchens adress', async () => {
     stubApi({ match: detail() })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     const link = await screen.findByRole('link', { name: /Vägbeskrivning/ })
     expect(link.getAttribute('href')).toContain(encodeURIComponent('Klarebergsvallen, Karra'))
@@ -186,10 +186,10 @@ describe('Matchdetaljsidan — kalenderfil', () => {
   it('erbjuder nedladdning för en match som spelas', async () => {
     stubApi({ match: detail() })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     const link = await screen.findByRole('link', { name: /Lägg till i kalendern/ })
-    expect(link).toHaveAttribute('href', `/calendar/match/${MATCH_ID}.ics`)
+    expect(link).toHaveAttribute('href', `/calendar/handelse/${MATCH_ID}.ics`)
     expect(link).toHaveAttribute('download')
   })
 
@@ -198,9 +198,9 @@ describe('Matchdetaljsidan — kalenderfil', () => {
     // sämre än ingen post alls — den ligger kvar och påminner om fel sak.
     stubApi({ match: detail({ status: 'Cancelled' }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
-    await screen.findByText(/Matchen är inställd/)
+    await screen.findByText(/Händelsen är inställd/)
     expect(screen.queryByRole('link', { name: /Lägg till i kalendern/ })).not.toBeInTheDocument()
   })
 })
@@ -234,7 +234,7 @@ describe('Matchdetaljsidan — väder', () => {
       }),
     )
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(await screen.findByText('17°')).toBeInTheDocument()
     expect(screen.getByText('Lätt duggregn')).toBeInTheDocument()
@@ -245,7 +245,7 @@ describe('Matchdetaljsidan — väder', () => {
     // Prognosfönstret är 15 dagar. Inget anrop görs alls bortom det.
     stubApi({ match: detail({ kickoffUtc: '2099-09-20T12:00:00Z' }) })
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     await screen.findByText('Hemmamatch')
     expect(screen.queryByText(/risk för nederbörd/)).not.toBeInTheDocument()
@@ -268,7 +268,7 @@ describe('Matchdetaljsidan — väder', () => {
       }),
     )
 
-    renderRoute(`/match/${MATCH_ID}`)
+    renderRoute(`/handelse/${MATCH_ID}`)
 
     expect(await screen.findByText('Hemmamatch')).toBeInTheDocument()
     expect(screen.queryByText(/risk för nederbörd/)).not.toBeInTheDocument()

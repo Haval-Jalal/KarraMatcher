@@ -4,11 +4,11 @@ import { useState } from 'react'
 
 import { CarpoolOverview } from '@/features/carpool'
 import { useAuth } from '@/features/auth'
-import { teamMatchesQueryKey, useTeamMatches, type Match } from '@/features/matches'
+import { eventLabel, teamEventsQueryKey, useTeamEvents, type TeamEvent } from '@/features/events'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
-import { cancelMatch, createMatch, deleteMatch, updateMatch } from './adminApi'
-import { MatchForm } from './MatchForm'
+import { cancelEvent, createEvent, deleteEvent, updateEvent } from './adminApi'
+import { EventForm } from './EventForm'
 import { ScheduleImport } from './ScheduleImport'
 import { SeasonOverview } from './SeasonOverview'
 
@@ -18,35 +18,32 @@ import { SeasonOverview } from './SeasonOverview'
  * <h3>Vad den ska kännas som</h3>
  *
  * Det här görs stående vid en plan, på en telefon, ofta med ett barn i handen. Krångel här
- * är den enskilt största risken för att appen aldrig fylls med innehåll — och en tom app är
- * en app ingen öppnar igen.
+ * är den enskilt största risken för att appen aldrig fylls med innehåll.
  *
  * <h3>Ändringen syns direkt</h3>
  *
- * Efter varje ändring ogiltigförklaras lagets matchfråga, så den publika listan visar det
- * nya utan omladdning. Tränaren ska kunna se att det blev rätt, i samma vy.
+ * Efter varje ändring ogiltigförklaras lagets schema-fråga, så listan visar det nya utan
+ * omladdning.
  */
-export function CoachMatchesPage() {
+export function CoachEventsPage() {
   const { slug } = useParams({ from: '/lag/$slug/tranare' })
   const { canManage } = useAuth()
   const queryClient = useQueryClient()
-  const { data, isPending } = useTeamMatches(slug)
+  const { data, isPending } = useTeamEvents(slug)
 
-  const [editing, setEditing] = useState<Match | null>(null)
+  const [editing, setEditing] = useState<TeamEvent | null>(null)
   const [adding, setAdding] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState<Match | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<TeamEvent | null>(null)
 
   useDocumentTitle('Sköt laget')
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: teamMatchesQueryKey(slug) })
+    await queryClient.invalidateQueries({ queryKey: teamEventsQueryKey(slug) })
   }
 
   if (!canManage(slug)) {
     /*
-     * Servern avgor vad nagon far gora -- det har avgor bara vad som visas. En tranare for
-     * Gul som skriver in Blas adress moter alltsa den har texten, och skulle hen anda
-     * skicka ett anrop svarar servern 403.
+     * Servern avgor vad nagon far gora -- det har avgor bara vad som visas.
      */
     return (
       <main>
@@ -70,13 +67,13 @@ export function CoachMatchesPage() {
       </header>
 
       {adding || editing !== null ? (
-        <MatchForm
+        <EventForm
           {...(editing !== null ? { existing: editing } : {})}
           onSubmit={async (input) => {
             if (editing !== null) {
-              await updateMatch(slug, editing.id, input)
+              await updateEvent(slug, editing.id, input)
             } else {
-              await createMatch(slug, input)
+              await createEvent(slug, input)
             }
 
             await refresh()
@@ -97,7 +94,7 @@ export function CoachMatchesPage() {
               setAdding(true)
             }}
           >
-            Lägg till match
+            Lägg till händelse
           </button>
         </div>
       )}
@@ -110,8 +107,7 @@ export function CoachMatchesPage() {
       />
 
       {/*
-        Samåkningen står före säsongslistan: den är det som är färskvara. Vem som kör på
-        lördag går inte att läsa ur schemat, och det är den enda frågan som har ett datum.
+        Samåkningen står före säsongslistan: den är det som är färskvara.
       */}
       <CarpoolOverview slug={slug} enabled={canManage(slug)} />
 
@@ -119,15 +115,15 @@ export function CoachMatchesPage() {
 
       {isPending ? (
         <p className="state" role="status">
-          Hämtar matcherna…
+          Hämtar schemat…
         </p>
       ) : (
         <SeasonOverview
-          matches={data?.matches ?? []}
+          events={data?.events ?? []}
           onEdit={setEditing}
-          onCancel={(match) => {
+          onCancel={(event) => {
             void (async () => {
-              await cancelMatch(slug, match.id)
+              await cancelEvent(slug, event.id)
               await refresh()
             })()
           }}
@@ -137,11 +133,11 @@ export function CoachMatchesPage() {
 
       {confirmDelete !== null && (
         <section className="danger-zone">
-          <h2>Ta bort matchen mot {confirmDelete.opponent}?</h2>
+          <h2>Ta bort {eventLabel(confirmDelete)}?</h2>
 
           <p className="state" role="alert">
-            Matchen försvinner helt, även ur föräldrarnas kalendrar.{' '}
-            <strong>Ska matchen ställas in ska du välja Ställ in i stället</strong> — då blir den
+            Händelsen försvinner helt, även ur föräldrarnas kalendrar.{' '}
+            <strong>Ska en match ställas in ska du välja Ställ in i stället</strong> — då blir den
             kvar i kalendern, markerad som inställd.
           </p>
 
@@ -160,13 +156,13 @@ export function CoachMatchesPage() {
               className="button button--danger"
               onClick={() => {
                 void (async () => {
-                  await deleteMatch(slug, confirmDelete.id)
+                  await deleteEvent(slug, confirmDelete.id)
                   await refresh()
                   setConfirmDelete(null)
                 })()
               }}
             >
-              Ja, ta bort matchen
+              Ja, ta bort
             </button>
           </div>
         </section>

@@ -2,11 +2,11 @@ import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/
 
 import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
-import { CoachMatchesPage } from '@/features/admin'
+import { CoachEventsPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
-import { MatchDetailPage, TeamSchedulePage } from '@/features/matches'
+import { EventDetailPage, TeamSchedulePage } from '@/features/events'
 import { ApplyLandingPage } from '@/features/applications'
 import { AdminPage, InvitationLandingPage } from '@/features/invitations'
 import { StartPage } from '@/features/start/StartPage'
@@ -57,13 +57,13 @@ const teamRoute = createRoute({
 
 /** Exporteras för tester, som bygger en egen router med minneshistorik. */
 /**
- * En match på egen adress. Nås från listan, från "nästa match"-kortet, och så småningom
+ * En händelse på egen adress. Nås från listan, från "nästa"-kortet, och så småningom
  * direkt från en kalenderpost eller en push-notis.
  */
-const matchRoute = createRoute({
+const eventRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/match/$id',
-  component: MatchDetailPage,
+  path: '/handelse/$id',
+  component: EventDetailPage,
 })
 
 /**
@@ -131,7 +131,7 @@ const coachRoute = createRoute({
       throw redirect({ to: '/logga-in', search: { next: location.pathname } })
     }
   },
-  component: CoachMatchesPage,
+  component: CoachEventsPage,
 })
 
 /**
@@ -238,7 +238,7 @@ const privacyRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
-  matchRoute,
+  eventRoute,
   loginRoute,
   accountRoute,
   coachRoute,

@@ -2,8 +2,8 @@ import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { findClashes, SeasonOverview } from '@/features/admin'
-import type { Match } from '@/features/matches'
-import { testMatch } from '@/test/apiStub'
+import type { TeamEvent } from '@/features/events'
+import { testEvent } from '@/test/apiStub'
 
 /**
  * Tränarens säsongsöversikt (`#41`).
@@ -14,9 +14,9 @@ import { testMatch } from '@/test/apiStub'
  * </para>
  */
 
-function render_(matches: Match[]) {
+function render_(events: TeamEvent[]) {
   return render(
-    <SeasonOverview matches={matches} onEdit={vi.fn()} onCancel={vi.fn()} onDelete={vi.fn()} />,
+    <SeasonOverview events={events} onEdit={vi.fn()} onCancel={vi.fn()} onDelete={vi.fn()} />,
   )
 }
 
@@ -24,8 +24,8 @@ describe('krockar', () => {
   it('markerar två matcher som ligger för nära', () => {
     // Samma lag kan inte spela två matcher inom två timmar.
     const clashing = findClashes([
-      testMatch('a', '2026-09-20T12:00:00Z'),
-      testMatch('b', '2026-09-20T13:00:00Z'),
+      testEvent('a', '2026-09-20T12:00:00Z'),
+      testEvent('b', '2026-09-20T13:00:00Z'),
     ])
 
     expect(clashing.size).toBe(2)
@@ -38,8 +38,8 @@ describe('krockar', () => {
      * men granzen far anda inte vara sa snav att en normal sondag ser ut som ett fel.
      */
     const calm = findClashes([
-      testMatch('a', '2026-09-20T10:00:00Z'),
-      testMatch('b', '2026-09-20T13:00:00Z'),
+      testEvent('a', '2026-09-20T10:00:00Z'),
+      testEvent('b', '2026-09-20T13:00:00Z'),
     ])
 
     expect(calm.size).toBe(0)
@@ -49,8 +49,8 @@ describe('krockar', () => {
     // En inställd match tar ingen tid i anspråk. Att flagga den hade fått tränaren att
     // leta efter ett problem som inte finns.
     const clashing = findClashes([
-      testMatch('a', '2026-09-20T12:00:00Z'),
-      testMatch('b', '2026-09-20T12:30:00Z', { status: 'Cancelled' }),
+      testEvent('a', '2026-09-20T12:00:00Z'),
+      testEvent('b', '2026-09-20T12:30:00Z', { status: 'Cancelled' }),
     ])
 
     expect(clashing.size).toBe(0)
@@ -59,8 +59,8 @@ describe('krockar', () => {
   it('visar krocken på raden, inte bara i en ruta högst upp', () => {
     // En varning som inte säger vilken rad den gäller tvingar tränaren att leta själv.
     render_([
-      testMatch('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda' }),
-      testMatch('b', '2026-09-20T13:00:00Z', { opponent: 'Kareby' }),
+      testEvent('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda' }),
+      testEvent('b', '2026-09-20T13:00:00Z', { opponent: 'Kareby' }),
     ])
 
     const row = screen.getByRole('row', { name: /Torslanda/ })
@@ -73,8 +73,8 @@ describe('hela säsongen visas', () => {
   it('behåller spelade matcher', () => {
     // En lista som börjar vid dagens datum döljer just det tränaren letar efter.
     render_([
-      testMatch('gammal', '2026-08-01T12:00:00Z', { opponent: 'Spelad match' }),
-      testMatch('ny', '2026-10-01T12:00:00Z', { opponent: 'Kommande match' }),
+      testEvent('gammal', '2026-08-01T12:00:00Z', { opponent: 'Spelad match' }),
+      testEvent('ny', '2026-10-01T12:00:00Z', { opponent: 'Kommande match' }),
     ])
 
     /*
@@ -86,7 +86,7 @@ describe('hela säsongen visas', () => {
   })
 
   it('grupperar per månad', () => {
-    render_([testMatch('a', '2026-09-20T12:00:00Z'), testMatch('b', '2026-10-04T12:00:00Z')])
+    render_([testEvent('a', '2026-09-20T12:00:00Z'), testEvent('b', '2026-10-04T12:00:00Z')])
 
     expect(screen.getByRole('heading', { name: 'September 2026' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Oktober 2026' })).toBeInTheDocument()
@@ -95,7 +95,7 @@ describe('hela säsongen visas', () => {
   it('säger till när säsongen är tom', () => {
     render_([])
 
-    expect(screen.getByText(/Inga matcher inlagda än/)).toBeInTheDocument()
+    expect(screen.getByText(/Inga händelser inlagda än/)).toBeInTheDocument()
   })
 })
 
@@ -105,16 +105,16 @@ describe('snabbknappar per rad', () => {
      * "Andra" i en lista med trettio rader sager ingenting for den som lyssnar. Knappens
      * tillgangliga namn bar motstandaren, sa raderna gar att skilja at.
      */
-    render_([testMatch('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda' })])
+    render_([testEvent('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda' })])
 
-    expect(screen.getByRole('button', { name: 'Ändra matchen mot Torslanda' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Ändra .*Torslanda/ })).toBeInTheDocument()
   })
 
   it('erbjuder inte att ställa in en redan inställd match', () => {
     render_([
-      testMatch('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda', status: 'Cancelled' }),
+      testEvent('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda', status: 'Cancelled' }),
     ])
 
-    expect(screen.queryByRole('button', { name: /Ställ in matchen/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ställ in / })).not.toBeInTheDocument()
   })
 })
