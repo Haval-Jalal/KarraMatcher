@@ -2,7 +2,7 @@ using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Carpool;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -77,7 +77,7 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.AddRange(expired, fresh);
+        context.Events.AddRange(expired, fresh);
         context.Accounts.AddRange(driver, asker);
         context.CarpoolOffers.AddRange(oldOffer, freshOffer);
         context.CarpoolRequests.AddRange(oldRequest, freshRequest);
@@ -87,7 +87,7 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
         return new Seeded(oldOffer.Id, oldRequest.Id, freshOffer.Id, freshRequest.Id);
     }
 
-    private static Match Match(Guid teamId, Guid venueId, DateTime kickoffUtc) =>
+    private static Event Match(Guid teamId, Guid venueId, DateTime kickoffUtc) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -96,7 +96,7 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             VenueId = venueId,
             IsHome = false,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = kickoffUtc,
         };

@@ -62,7 +62,7 @@ export function ScheduleImport({ slug, onImported }: { slug: string; onImported:
 
     try {
       return await postJson<ImportResult>(
-        `/api/v1/teams/${encodeURIComponent(slug)}/matches/${path}`,
+        `/api/v1/teams/${encodeURIComponent(slug)}/events/${path}`,
         { text },
       )
     } catch (error) {

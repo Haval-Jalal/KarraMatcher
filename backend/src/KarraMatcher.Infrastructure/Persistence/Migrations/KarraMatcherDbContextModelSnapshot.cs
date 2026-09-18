@@ -479,6 +479,107 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                     b.ToTable("GuardianConsents");
                 });
 
+            modelBuilder.Entity("KarraMatcher.Domain.Events.Event", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AddressOverride")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("IcsSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool?>("IsHome")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("KickoffUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OpponentName")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime?>("ReminderSentUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Scheduled");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Match");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VenueId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VenueId");
+
+                    b.HasIndex("TeamId", "KickoffUtc");
+
+                    b.ToTable("Events", (string)null);
+                });
+
+            modelBuilder.Entity("KarraMatcher.Domain.Events.Venue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsHome")
+                        .HasColumnType("boolean");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Venues");
+                });
+
             modelBuilder.Entity("KarraMatcher.Domain.Invitations.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -531,97 +632,6 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                     b.HasIndex("AgeGroupId", "Status");
 
                     b.ToTable("Invitations");
-                });
-
-            modelBuilder.Entity("KarraMatcher.Domain.Matches.Match", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AddressOverride")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("IcsSequence")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
-                    b.Property<bool>("IsHome")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("KickoffUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("OpponentName")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTime?>("ReminderSentUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Scheduled");
-
-                    b.Property<Guid>("TeamId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("VenueId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VenueId");
-
-                    b.HasIndex("TeamId", "KickoffUtc");
-
-                    b.ToTable("Matches");
-                });
-
-            modelBuilder.Entity("KarraMatcher.Domain.Matches.Venue", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<bool>("IsHome")
-                        .HasColumnType("boolean");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("Venues");
                 });
 
             modelBuilder.Entity("KarraMatcher.Domain.Push.NotificationPreference", b =>
@@ -879,7 +889,7 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("KarraMatcher.Domain.Attendance.AttendanceCall", b =>
                 {
-                    b.HasOne("KarraMatcher.Domain.Matches.Match", null)
+                    b.HasOne("KarraMatcher.Domain.Events.Event", null)
                         .WithMany()
                         .HasForeignKey("MatchId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -894,7 +904,7 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("KarraMatcher.Domain.Matches.Match", null)
+                    b.HasOne("KarraMatcher.Domain.Events.Event", null)
                         .WithMany()
                         .HasForeignKey("MatchId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -909,7 +919,7 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("KarraMatcher.Domain.Matches.Match", null)
+                    b.HasOne("KarraMatcher.Domain.Events.Event", null)
                         .WithMany()
                         .HasForeignKey("MatchId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -979,6 +989,25 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("KarraMatcher.Domain.Events.Event", b =>
+                {
+                    b.HasOne("KarraMatcher.Domain.Teams.Team", "Team")
+                        .WithMany("Events")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KarraMatcher.Domain.Events.Venue", "Venue")
+                        .WithMany("Events")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+
+                    b.Navigation("Venue");
+                });
+
             modelBuilder.Entity("KarraMatcher.Domain.Invitations.Invitation", b =>
                 {
                     b.HasOne("KarraMatcher.Domain.Accounts.Account", "AcceptedByAccount")
@@ -1002,25 +1031,6 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                     b.Navigation("AgeGroup");
 
                     b.Navigation("Team");
-                });
-
-            modelBuilder.Entity("KarraMatcher.Domain.Matches.Match", b =>
-                {
-                    b.HasOne("KarraMatcher.Domain.Teams.Team", "Team")
-                        .WithMany("Matches")
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("KarraMatcher.Domain.Matches.Venue", "Venue")
-                        .WithMany("Matches")
-                        .HasForeignKey("VenueId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Team");
-
-                    b.Navigation("Venue");
                 });
 
             modelBuilder.Entity("KarraMatcher.Domain.Push.NotificationPreference", b =>
@@ -1087,9 +1097,9 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
                     b.Navigation("RefreshTokens");
                 });
 
-            modelBuilder.Entity("KarraMatcher.Domain.Matches.Venue", b =>
+            modelBuilder.Entity("KarraMatcher.Domain.Events.Venue", b =>
                 {
-                    b.Navigation("Matches");
+                    b.Navigation("Events");
                 });
 
             modelBuilder.Entity("KarraMatcher.Domain.Teams.AgeGroup", b =>
@@ -1109,7 +1119,7 @@ namespace KarraMatcher.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("KarraMatcher.Domain.Teams.Team", b =>
                 {
-                    b.Navigation("Matches");
+                    b.Navigation("Events");
                 });
 #pragma warning restore 612, 618
         }

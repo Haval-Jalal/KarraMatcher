@@ -7,7 +7,7 @@ using System.Text.Json;
 using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Common;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -113,7 +113,7 @@ public sealed class MatchReminderJobTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = teamId,
@@ -121,13 +121,13 @@ public sealed class MatchReminderJobTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
-            Status = cancelled ? MatchStatus.Cancelled : MatchStatus.Scheduled,
+            Status = cancelled ? EventStatus.Cancelled : EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = FixedNow.UtcDateTime,
         };
 
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         await context.SaveChangesAsync(CancellationToken.None);
 
         return match.Id;

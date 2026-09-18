@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { stubApi, testMatch, testTeams } from '@/test/apiStub'
+import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -117,7 +117,7 @@ describe('allt går att nå med tangentbord', () => {
     stubApi({
       matches: {
         team: testTeams[0]!,
-        matches: [testMatch('a', '2099-09-20T12:00:00Z')],
+        matches: [testEvent('a', '2099-09-20T12:00:00Z')],
       },
     })
 
@@ -172,7 +172,7 @@ describe('sidan har den struktur en skärmläsare navigerar efter', () => {
     stubApi({
       matches: {
         team: testTeams[0]!,
-        matches: [testMatch('a', '2099-09-20T12:00:00Z'), testMatch('b', '2099-10-04T12:00:00Z')],
+        matches: [testEvent('a', '2099-09-20T12:00:00Z'), testEvent('b', '2099-10-04T12:00:00Z')],
       },
     })
 

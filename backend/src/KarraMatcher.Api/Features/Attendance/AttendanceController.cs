@@ -33,7 +33,7 @@ namespace KarraMatcher.Api.Features.Attendance;
 [ApiController]
 [Route("api/v1/matches/{matchId:guid}/attendance")]
 [Produces("application/json")]
-[Authorize(Policy = AuthorizationPolicies.MemberOfMatch)]
+[Authorize(Policy = AuthorizationPolicies.MemberOfEvent)]
 [RequireAttendanceEnabled]
 public sealed class AttendanceController(
     ICommandDispatcher commands,

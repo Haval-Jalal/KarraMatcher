@@ -1,4 +1,4 @@
-import type { Match } from '@/features/matches'
+import type { TeamEvent } from '@/features/events'
 
 /**
  * Hur nära två avsparkar får ligga innan det räknas som en krock.
@@ -23,10 +23,10 @@ const CLASH_WINDOW_MS = 2 * 60 * 60 * 1000
  * flagga den hade fått tränaren att leta efter ett problem som inte finns.
  * </para>
  */
-export function findClashes(matches: readonly Match[]): ReadonlySet<string> {
-  const playing = matches
-    .filter((match) => match.status !== 'Cancelled')
-    .map((match) => ({ id: match.id, at: new Date(match.kickoffUtc).getTime() }))
+export function findClashes(events: readonly TeamEvent[]): ReadonlySet<string> {
+  const playing = events
+    .filter((event) => event.status !== 'Cancelled')
+    .map((event) => ({ id: event.id, at: new Date(event.kickoffUtc).getTime() }))
     .sort((a, b) => a.at - b.at)
 
   const clashing = new Set<string>()

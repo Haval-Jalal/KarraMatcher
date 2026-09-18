@@ -2,7 +2,7 @@ using System.Globalization;
 
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Common;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 
 using Microsoft.EntityFrameworkCore;
@@ -206,7 +206,8 @@ public sealed class DatabaseSeeder(KarraMatcherDbContext context, IConfiguration
         Dictionary<string, Venue> venues,
         CancellationToken cancellationToken)
     {
-        var existing = await context.Matches
+        var existing = await context.Events
+            .Where(e => e.Type == EventType.Match)
             .Select(m => new { m.TeamId, m.KickoffUtc, m.OpponentName })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -231,14 +232,15 @@ public sealed class DatabaseSeeder(KarraMatcherDbContext context, IConfiguration
                 continue;
             }
 
-            context.Matches.Add(new Match
+            context.Events.Add(new Event
             {
                 TeamId = team.Id,
+                Type = EventType.Match,
                 KickoffUtc = kickoffUtc,
                 OpponentName = row.Opponent,
                 VenueId = venue.Id,
                 IsHome = venue.IsHome,
-                Status = MatchStatus.Scheduled,
+                Status = EventStatus.Scheduled,
                 UpdatedUtc = DateTime.UtcNow,
             });
 

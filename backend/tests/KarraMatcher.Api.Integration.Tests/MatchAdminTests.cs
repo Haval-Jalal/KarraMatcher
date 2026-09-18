@@ -6,7 +6,7 @@ using System.Text.Json;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Audit;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -66,7 +66,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -74,7 +74,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = Kickoff,
         };
@@ -83,7 +83,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
 
         await context.SaveChangesAsync(CancellationToken.None);
 
@@ -146,6 +146,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
     private static object Draft(DateTime kickoff, Guid venueId, string opponent = "Torslanda") =>
         new
         {
+            type = "Match",
             kickoffUtc = kickoff,
             opponent,
             venueId,
@@ -168,7 +169,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var response = await SendAsync(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             fixture.Slug,
             fixture.CoachAccountId,
             Draft(Kickoff.AddHours(2), fixture.VenueId));
@@ -185,7 +186,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         await SendAsync(
             HttpMethod.Post,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}/cancel",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}/cancel",
             fixture.Slug,
             fixture.CoachAccountId);
 
@@ -201,16 +202,16 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         await SendAsync(
             HttpMethod.Post,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}/cancel",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}/cancel",
             fixture.Slug,
             fixture.CoachAccountId);
 
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
-        var match = await context.Matches.FindAsync([fixture.MatchId], CancellationToken.None);
+        var match = await context.Events.FindAsync([fixture.MatchId], CancellationToken.None);
 
         Assert.NotNull(match);
-        Assert.Equal(MatchStatus.Cancelled, match.Status);
+        Assert.Equal(EventStatus.Cancelled, match.Status);
     }
 
     // ---- Tranaren rors bara sitt eget lag ---------------------------------------------
@@ -222,7 +223,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var response = await SendAsync(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             "ett-helt-annat-lag",
             fixture.CoachAccountId,
             Draft(Kickoff, fixture.VenueId));
@@ -246,7 +247,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var response = await SendAsync(
             HttpMethod.Put,
-            $"/api/v1/teams/{mine.Slug}/matches/{theirs.MatchId}",
+            $"/api/v1/teams/{mine.Slug}/events/{theirs.MatchId}",
             mine.Slug,
             mine.CoachAccountId,
             Draft(Kickoff, mine.VenueId));
@@ -262,7 +263,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
         using var client = factory.CreateClient(ClientOptions);
 
         var response = await client.PostAsync(
-            $"/api/v1/teams/{fixture.Slug}/matches", null, CancellationToken.None);
+            $"/api/v1/teams/{fixture.Slug}/events", null, CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -276,7 +277,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var response = await SendAsync(
             HttpMethod.Post,
-            $"/api/v1/teams/{fixture.Slug}/matches",
+            $"/api/v1/teams/{fixture.Slug}/events",
             fixture.Slug,
             fixture.CoachAccountId,
             Draft(Kickoff, fixture.VenueId, opponent: "  "));
@@ -291,7 +292,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var response = await SendAsync(
             HttpMethod.Post,
-            $"/api/v1/teams/{fixture.Slug}/matches",
+            $"/api/v1/teams/{fixture.Slug}/events",
             fixture.Slug,
             fixture.CoachAccountId,
             Draft(Kickoff, Guid.NewGuid()));
@@ -309,12 +310,12 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         await SendAsync(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             fixture.Slug,
             fixture.CoachAccountId,
             Draft(Kickoff.AddHours(3), fixture.VenueId, opponent: "Kareby IS"));
 
-        var entry = await AuditFor(fixture.MatchId, AuditActions.MatchUpdated);
+        var entry = await AuditFor(fixture.MatchId, AuditActions.EventUpdated);
 
         Assert.Equal(fixture.CoachAccountId, entry.ActorAccountId);
         Assert.Contains("->", entry.Details, StringComparison.Ordinal);
@@ -336,6 +337,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var payload = new
         {
+            type = "Match",
             kickoffUtc = Kickoff,
             opponent = "Torslanda",
             venueId = fixture.VenueId,
@@ -346,12 +348,12 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         await SendAsync(
             HttpMethod.Put,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             fixture.Slug,
             fixture.CoachAccountId,
             payload);
 
-        var entry = await AuditFor(fixture.MatchId, AuditActions.MatchUpdated);
+        var entry = await AuditFor(fixture.MatchId, AuditActions.EventUpdated);
 
         Assert.DoesNotContain("Elias", entry.Details, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("070", entry.Details, StringComparison.Ordinal);
@@ -364,13 +366,13 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
 
         var response = await SendAsync(
             HttpMethod.Delete,
-            $"/api/v1/teams/{fixture.Slug}/matches/{fixture.MatchId}",
+            $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             fixture.Slug,
             fixture.CoachAccountId);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        var entry = await AuditFor(fixture.MatchId, AuditActions.MatchDeleted);
+        var entry = await AuditFor(fixture.MatchId, AuditActions.EventDeleted);
 
         Assert.Equal(fixture.MatchId, entry.SubjectId);
     }
@@ -382,7 +384,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        var match = await context.Matches
+        var match = await context.Events
             .AsNoTracking()
             .SingleAsync(m => m.Id == matchId, CancellationToken.None);
 

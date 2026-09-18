@@ -25,7 +25,9 @@ const team = { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' 
 function matchAt(kickoffUtc: string) {
   return {
     id: 'm1',
+    type: 'Match',
     kickoffUtc,
+    title: null,
     opponent: 'Torslanda',
     isHome: false,
     status: 'Scheduled',
@@ -109,8 +111,10 @@ function stubApi(options: {
 
       if (url.includes('/carpool')) return Promise.resolve(jsonResponse([]))
 
-      if (url.includes('/api/v1/matches/')) {
-        return Promise.resolve(jsonResponse({ match: matchAt(kickoffUtc), team }))
+      // Detaljsidan hämtar händelsen på /api/v1/events/{id} (`#198`). Närvarons egna
+      // adresser ligger kvar under /api/v1/matches/ och fångas ovan.
+      if (url.includes('/api/v1/events/')) {
+        return Promise.resolve(jsonResponse({ team, event: matchAt(kickoffUtc) }))
       }
 
       return Promise.resolve(jsonResponse({}))
@@ -133,7 +137,7 @@ describe('grinden håller funktionen osynlig', () => {
   it('en gäst ser ingen kallelse', async () => {
     stubApi({ state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null } })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     // Matchen laddar; kallelsen ska aldrig dyka upp for en utloggad.
     expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
@@ -144,7 +148,7 @@ describe('grinden håller funktionen osynlig', () => {
     setAccessToken(PARENT_TOKEN)
     stubApi({ state: 'gate-off' })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
     await waitFor(() =>
@@ -161,7 +165,7 @@ describe('tränaren kallar', () => {
       state: { callOpen: false, kickoffUtc: FUTURE, myResponse: null },
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     const button = await screen.findByRole('button', { name: 'Kalla till matchen' })
     await userEvent.click(button)
@@ -179,7 +183,7 @@ describe('tränaren kallar', () => {
     setAccessToken(PARENT_TOKEN)
     stubApi({ state: { callOpen: false, kickoffUtc: FUTURE, myResponse: null } })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(
       await screen.findByText('Tränaren har inte kallat till den här matchen än.'),
@@ -204,7 +208,7 @@ describe('tränaren kallar', () => {
       },
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByRole('heading', { name: 'Svar hittills' })).toBeInTheDocument()
     // Exakt "5", inte /5/: matchens relativa dagsetikett ("Om 95 dagar") innehåller också
@@ -231,7 +235,7 @@ describe('tränaren kallar', () => {
       },
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText(/2 har inte svarat/)).toBeInTheDocument()
     expect(screen.getByText(/Bengt Ek, Cecilia Dahl/)).toBeInTheDocument()
@@ -260,7 +264,7 @@ describe('tränaren kallar', () => {
       },
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     // Formuläret finns (föräldern kan svara), men summeringen och namnen gör det inte.
     expect(await screen.findByRole('button', { name: 'Svara' })).toBeInTheDocument()
@@ -274,7 +278,7 @@ describe('den vuxna svarar', () => {
     setAccessToken(PARENT_TOKEN)
     const sent = stubApi({ state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null } })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     await userEvent.selectOptions(await screen.findByLabelText('Hur många kommer?'), '2')
     await userEvent.click(screen.getByRole('button', { name: 'Svara' }))
@@ -295,7 +299,7 @@ describe('den vuxna svarar', () => {
       },
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText(/Ditt svar:/)).toBeInTheDocument()
     expect(screen.getByText('Kommer (2)')).toBeInTheDocument()
@@ -306,7 +310,7 @@ describe('den vuxna svarar', () => {
     setAccessToken(PARENT_TOKEN)
     stubApi({ state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null } })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     await userEvent.click(await screen.findByLabelText('Kan inte'))
 
@@ -324,7 +328,7 @@ describe('den vuxna svarar', () => {
       },
     })
 
-    renderRoute('/match/m1')
+    renderRoute('/handelse/m1')
 
     expect(await screen.findByText(/Du svarade: Kommer \(1\)/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Svara|Ändra svar/ })).not.toBeInTheDocument()

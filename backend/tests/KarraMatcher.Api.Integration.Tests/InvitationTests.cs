@@ -104,7 +104,7 @@ public sealed class InvitationTests(KarraMatcherApiFactory factory)
 
         // Före accept: inte medlem — lagets schema nekas.
         var before = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/matches", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.Forbidden, before.StatusCode);
 
         var accept = await SendAsync(
@@ -114,7 +114,7 @@ public sealed class InvitationTests(KarraMatcherApiFactory factory)
 
         // Efter accept: medlem — schemat går att läsa.
         var after = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/matches", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.OK, after.StatusCode);
     }
 

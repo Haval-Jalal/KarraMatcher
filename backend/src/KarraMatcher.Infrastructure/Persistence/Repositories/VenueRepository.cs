@@ -1,6 +1,6 @@
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Venues;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 

@@ -15,7 +15,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     {
         ArgumentNullException.ThrowIfNull(slug);
 
-        return await context.Matches
+        return await context.Events
             .AsNoTracking()
             .AnyAsync(m => m.Id == matchId && m.Team!.Slug == slug, cancellationToken)
             .ConfigureAwait(false);
@@ -32,7 +32,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     public async Task<DateTime?> FindKickoffUtcAsync(
         Guid matchId,
         CancellationToken cancellationToken) =>
-        await context.Matches
+        await context.Events
             .AsNoTracking()
             .Where(m => m.Id == matchId)
             .Select(m => (DateTime?)m.KickoffUtc)
@@ -68,7 +68,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
         Guid matchId,
         CancellationToken cancellationToken)
     {
-        var teamId = await context.Matches
+        var teamId = await context.Events
             .AsNoTracking()
             .Where(m => m.Id == matchId)
             .Select(m => (Guid?)m.TeamId)
@@ -90,7 +90,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     }
 
     public async Task<Guid?> FindTeamIdAsync(Guid matchId, CancellationToken cancellationToken) =>
-        await context.Matches
+        await context.Events
             .AsNoTracking()
             .Where(m => m.Id == matchId)
             .Select(m => (Guid?)m.TeamId)

@@ -1,6 +1,6 @@
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -38,7 +38,7 @@ internal sealed class AttendanceResponseConfiguration : IEntityTypeConfiguration
          * inget. Fran kontot: §KM.6 kraver att en radering tar med sig allt kontot ager, och
          * narvarosvaren hor dit.
          */
-        builder.HasOne<Match>()
+        builder.HasOne<Event>()
             .WithMany()
             .HasForeignKey(r => r.MatchId)
             .OnDelete(DeleteBehavior.Cascade);

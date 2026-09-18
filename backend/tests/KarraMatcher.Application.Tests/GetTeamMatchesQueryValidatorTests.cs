@@ -1,4 +1,4 @@
-using KarraMatcher.Application.Features.Teams.GetTeamMatches;
+using KarraMatcher.Application.Features.Teams.GetTeamEvents;
 
 namespace KarraMatcher.Application.Tests;
 
@@ -6,9 +6,9 @@ namespace KarraMatcher.Application.Tests;
 /// Sluggen kommer fran URL:en och ar darmed anvandarindata. Validatorn ar det som gor att
 /// skrap avvisas med 400 innan det nar databasen.
 /// </summary>
-public class GetTeamMatchesQueryValidatorTests
+public class GetTeamEventsQueryValidatorTests
 {
-    private readonly GetTeamMatchesQueryValidator _validator = new();
+    private readonly GetTeamEventsQueryValidator _validator = new();
 
     [Theory]
     [InlineData("gul")]
@@ -17,7 +17,7 @@ public class GetTeamMatchesQueryValidatorTests
     [InlineData("lag-2")]
     public void Validate_GiltigSlug_ArGodkand(string slug)
     {
-        Assert.True(_validator.Validate(new GetTeamMatchesQuery(slug)).IsValid);
+        Assert.True(_validator.Validate(new GetTeamEventsQuery(slug)).IsValid);
     }
 
     [Theory]
@@ -31,12 +31,12 @@ public class GetTeamMatchesQueryValidatorTests
     [InlineData("gott-lag-ä")]       // svenska tecken hor inte hemma i en slug (KM.9)
     public void Validate_OgiltigSlug_ArUnderkand(string slug)
     {
-        Assert.False(_validator.Validate(new GetTeamMatchesQuery(slug)).IsValid);
+        Assert.False(_validator.Validate(new GetTeamEventsQuery(slug)).IsValid);
     }
 
     [Fact]
     public void Validate_ForLangSlug_ArUnderkand()
     {
-        Assert.False(_validator.Validate(new GetTeamMatchesQuery(new string('a', 81))).IsValid);
+        Assert.False(_validator.Validate(new GetTeamEventsQuery(new string('a', 81))).IsValid);
     }
 }

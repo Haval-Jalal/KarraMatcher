@@ -52,7 +52,7 @@ public class DatabaseSeederTests
         Assert.Equal(1, await second.AgeGroups.CountAsync(CancellationToken.None));
         Assert.Equal(4, await second.Teams.CountAsync(CancellationToken.None));
         Assert.Equal(7, await second.Venues.CountAsync(CancellationToken.None));
-        Assert.Equal(25, await second.Matches.CountAsync(CancellationToken.None));
+        Assert.Equal(25, await second.Events.CountAsync(CancellationToken.None));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class DatabaseSeederTests
         await new DatabaseSeeder(context, EmptyConfig).SeedAsync(CancellationToken.None);
 
         // Första matchen: 29 augusti kl 14.30 svensk tid = 12:30 UTC (sommartid).
-        var first = await context.Matches.OrderBy(m => m.KickoffUtc)
+        var first = await context.Events.OrderBy(m => m.KickoffUtc)
             .FirstAsync(CancellationToken.None);
 
         Assert.Equal(new DateTime(2026, 8, 29, 12, 30, 0, DateTimeKind.Utc), first.KickoffUtc);
@@ -112,7 +112,7 @@ public class DatabaseSeederTests
         await using var context = NewContext(Guid.NewGuid().ToString());
         await new DatabaseSeeder(context, EmptyConfig).SeedAsync(CancellationToken.None);
 
-        var matches = await context.Matches.ToListAsync(CancellationToken.None);
+        var matches = await context.Events.ToListAsync(CancellationToken.None);
 
         Assert.Equal(25, matches.Count);
         Assert.All(matches, m => Assert.Equal(DateTimeKind.Utc, m.KickoffUtc.Kind));
@@ -193,7 +193,7 @@ public class DatabaseSeederTests
         await new DatabaseSeeder(context, EmptyConfig).SeedAsync(CancellationToken.None);
 
         var perTeam = await context.Teams
-            .Select(t => new { t.Slug, Count = context.Matches.Count(m => m.TeamId == t.Id) })
+            .Select(t => new { t.Slug, Count = context.Events.Count(m => m.TeamId == t.Id) })
             .ToListAsync(CancellationToken.None);
 
         Assert.Equal(4, perTeam.Count);

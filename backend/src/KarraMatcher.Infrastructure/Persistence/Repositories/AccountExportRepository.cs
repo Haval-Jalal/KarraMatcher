@@ -41,10 +41,10 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
         var offers = await (
             from o in context.CarpoolOffers.AsNoTracking()
             where o.DriverAccountId == accountId
-            join m in context.Matches on o.MatchId equals m.Id
+            join m in context.Events on o.MatchId equals m.Id
             orderby m.KickoffUtc
             select new CarpoolOfferExportRow(
-                m.OpponentName,
+                m.OpponentName ?? string.Empty,
                 m.KickoffUtc,
                 o.Direction,
                 o.DeparturePlace,
@@ -60,10 +60,10 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             from r in context.CarpoolRequests.AsNoTracking()
             where r.RequesterAccountId == accountId
             join o in context.CarpoolOffers on r.OfferId equals o.Id
-            join m in context.Matches on o.MatchId equals m.Id
+            join m in context.Events on o.MatchId equals m.Id
             orderby m.KickoffUtc
             select new CarpoolRequestExportRow(
-                m.OpponentName,
+                m.OpponentName ?? string.Empty,
                 m.KickoffUtc,
                 r.Seats,
                 r.Message,
@@ -76,10 +76,10 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
         var attendance = await (
             from a in context.AttendanceResponses.AsNoTracking()
             where a.AccountId == accountId
-            join m in context.Matches on a.MatchId equals m.Id
+            join m in context.Events on a.MatchId equals m.Id
             orderby m.KickoffUtc
             select new AttendanceResponseExportRow(
-                m.OpponentName,
+                m.OpponentName ?? string.Empty,
                 m.KickoffUtc,
                 a.Status,
                 a.Count,

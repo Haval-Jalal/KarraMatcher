@@ -1,4 +1,4 @@
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -16,10 +16,10 @@ internal sealed class VenueConfiguration : IEntityTypeConfiguration<Venue>
         builder.Property(v => v.Address).HasMaxLength(200).IsRequired();
         builder.HasIndex(v => v.Name).IsUnique();
 
-        builder.HasMany(v => v.Matches)
-            .WithOne(m => m.Venue)
-            .HasForeignKey(m => m.VenueId)
-            // En spelplats som används av matcher får inte raderas bort under fötterna.
+        builder.HasMany(v => v.Events)
+            .WithOne(e => e.Venue)
+            .HasForeignKey(e => e.VenueId)
+            // En spelplats som används av händelser får inte raderas bort under fötterna.
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

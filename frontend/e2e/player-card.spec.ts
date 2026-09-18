@@ -47,7 +47,7 @@ test('spelarkortet lever på enheten och lämnar aldrig den', async ({ page }) =
 
   // ---- Fyll i ett mål efter matchen → märke låses upp ----------------------------------
   const matchId = await e2eMatchId(page)
-  await page.goto(`/match/${matchId}`)
+  await page.goto(`/handelse/${matchId}`)
 
   await expect(page.getByRole('heading', { name: 'Efter matchen' })).toBeVisible()
 

@@ -30,7 +30,7 @@ namespace KarraMatcher.Api.Features.Carpool;
 [ApiController]
 [Route("api/v1/matches/{matchId:guid}/carpool")]
 [Produces("application/json")]
-[Authorize(Policy = AuthorizationPolicies.MemberOfMatch)]
+[Authorize(Policy = AuthorizationPolicies.MemberOfEvent)]
 public sealed class CarpoolController(IQueryDispatcher queries) : ControllerBase
 {
     /// <summary>Matchens öppna erbjudanden.</summary>

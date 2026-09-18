@@ -25,10 +25,10 @@ public interface IMembershipService
         string teamSlug,
         CancellationToken cancellationToken);
 
-    /// <summary>Är kontot medlem av matchens lag?</summary>
-    public Task<bool> IsMemberOfMatchAsync(
+    /// <summary>Är kontot medlem av händelsens lag?</summary>
+    public Task<bool> IsMemberOfEventAsync(
         Guid accountId,
-        Guid matchId,
+        Guid eventId,
         CancellationToken cancellationToken);
 
     /// <summary>Lag-slugarna kontot är medlem av. Används för att lista bara det man får se.</summary>

@@ -1,4 +1,4 @@
-import type { Match } from '@/features/matches'
+import { eventLabel, type TeamEvent } from '@/features/events'
 import { formatKickoffTime, formatMatchDate, formatMonthHeading } from '@/lib/time'
 
 import { findClashes } from './findClashes'
@@ -6,45 +6,43 @@ import { findClashes } from './findClashes'
 /**
  * Hela säsongen på en skärm.
  *
- * <h3>Varför spelade matcher är kvar</h3>
+ * <h3>Varför spelade händelser är kvar</h3>
  *
- * Tränaren behöver överblick, inte bara nästa match. Det är i helheten hen upptäcker att
- * två matcher krockar, att en omgång saknas, eller att en match hamnat i fel månad — och
- * en lista som börjar vid dagens datum döljer just det.
+ * Tränaren behöver överblick, inte bara nästa händelse. Det är i helheten hen upptäcker att
+ * två krockar, att en omgång saknas, eller att något hamnat i fel månad.
  *
  * <h3>Krockar</h3>
  *
  * Markeringen är ett <em>ord</em>, inte en färg (WCAG 1.4.1), och står i samma rad som
- * matchen. En varning i en egen ruta högst upp kräver att man själv letar reda på vilken
- * rad den gäller.
+ * händelsen.
  */
 export function SeasonOverview({
-  matches,
+  events,
   onEdit,
   onCancel,
   onDelete,
 }: {
-  matches: readonly Match[]
-  onEdit: (match: Match) => void
-  onCancel: (match: Match) => void
-  onDelete: (match: Match) => void
+  events: readonly TeamEvent[]
+  onEdit: (event: TeamEvent) => void
+  onCancel: (event: TeamEvent) => void
+  onDelete: (event: TeamEvent) => void
 }) {
-  if (matches.length === 0) {
+  if (events.length === 0) {
     return (
       <p className="state">
-        Inga matcher inlagda än. Klistra in schemat ovan, eller lägg till en match i taget.
+        Inga händelser inlagda än. Klistra in schemat ovan, eller lägg till en i taget.
       </p>
     )
   }
 
-  const clashing = findClashes(matches)
-  const byMonth = groupByMonth(matches)
+  const clashing = findClashes(events)
+  const byMonth = groupByMonth(events)
 
   return (
     <>
       {clashing.size > 0 && (
         <p className="state state--error" role="status">
-          {`${String(clashing.size)} matcher ligger närmare än två timmar från varandra. `}
+          {`${String(clashing.size)} händelser ligger närmare än två timmar från varandra. `}
           Kontrollera att det stämmer.
         </p>
       )}
@@ -58,54 +56,47 @@ export function SeasonOverview({
               <thead>
                 <tr>
                   <th scope="col">När</th>
-                  <th scope="col">Motståndare</th>
+                  <th scope="col">Vad</th>
                   <th scope="col">Plats</th>
                   <th scope="col">Åtgärd</th>
                 </tr>
               </thead>
               <tbody>
-                {group.map((match) => (
-                  <tr key={match.id}>
+                {group.map((event) => (
+                  <tr key={event.id}>
                     <td>
-                      <span className="season__time">{formatKickoffTime(match.kickoffUtc)}</span>{' '}
-                      <span className="season__date">{formatMatchDate(match.kickoffUtc)}</span>
-                      {clashing.has(match.id) && (
+                      <span className="season__time">{formatKickoffTime(event.kickoffUtc)}</span>{' '}
+                      <span className="season__date">{formatMatchDate(event.kickoffUtc)}</span>
+                      {clashing.has(event.id) && (
                         <span className="badge badge--cancelled"> Krock</span>
                       )}
-                      {match.status === 'Cancelled' && <span className="badge"> Inställd</span>}
+                      {event.status === 'Cancelled' && <span className="badge"> Inställd</span>}
                     </td>
-                    <td>
-                      {match.isHome ? 'Hemma mot ' : 'Borta mot '}
-                      {match.opponent}
-                    </td>
-                    <td className="season__venue">{match.venue.name}</td>
+                    <td>{eventLabel(event)}</td>
+                    <td className="season__venue">{event.venue.name}</td>
                     <td>
                       <div className="season__actions">
                         <button
                           type="button"
                           className="button"
                           onClick={() => {
-                            onEdit(match)
+                            onEdit(event)
                           }}
                         >
                           <span aria-hidden="true">Ändra</span>
-                          <span className="visually-hidden">
-                            {`Ändra matchen mot ${match.opponent}`}
-                          </span>
+                          <span className="visually-hidden">{`Ändra ${eventLabel(event)}`}</span>
                         </button>
 
-                        {match.status !== 'Cancelled' && (
+                        {event.status !== 'Cancelled' && (
                           <button
                             type="button"
                             className="button"
                             onClick={() => {
-                              onCancel(match)
+                              onCancel(event)
                             }}
                           >
                             <span aria-hidden="true">Ställ in</span>
-                            <span className="visually-hidden">
-                              {`Ställ in matchen mot ${match.opponent}`}
-                            </span>
+                            <span className="visually-hidden">{`Ställ in ${eventLabel(event)}`}</span>
                           </button>
                         )}
 
@@ -113,13 +104,11 @@ export function SeasonOverview({
                           type="button"
                           className="button button--danger"
                           onClick={() => {
-                            onDelete(match)
+                            onDelete(event)
                           }}
                         >
                           <span aria-hidden="true">Ta bort</span>
-                          <span className="visually-hidden">
-                            {`Ta bort matchen mot ${match.opponent}`}
-                          </span>
+                          <span className="visually-hidden">{`Ta bort ${eventLabel(event)}`}</span>
                         </button>
                       </div>
                     </td>
@@ -135,22 +124,19 @@ export function SeasonOverview({
 }
 
 /**
- * Matcherna per månad, i tidsordning.
- *
- * Månadsrubriker och inte en enda lång tabell: en säsong är ett trettiotal rader, och
- * rubrikerna är det som gör den möjlig att hoppa i på en telefon.
+ * Händelserna per månad, i tidsordning.
  */
-function groupByMonth(matches: readonly Match[]): [string, Match[]][] {
-  const groups = new Map<string, Match[]>()
+function groupByMonth(events: readonly TeamEvent[]): [string, TeamEvent[]][] {
+  const groups = new Map<string, TeamEvent[]>()
 
-  for (const match of [...matches].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc))) {
-    const month = formatMonthHeading(match.kickoffUtc)
+  for (const event of [...events].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc))) {
+    const month = formatMonthHeading(event.kickoffUtc)
     const existing = groups.get(month)
 
     if (existing === undefined) {
-      groups.set(month, [match])
+      groups.set(month, [event])
     } else {
-      existing.push(match)
+      existing.push(event)
     }
   }
 

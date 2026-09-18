@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -36,7 +36,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        var existing = context.Matches.FirstOrDefault(m => m.OpponentName == "Detaljmotstandaren");
+        var existing = context.Events.FirstOrDefault(m => m.OpponentName == "Detaljmotstandaren");
 
         if (existing is not null)
         {
@@ -68,7 +68,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
             Longitude = 11.99,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -76,7 +76,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
             OpponentName = "Detaljmotstandaren",
             VenueId = venue.Id,
             IsHome = false,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
 
             // Skrivs med flit: testet längst ned kontrollerar att den inte kommer med i
             // svaret. En notis är tränarens fritext och räknas som potentiell PII (§KM.1).
@@ -88,7 +88,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         context.SaveChanges();
 
         return match.Id;
@@ -106,7 +106,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // Stängd app (§KM.3): en gäst når inte längre en enskild match.
         using var client = _factory.CreateClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -116,7 +116,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -126,11 +126,11 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
         var json = await ReadJsonAsync(response);
 
-        Assert.Equal("Detaljmotstandaren", json.GetProperty("match").GetProperty("opponent").GetString());
-        Assert.False(json.GetProperty("match").GetProperty("isHome").GetBoolean());
+        Assert.Equal("Detaljmotstandaren", json.GetProperty("event").GetProperty("opponent").GetString());
+        Assert.False(json.GetProperty("event").GetProperty("isHome").GetBoolean());
         Assert.Equal("detaljlaget", json.GetProperty("team").GetProperty("slug").GetString());
         Assert.Equal("P2016", json.GetProperty("team").GetProperty("ageGroup").GetString());
     }
@@ -142,8 +142,8 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // aldrig från något anroparen skickat in (SSRF-regeln i CLAUDE.md).
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
-        var venue = (await ReadJsonAsync(response)).GetProperty("match").GetProperty("venue");
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
+        var venue = (await ReadJsonAsync(response)).GetProperty("event").GetProperty("venue");
 
         Assert.Equal(57.78, venue.GetProperty("latitude").GetDouble(), 2);
         Assert.Equal(11.99, venue.GetProperty("longitude").GetDouble(), 2);
@@ -154,9 +154,9 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
         var kickoff = (await ReadJsonAsync(response))
-            .GetProperty("match").GetProperty("kickoffUtc").GetString();
+            .GetProperty("event").GetProperty("kickoffUtc").GetString();
 
         Assert.EndsWith("+00:00", kickoff, StringComparison.Ordinal);
     }
@@ -168,7 +168,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // edge-cache. Den publika edge-cachningen togs bort med `#191`.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
         var cacheControl = response.Headers.CacheControl;
 
         Assert.NotNull(cacheControl);
@@ -185,11 +185,11 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         using var client = _factory.CreateSuperAdminClient();
 
         var response = await client.GetAsync(
-            $"/api/v1/matches/{Guid.NewGuid()}", CancellationToken.None);
+            $"/api/v1/events/{Guid.NewGuid()}", CancellationToken.None);
         var json = await ReadJsonAsync(response);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("Matchen finns inte", json.GetProperty("title").GetString());
+        Assert.Equal("Händelsen finns inte", json.GetProperty("title").GetString());
     }
 
     [Theory]
@@ -201,7 +201,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // inte 500 — en felformad länk är inte ett serverfel.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{id}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{id}", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -217,18 +217,18 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // ställning till det här, inte upptäcka det i produktion.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/matches/{_matchId}", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
         var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
         var json = JsonDocument.Parse(body).RootElement;
 
         Assert.DoesNotContain("Kalle", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("sjuk", body, StringComparison.OrdinalIgnoreCase);
 
-        var matchFields = json.GetProperty("match")
+        var matchFields = json.GetProperty("event")
             .EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal);
 
         Assert.Equal(
-            ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "venue"],
+            ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "title", "type", "venue"],
             matchFields);
     }
 }

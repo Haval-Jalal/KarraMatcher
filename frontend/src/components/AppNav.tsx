@@ -149,7 +149,7 @@ function sectionOf(pathname: string): Section {
   if (pathname === '/superadmin') return 'superadmin'
   if (pathname === '/admin') return 'admin'
 
-  if (pathname === '/' || pathname.startsWith('/lag/') || pathname.startsWith('/match/')) {
+  if (pathname === '/' || pathname.startsWith('/lag/') || pathname.startsWith('/handelse/')) {
     return 'matcher'
   }
 

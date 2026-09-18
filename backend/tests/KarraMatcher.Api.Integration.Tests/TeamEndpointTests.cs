@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -84,16 +84,16 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
         context.Venues.Add(venue);
 
         // Med flit i fel ordning: svaret ska komma sorterat oavsett insättningsordning.
-        context.Matches.AddRange(
-            NewMatch(gul, venue, Kickoff.AddDays(14), "Sist", MatchStatus.Scheduled),
-            NewMatch(gul, venue, Kickoff, "Forst", MatchStatus.Scheduled),
-            NewMatch(gul, venue, Kickoff.AddDays(7), "Installd", MatchStatus.Cancelled));
+        context.Events.AddRange(
+            NewMatch(gul, venue, Kickoff.AddDays(14), "Sist", EventStatus.Scheduled),
+            NewMatch(gul, venue, Kickoff, "Forst", EventStatus.Scheduled),
+            NewMatch(gul, venue, Kickoff.AddDays(7), "Installd", EventStatus.Cancelled));
 
         context.SaveChanges();
     }
 
-    private static Match NewMatch(
-        Team team, Venue venue, DateTime kickoffUtc, string opponent, MatchStatus status) => new()
+    private static Event NewMatch(
+        Team team, Venue venue, DateTime kickoffUtc, string opponent, EventStatus status) => new()
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -162,9 +162,9 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
+        var response = await client.GetAsync("/api/v1/teams/gul/events", CancellationToken.None);
         var json = await ReadJsonAsync(response);
-        var matches = json.GetProperty("matches");
+        var matches = json.GetProperty("events");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(
@@ -177,10 +177,10 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
+        var response = await client.GetAsync("/api/v1/teams/gul/events", CancellationToken.None);
         var json = await ReadJsonAsync(response);
 
-        var cancelled = json.GetProperty("matches").EnumerateArray()
+        var cancelled = json.GetProperty("events").EnumerateArray()
             .Single(m => m.GetProperty("opponent").GetString() == "Installd");
 
         Assert.Equal("Cancelled", cancelled.GetProperty("status").GetString());
@@ -192,10 +192,10 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // §KM.5. Skulle backend börja skicka lokaltid vore felet osynligt halva året.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
+        var response = await client.GetAsync("/api/v1/teams/gul/events", CancellationToken.None);
         var json = await ReadJsonAsync(response);
 
-        var kickoff = json.GetProperty("matches")[0].GetProperty("kickoffUtc").GetString();
+        var kickoff = json.GetProperty("events")[0].GetProperty("kickoffUtc").GetString();
 
         Assert.NotNull(kickoff);
         Assert.EndsWith("+00:00", kickoff, StringComparison.Ordinal);
@@ -208,7 +208,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // med `#191`.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
+        var response = await client.GetAsync("/api/v1/teams/gul/events", CancellationToken.None);
         var cacheControl = response.Headers.CacheControl;
 
         Assert.NotNull(cacheControl);
@@ -223,7 +223,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
     {
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync("/api/v1/teams/finns-inte/matches", CancellationToken.None);
+        var response = await client.GetAsync("/api/v1/teams/finns-inte/events", CancellationToken.None);
         var json = await ReadJsonAsync(response);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -239,7 +239,7 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // Skräp avvisas av validatorn innan det når databasen, och blir 400 — inte 500.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync($"/api/v1/teams/{slug}/matches", CancellationToken.None);
+        var response = await client.GetAsync($"/api/v1/teams/{slug}/events", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -252,14 +252,14 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
         // upp måste någon ta ställning till det här, inte upptäcka det i produktion.
         using var client = _factory.CreateSuperAdminClient();
 
-        var response = await client.GetAsync("/api/v1/teams/gul/matches", CancellationToken.None);
+        var response = await client.GetAsync("/api/v1/teams/gul/events", CancellationToken.None);
         var json = await ReadJsonAsync(response);
 
-        var matchFields = json.GetProperty("matches")[0]
+        var matchFields = json.GetProperty("events")[0]
             .EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal);
 
         Assert.Equal(
-            ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "venue"],
+            ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "title", "type", "venue"],
             matchFields);
     }
 }

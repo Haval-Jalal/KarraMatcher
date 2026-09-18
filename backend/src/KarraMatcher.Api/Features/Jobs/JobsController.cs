@@ -49,7 +49,7 @@ public sealed class JobsController(
         }
 
         var reminded = await commands
-            .SendAsync(new SendMatchRemindersCommand(), cancellationToken)
+            .SendAsync(new SendEventRemindersCommand(), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(new JobResult(reminded));

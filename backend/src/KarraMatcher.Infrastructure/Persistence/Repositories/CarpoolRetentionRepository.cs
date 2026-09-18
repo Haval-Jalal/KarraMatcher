@@ -36,7 +36,7 @@ internal sealed class CarpoolRetentionRepository(KarraMatcherDbContext context)
          * en match som hann passera gransen daremellan kunde lamna kvar ett erbjudande vars
          * forfragningar redan var borta.
          */
-        var expired = await context.Matches
+        var expired = await context.Events
             .AsNoTracking()
             .Where(match => match.KickoffUtc < cutoffUtc)
             .Select(match => match.Id)

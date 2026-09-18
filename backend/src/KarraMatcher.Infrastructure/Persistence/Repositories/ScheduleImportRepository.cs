@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -46,9 +47,9 @@ internal sealed class ScheduleImportRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var existing = await context.Matches
+        var existing = await context.Events
             .AsNoTracking()
-            .Where(m => m.Team!.Slug == teamSlug)
+            .Where(m => m.Team!.Slug == teamSlug && m.Type == EventType.Match)
             .Select(m => new { m.KickoffUtc, m.OpponentName })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -59,7 +60,7 @@ internal sealed class ScheduleImportRepository(KarraMatcherDbContext context)
             existing
                 .Select(m => string.Create(
                     CultureInfo.InvariantCulture,
-                    $"{teamSlug}|{m.KickoffUtc:yyyy-MM-ddTHH:mm:ss}Z|{m.OpponentName.ToLowerInvariant()}"))
+                    $"{teamSlug}|{m.KickoffUtc:yyyy-MM-ddTHH:mm:ss}Z|{(m.OpponentName ?? string.Empty).ToLowerInvariant()}"))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase));
     }
 }

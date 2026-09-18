@@ -11,7 +11,7 @@ import {
   writeCard,
 } from '@/features/playercard'
 import { emptyCard, type Child, type MatchReport } from '@/features/playercard/storage/schema'
-import { stubApi, testMatch, testTeams } from '@/test/apiStub'
+import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -257,12 +257,12 @@ describe('motståndaren skrivs av, den slås inte upp', () => {
     stubApi({
       match: {
         team: testTeams[0]!,
-        match: testMatch('match-1', '2026-09-20T12:00:00Z', { opponent: 'Torslanda IK' }),
+        match: testEvent('match-1', '2026-09-20T12:00:00Z', { opponent: 'Torslanda IK' }),
       },
     })
 
     const user = userEvent.setup()
-    renderRoute('/match/match-1')
+    renderRoute('/handelse/match-1')
 
     await user.click(await screen.findByRole('button', { name: 'Öka Mål — Elias' }))
 

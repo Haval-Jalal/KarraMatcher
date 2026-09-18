@@ -45,12 +45,12 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
                 .ConfigureAwait(false);
     }
 
-    public async Task<bool> IsMemberOfMatchAsync(
-        Guid accountId, Guid matchId, CancellationToken cancellationToken)
+    public async Task<bool> IsMemberOfEventAsync(
+        Guid accountId, Guid eventId, CancellationToken cancellationToken)
     {
-        var team = await context.Matches
+        var team = await context.Events
             .AsNoTracking()
-            .Where(m => m.Id == matchId)
+            .Where(m => m.Id == eventId)
             .Select(m => new { TeamId = m.TeamId, m.Team!.AgeGroupId })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);

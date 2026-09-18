@@ -7,7 +7,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -70,7 +70,7 @@ public sealed class CarpoolOverviewTests(KarraMatcherApiFactory factory)
         var withoutOffer = Match(team.Id, venue.Id, now.AddDays(10), "Backa");
         var played = Match(team.Id, venue.Id, now.AddDays(-3), "Hisingsbacka");
         var cancelled = Match(team.Id, venue.Id, now.AddDays(5), "Salvia");
-        cancelled.Status = MatchStatus.Cancelled;
+        cancelled.Status = EventStatus.Cancelled;
 
         var coach = new Account { Id = Guid.NewGuid(), Email = $"tranare-o-{suffix}@example.com" };
         var driver = new Account { Id = Guid.NewGuid(), Email = $"forare-o-{suffix}@example.com" };
@@ -99,7 +99,7 @@ public sealed class CarpoolOverviewTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.AddRange(withOffer, withoutOffer, played, cancelled);
+        context.Events.AddRange(withOffer, withoutOffer, played, cancelled);
         context.Accounts.AddRange(coach, driver, asker);
         context.CarpoolOffers.Add(offer);
         context.CarpoolRequests.AddRange(accepted, waiting);
@@ -109,7 +109,7 @@ public sealed class CarpoolOverviewTests(KarraMatcherApiFactory factory)
         return new Fixture(team.Slug, coach.Id, driver.Id, withOffer.Id);
     }
 
-    private static Match Match(Guid teamId, Guid venueId, DateTime kickoffUtc, string opponent) =>
+    private static Event Match(Guid teamId, Guid venueId, DateTime kickoffUtc, string opponent) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -118,7 +118,7 @@ public sealed class CarpoolOverviewTests(KarraMatcherApiFactory factory)
             OpponentName = opponent,
             VenueId = venueId,
             IsHome = false,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = kickoffUtc,
         };

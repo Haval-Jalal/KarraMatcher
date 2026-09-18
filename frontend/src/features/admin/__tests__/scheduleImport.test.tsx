@@ -76,7 +76,7 @@ describe('inget sparas förrän tränaren godkänner', () => {
     await screen.findByText('Rad för rad')
 
     expect(calls.some((call) => call.endsWith('/import/preview'))).toBe(true)
-    expect(calls.some((call) => call.endsWith('/matches/import'))).toBe(false)
+    expect(calls.some((call) => call.endsWith('/events/import'))).toBe(false)
   })
 
   it('visar knappen för import först efter granskningen', async () => {
@@ -158,6 +158,6 @@ async function waitForImport(calls: string[]) {
   const { waitFor } = await import('@testing-library/react')
 
   await waitFor(() => {
-    expect(calls.some((call) => call.endsWith('/matches/import'))).toBe(true)
+    expect(calls.some((call) => call.endsWith('/events/import'))).toBe(true)
   })
 }

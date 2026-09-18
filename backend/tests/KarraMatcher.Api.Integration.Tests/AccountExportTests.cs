@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Carpool;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Push;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -71,7 +71,7 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
-        var match = new Match
+        var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
@@ -79,7 +79,7 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
             OpponentName = opponent,
             VenueId = venue.Id,
             IsHome = true,
-            Status = MatchStatus.Scheduled,
+            Status = EventStatus.Scheduled,
             UpdatedUtc = Kickoff,
         };
         var offer = new CarpoolOffer
@@ -122,7 +122,7 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Matches.Add(match);
+        context.Events.Add(match);
         context.CarpoolOffers.Add(offer);
         context.PushSubscriptions.Add(subscription);
         context.NotificationPreferences.Add(preference);

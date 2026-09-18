@@ -38,8 +38,8 @@ function stubApi(settings: { matchChanges: boolean; carpool: boolean; reminders:
         return Promise.resolve(jsonResponse(method === 'PUT' ? body : settings))
       }
 
-      if (url.includes('/teams/gul/matches')) {
-        return Promise.resolve(jsonResponse({ team, matches: [] }))
+      if (url.includes('/teams/gul/events')) {
+        return Promise.resolve(jsonResponse({ team, events: [] }))
       }
       if (url.endsWith('/api/v1/teams')) return Promise.resolve(jsonResponse([team]))
 

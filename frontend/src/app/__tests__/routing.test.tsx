@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
-import { stubApi, testMatch, testTeams } from '@/test/apiStub'
+import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 beforeEach(() => {
@@ -34,14 +34,14 @@ describe('routing', () => {
 
     const { router } = renderRoute('/')
 
-    expect(await screen.findByRole('heading', { name: 'Matcher' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Schema' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/lag/bla')
   })
 
   it('visar lagets schema på en delad länk', async () => {
     // Ingen sparad inställning: mottagaren av länken ska ändå landa på rätt lag.
     stubApi({
-      matches: { team: testTeams[0]!, matches: [testMatch('a', '2026-09-20T12:00:00Z')] },
+      matches: { team: testTeams[0]!, matches: [testEvent('a', '2026-09-20T12:00:00Z')] },
     })
 
     renderRoute('/lag/gul')

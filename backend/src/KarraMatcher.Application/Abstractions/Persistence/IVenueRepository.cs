@@ -1,5 +1,5 @@
 using KarraMatcher.Application.Features.Venues;
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Abstractions.Persistence;
 

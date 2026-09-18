@@ -8,10 +8,10 @@ namespace KarraMatcher.Infrastructure.Persistence.Repositories;
 internal sealed class CarpoolOfferRepository(KarraMatcherDbContext context) : ICarpoolOfferRepository
 {
     public Task<bool> MatchExistsAsync(Guid matchId, CancellationToken cancellationToken) =>
-        context.Matches.AsNoTracking().AnyAsync(m => m.Id == matchId, cancellationToken);
+        context.Events.AsNoTracking().AnyAsync(m => m.Id == matchId, cancellationToken);
 
     public async Task<Guid?> FindMatchTeamIdAsync(Guid matchId, CancellationToken cancellationToken) =>
-        await context.Matches
+        await context.Events
             .AsNoTracking()
             .Where(m => m.Id == matchId)
             .Select(m => (Guid?)m.TeamId)

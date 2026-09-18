@@ -1,4 +1,4 @@
-using KarraMatcher.Domain.Matches;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -34,15 +34,15 @@ public class PersistenceModelTests
     }
 
     [Theory]
-    [InlineData(nameof(Match.KickoffUtc))]
-    [InlineData(nameof(Match.UpdatedUtc))]
+    [InlineData(nameof(Event.KickoffUtc))]
+    [InlineData(nameof(Event.UpdatedUtc))]
     public void Tidsstamplar_LagrasSomTimestamptz(string propertyName)
     {
         // timestamptz, inte timestamp. Npgsql vägrar då skriva en DateTime vars Kind
         // inte är Utc — vilket är körtidsskyddet bakom §KM.5.
         Assert.Equal(
             "timestamp with time zone",
-            Property<Match>(propertyName).GetColumnType());
+            Property<Event>(propertyName).GetColumnType());
     }
 
     [Fact]
@@ -57,25 +57,25 @@ public class PersistenceModelTests
     }
 
     [Fact]
-    public void MatchStatus_LagrasSomTextInteSiffra()
+    public void EventStatus_LagrasSomTextInteSiffra()
     {
         // En siffra i databasen säger ingenting den dag någon felsöker med psql.
-        var property = Property<Match>(nameof(Match.Status));
+        var property = Property<Event>(nameof(Event.Status));
 
         Assert.Equal("character varying(20)", property.GetColumnType());
-        Assert.Equal(MatchStatus.Scheduled, property.GetDefaultValue());
+        Assert.Equal(EventStatus.Scheduled, property.GetDefaultValue());
     }
 
     [Fact]
     public void Matcher_HarIndexPaLagOchAvspark()
     {
         // Appens vanligaste fråga: ett lags matcher i tidsordning.
-        var entity = Model().FindEntityType(typeof(Match));
+        var entity = Model().FindEntityType(typeof(Event));
         Assert.NotNull(entity);
 
         var index = entity.GetIndexes().SingleOrDefault(i =>
             i.Properties.Select(p => p.Name)
-                .SequenceEqual([nameof(Match.TeamId), nameof(Match.KickoffUtc)]));
+                .SequenceEqual([nameof(Event.TeamId), nameof(Event.KickoffUtc)]));
 
         Assert.NotNull(index);
     }
@@ -99,7 +99,7 @@ public class PersistenceModelTests
     [Fact]
     public void Spelplats_KanInteRaderasNarMatcherAnvanderDen()
     {
-        var entity = Model().FindEntityType(typeof(Match));
+        var entity = Model().FindEntityType(typeof(Event));
         Assert.NotNull(entity);
 
         var toVenue = entity.GetForeignKeys()
@@ -118,9 +118,9 @@ public class PersistenceModelTests
         Assert.Equal(
             [
                 "Account", "AgeGroup", "AttendanceCall", "AttendanceResponse", "AuditEntry",
-                "CarpoolOffer", "CarpoolRequest", "Child", "Club", "GuardianConsent",
+                "CarpoolOffer", "CarpoolRequest", "Child", "Club", "Event", "GuardianConsent",
                 "Guardianship", "Invitation",
-                "LoginCode", "Match", "MembershipApplication", "NotificationPreference",
+                "LoginCode", "MembershipApplication", "NotificationPreference",
                 "PushSubscription", "RefreshToken", "Sport",
                 "Team", "TeamRole", "Venue",
             ],

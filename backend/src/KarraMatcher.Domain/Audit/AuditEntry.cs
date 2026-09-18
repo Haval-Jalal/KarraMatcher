@@ -55,10 +55,11 @@ public static class AuditActions
     public const string AccountDeleted = "konto.raderat";
     public const string AccountNameChanged = "konto.namn.andrat";
 
-    public const string MatchCreated = "match.skapad";
-    public const string MatchUpdated = "match.andrad";
-    public const string MatchCancelled = "match.installd";
-    public const string MatchDeleted = "match.raderad";
+    // Händelser (match/träning/övrigt) (§KM.10, `#198`).
+    public const string EventCreated = "handelse.skapad";
+    public const string EventUpdated = "handelse.andrad";
+    public const string EventCancelled = "handelse.installd";
+    public const string EventDeleted = "handelse.raderad";
 
     // Superadmins plattformshantering (§KM.3, `#192`).
     public const string SportCreated = "sport.skapad";

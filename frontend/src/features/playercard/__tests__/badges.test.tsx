@@ -12,7 +12,7 @@ import {
   writeCard,
 } from '@/features/playercard'
 import { emptyCard, type Child, type MatchReport } from '@/features/playercard/storage/schema'
-import { stubApi, testMatch, testTeams } from '@/test/apiStub'
+import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 import CSS from '@/styles/index.css?raw'
 
@@ -113,10 +113,10 @@ describe('märken räknas ur den lokala statistiken', () => {
 describe('firandet sker när märket låses upp', () => {
   function openMatch() {
     stubApi({
-      match: { team: testTeams[0]!, match: testMatch(MATCH_ID, '2026-09-20T12:00:00Z') },
+      match: { team: testTeams[0]!, match: testEvent(MATCH_ID, '2026-09-20T12:00:00Z') },
     })
 
-    return renderRoute(`/match/${MATCH_ID}`)
+    return renderRoute(`/handelse/${MATCH_ID}`)
   }
 
   it('dyker upp i matchrapporten när målet fylls i', async () => {
