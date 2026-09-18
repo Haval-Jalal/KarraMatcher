@@ -43,7 +43,7 @@ test('samåkning: erbjudande, förfrågan och nekande med meddelande', async ({
   const matchId = await e2eMatchId(probePage)
   await probe.close()
 
-  const matchPath = `/match/${matchId}`
+  const matchPath = `/handelse/${matchId}`
   const departurePlace = `Kärra centrum ${Date.now()}`
 
   // ---- Föraren lägger upp en skjuts ----------------------------------------------------

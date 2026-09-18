@@ -18,6 +18,6 @@ test('inloggad medlem hittar nästa match och vägbeskrivning', async ({ page })
   // Klick, inte page.goto: navigeringen är klientsidig och en full omladdning nollar tokenen.
   await page.getByRole('link', { name: 'Visa matchen' }).click()
 
-  await expect(page).toHaveURL(/\/match\//)
+  await expect(page).toHaveURL(/\/handelse\//)
   await expect(page.getByRole('link', { name: /Vägbeskrivning/ })).toBeVisible()
 })
