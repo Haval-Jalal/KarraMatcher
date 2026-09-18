@@ -85,6 +85,13 @@ public static class AuditActions
     // Vårdnadshavarsamtycke (§KM.6, `#195`).
     public const string ConsentGranted = "samtycke.givet";
 
+    // Barnhantering (§KM.1, `#196`).
+    public const string ChildCreated = "barn.skapat";
+    public const string ChildUpdated = "barn.andrat";
+    public const string ChildDeleted = "barn.raderat";
+    public const string GuardianLinked = "vardnadshavare.kopplad";
+    public const string GuardianUnlinked = "vardnadshavare.bortkopplad";
+
     public const string AttendanceEnabled = "narvaro.paslagen";
     public const string AttendanceDisabled = "narvaro.avslagen";
     public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";
