@@ -186,6 +186,44 @@ public sealed class ChatService(
         return ChatModerationOutcome.Ok;
     }
 
+    /// <summary>
+    /// Adminens moderering: tar bort valfritt meddelande i truppen, oavsett kanal (`#202`).
+    ///
+    /// <para>
+    /// Anmälningskön spänner hela truppen (trupp-kanalen och alla lag-kanaler), så adminens
+    /// radering får inte vara kanalbunden. Behörigheten är redan prövad (AdminOfTrupp); här
+    /// räcker att meddelandet hör till truppen. Texten töms direkt, tombstonen blir kvar.
+    /// </para>
+    /// </summary>
+    public async Task<ChatModerationOutcome> DeleteByAdminAsync(
+        Guid truppId,
+        Guid messageId,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
+        var message = await chat.FindMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
+
+        if (message is null || message.AgeGroupId != truppId)
+        {
+            return ChatModerationOutcome.NotFound;
+        }
+
+        if (message.DeletedUtc is null)
+        {
+            message.DeletedUtc = clock.GetUtcNow().UtcDateTime;
+            message.DeletedByAccountId = actorAccountId;
+            message.Body = string.Empty;
+
+            await audit.RecordAsync(
+                AuditActions.ChatMessageDeleted, actorAccountId, cancellationToken, messageId)
+                .ConfigureAwait(false);
+
+            await chat.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return ChatModerationOutcome.Ok;
+    }
+
     /// <summary>Avbokar ett eget (eller, som admin, valfritt) schemalagt meddelande innan det går ut.</summary>
     public async Task<ChatModerationOutcome> CancelScheduledAsync(
         Guid truppId,

@@ -195,6 +195,29 @@ public sealed class ChatTeamTests(KarraMatcherApiFactory factory)
         Assert.Equal(1, row.GetProperty("reportCount").GetInt32());
     }
 
+    [Fact]
+    public async Task AdminRaderar_LagMeddelande_FranTruppensKo()
+    {
+        var f = await SeedAsync("admin-radera-lag");
+        var id = await TeamPostAsync(f, f.GulSlug, CoachToken(f), "Ska modereras bort");
+
+        // Admin raderar ett lag-kanal-meddelande via den kanalobundna trupp-admin-endpointen.
+        var deleted = await SendAsync(
+            HttpMethod.Delete, $"/api/v1/admin/trupper/{f.TruppId}/chat/messages/{id}", AdminToken(f));
+
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        await AssertAuditedAsync("chatt.meddelande.raderat", id);
+
+        // Meddelandet är nu en tombstone i lag-kanalen (texten borta).
+        var messages = await SendAsync(
+            HttpMethod.Get, $"/api/v1/teams/{f.GulSlug}/chat/messages", AdminToken(f));
+        messages.EnsureSuccessStatusCode();
+        var list = await messages.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+        var msg = list.EnumerateArray().Single(m => m.GetProperty("id").GetGuid() == id);
+        Assert.True(msg.GetProperty("deleted").GetBoolean());
+        Assert.Equal(string.Empty, msg.GetProperty("body").GetString());
+    }
+
     // ---- Notis -----------------------------------------------------------------------
 
     [Fact]

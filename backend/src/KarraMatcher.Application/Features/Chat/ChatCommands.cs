@@ -42,6 +42,10 @@ public sealed record ReportChatMessageCommand(
     Guid MessageId,
     Guid AccountId) : ICommand<ChatModerationOutcome>;
 
+/// <summary>Adminens moderering: tar bort valfritt meddelande i truppen, oavsett kanal (`#202`).</summary>
+public sealed record AdminDeleteChatMessageCommand(Guid TruppId, Guid MessageId, Guid ActorAccountId)
+    : ICommand<ChatModerationOutcome>;
+
 /// <summary>De senaste meddelandena i en kanal.</summary>
 public sealed record GetChatMessagesQuery(Guid TruppId, Guid? TeamId)
     : IQuery<IReadOnlyList<ChatMessageDto>>;
@@ -176,6 +180,30 @@ internal sealed class ReportChatMessageCommandHandler(ChatService service)
 
         return service.ReportAsync(
             command.TruppId, command.TeamId, command.MessageId, command.AccountId, cancellationToken);
+    }
+}
+
+internal sealed class AdminDeleteChatMessageCommandValidator
+    : AbstractValidator<AdminDeleteChatMessageCommand>
+{
+    public AdminDeleteChatMessageCommandValidator()
+    {
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.MessageId).NotEmpty();
+        RuleFor(c => c.ActorAccountId).NotEmpty();
+    }
+}
+
+internal sealed class AdminDeleteChatMessageCommandHandler(ChatService service)
+    : ICommandHandler<AdminDeleteChatMessageCommand, ChatModerationOutcome>
+{
+    public Task<ChatModerationOutcome> HandleAsync(
+        AdminDeleteChatMessageCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.DeleteByAdminAsync(
+            command.TruppId, command.MessageId, command.ActorAccountId, cancellationToken);
     }
 }
 
