@@ -8,94 +8,115 @@ namespace KarraMatcher.Infrastructure.Persistence.Repositories;
 internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     : IAttendanceCallRepository
 {
-    public async Task<bool> MatchBelongsToTeamAsync(
-        Guid matchId,
-        string slug,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(slug);
-
-        return await context.Events
+    public async Task<EventContext?> FindEventContextAsync(
+        Guid eventId, CancellationToken cancellationToken) =>
+        await context.Events
             .AsNoTracking()
-            .AnyAsync(m => m.Id == matchId && m.Team!.Slug == slug, cancellationToken)
+            .Where(e => e.Id == eventId)
+            .Select(e => new EventContext(e.Team!.AgeGroupId, e.TeamId, e.KickoffUtc))
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
-    }
 
-    public Task<bool> CallExistsAsync(Guid matchId, CancellationToken cancellationToken) =>
-        context.AttendanceCalls
+    public async Task<DateTime?> FindKickoffUtcAsync(
+        Guid eventId, CancellationToken cancellationToken) =>
+        await context.Events
             .AsNoTracking()
-            .AnyAsync(c => c.MatchId == matchId, cancellationToken);
+            .Where(e => e.Id == eventId)
+            .Select(e => (DateTime?)e.KickoffUtc)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    // Spårad: samma kallelse kan behöva få inbjudningar synkade i samma enhet av arbete.
+    public Task<AttendanceCall?> FindCallByEventAsync(Guid eventId, CancellationToken cancellationToken) =>
+        context.AttendanceCalls.FirstOrDefaultAsync(c => c.MatchId == eventId, cancellationToken);
 
     public async Task AddCallAsync(AttendanceCall attendanceCall, CancellationToken cancellationToken) =>
         await context.AttendanceCalls.AddAsync(attendanceCall, cancellationToken).ConfigureAwait(false);
 
-    public async Task<DateTime?> FindKickoffUtcAsync(
-        Guid matchId,
-        CancellationToken cancellationToken) =>
-        await context.Events
+    public async Task<IReadOnlySet<Guid>> ChildIdsInTruppAsync(
+        Guid ageGroupId, CancellationToken cancellationToken)
+    {
+        var ids = await context.Children
             .AsNoTracking()
-            .Where(m => m.Id == matchId)
-            .Select(m => (DateTime?)m.KickoffUtc)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-    public Task<AttendanceResponse?> FindResponseAsync(
-        Guid matchId,
-        Guid accountId,
-        CancellationToken cancellationToken) =>
-        // Spårat, inte AsNoTracking: svaret ska gå att ändra i samma enhet av arbete.
-        context.AttendanceResponses
-            .FirstOrDefaultAsync(
-                r => r.MatchId == matchId && r.AccountId == accountId,
-                cancellationToken);
-
-    public async Task AddResponseAsync(
-        AttendanceResponse response,
-        CancellationToken cancellationToken) =>
-        await context.AttendanceResponses.AddAsync(response, cancellationToken).ConfigureAwait(false);
-
-    public async Task<IReadOnlyList<AttendanceResponse>> ListResponsesForMatchAsync(
-        Guid matchId,
-        CancellationToken cancellationToken) =>
-        await context.AttendanceResponses
-            .AsNoTracking()
-            .Where(r => r.MatchId == matchId)
-            .OrderBy(r => r.CreatedUtc)
+            .Where(c => c.AgeGroupId == ageGroupId)
+            .Select(c => c.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<Guid>> ListExpectedResponderAccountIdsAsync(
-        Guid matchId,
-        CancellationToken cancellationToken)
-    {
-        var teamId = await context.Events
-            .AsNoTracking()
-            .Where(m => m.Id == matchId)
-            .Select(m => (Guid?)m.TeamId)
-            .FirstOrDefaultAsync(cancellationToken)
+        return ids.ToHashSet();
+    }
+
+    public async Task<IReadOnlyList<AttendanceInvitation>> ListInvitationsAsync(
+        Guid callId, CancellationToken cancellationToken) =>
+        await context.AttendanceInvitations
+            .Where(i => i.CallId == callId)
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        if (teamId is null)
+    public async Task AddInvitationAsync(
+        AttendanceInvitation invitation, CancellationToken cancellationToken) =>
+        await context.AttendanceInvitations.AddAsync(invitation, cancellationToken).ConfigureAwait(false);
+
+    public void RemoveInvitation(AttendanceInvitation invitation) =>
+        context.AttendanceInvitations.Remove(invitation);
+
+    public Task<AttendanceInvitation?> FindInvitationAsync(
+        Guid callId, Guid childId, CancellationToken cancellationToken) =>
+        context.AttendanceInvitations
+            .FirstOrDefaultAsync(i => i.CallId == callId && i.ChildId == childId, cancellationToken);
+
+    public async Task<IReadOnlyList<InvitationRow>> ListInvitationRowsAsync(
+        Guid callId, CancellationToken cancellationToken) =>
+        await context.AttendanceInvitations
+            .AsNoTracking()
+            .Where(i => i.CallId == callId)
+            .Join(
+                context.Children.AsNoTracking(),
+                i => i.ChildId,
+                c => c.Id,
+                (i, c) => new InvitationRow(
+                    c.Id, c.FirstName, c.LastInitial, c.Team!.Name, c.Team!.ColorHex, i.Reply))
+            .OrderBy(r => r.TeamName).ThenBy(r => r.FirstName)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<MyInvitationRow>> ListMineAsync(
+        Guid eventId, Guid accountId, CancellationToken cancellationToken) =>
+        await (
+            from i in context.AttendanceInvitations.AsNoTracking()
+            join call in context.AttendanceCalls.AsNoTracking() on i.CallId equals call.Id
+            join c in context.Children.AsNoTracking() on i.ChildId equals c.Id
+            join g in context.Guardianships.AsNoTracking() on c.Id equals g.ChildId
+            where call.MatchId == eventId && g.AccountId == accountId
+            orderby c.FirstName
+            select new MyInvitationRow(c.Id, c.FirstName, c.LastInitial, i.Reply))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public Task<bool> IsGuardianOfChildAsync(
+        Guid accountId, Guid childId, CancellationToken cancellationToken) =>
+        context.Guardianships
+            .AsNoTracking()
+            .AnyAsync(g => g.AccountId == accountId && g.ChildId == childId, cancellationToken);
+
+    public async Task<IReadOnlyList<Guid>> GuardianAccountIdsForChildrenAsync(
+        IReadOnlyCollection<Guid> childIds, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(childIds);
+
+        if (childIds.Count == 0)
         {
             return [];
         }
 
-        return await context.PushSubscriptions
+        return await context.Guardianships
             .AsNoTracking()
-            .Where(s => s.TeamId == teamId && s.AccountId != null)
-            .Select(s => s.AccountId!.Value)
+            .Where(g => childIds.Contains(g.ChildId))
+            .Select(g => g.AccountId)
             .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
-
-    public async Task<Guid?> FindTeamIdAsync(Guid matchId, CancellationToken cancellationToken) =>
-        await context.Events
-            .AsNoTracking()
-            .Where(m => m.Id == matchId)
-            .Select(m => (Guid?)m.TeamId)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         context.SaveChangesAsync(cancellationToken);

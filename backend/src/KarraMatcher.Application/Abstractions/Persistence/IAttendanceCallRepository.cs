@@ -2,70 +2,77 @@ using KarraMatcher.Domain.Attendance;
 
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
+/// <summary>Händelsens sammanhang som en kallelse behöver: trupp, lag och avspark (`#199`).</summary>
+public sealed record EventContext(Guid AgeGroupId, Guid TeamId, DateTime KickoffUtc);
+
+/// <summary>Ett kallat barn med namn, lag och svar — för tränarens summering (`#199`).</summary>
+public sealed record InvitationRow(
+    Guid ChildId,
+    string FirstName,
+    string LastInitial,
+    string? TeamName,
+    string? ColorHex,
+    AttendanceReply? Reply);
+
+/// <summary>Den inloggades eget kallade barn och dess svar (`#199`).</summary>
+public sealed record MyInvitationRow(
+    Guid ChildId,
+    string FirstName,
+    string LastInitial,
+    AttendanceReply? Reply);
+
 /// <summary>
-/// Läser och skriver kallelsen och dess svar (`#57`).
+/// Läser och skriver kallelsen (per barn) och dess svar (§KM.7, `#199`).
 ///
 /// <para>
-/// Skild från <see cref="IAttendanceRepository"/>, som bara rör grindens flagga. Kallelsen
-/// och svaren är den faktiska funktionen bakom grinden — de hör ihop som en enhet: ett svar
-/// utan en kallelse hör ingenstans.
+/// Kallelsen riktas mot utvalda barn ur hela truppen — inte bara händelsens eget lag —
+/// eftersom ett lag fylls på med barn från andra lag vid behov. Svaren är per barn: Ja/Nej.
 /// </para>
 /// </summary>
 public interface IAttendanceCallRepository
 {
-    /// <summary>
-    /// Hör matchen till laget med den slugen? Falskt både när matchen inte finns och när
-    /// den tillhör ett annat lag — samma svar, så en tränare inte kan kartlägga andra lags
-    /// matcher genom att prova.
-    /// </summary>
-    public Task<bool> MatchBelongsToTeamAsync(
-        Guid matchId,
-        string slug,
-        CancellationToken cancellationToken);
+    /// <summary>Händelsens trupp, lag och avspark, eller null när händelsen inte finns.</summary>
+    public Task<EventContext?> FindEventContextAsync(Guid eventId, CancellationToken cancellationToken);
 
-    /// <summary>Sant när kallelsen redan är öppnad för matchen.</summary>
-    public Task<bool> CallExistsAsync(Guid matchId, CancellationToken cancellationToken);
+    /// <summary>Händelsens avspark i UTC, eller null när den inte finns.</summary>
+    public Task<DateTime?> FindKickoffUtcAsync(Guid eventId, CancellationToken cancellationToken);
+
+    /// <summary>Kallelsen för händelsen, spårad. Null när den inte öppnats än.</summary>
+    public Task<AttendanceCall?> FindCallByEventAsync(Guid eventId, CancellationToken cancellationToken);
 
     public Task AddCallAsync(AttendanceCall attendanceCall, CancellationToken cancellationToken);
 
-    /// <summary>Matchens avspark i UTC, eller null när matchen inte finns.</summary>
-    public Task<DateTime?> FindKickoffUtcAsync(Guid matchId, CancellationToken cancellationToken);
+    /// <summary>Alla barn-id som hör till truppen — för att pröva att ett urval är giltigt.</summary>
+    public Task<IReadOnlySet<Guid>> ChildIdsInTruppAsync(
+        Guid ageGroupId, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Kontots svar på matchen, spårat så att det går att ändra. Null när inget finns än.
-    /// </summary>
-    public Task<AttendanceResponse?> FindResponseAsync(
-        Guid matchId,
-        Guid accountId,
-        CancellationToken cancellationToken);
+    /// <summary>Kallelsens inbjudningar, spårade — för att synka urvalet.</summary>
+    public Task<IReadOnlyList<AttendanceInvitation>> ListInvitationsAsync(
+        Guid callId, CancellationToken cancellationToken);
 
-    public Task AddResponseAsync(AttendanceResponse response, CancellationToken cancellationToken);
+    public Task AddInvitationAsync(AttendanceInvitation invitation, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Alla svar på en match, äldst först — den som svarade först syns först. Endast läsning
-    /// (tränarens summering, `#58`).
-    /// </summary>
-    public Task<IReadOnlyList<AttendanceResponse>> ListResponsesForMatchAsync(
-        Guid matchId,
-        CancellationToken cancellationToken);
+    public void RemoveInvitation(AttendanceInvitation invitation);
 
-    /// <summary>
-    /// Kontona som förväntas svara på matchen: de som prenumererar på lagets notiser och
-    /// har ett konto (`#58`, §KM.1).
-    ///
-    /// <para>
-    /// Det är den enda konto-baserade lag-kopplingen vi har (den infördes i <c>#63</c>) —
-    /// och den som kan ta emot en påminnelse. "Inte svarat" räknas mot den här mängden: en
-    /// förälder som följer laget men inte svarat. En gäst utan konto räknas inte, och kan
-    /// heller inte nås av en notis.
-    /// </para>
-    /// </summary>
-    public Task<IReadOnlyList<Guid>> ListExpectedResponderAccountIdsAsync(
-        Guid matchId,
-        CancellationToken cancellationToken);
+    /// <summary>En inbjudan (kallat barn), spårad — för att sätta ett svar. Null när barnet inte kallats.</summary>
+    public Task<AttendanceInvitation?> FindInvitationAsync(
+        Guid callId, Guid childId, CancellationToken cancellationToken);
 
-    /// <summary>Matchens lag, eller null när matchen inte finns. För att rikta påminnelsen (`#65`).</summary>
-    public Task<Guid?> FindTeamIdAsync(Guid matchId, CancellationToken cancellationToken);
+    /// <summary>De kallade barnen med namn, lag och svar (tränarens summering).</summary>
+    public Task<IReadOnlyList<InvitationRow>> ListInvitationRowsAsync(
+        Guid callId, CancellationToken cancellationToken);
+
+    /// <summary>Den inloggades egna kallade barn för händelsen (vårdnadshavarens vy).</summary>
+    public Task<IReadOnlyList<MyInvitationRow>> ListMineAsync(
+        Guid eventId, Guid accountId, CancellationToken cancellationToken);
+
+    /// <summary>Är kontot vårdnadshavare för barnet?</summary>
+    public Task<bool> IsGuardianOfChildAsync(
+        Guid accountId, Guid childId, CancellationToken cancellationToken);
+
+    /// <summary>Vårdnadshavarnas konto-id för en uppsättning barn — för riktad notis.</summary>
+    public Task<IReadOnlyList<Guid>> GuardianAccountIdsForChildrenAsync(
+        IReadOnlyCollection<Guid> childIds, CancellationToken cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

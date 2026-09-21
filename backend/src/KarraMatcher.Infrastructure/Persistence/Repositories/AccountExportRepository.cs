@@ -73,17 +73,21 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Kallelsesvaren vårdnadshavaren själv lämnat (per barn, `#199`). Barnets minimala
+        // namn (§KM.1) ingår — det är den vuxnes egen data om sitt eget barn.
         var attendance = await (
-            from a in context.AttendanceResponses.AsNoTracking()
-            where a.AccountId == accountId
-            join m in context.Events on a.MatchId equals m.Id
+            from i in context.AttendanceInvitations.AsNoTracking()
+            where i.RespondedByAccountId == accountId && i.Reply != null
+            join call in context.AttendanceCalls.AsNoTracking() on i.CallId equals call.Id
+            join m in context.Events.AsNoTracking() on call.MatchId equals m.Id
+            join c in context.Children.AsNoTracking() on i.ChildId equals c.Id
             orderby m.KickoffUtc
             select new AttendanceResponseExportRow(
-                m.OpponentName ?? string.Empty,
+                m.OpponentName ?? m.Title ?? string.Empty,
                 m.KickoffUtc,
-                a.Status,
-                a.Count,
-                a.CreatedUtc))
+                c.FirstName + " " + c.LastInitial,
+                i.Reply!.Value,
+                i.RespondedUtc!.Value))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

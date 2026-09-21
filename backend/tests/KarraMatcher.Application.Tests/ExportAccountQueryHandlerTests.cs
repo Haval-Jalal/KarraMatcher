@@ -95,7 +95,7 @@ public class ExportAccountQueryHandlerTests
             attendance:
             [
                 new AttendanceResponseExportRow(
-                    "Torslanda IK", Kickoff, AttendanceStatus.Coming, 2, Kickoff),
+                    "Torslanda IK", Kickoff, "Liam J", AttendanceReply.Coming, Kickoff),
             ]));
 
         var result = await handler.HandleAsync(new ExportAccountQuery(Account), CancellationToken.None);
@@ -104,7 +104,8 @@ public class ExportAccountQueryHandlerTests
         Assert.Equal("Both", result.CarpoolOffers[0].Direction);
         Assert.Equal("Open", result.CarpoolOffers[0].Status);
         Assert.Equal("Torslanda IK", result.CarpoolOffers[0].MatchOpponent);
-        Assert.Equal("Coming", result.AttendanceResponses[0].Status);
+        Assert.Equal("Coming", result.AttendanceResponses[0].Reply);
+        Assert.Equal("Liam J", result.AttendanceResponses[0].ChildName);
     }
 
     [Fact]

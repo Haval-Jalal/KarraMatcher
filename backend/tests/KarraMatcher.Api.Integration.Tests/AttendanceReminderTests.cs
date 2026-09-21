@@ -10,25 +10,25 @@ using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
+using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
-using KarraMatcher.Domain.Push;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace KarraMatcher.Api.Integration.Tests;
 
 /// <summary>
-/// Närvarosummeringens "inte svarat" och påminnelsen (`#58`, §KM.1, §KM.12).
+/// Påminnelsen om kallelsen (§KM.7, §KM.1, `#199`).
 ///
 /// <para>
-/// "Inte svarat" mäts mot lagets prenumeranter med konto — den enda konto-baserade lag-
-/// kopplingen (den kom i <c>#63</c>), och den som kan ta emot en påminnelse. Påminnelsen går
-/// bara till dem, aldrig till någon som redan svarat, och bär ingen fritext.
+/// Påminnelsen går till vårdnadshavarna för de kallade barn som ännu inte svarat — aldrig
+/// till någon vars barn redan svarat, och bär ingen fritext eller något barns namn.
 /// </para>
 /// </summary>
 public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
@@ -43,7 +43,7 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
         public void Enqueue(PushDispatch dispatch) => Dispatches.Enqueue(dispatch);
     }
 
-    private sealed record Fixture(string Slug, Guid TeamId, Guid MatchId, Guid CoachId);
+    private sealed record Fixture(Guid TruppId, Guid EventId);
 
     private (WebApplicationFactory<Program> App, RecordingOutbox Outbox) WithRecordingOutbox()
     {
@@ -64,14 +64,14 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
         var now = DateTime.UtcNow;
 
         var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = $"klubb-r-{suffix}" };
-        var ageGroup = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
+        var trupp = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
         var team = new Team
         {
             Id = Guid.NewGuid(),
-            AgeGroupId = ageGroup.Id,
-            Name = "Gul",
-            ColorHex = "#D9A21B",
-            Slug = $"gul-r-{suffix}",
+            AgeGroupId = trupp.Id,
+            Name = "Svart",
+            ColorHex = "#161616",
+            Slug = $"svart-r-{suffix}",
             AttendanceEnabled = true,
         };
         var venue = new Venue
@@ -87,106 +87,112 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
+            Type = EventType.Match,
             KickoffUtc = now.AddDays(3),
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
             Status = EventStatus.Scheduled,
-            IcsSequence = 0,
             UpdatedUtc = now,
         };
-        var coach = new Account { Id = Guid.NewGuid(), Email = $"tranare-r-{suffix}@example.com", CreatedUtc = now };
 
         context.Clubs.Add(club);
-        context.AgeGroups.Add(ageGroup);
+        context.AgeGroups.Add(trupp);
         context.Teams.Add(team);
         context.Venues.Add(venue);
         context.Events.Add(match);
-        context.Accounts.Add(coach);
-        context.AttendanceCalls.Add(new AttendanceCall
-        {
-            Id = Guid.NewGuid(),
-            MatchId = match.Id,
-            OpenedByAccountId = coach.Id,
-            OpenedUtc = now,
-        });
-
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return new Fixture(team.Slug, team.Id, match.Id, coach.Id);
+        return new Fixture(trupp.Id, match.Id);
     }
 
-    /// <summary>Ett konto som prenumererar på laget, valfritt med ett svar på matchen.</summary>
-    private async Task<Guid> SeedSubscriberAsync(
-        Fixture fixture,
-        string name,
-        AttendanceStatus? answered = null)
+    /// <summary>Ett kallat barn med vårdnadshavare, valfritt med ett svar. Returnerar konto-id:t.</summary>
+    private async Task<Guid> SeedInvitedChildAsync(
+        Fixture fixture, string tag, Guid callId, Guid teamId, AttendanceReply? reply = null)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
         var now = DateTime.UtcNow;
 
-        var account = new Account
+        var guardian = new Account { Id = Guid.NewGuid(), Email = $"vh-{tag}-{Guid.NewGuid():N}@example.com", CreatedUtc = now };
+        var child = new Child
         {
             Id = Guid.NewGuid(),
-            Email = $"{name.ToLowerInvariant()}-{Guid.NewGuid():N}@example.com",
-            FirstName = name,
+            FirstName = "Liam",
+            LastInitial = "J",
+            AgeGroupId = fixture.TruppId,
+            TeamId = teamId,
             CreatedUtc = now,
         };
-        context.Accounts.Add(account);
-        context.PushSubscriptions.Add(new PushSubscription
+
+        context.Accounts.Add(guardian);
+        context.Children.Add(child);
+        context.Guardianships.Add(new Guardianship
         {
             Id = Guid.NewGuid(),
-            TeamId = fixture.TeamId,
-            AccountId = account.Id,
-            Endpoint = $"https://fcm.googleapis.com/fcm/send/{Guid.NewGuid():N}",
-            P256dh = "BLc4xRzKlKORKWlbdgFaBrrPK3ydWAHo4M0gs0i1oEKgPpWG5nnwyPCwbLwGvHqvqnfHiPSw1kvR8t9zs2VoXsc",
-            Auth = "8eDyX_uCN0XRhSbY5hs7Hg",
-            CreatedUtc = now,
+            AccountId = guardian.Id,
+            ChildId = child.Id,
+            GrantedUtc = now,
         });
-
-        if (answered is not null)
+        context.AttendanceInvitations.Add(new AttendanceInvitation
         {
-            context.AttendanceResponses.Add(new AttendanceResponse
-            {
-                Id = Guid.NewGuid(),
-                MatchId = fixture.MatchId,
-                AccountId = account.Id,
-                Status = answered.Value,
-                Count = answered.Value == AttendanceStatus.CantCome ? 0 : 2,
-                CreatedUtc = now,
-                UpdatedUtc = now,
-            });
-        }
+            Id = Guid.NewGuid(),
+            CallId = callId,
+            ChildId = child.Id,
+            Reply = reply,
+            RespondedByAccountId = reply is null ? null : guardian.Id,
+            RespondedUtc = reply is null ? null : now,
+        });
 
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return account.Id;
+        return guardian.Id;
     }
 
-    private string TokenFor(Guid accountId, params string[] coachOf)
+    private async Task<(Guid CallId, Guid TeamId)> SeedCallAsync(Fixture fixture)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var teamId = await context.Events
+            .Where(e => e.Id == fixture.EventId)
+            .Select(e => e.TeamId)
+            .SingleAsync(CancellationToken.None);
+
+        var call = new AttendanceCall
+        {
+            Id = Guid.NewGuid(),
+            MatchId = fixture.EventId,
+            OpenedByAccountId = Guid.NewGuid(),
+            OpenedUtc = DateTime.UtcNow,
+        };
+        context.AttendanceCalls.Add(call);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return (call.Id, teamId);
+    }
+
+    private string AdminToken(Guid truppId)
     {
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [], coachOf)).Token;
+        return issuer.Issue(Guid.NewGuid(), "admin@example.com", new AccountRoles(false, [truppId.ToString()], [])).Token;
     }
 
-    private static async Task<HttpResponseMessage> GetAsync(
-        WebApplicationFactory<Program> app,
-        string path,
-        string token)
+    private string PlainToken() =>
+        Token(AccountRoles.None);
+
+    private string Token(AccountRoles roles)
     {
-        using var client = app.CreateClient(ClientOptions);
-        var request = new HttpRequestMessage(HttpMethod.Get, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return await client.SendAsync(request, CancellationToken.None);
+        using var scope = factory.Services.CreateScope();
+        var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
+
+        return issuer.Issue(Guid.NewGuid(), "konto@example.com", roles).Token;
     }
 
-    private static async Task<HttpResponseMessage> PostAsync(
-        WebApplicationFactory<Program> app,
-        string path,
-        string token)
+    private static async Task<HttpResponseMessage> RemindAsync(
+        WebApplicationFactory<Program> app, Fixture f, string token)
     {
         using var client = app.CreateClient(ClientOptions);
 
@@ -200,7 +206,9 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
             .Single(value => value.StartsWith("karra_csrf", StringComparison.Ordinal))
             .Split(';')[0];
 
-        var request = new HttpRequestMessage(HttpMethod.Post, path);
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/v1/admin/trupper/{f.TruppId}/events/{f.EventId}/kallelse/remind");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("X-CSRF-TOKEN", body.GetProperty("token").GetString()!);
         request.Headers.Add("Cookie", cookie);
@@ -208,54 +216,36 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
         return await client.SendAsync(request, CancellationToken.None);
     }
 
-    private static string Base(Fixture f) => $"/api/v1/teams/{f.Slug}/matches/{f.MatchId}/attendance";
-
-    [Fact]
-    public async Task Summering_RaknarDemSomInteSvarat()
-    {
-        var fixture = await SeedAsync("count");
-        await SeedSubscriberAsync(fixture, "Anna", AttendanceStatus.Coming);
-        await SeedSubscriberAsync(fixture, "Bengt");
-        var (app, _) = WithRecordingOutbox();
-
-        var response = await GetAsync(app, $"{Base(fixture)}/summary", TokenFor(fixture.CoachId, fixture.Slug));
-        response.EnsureSuccessStatusCode();
-
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
-
-        Assert.Equal(1, body.GetProperty("notAnsweredCount").GetInt32());
-        var names = body.GetProperty("notAnsweredNames").EnumerateArray().Select(n => n.GetString()).ToArray();
-        Assert.Contains("Bengt", names);
-        Assert.DoesNotContain("Anna", names);
-    }
-
     [Fact]
     public async Task Paminnelse_NarBaraDemSomInteSvarat()
     {
         var fixture = await SeedAsync("remind");
-        await SeedSubscriberAsync(fixture, "Anna", AttendanceStatus.Coming);
-        var bengt = await SeedSubscriberAsync(fixture, "Bengt");
+        var (callId, teamId) = await SeedCallAsync(fixture);
+        await SeedInvitedChildAsync(fixture, "svarat", callId, teamId, AttendanceReply.Coming);
+        var notAnswered = await SeedInvitedChildAsync(fixture, "tyst", callId, teamId);
         var (app, outbox) = WithRecordingOutbox();
 
-        var response = await PostAsync(app, $"{Base(fixture)}/remind", TokenFor(fixture.CoachId, fixture.Slug));
+        var response = await RemindAsync(app, fixture, AdminToken(fixture.TruppId));
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
         Assert.Equal(1, body.GetProperty("reminded").GetInt32());
 
         Assert.True(outbox.Dispatches.TryDequeue(out var dispatch));
-        Assert.Equal([bengt], dispatch.AccountIds);
+        Assert.Equal([notAnswered], dispatch.AccountIds);
         Assert.Contains("Påminnelse", dispatch.Message.Title, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Paminnelse_UtanNagonAttPaminna_KoarIngenNotis()
+    public async Task Paminnelse_NarAllaSvarat_KoarIngenNotis()
     {
-        var fixture = await SeedAsync("none");
-        await SeedSubscriberAsync(fixture, "Anna", AttendanceStatus.Coming);
+        var fixture = await SeedAsync("all-answered");
+        var (callId, teamId) = await SeedCallAsync(fixture);
+        await SeedInvitedChildAsync(fixture, "a", callId, teamId, AttendanceReply.Coming);
+        await SeedInvitedChildAsync(fixture, "b", callId, teamId, AttendanceReply.NotComing);
         var (app, outbox) = WithRecordingOutbox();
 
-        var response = await PostAsync(app, $"{Base(fixture)}/remind", TokenFor(fixture.CoachId, fixture.Slug));
+        var response = await RemindAsync(app, fixture, AdminToken(fixture.TruppId));
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
@@ -264,13 +254,14 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
-    public async Task Paminnelse_SomIckeTranare_Nekas()
+    public async Task Paminnelse_SomIckeAdmin_Nekas()
     {
-        var fixture = await SeedAsync("not-coach");
-        var parent = await SeedSubscriberAsync(fixture, "Cecilia");
+        var fixture = await SeedAsync("not-admin");
+        var (callId, teamId) = await SeedCallAsync(fixture);
+        await SeedInvitedChildAsync(fixture, "tyst", callId, teamId);
         var (app, _) = WithRecordingOutbox();
 
-        var response = await PostAsync(app, $"{Base(fixture)}/remind", TokenFor(parent));
+        var response = await RemindAsync(app, fixture, PlainToken());
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }

@@ -11,4 +11,8 @@ namespace KarraMatcher.Application.Features.Events;
 /// PII, och exponeras inte i läs-svaret.
 /// </para>
 /// </summary>
-public sealed record EventDetailDto(EventDto Event, TeamDto Team);
+/// <param name="TruppId">
+/// Åldersgruppens (truppens) id — som en admin behöver för att skicka en kallelse och hämta
+/// truppens barn (§KM.7, `#199`). Bara ett id, ingen PII.
+/// </param>
+public sealed record EventDetailDto(EventDto Event, TeamDto Team, Guid TruppId);

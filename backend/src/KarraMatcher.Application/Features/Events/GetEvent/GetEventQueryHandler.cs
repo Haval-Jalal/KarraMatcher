@@ -23,6 +23,6 @@ internal sealed class GetEventQueryHandler(IEventRepository events)
             return null;
         }
 
-        return new EventDetailDto(item.ToDto(), item.Team.ToDto());
+        return new EventDetailDto(item.ToDto(), item.Team.ToDto(), item.Team.AgeGroupId);
     }
 }

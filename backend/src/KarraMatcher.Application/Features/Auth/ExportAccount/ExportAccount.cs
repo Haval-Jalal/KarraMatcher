@@ -65,13 +65,13 @@ public sealed record CarpoolRequestExportDto(
     string Status,
     DateTime CreatedUtc);
 
-/// <summary>Ett närvarosvar — ett antal för familjen (§KM.7), aldrig ett barns namn.</summary>
+/// <summary>Ett kallelsesvar vårdnadshavaren lämnat för ett av sina barn (§KM.7, `#199`).</summary>
 public sealed record AttendanceResponseExportDto(
-    string MatchOpponent,
-    DateTime MatchKickoffUtc,
-    string Status,
-    int Count,
-    DateTime CreatedUtc);
+    string EventLabel,
+    DateTime EventKickoffUtc,
+    string ChildName,
+    string Reply,
+    DateTime RespondedUtc);
 
 /// <summary>Notisinställningen för ett lag.</summary>
 public sealed record NotificationPreferenceExportDto(
@@ -155,11 +155,11 @@ internal sealed class ExportAccountQueryHandler(
                 r.Status.ToString(),
                 r.CreatedUtc))],
             [.. data.AttendanceResponses.Select(a => new AttendanceResponseExportDto(
-                a.MatchOpponent,
-                a.MatchKickoffUtc,
-                a.Status.ToString(),
-                a.Count,
-                a.CreatedUtc))],
+                a.EventLabel,
+                a.EventKickoffUtc,
+                a.ChildName,
+                a.Reply.ToString(),
+                a.RespondedUtc))],
             [.. data.NotificationPreferences.Select(p => new NotificationPreferenceExportDto(
                 p.TeamName,
                 p.MatchChanges,

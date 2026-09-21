@@ -47,7 +47,7 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<AttendanceCall> AttendanceCalls => Set<AttendanceCall>();
 
-    public DbSet<AttendanceResponse> AttendanceResponses => Set<AttendanceResponse>();
+    public DbSet<AttendanceInvitation> AttendanceInvitations => Set<AttendanceInvitation>();
 
     public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
         Set<Domain.Push.PushSubscription>();
