@@ -185,8 +185,9 @@ function ExportView({ data }: { data: AccountExport }) {
         <ul>
           {data.notificationSettings.map((setting, index) => (
             <li key={index}>
-              {setting.teamName}: matchändringar {onOff(setting.matchChanges)}, samåkning{' '}
-              {onOff(setting.carpool)}, påminnelser {onOff(setting.reminders)}.
+              {setting.teamName}: händelser {onOff(setting.eventChanges)}, kallelser{' '}
+              {onOff(setting.kallelser)}, samåkning {onOff(setting.carpool)}, chatt{' '}
+              {onOff(setting.chat)}.
             </li>
           ))}
         </ul>

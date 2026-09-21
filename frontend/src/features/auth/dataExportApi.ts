@@ -56,9 +56,10 @@ export interface AttendanceResponseExport {
 
 export interface NotificationPreferenceExport {
   teamName: string
-  matchChanges: boolean
+  eventChanges: boolean
+  kallelser: boolean
   carpool: boolean
-  reminders: boolean
+  chat: boolean
   updatedUtc: string
 }
 

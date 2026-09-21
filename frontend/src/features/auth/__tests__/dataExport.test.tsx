@@ -46,9 +46,10 @@ const EXPORT: AccountExport = {
   notificationSettings: [
     {
       teamName: 'Gul',
-      matchChanges: true,
+      eventChanges: true,
+      kallelser: true,
       carpool: false,
-      reminders: true,
+      chat: true,
       updatedUtc: '2026-10-01T09:00:00Z',
     },
   ],

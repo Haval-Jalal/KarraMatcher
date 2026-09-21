@@ -24,12 +24,13 @@ import { notificationSettingsQueryKey, useNotificationSettings } from './useNoti
 
 const ROWS: { key: keyof Settings; label: string; description: string }[] = [
   {
-    key: 'matchChanges',
-    label: 'Matchändringar',
-    description: 'Ny, flyttad, ändrad eller inställd match.',
+    key: 'eventChanges',
+    label: 'Händelser',
+    description: 'Ny, flyttad, ändrad eller inställd händelse, och påminnelsen kvällen före.',
   },
+  { key: 'kallelser', label: 'Kallelser', description: 'Ny kallelse och påminnelse att svara.' },
   { key: 'carpool', label: 'Samåkning', description: 'Erbjudanden, förfrågningar och svar.' },
-  { key: 'reminders', label: 'Påminnelser', description: 'Kvällen före match, och kallelsen.' },
+  { key: 'chat', label: 'Chatt', description: 'Meddelanden i lagets och truppens chatt.' },
 ]
 
 export function NotificationSettings({ teamSlug }: { teamSlug: string }) {

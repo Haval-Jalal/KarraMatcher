@@ -17,7 +17,12 @@ const TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
 
 const team = { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' }
 
-function stubApi(settings: { matchChanges: boolean; carpool: boolean; reminders: boolean }) {
+function stubApi(settings: {
+  eventChanges: boolean
+  kallelser: boolean
+  carpool: boolean
+  chat: boolean
+}) {
   const sent: { url: string; method: string; body: unknown }[] = []
 
   vi.stubGlobal(
@@ -61,7 +66,7 @@ afterEach(() => {
 
 describe('notisinställningar', () => {
   it('en gäst ser inga inställningar', async () => {
-    stubApi({ matchChanges: true, carpool: true, reminders: true })
+    stubApi({ eventChanges: true, kallelser: true, carpool: true, chat: true })
 
     renderRoute('/lag/gul')
 
@@ -71,20 +76,20 @@ describe('notisinställningar', () => {
     )
   })
 
-  it('en inloggad ser sina tre val', async () => {
+  it('en inloggad ser sina val', async () => {
     setAccessToken(TOKEN)
-    stubApi({ matchChanges: true, carpool: false, reminders: true })
+    stubApi({ eventChanges: true, kallelser: true, carpool: false, chat: true })
 
     renderRoute('/lag/gul')
 
     expect(await screen.findByRole('heading', { name: 'Notiser' })).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: /Matchändringar/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Händelser/ })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: /Samåkning/ })).not.toBeChecked()
   })
 
   it('sparar en avstängning med en gång', async () => {
     setAccessToken(TOKEN)
-    const sent = stubApi({ matchChanges: true, carpool: true, reminders: true })
+    const sent = stubApi({ eventChanges: true, kallelser: true, carpool: true, chat: true })
 
     renderRoute('/lag/gul')
 
@@ -92,7 +97,12 @@ describe('notisinställningar', () => {
 
     await waitFor(() => {
       const put = sent.find((r) => r.method === 'PUT' && r.url.includes('/notification-settings'))
-      expect(put?.body).toEqual({ matchChanges: true, carpool: false, reminders: true })
+      expect(put?.body).toEqual({
+        eventChanges: true,
+        kallelser: true,
+        carpool: false,
+        chat: true,
+      })
     })
   })
 })
