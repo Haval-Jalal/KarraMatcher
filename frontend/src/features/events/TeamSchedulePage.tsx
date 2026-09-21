@@ -1,6 +1,7 @@
-import { useParams } from '@tanstack/react-router'
+import { Link, useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
+import { useAuth } from '@/features/auth'
 import { NotificationSettings } from '@/features/notifications'
 import { TeamPicker, useSelectedTeam, useTeams } from '@/features/teams'
 import { teamThemeStyle } from '@/lib/teamTheme'
@@ -19,6 +20,7 @@ export function TeamSchedulePage() {
   const { slug } = useParams({ from: '/lag/$slug' })
   const { data: teams } = useTeams()
   const { selectedSlug, selectTeam } = useSelectedTeam()
+  const { status } = useAuth()
 
   // Att öppna en delad länk ska också bli det ihågkomna valet — annars skickas
   // föräldern tillbaka till sitt gamla lag nästa gång hen öppnar appen.
@@ -56,6 +58,15 @@ export function TeamSchedulePage() {
       )}
 
       <EventListSection slug={slug} />
+
+      {/* Lag-chatten (#202). Bara för inloggade; medlemskapet prövas server-side. */}
+      {status === 'inloggad' && (
+        <p className="actions">
+          <Link className="button button--small" to="/lag/$slug/chatt" params={{ slug }}>
+            Lagchatt
+          </Link>
+        </p>
+      )}
 
       {/* Notisinställningar (#65). Renderar ingenting för en gäst. */}
       <NotificationSettings teamSlug={slug} />

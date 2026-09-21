@@ -4,7 +4,7 @@ import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
 import { CoachEventsPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
-import { ChatPage } from '@/features/chat'
+import { ChatPage, TeamChatPage } from '@/features/chat'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { EventDetailPage, TeamSchedulePage } from '@/features/events'
@@ -264,6 +264,26 @@ const chatTruppRoute = createRoute({
 })
 
 /**
+ * Lag-chatten (§KM.1/§KM.10, `#202`) — en egen kanal per färg-lag, nådd från lagsidan. Kräver
+ * inloggning i `beforeLoad`; medlemskapet i laget prövas server-side.
+ */
+const teamChatRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/lag/$slug/chatt',
+  beforeLoad: async ({ location }) => {
+    if (getAccessToken() === null && hasSessionHint()) {
+      await renewSession()
+    }
+
+    if (getAccessToken() === null) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
+    }
+  },
+  component: TeamChatPage,
+})
+
+/**
  * Integritetstexten (§KM.6). Publik: en gäst ska kunna läsa vad appen sparar innan hen loggar
  * in, inte efter. Nås från fotens länk och från Mitt konto.
  */
@@ -288,6 +308,7 @@ export const routeTree = rootRoute.addChildren([
   playerCardChildRoute,
   chatIndexRoute,
   chatTruppRoute,
+  teamChatRoute,
   privacyRoute,
 ])
 
