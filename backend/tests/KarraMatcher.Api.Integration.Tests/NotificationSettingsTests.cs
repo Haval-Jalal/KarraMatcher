@@ -113,9 +113,10 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
     private async Task DisableAsync(
         Guid accountId,
         Guid teamId,
-        bool matchChanges = true,
+        bool eventChanges = true,
+        bool kallelser = true,
         bool carpool = true,
-        bool reminders = true)
+        bool chat = true)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
@@ -125,12 +126,39 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
             Id = Guid.NewGuid(),
             AccountId = accountId,
             TeamId = teamId,
-            MatchChanges = matchChanges,
+            EventChanges = eventChanges,
+            Kallelser = kallelser,
             Carpool = carpool,
-            Reminders = reminders,
+            Chat = chat,
             UpdatedUtc = DateTime.UtcNow,
         });
         await context.SaveChangesAsync(CancellationToken.None);
+    }
+
+    /// <summary>Ett extra konto som är medlem av laget (tränare), så en lag-notis når det.</summary>
+    private async Task<Guid> AddCoachAsync(Guid teamId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var account = new Account
+        {
+            Id = Guid.NewGuid(),
+            Email = $"tranare-{Guid.NewGuid():N}@example.com",
+            CreatedUtc = DateTime.UtcNow,
+        };
+        context.Accounts.Add(account);
+        context.TeamRoles.Add(new TeamRole
+        {
+            Id = Guid.NewGuid(),
+            AccountId = account.Id,
+            TeamId = teamId,
+            Role = RoleKind.Coach,
+            GrantedUtc = DateTime.UtcNow,
+        });
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return account.Id;
     }
 
     private async Task<IReadOnlyList<Guid>> DeliverToTeamAsync(Guid teamId, PushCategory category)
@@ -198,9 +226,10 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
-        Assert.True(body.GetProperty("matchChanges").GetBoolean());
+        Assert.True(body.GetProperty("eventChanges").GetBoolean());
+        Assert.True(body.GetProperty("kallelser").GetBoolean());
         Assert.True(body.GetProperty("carpool").GetBoolean());
-        Assert.True(body.GetProperty("reminders").GetBoolean());
+        Assert.True(body.GetProperty("chat").GetBoolean());
     }
 
     [Fact]
@@ -209,15 +238,18 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         var fixture = await SeedAsync("save");
         var token = TokenFor(fixture.AccountId);
 
-        var put = await PutAsync(fixture.Slug, token, new { matchChanges = true, carpool = false, reminders = false });
+        var put = await PutAsync(
+            fixture.Slug, token,
+            new { eventChanges = true, kallelser = false, carpool = false, chat = true });
         put.EnsureSuccessStatusCode();
 
         var get = await GetAsync(fixture.Slug, token);
         var body = await get.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
 
-        Assert.True(body.GetProperty("matchChanges").GetBoolean());
+        Assert.True(body.GetProperty("eventChanges").GetBoolean());
+        Assert.False(body.GetProperty("kallelser").GetBoolean());
         Assert.False(body.GetProperty("carpool").GetBoolean());
-        Assert.False(body.GetProperty("reminders").GetBoolean());
+        Assert.True(body.GetProperty("chat").GetBoolean());
     }
 
     [Fact]
@@ -247,30 +279,65 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
     // ---- Respekteras vid utskick -----------------------------------------------------
 
     [Fact]
+    public async Task LagbrettUtskick_NarBaraMedlemmar()
+    {
+        // #200: en lag-notis går bara till medlemmar. En prenumeration som hör till ett konto
+        // som inte är medlem, och en anonym prenumeration (utan konto), nås inte.
+        var fixture = await SeedAsync("member-only");
+        var member = await AddSubscriberAsync(fixture.TeamId, fixture.AccountId);
+
+        var nonMemberAccount = await SeedOutsiderAsync("member-only");
+        var nonMember = await AddSubscriberAsync(fixture.TeamId, nonMemberAccount);
+        var anonymous = await AddSubscriberAsync(fixture.TeamId, accountId: null);
+
+        var reached = await DeliverToTeamAsync(fixture.TeamId, PushCategory.EventChange);
+
+        Assert.Contains(member, reached);
+        Assert.DoesNotContain(nonMember, reached);
+        Assert.DoesNotContain(anonymous, reached);
+    }
+
+    [Fact]
     public async Task LagbrettUtskick_UteslutDenSomStangtAv()
     {
         var fixture = await SeedAsync("team-filter");
         var mine = await AddSubscriberAsync(fixture.TeamId, fixture.AccountId);
-        var anonymous = await AddSubscriberAsync(fixture.TeamId, accountId: null);
-        await DisableAsync(fixture.AccountId, fixture.TeamId, matchChanges: false);
 
-        var reached = await DeliverToTeamAsync(fixture.TeamId, PushCategory.MatchChange);
+        // En annan medlem utan avstängning ska fortfarande nås — positiv kontroll.
+        var otherAccount = await AddCoachAsync(fixture.TeamId);
+        var other = await AddSubscriberAsync(fixture.TeamId, otherAccount);
+
+        await DisableAsync(fixture.AccountId, fixture.TeamId, eventChanges: false);
+
+        var reached = await DeliverToTeamAsync(fixture.TeamId, PushCategory.EventChange);
 
         Assert.DoesNotContain(mine, reached);
-        Assert.Contains(anonymous, reached); // en gäst har inga inställningar och får allt
+        Assert.Contains(other, reached);
     }
 
     [Fact]
     public async Task LagbrettUtskick_AnnanKategoriNasFortfarande()
     {
-        // Bara matchändringar avstängt -- påminnelser når fortfarande fram.
+        // Bara händelser avstängt -- kallelser når fortfarande fram.
         var fixture = await SeedAsync("category");
         var mine = await AddSubscriberAsync(fixture.TeamId, fixture.AccountId);
-        await DisableAsync(fixture.AccountId, fixture.TeamId, matchChanges: false);
+        await DisableAsync(fixture.AccountId, fixture.TeamId, eventChanges: false);
 
-        var reached = await DeliverToTeamAsync(fixture.TeamId, PushCategory.Reminder);
+        var reached = await DeliverToTeamAsync(fixture.TeamId, PushCategory.Kallelse);
 
         Assert.Contains(mine, reached);
+    }
+
+    [Fact]
+    public async Task LagbrettUtskick_ChattAvstangt_Uteslut()
+    {
+        var fixture = await SeedAsync("chat-off");
+        var mine = await AddSubscriberAsync(fixture.TeamId, fixture.AccountId);
+        await DisableAsync(fixture.AccountId, fixture.TeamId, chat: false);
+
+        var reached = await DeliverToTeamAsync(fixture.TeamId, PushCategory.Chat);
+
+        Assert.DoesNotContain(mine, reached);
     }
 
     [Fact]
@@ -281,9 +348,42 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         await DisableAsync(fixture.AccountId, fixture.TeamId, carpool: false);
 
         var carpool = await DeliverToAccountAsync(fixture.TeamId, fixture.AccountId, PushCategory.Carpool);
-        var matchChange = await DeliverToAccountAsync(fixture.TeamId, fixture.AccountId, PushCategory.MatchChange);
+        var eventChange = await DeliverToAccountAsync(fixture.TeamId, fixture.AccountId, PushCategory.EventChange);
 
         Assert.DoesNotContain(mine, carpool);
-        Assert.Contains(mine, matchChange); // bara samåkning avstängt
+        Assert.Contains(mine, eventChange); // bara samåkning avstängt
+    }
+
+    [Fact]
+    public async Task KontoriktatUtskick_NarAvenIckeMedlem()
+    {
+        // #200: ett kontoriktat utskick är inte medlemskaps-grindat — så här når kallelsen ett
+        // inlånat barns vårdnadshavare som inte är medlem av händelsens lag (och samåkning
+        // når en specifik mottagare oavsett lag-medlemskap).
+        var fixture = await SeedAsync("account-nonmember");
+        var outsider = await SeedOutsiderAsync("account-nonmember");
+        var subscription = await AddSubscriberAsync(fixture.TeamId, outsider);
+
+        var reached = await DeliverToAccountAsync(fixture.TeamId, outsider, PushCategory.Kallelse);
+
+        Assert.Contains(subscription, reached);
+    }
+
+    /// <summary>Ett konto utan någon koppling till laget — för att pröva medlemskaps-grinden.</summary>
+    private async Task<Guid> SeedOutsiderAsync(string suffix)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var account = new Account
+        {
+            Id = Guid.NewGuid(),
+            Email = $"utomstaende-{suffix}-{Guid.NewGuid():N}@example.com",
+            CreatedUtc = DateTime.UtcNow,
+        };
+        context.Accounts.Add(account);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return account.Id;
     }
 }

@@ -75,9 +75,10 @@ public sealed record AttendanceResponseExportRow(
 /// <summary>Notisinställningen för ett lag.</summary>
 public sealed record NotificationPreferenceExportRow(
     string TeamName,
-    bool MatchChanges,
+    bool EventChanges,
+    bool Kallelser,
     bool Carpool,
-    bool Reminders,
+    bool Chat,
     DateTime UpdatedUtc);
 
 /// <summary>

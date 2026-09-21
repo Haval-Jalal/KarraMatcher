@@ -98,9 +98,10 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             orderby t.Name
             select new NotificationPreferenceExportRow(
                 t.Name,
-                p.MatchChanges,
+                p.EventChanges,
+                p.Kallelser,
                 p.Carpool,
-                p.Reminders,
+                p.Chat,
                 p.UpdatedUtc))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

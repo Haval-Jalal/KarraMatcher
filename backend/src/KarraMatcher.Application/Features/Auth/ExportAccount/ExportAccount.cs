@@ -76,9 +76,10 @@ public sealed record AttendanceResponseExportDto(
 /// <summary>Notisinställningen för ett lag.</summary>
 public sealed record NotificationPreferenceExportDto(
     string TeamName,
-    bool MatchChanges,
+    bool EventChanges,
+    bool Kallelser,
     bool Carpool,
-    bool Reminders,
+    bool Chat,
     DateTime UpdatedUtc);
 
 /// <summary>Att en notisprenumeration finns — utan den tekniska adressen (§KM.10).</summary>
@@ -162,9 +163,10 @@ internal sealed class ExportAccountQueryHandler(
                 a.RespondedUtc))],
             [.. data.NotificationPreferences.Select(p => new NotificationPreferenceExportDto(
                 p.TeamName,
-                p.MatchChanges,
+                p.EventChanges,
+                p.Kallelser,
                 p.Carpool,
-                p.Reminders,
+                p.Chat,
                 p.UpdatedUtc))],
             [.. data.PushSubscriptions.Select(s => new PushSubscriptionExportDto(
                 s.TeamName,

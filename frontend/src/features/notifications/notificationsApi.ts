@@ -3,18 +3,21 @@ import { getAuthJson, postJson } from '@/lib/api'
 /**
  * En förälders notisinställningar för ett lag (`#65`).
  *
- * <h3>Per lag, tre växlar</h3>
+ * <h3>Per lag, en växel per notistyp</h3>
  *
  * En förälder med barn i två lag ska kunna ha olika inställningar för dem. Allt på är
- * förvalet — servern svarar med tre <c>true</c> för den som aldrig ändrat något.
+ * förvalet — servern svarar med alla <c>true</c> för den som aldrig ändrat något. Chatt
+ * finns med redan nu (`#200`) fast utskicket byggs i `#201`/`#202`.
  */
 export interface NotificationSettings {
-  /** Ny, flyttad, ändrad eller inställd match. */
-  matchChanges: boolean
+  /** Händelse skapad, flyttad, ändrad eller inställd, samt kvällspåminnelsen. */
+  eventChanges: boolean
+  /** Kallelser: ny kallelse och påminnelse att svara. */
+  kallelser: boolean
   /** Samåkning: erbjudande, förfrågan, svar. */
   carpool: boolean
-  /** Påminnelser: kvällen före match och kallelsen. */
-  reminders: boolean
+  /** Chatt (byggs senare). */
+  chat: boolean
 }
 
 const base = (teamSlug: string) =>

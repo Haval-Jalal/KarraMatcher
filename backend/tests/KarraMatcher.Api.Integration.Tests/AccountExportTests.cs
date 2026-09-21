@@ -111,9 +111,10 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
             Id = Guid.NewGuid(),
             AccountId = account.Id,
             TeamId = team.Id,
-            MatchChanges = true,
+            EventChanges = true,
+            Kallelser = true,
             Carpool = false,
-            Reminders = true,
+            Chat = true,
             UpdatedUtc = Kickoff.AddDays(-3),
         };
 

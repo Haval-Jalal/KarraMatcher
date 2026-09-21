@@ -122,6 +122,62 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<Guid>> MemberAccountIdsAsync(
+        Guid teamId, CancellationToken cancellationToken)
+    {
+        var ageGroupId = await context.Teams
+            .AsNoTracking()
+            .Where(t => t.Id == teamId)
+            .Select(t => (Guid?)t.AgeGroupId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (ageGroupId is null)
+        {
+            return [];
+        }
+
+        var age = ageGroupId.Value;
+        var ids = new HashSet<Guid>();
+
+        // Tränare för laget och admins för dess trupp. Global superadmin utelämnas med flit —
+        // en lag-notis ska inte nå plattformsägaren för varje lag.
+        ids.UnionWith(await context.TeamRoles
+            .AsNoTracking()
+            .Where(r => (r.Role == RoleKind.Coach && r.TeamId == teamId)
+                || (r.Role == RoleKind.Admin && r.AgeGroupId == age))
+            .Select(r => r.AccountId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+
+        // Vårdnadshavare till barn i laget.
+        ids.UnionWith(await context.Guardianships
+            .AsNoTracking()
+            .Where(g => g.Child!.TeamId == teamId)
+            .Select(g => g.AccountId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+
+        // Accepterade inbjudningar och godkända ansökningar ger trupp-medlemskap (`#193`/`#194`).
+        ids.UnionWith(await context.Invitations
+            .AsNoTracking()
+            .Where(i => i.Status == InvitationStatus.Accepted
+                && i.AgeGroupId == age
+                && i.AcceptedByAccountId != null)
+            .Select(i => i.AcceptedByAccountId!.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+
+        ids.UnionWith(await context.MembershipApplications
+            .AsNoTracking()
+            .Where(a => a.Status == ApplicationStatus.Approved && a.AgeGroupId == age)
+            .Select(a => a.AccountId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false));
+
+        return [.. ids];
+    }
+
     private async Task<bool> IsMemberCoreAsync(
         Guid accountId, Guid teamId, Guid ageGroupId, CancellationToken cancellationToken)
     {

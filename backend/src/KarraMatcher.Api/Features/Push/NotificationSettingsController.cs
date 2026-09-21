@@ -98,8 +98,9 @@ public sealed class NotificationSettingsController(
     }
 }
 
-/// <summary>De tre växlarna den inloggade skickar in.</summary>
-public sealed record NotificationSettingsRequest(bool MatchChanges, bool Carpool, bool Reminders)
+/// <summary>Växlarna den inloggade skickar in: händelser, kallelser, samåkning, chatt.</summary>
+public sealed record NotificationSettingsRequest(
+    bool EventChanges, bool Kallelser, bool Carpool, bool Chat)
 {
-    internal NotificationSettingsDraft ToDraft() => new(MatchChanges, Carpool, Reminders);
+    internal NotificationSettingsDraft ToDraft() => new(EventChanges, Kallelser, Carpool, Chat);
 }
