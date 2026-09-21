@@ -15,6 +15,12 @@ public sealed record ChatMessageDto(
 /// <summary>Ett schemalagt (ännu opublicerat) meddelande — den som skapade det ser sina.</summary>
 public sealed record ScheduledMessageDto(Guid Id, string Body, DateTimeOffset PublishAtUtc);
 
+/// <summary>
+/// Meta om en lag-kanal som FE:t behöver: truppens id (för att avgöra admin via anspråk) och
+/// om den inloggade är ledare (får schemalägga) (`#202`).
+/// </summary>
+public sealed record TeamChatMetaDto(Guid TruppId, bool IsLeader);
+
 /// <summary>Ett anmält meddelande i adminens moderering (`#201`).</summary>
 public sealed record ReportedMessageDto(
     Guid MessageId,

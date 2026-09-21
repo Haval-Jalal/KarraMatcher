@@ -14,9 +14,15 @@ public sealed record ReportedMessageRow(
 /// <summary>
 /// Läser och skriver chattens meddelanden och anmälningar (§KM.1/§KM.10, `#201`).
 /// </summary>
+/// <summary>Ett lags chatt-kanal: laget och dess trupp, upplöst ur lagets slug (`#202`).</summary>
+public sealed record TeamChannel(Guid TeamId, Guid AgeGroupId);
+
 public interface IChatRepository
 {
     public Task<bool> TruppExistsAsync(Guid ageGroupId, CancellationToken cancellationToken);
+
+    /// <summary>Laget och dess trupp för en slug, eller null. Låter en lag-kanal delas per slug.</summary>
+    public Task<TeamChannel?> FindTeamChannelAsync(string slug, CancellationToken cancellationToken);
 
     public Task AddMessageAsync(ChatMessage message, CancellationToken cancellationToken);
 
@@ -42,9 +48,12 @@ public interface IChatRepository
 
     public Task AddReportAsync(ChatReport report, CancellationToken cancellationToken);
 
-    /// <summary>Anmälda meddelanden i kanalen med antal anmälningar — adminens kö.</summary>
-    public Task<IReadOnlyList<ReportedMessageRow>> ListReportedAsync(
-        Guid ageGroupId, Guid? teamId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Anmälda meddelanden i hela truppen — trupp-kanalen och alla dess lag-kanaler — med
+    /// antal anmälningar. Adminens kö (moderering delas mellan kanalerna, `#202`).
+    /// </summary>
+    public Task<IReadOnlyList<ReportedMessageRow>> ListReportedForTruppAsync(
+        Guid ageGroupId, CancellationToken cancellationToken);
 
     /// <summary>Konton som stängt av Chatt för något lag i truppen ("av någonstans = av").</summary>
     public Task<IReadOnlyList<Guid>> ChatDisabledAccountIdsAsync(

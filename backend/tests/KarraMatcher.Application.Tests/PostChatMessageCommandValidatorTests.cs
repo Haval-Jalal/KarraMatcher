@@ -11,7 +11,7 @@ public class PostChatMessageCommandValidatorTests
     private readonly PostChatMessageCommandValidator _validator = new();
 
     private static PostChatMessageCommand Command(string body) =>
-        new(Guid.NewGuid(), Guid.NewGuid(), body, null);
+        new(Guid.NewGuid(), TeamId: null, Guid.NewGuid(), body, null);
 
     [Fact]
     public void Validate_MedText_ArGodkand()
