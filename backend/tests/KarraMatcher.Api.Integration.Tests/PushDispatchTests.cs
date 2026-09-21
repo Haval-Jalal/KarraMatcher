@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 
 using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Features.Push;
+using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Push;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
@@ -102,12 +103,30 @@ public sealed class PushDispatchTests
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
 
+        // #200: en lag-notis når bara medlemmar. Varje prenumerant är därför ett konto som är
+        // tränare för laget, så att utskicket faktiskt släpper igenom dem.
         foreach (var endpoint in endpoints)
         {
+            var account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = $"{suffix}-{endpoint.GetHashCode(StringComparison.Ordinal)}@example.com",
+                CreatedUtc = DateTime.UtcNow,
+            };
+            context.Accounts.Add(account);
+            context.TeamRoles.Add(new TeamRole
+            {
+                Id = Guid.NewGuid(),
+                AccountId = account.Id,
+                TeamId = team.Id,
+                Role = RoleKind.Coach,
+                GrantedUtc = DateTime.UtcNow,
+            });
             context.PushSubscriptions.Add(new PushSubscription
             {
                 Id = Guid.NewGuid(),
                 TeamId = team.Id,
+                AccountId = account.Id,
                 Endpoint = endpoint,
                 P256dh = "nyckel",
                 Auth = "hemlighet",
@@ -169,7 +188,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.MatchChange, new PushMessage("Matchen ar installd", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.EventChange, new PushMessage("Matchen ar installd", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(() =>
             Task.FromResult(endpoints.All(sender.Attempts.ContainsKey))));
@@ -194,7 +213,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.MatchChange, new PushMessage("Ny tid", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.EventChange, new PushMessage("Ny tid", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(async () => await CountAsync(host, teamId) == 2));
 
@@ -219,7 +238,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.MatchChange, new PushMessage("Flyttad match", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.EventChange, new PushMessage("Flyttad match", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(() =>
             Task.FromResult(sender.Attempts.TryGetValue(endpoints[0], out var attempts) && attempts >= 2)));
@@ -242,7 +261,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.MatchChange, new PushMessage("Ny match", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.EventChange, new PushMessage("Ny match", "", "/match/1")));
 
         Assert.True(await EventuallyAsync(async () =>
         {
@@ -269,7 +288,7 @@ public sealed class PushDispatchTests
         using var client = host.CreateClient();
 
         host.Services.GetRequiredService<IPushOutbox>()
-            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.MatchChange, new PushMessage("Ny match", "", "/match/1")));
+            .Enqueue(PushDispatch.ToTeam(teamId, PushCategory.EventChange, new PushMessage("Ny match", "", "/match/1")));
 
         await Task.Delay(300, CancellationToken.None);
 

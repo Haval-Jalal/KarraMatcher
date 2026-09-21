@@ -14,9 +14,10 @@ internal sealed class NotificationPreferenceConfiguration
 
         builder.HasKey(p => p.Id);
 
-        builder.Property(p => p.MatchChanges).IsRequired();
+        builder.Property(p => p.EventChanges).IsRequired();
+        builder.Property(p => p.Kallelser).IsRequired();
         builder.Property(p => p.Carpool).IsRequired();
-        builder.Property(p => p.Reminders).IsRequired();
+        builder.Property(p => p.Chat).IsRequired();
         builder.Property(p => p.UpdatedUtc).HasColumnType("timestamp with time zone").IsRequired();
 
         // En rad per konto och lag. Utan det unika indexet kunde tva sparningar lagga tva

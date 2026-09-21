@@ -9,23 +9,26 @@ namespace KarraMatcher.Application.Features.Push;
 /// En förälders notisval för ett lag, så som appen visar och sätter dem (`#65`).
 ///
 /// <para>
-/// Tre växlar, en per notistyp. Allt på är förvalet — den som aldrig rört inställningarna
-/// får alla tre.
+/// En växel per notistyp: händelser, kallelser, samåkning och chatt. Allt på är förvalet —
+/// den som aldrig rört inställningarna får alla. Chatt finns med redan nu (`#200`) fast
+/// utskicket byggs i `#201`/`#202`.
 /// </para>
 /// </summary>
-public sealed record NotificationSettingsDto(bool MatchChanges, bool Carpool, bool Reminders)
+public sealed record NotificationSettingsDto(
+    bool EventChanges, bool Kallelser, bool Carpool, bool Chat)
 {
     public static NotificationSettingsDto For(NotificationPreference preference)
     {
         ArgumentNullException.ThrowIfNull(preference);
 
         return new NotificationSettingsDto(
-            preference.MatchChanges, preference.Carpool, preference.Reminders);
+            preference.EventChanges, preference.Kallelser, preference.Carpool, preference.Chat);
     }
 }
 
 /// <summary>Det den inloggade skickar in när hen ändrar sina val.</summary>
-public sealed record NotificationSettingsDraft(bool MatchChanges, bool Carpool, bool Reminders);
+public sealed record NotificationSettingsDraft(
+    bool EventChanges, bool Kallelser, bool Carpool, bool Chat);
 
 /// <summary>Kontots notisval för ett lag. Laget står i adressen, kontot är den inloggade.</summary>
 public sealed record GetNotificationSettingsQuery(string Slug, Guid AccountId)

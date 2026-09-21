@@ -56,7 +56,7 @@ public sealed class EventReminderService(
         foreach (var item in due)
         {
             push.Enqueue(PushDispatch.ToTeam(
-                item.TeamId, PushCategory.Reminder, EventNotification.Reminder(item)));
+                item.TeamId, PushCategory.EventChange, EventNotification.Reminder(item)));
         }
 
         // Märks efter att notiserna köats -- en andra körning hittar dem inte längre.

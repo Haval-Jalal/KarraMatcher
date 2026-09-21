@@ -36,7 +36,7 @@ public sealed class NotificationSettingsService(
             .ConfigureAwait(false);
 
         return preference is null
-            ? new NotificationSettingsDto(true, true, true)
+            ? new NotificationSettingsDto(true, true, true, true)
             : NotificationSettingsDto.For(preference);
     }
 
@@ -74,9 +74,10 @@ public sealed class NotificationSettingsService(
             await preferences.AddAsync(preference, cancellationToken).ConfigureAwait(false);
         }
 
-        preference.MatchChanges = draft.MatchChanges;
+        preference.EventChanges = draft.EventChanges;
+        preference.Kallelser = draft.Kallelser;
         preference.Carpool = draft.Carpool;
-        preference.Reminders = draft.Reminders;
+        preference.Chat = draft.Chat;
         preference.UpdatedUtc = now;
 
         await preferences.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

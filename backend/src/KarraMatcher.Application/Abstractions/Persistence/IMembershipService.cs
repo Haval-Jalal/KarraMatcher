@@ -19,6 +19,16 @@ public interface IMembershipService
         Guid teamId,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Konto-id för <em>alla</em> medlemmar av laget — motsatt riktning mot de per-konto-frågor
+    /// resten av interfacet ställer (`#200`). Används för att rikta en lag-notis till medlemmar
+    /// i stället för till öppna prenumeranter (§KM.3). Global superadmin räknas inte som
+    /// lag-medlem här: en lag-notis ska inte nå plattformsägaren för varje lag.
+    /// </summary>
+    public Task<IReadOnlyList<Guid>> MemberAccountIdsAsync(
+        Guid teamId,
+        CancellationToken cancellationToken);
+
     /// <summary>Samma, men laget anges med sin slug — som i adressen <c>/lag/{slug}</c>.</summary>
     public Task<bool> IsMemberOfTeamBySlugAsync(
         Guid accountId,

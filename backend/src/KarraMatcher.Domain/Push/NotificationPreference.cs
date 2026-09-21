@@ -26,14 +26,17 @@ public sealed class NotificationPreference
 
     public Guid TeamId { get; set; }
 
-    /// <summary>Ny, flyttad, ändrad eller inställd match (`#62`).</summary>
-    public bool MatchChanges { get; set; } = true;
+    /// <summary>Händelse skapad, flyttad, ändrad eller inställd, samt kvällspåminnelsen (`#62`, `#64`).</summary>
+    public bool EventChanges { get; set; } = true;
+
+    /// <summary>Kallelser: ny kallelse och påminnelse att svara (§KM.7, `#199`).</summary>
+    public bool Kallelser { get; set; } = true;
 
     /// <summary>Samåkning: erbjudande, förfrågan, svar (`#63`).</summary>
     public bool Carpool { get; set; } = true;
 
-    /// <summary>Påminnelser: kvällen före match (`#64`) och kallelsen (`#58`).</summary>
-    public bool Reminders { get; set; } = true;
+    /// <summary>Chatt (`#201`/`#202`). Inställningen finns redan, utskicket kommer senare.</summary>
+    public bool Chat { get; set; } = true;
 
     public DateTime UpdatedUtc { get; set; }
 }

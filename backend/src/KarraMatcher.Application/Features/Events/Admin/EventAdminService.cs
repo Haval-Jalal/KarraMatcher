@@ -93,7 +93,7 @@ public sealed class EventAdminService(
         if (created is not null)
         {
             push.Enqueue(PushDispatch.ToTeam(
-                item.TeamId, PushCategory.MatchChange, EventNotification.Created(created)));
+                item.TeamId, PushCategory.EventChange, EventNotification.Created(created)));
         }
 
         return created;
@@ -157,7 +157,7 @@ public sealed class EventAdminService(
             // Null när bara notistexten ändrats: en förälder behöver inte väckas för det.
             if (message is not null)
             {
-                push.Enqueue(PushDispatch.ToTeam(item.TeamId, PushCategory.MatchChange, message));
+                push.Enqueue(PushDispatch.ToTeam(item.TeamId, PushCategory.EventChange, message));
             }
         }
 
@@ -205,7 +205,7 @@ public sealed class EventAdminService(
         // "Åk inte till spelplatsen" är hela poängen med den här notisen — en inställd
         // händelse som ingen får veta om är den som får någon att stå ensam på en plan.
         push.Enqueue(PushDispatch.ToTeam(
-            item.TeamId, PushCategory.MatchChange, EventNotification.Cancelled(dto)));
+            item.TeamId, PushCategory.EventChange, EventNotification.Cancelled(dto)));
 
         return dto;
     }

@@ -9,7 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KarraMatcher.Infrastructure.Persistence.Repositories;
 
-internal sealed class PushDeliveryRepository(KarraMatcherDbContext context, TimeProvider clock)
+internal sealed class PushDeliveryRepository(
+    KarraMatcherDbContext context,
+    IMembershipService membership,
+    TimeProvider clock)
     : IPushDeliveryRepository
 {
     public async Task<IReadOnlyList<PushTarget>> ListForTeamAsync(
@@ -17,14 +20,24 @@ internal sealed class PushDeliveryRepository(KarraMatcherDbContext context, Time
         PushCategory category,
         CancellationToken cancellationToken)
     {
-        // Konton som stangt av kategorin for laget. En anonym prenumerant (utan konto) har
-        // inga installningar och lamnas darfor kvar -- filtreringen ror en foralders eget val.
+        // Stangd app (§KM.3, `#200`): en lag-notis gar bara till lagets *medlemmar*, inte till
+        // vem som helst som prenumererar. En anonym prenumeration (utan konto) nas aldrig.
+        var members = (await membership.MemberAccountIdsAsync(teamId, cancellationToken)
+            .ConfigureAwait(false)).ToHashSet();
+
+        if (members.Count == 0)
+        {
+            return [];
+        }
+
+        // Medlemmar som stangt av kategorin for laget. Franvaro av rad = allt pa.
         var disabled = DisabledAccountIds(teamId, category);
 
         return await context.PushSubscriptions
             .AsNoTracking()
-            .Where(s => s.TeamId == teamId
-                && (s.AccountId == null || !disabled.Contains(s.AccountId.Value)))
+            .Where(s => s.AccountId != null
+                && members.Contains(s.AccountId.Value)
+                && !disabled.Contains(s.AccountId.Value))
             .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -70,9 +83,10 @@ internal sealed class PushDeliveryRepository(KarraMatcherDbContext context, Time
     private static Expression<Func<NotificationPreference, bool>> IsDisabled(PushCategory category) =>
         category switch
         {
-            PushCategory.MatchChange => p => !p.MatchChanges,
+            PushCategory.EventChange => p => !p.EventChanges,
+            PushCategory.Kallelse => p => !p.Kallelser,
             PushCategory.Carpool => p => !p.Carpool,
-            PushCategory.Reminder => p => !p.Reminders,
+            PushCategory.Chat => p => !p.Chat,
             _ => p => false,
         };
 

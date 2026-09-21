@@ -159,7 +159,7 @@ public sealed class AttendanceService(
                 push.Enqueue(PushDispatch.ToAccounts(
                     context.TeamId,
                     guardians,
-                    PushCategory.MatchChange,
+                    PushCategory.Kallelse,
                     new PushMessage(
                         "Ny kallelse",
                         "Ditt barn är kallat. Öppna för att svara Ja eller Nej.",
@@ -313,7 +313,7 @@ public sealed class AttendanceService(
                 push.Enqueue(PushDispatch.ToAccounts(
                     context.TeamId,
                     guardians,
-                    PushCategory.Reminder,
+                    PushCategory.Kallelse,
                     new PushMessage(
                         "Påminnelse: svara på kallelsen",
                         "Kommer ditt barn? Öppna för att svara Ja eller Nej.",
