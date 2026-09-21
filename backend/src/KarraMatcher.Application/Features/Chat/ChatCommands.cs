@@ -1,12 +1,20 @@
 using FluentValidation;
 
 using KarraMatcher.Application.Abstractions.Messaging;
+using KarraMatcher.Application.Abstractions.Persistence;
 
 namespace KarraMatcher.Application.Features.Chat;
 
-/// <summary>Postar (eller schemalägger) ett meddelande i trupp-chatten.</summary>
+/*
+ * Kanalen är paret (TruppId, TeamId?): TeamId null = trupp-chatten, satt = en lag-kanal
+ * (`#202`). Samma kommandon och samma tjänst betjänar båda; controllern för lag-kanalen
+ * löser upp lagets slug till (TeamId, TruppId) via GetTeamChannelQuery först.
+ */
+
+/// <summary>Postar (eller schemalägger) ett meddelande i en kanal.</summary>
 public sealed record PostChatMessageCommand(
     Guid TruppId,
+    Guid? TeamId,
     Guid AccountId,
     string Body,
     DateTimeOffset? PublishAt) : ICommand<ChatPostOutcome>;
@@ -14,6 +22,7 @@ public sealed record PostChatMessageCommand(
 /// <summary>Tar bort ett meddelande (eget, eller vilket som helst om anroparen är admin).</summary>
 public sealed record DeleteChatMessageCommand(
     Guid TruppId,
+    Guid? TeamId,
     Guid MessageId,
     Guid AccountId,
     bool ActorIsAdmin) : ICommand<ChatModerationOutcome>;
@@ -21,6 +30,7 @@ public sealed record DeleteChatMessageCommand(
 /// <summary>Avbokar ett schemalagt meddelande innan det går ut.</summary>
 public sealed record CancelScheduledChatMessageCommand(
     Guid TruppId,
+    Guid? TeamId,
     Guid MessageId,
     Guid AccountId,
     bool ActorIsAdmin) : ICommand<ChatModerationOutcome>;
@@ -28,19 +38,31 @@ public sealed record CancelScheduledChatMessageCommand(
 /// <summary>Anmäler ett meddelande.</summary>
 public sealed record ReportChatMessageCommand(
     Guid TruppId,
+    Guid? TeamId,
     Guid MessageId,
     Guid AccountId) : ICommand<ChatModerationOutcome>;
 
-/// <summary>De senaste meddelandena i trupp-chatten.</summary>
-public sealed record GetChatMessagesQuery(Guid TruppId) : IQuery<IReadOnlyList<ChatMessageDto>>;
+/// <summary>Adminens moderering: tar bort valfritt meddelande i truppen, oavsett kanal (`#202`).</summary>
+public sealed record AdminDeleteChatMessageCommand(Guid TruppId, Guid MessageId, Guid ActorAccountId)
+    : ICommand<ChatModerationOutcome>;
 
-/// <summary>Den inloggades egna schemalagda meddelanden.</summary>
-public sealed record GetScheduledChatMessagesQuery(Guid TruppId, Guid AccountId)
+/// <summary>De senaste meddelandena i en kanal.</summary>
+public sealed record GetChatMessagesQuery(Guid TruppId, Guid? TeamId)
+    : IQuery<IReadOnlyList<ChatMessageDto>>;
+
+/// <summary>Den inloggades egna schemalagda meddelanden i en kanal.</summary>
+public sealed record GetScheduledChatMessagesQuery(Guid TruppId, Guid? TeamId, Guid AccountId)
     : IQuery<IReadOnlyList<ScheduledMessageDto>>;
 
-/// <summary>Adminens kö av anmälda meddelanden.</summary>
+/// <summary>Adminens kö av anmälda meddelanden i hela truppen.</summary>
 public sealed record GetReportedChatMessagesQuery(Guid TruppId)
     : IQuery<IReadOnlyList<ReportedMessageDto>>;
+
+/// <summary>Löser upp ett lags slug till dess chatt-kanal (TeamId + TruppId). Null när laget saknas.</summary>
+public sealed record GetTeamChannelQuery(string Slug) : IQuery<TeamChannel?>;
+
+/// <summary>Meta om en lag-kanal för den inloggade (trupp-id + ledarskap). Null när laget saknas.</summary>
+public sealed record GetTeamChatMetaQuery(string Slug, Guid AccountId) : IQuery<TeamChatMetaDto?>;
 
 internal sealed class PostChatMessageCommandValidator : AbstractValidator<PostChatMessageCommand>
 {
@@ -98,6 +120,14 @@ internal sealed class GetScheduledChatMessagesQueryValidator
     }
 }
 
+internal sealed class GetTeamChannelQueryValidator : AbstractValidator<GetTeamChannelQuery>
+{
+    public GetTeamChannelQueryValidator()
+    {
+        RuleFor(q => q.Slug).NotEmpty();
+    }
+}
+
 internal sealed class PostChatMessageCommandHandler(ChatService service)
     : ICommandHandler<PostChatMessageCommand, ChatPostOutcome>
 {
@@ -107,7 +137,8 @@ internal sealed class PostChatMessageCommandHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.PostAsync(
-            command.TruppId, command.AccountId, command.Body, command.PublishAt, cancellationToken);
+            command.TruppId, command.TeamId, command.AccountId, command.Body, command.PublishAt,
+            cancellationToken);
     }
 }
 
@@ -120,8 +151,8 @@ internal sealed class DeleteChatMessageCommandHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.DeleteAsync(
-            command.TruppId, command.MessageId, command.AccountId, command.ActorIsAdmin,
-            cancellationToken);
+            command.TruppId, command.TeamId, command.MessageId, command.AccountId,
+            command.ActorIsAdmin, cancellationToken);
     }
 }
 
@@ -134,8 +165,8 @@ internal sealed class CancelScheduledChatMessageCommandHandler(ChatService servi
         ArgumentNullException.ThrowIfNull(command);
 
         return service.CancelScheduledAsync(
-            command.TruppId, command.MessageId, command.AccountId, command.ActorIsAdmin,
-            cancellationToken);
+            command.TruppId, command.TeamId, command.MessageId, command.AccountId,
+            command.ActorIsAdmin, cancellationToken);
     }
 }
 
@@ -148,7 +179,31 @@ internal sealed class ReportChatMessageCommandHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.ReportAsync(
-            command.TruppId, command.MessageId, command.AccountId, cancellationToken);
+            command.TruppId, command.TeamId, command.MessageId, command.AccountId, cancellationToken);
+    }
+}
+
+internal sealed class AdminDeleteChatMessageCommandValidator
+    : AbstractValidator<AdminDeleteChatMessageCommand>
+{
+    public AdminDeleteChatMessageCommandValidator()
+    {
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.MessageId).NotEmpty();
+        RuleFor(c => c.ActorAccountId).NotEmpty();
+    }
+}
+
+internal sealed class AdminDeleteChatMessageCommandHandler(ChatService service)
+    : ICommandHandler<AdminDeleteChatMessageCommand, ChatModerationOutcome>
+{
+    public Task<ChatModerationOutcome> HandleAsync(
+        AdminDeleteChatMessageCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.DeleteByAdminAsync(
+            command.TruppId, command.MessageId, command.ActorAccountId, cancellationToken);
     }
 }
 
@@ -160,7 +215,7 @@ internal sealed class GetChatMessagesQueryHandler(ChatService service)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return service.ListAsync(query.TruppId, cancellationToken);
+        return service.ListAsync(query.TruppId, query.TeamId, cancellationToken);
     }
 }
 
@@ -172,7 +227,8 @@ internal sealed class GetScheduledChatMessagesQueryHandler(ChatService service)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return service.ListScheduledAsync(query.TruppId, query.AccountId, cancellationToken);
+        return service.ListScheduledAsync(
+            query.TruppId, query.TeamId, query.AccountId, cancellationToken);
     }
 }
 
@@ -185,5 +241,42 @@ internal sealed class GetReportedChatMessagesQueryHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(query);
 
         return service.ListReportedAsync(query.TruppId, cancellationToken);
+    }
+}
+
+internal sealed class GetTeamChannelQueryHandler(IChatRepository chat)
+    : IQueryHandler<GetTeamChannelQuery, TeamChannel?>
+{
+    public Task<TeamChannel?> HandleAsync(
+        GetTeamChannelQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return chat.FindTeamChannelAsync(query.Slug, cancellationToken);
+    }
+}
+
+internal sealed class GetTeamChatMetaQueryHandler(
+    IChatRepository chat, IMembershipService membership)
+    : IQueryHandler<GetTeamChatMetaQuery, TeamChatMetaDto?>
+{
+    public async Task<TeamChatMetaDto?> HandleAsync(
+        GetTeamChatMetaQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var channel = await chat.FindTeamChannelAsync(query.Slug, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return null;
+        }
+
+        var isLeader = await membership
+            .IsLeaderOfTruppAsync(query.AccountId, channel.AgeGroupId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return new TeamChatMetaDto(channel.AgeGroupId, isLeader);
     }
 }

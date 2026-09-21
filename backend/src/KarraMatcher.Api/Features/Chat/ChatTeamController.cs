@@ -2,6 +2,7 @@ using System.Security.Claims;
 
 using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
+using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Application.Features.Chat;
 
@@ -12,40 +13,29 @@ using Microsoft.IdentityModel.JsonWebTokens;
 namespace KarraMatcher.Api.Features.Chat;
 
 /// <summary>
-/// Trupp-chatten för medlemmar (§KM.1/§KM.10, `#201`).
+/// Lag-chatten (`#202`) — en egen kanal per färg-lag ovanpå trupp-chatten (`#201`).
 ///
 /// <para>
-/// <c>MemberOfTrupp</c> vaktar routen: bara truppens medlemmar läser och skriver, en
-/// icke-medlem nekas. En admin/tränare kan dessutom schemalägga (server prövar ledarskap).
-/// Radering: eget meddelande alltid, annat om anroparen är admin för truppen.
+/// <c>MemberOfTeam</c> vaktar routen (lagets slug): bara lagets medlemmar läser och skriver.
+/// Lagets slug löses upp till kanalen (lag-id + trupp-id) och samma kommandon/tjänst som
+/// trupp-chatten används — bara med lag-id satt. Moderering och gallring delas med
+/// trupp-chatten: anmälningar syns i truppens admin-kö, och samma gallringsjobb rensar.
 /// </para>
 /// </summary>
 [ApiController]
-[Route("api/v1/trupper/{truppId:guid}/chat")]
+[Route("api/v1/teams/{slug}/chat")]
 [Produces("application/json")]
-[Authorize(Policy = AuthorizationPolicies.MemberOfTrupp)]
-public sealed class ChatController(
+[Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
+public sealed class ChatTeamController(
     IQueryDispatcher queries,
     ICommandDispatcher commands) : ControllerBase
 {
-    /// <summary>De senaste meddelandena, äldst först.</summary>
-    [HttpGet("messages")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ChatMessageDto>>> Messages(
-        Guid truppId, CancellationToken cancellationToken)
-    {
-        var messages = await queries
-            .SendAsync(new GetChatMessagesQuery(truppId, null), cancellationToken)
-            .ConfigureAwait(false);
-
-        return Ok(messages);
-    }
-
-    /// <summary>Mina egna schemalagda (ännu ej utskickade) meddelanden.</summary>
-    [HttpGet("scheduled")]
+    /// <summary>Kanal-meta för FE:t: truppens id och om jag är ledare (får schemalägga).</summary>
+    [HttpGet("meta")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Scheduled(Guid truppId, CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TeamChatMetaDto>> Meta(string slug, CancellationToken cancellationToken)
     {
         var actor = ActorId();
 
@@ -54,22 +44,73 @@ public sealed class ChatController(
             return Unauthenticated();
         }
 
+        var meta = await queries
+            .SendAsync(new GetTeamChatMetaQuery(slug, actor.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        return meta is null ? NotFoundForTeam() : Ok(meta);
+    }
+
+    /// <summary>De senaste meddelandena i lag-kanalen, äldst först.</summary>
+    [HttpGet("messages")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Messages(string slug, CancellationToken cancellationToken)
+    {
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
         var messages = await queries
-            .SendAsync(new GetScheduledChatMessagesQuery(truppId, null, actor.Value), cancellationToken)
+            .SendAsync(new GetChatMessagesQuery(channel.AgeGroupId, channel.TeamId), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(messages);
     }
 
-    /// <summary>Postar ett meddelande nu, eller schemalägger om en framtida tid anges.</summary>
+    /// <summary>Mina egna schemalagda meddelanden i lag-kanalen.</summary>
+    [HttpGet("scheduled")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Scheduled(string slug, CancellationToken cancellationToken)
+    {
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
+        var messages = await queries
+            .SendAsync(
+                new GetScheduledChatMessagesQuery(channel.AgeGroupId, channel.TeamId, actor.Value),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(messages);
+    }
+
+    /// <summary>Postar (eller schemalägger, som ledare) ett meddelande i lag-kanalen.</summary>
     [HttpPost("messages")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Post(
-        Guid truppId, PostMessageRequest request, CancellationToken cancellationToken)
+        string slug, PostMessageRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -80,9 +121,17 @@ public sealed class ChatController(
             return Unauthenticated();
         }
 
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
         var outcome = await commands
             .SendAsync(
-                new PostChatMessageCommand(truppId, null, actor.Value, request.Body, request.PublishAt),
+                new PostChatMessageCommand(
+                    channel.AgeGroupId, channel.TeamId, actor.Value, request.Body, request.PublishAt),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -96,14 +145,14 @@ public sealed class ChatController(
         };
     }
 
-    /// <summary>Tar bort ett meddelande (eget, eller vilket som helst som admin).</summary>
+    /// <summary>Tar bort ett meddelande (eget, eller vilket som helst som admin för truppen).</summary>
     [HttpDelete("messages/{id:guid}")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid truppId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(string slug, Guid id, CancellationToken cancellationToken)
     {
         var actor = ActorId();
 
@@ -112,9 +161,17 @@ public sealed class ChatController(
             return Unauthenticated();
         }
 
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
         var outcome = await commands
             .SendAsync(
-                new DeleteChatMessageCommand(truppId, null, id, actor.Value, IsAdminOf(truppId)),
+                new DeleteChatMessageCommand(
+                    channel.AgeGroupId, channel.TeamId, id, actor.Value, IsAdminOf(channel.AgeGroupId)),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -129,7 +186,7 @@ public sealed class ChatController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CancelScheduled(
-        Guid truppId, Guid id, CancellationToken cancellationToken)
+        string slug, Guid id, CancellationToken cancellationToken)
     {
         var actor = ActorId();
 
@@ -138,9 +195,17 @@ public sealed class ChatController(
             return Unauthenticated();
         }
 
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
         var outcome = await commands
             .SendAsync(
-                new CancelScheduledChatMessageCommand(truppId, null, id, actor.Value, IsAdminOf(truppId)),
+                new CancelScheduledChatMessageCommand(
+                    channel.AgeGroupId, channel.TeamId, id, actor.Value, IsAdminOf(channel.AgeGroupId)),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -153,7 +218,7 @@ public sealed class ChatController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Report(Guid truppId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Report(string slug, Guid id, CancellationToken cancellationToken)
     {
         var actor = ActorId();
 
@@ -162,12 +227,24 @@ public sealed class ChatController(
             return Unauthenticated();
         }
 
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
         var outcome = await commands
-            .SendAsync(new ReportChatMessageCommand(truppId, null, id, actor.Value), cancellationToken)
+            .SendAsync(
+                new ReportChatMessageCommand(channel.AgeGroupId, channel.TeamId, id, actor.Value),
+                cancellationToken)
             .ConfigureAwait(false);
 
         return Respond(outcome);
     }
+
+    private Task<TeamChannel?> ResolveAsync(string slug, CancellationToken cancellationToken) =>
+        queries.SendAsync(new GetTeamChannelQuery(slug), cancellationToken);
 
     private IActionResult Respond(ChatModerationOutcome outcome) => outcome switch
     {
@@ -186,6 +263,11 @@ public sealed class ChatController(
         User.HasClaim(AuthClaims.SuperAdmin, "true")
         || User.HasClaim(AuthClaims.AdminOfTrupp, truppId.ToString());
 
+    private ObjectResult NotFoundForTeam() => Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Laget finns inte",
+        detail: "Kontrollera länken — laget kan ha bytt namn.");
+
     private ObjectResult Unauthenticated() => Problem(
         statusCode: StatusCodes.Status401Unauthorized,
         title: "Sessionen gäller inte längre",
@@ -199,6 +281,3 @@ public sealed class ChatController(
         return Guid.TryParse(raw, out var id) ? id : null;
     }
 }
-
-/// <summary>Det medlemmen skickar: texten och en valfri framtida utskickstid (schemaläggning).</summary>
-public sealed record PostMessageRequest(string Body, DateTimeOffset? PublishAt);

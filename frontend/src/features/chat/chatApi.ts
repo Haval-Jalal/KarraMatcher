@@ -1,6 +1,12 @@
 import { getAuthJson, postJson } from '@/lib/api'
 
-/** Trupp-chatten (§KM.1/§KM.10, `#201`). Allt kräver inloggning; medlemskap prövas server-side. */
+/** Chatten (§KM.1/§KM.10, `#201`/`#202`). Allt kräver inloggning; medlemskap prövas server-side. */
+
+/**
+ * En kanal: trupp-chatten (`#201`) eller ett lags kanal (`#202`). Samma meddelande-form och
+ * samma anrop betjänar båda — bara bas-adressen skiljer.
+ */
+export type ChatChannel = { kind: 'trupp'; truppId: string } | { kind: 'team'; slug: string }
 
 /** En trupp den inloggade är medlem av. `isLeader` = admin/tränare (får schemalägga). */
 export interface MemberTrupp {
@@ -8,6 +14,12 @@ export interface MemberTrupp {
   clubName: string
   name: string
   season: string
+  isLeader: boolean
+}
+
+/** Meta om en lag-kanal: truppens id (för admin-kontroll via anspråk) och om jag är ledare. */
+export interface TeamChatMeta {
+  truppId: string
   isLeader: boolean
 }
 
@@ -36,17 +48,31 @@ export interface ReportedMessage {
   reportCount: number
 }
 
-const base = (truppId: string) => `/api/v1/trupper/${encodeURIComponent(truppId)}/chat`
+/** En stabil nyckel per kanal, för query-cachen. */
+export const channelKey = (channel: ChatChannel): string =>
+  channel.kind === 'trupp' ? `trupp:${channel.truppId}` : `team:${channel.slug}`
+
+const base = (channel: ChatChannel): string =>
+  channel.kind === 'trupp'
+    ? `/api/v1/trupper/${encodeURIComponent(channel.truppId)}/chat`
+    : `/api/v1/teams/${encodeURIComponent(channel.slug)}/chat`
 
 export const getMyTrupper = (signal?: AbortSignal): Promise<MemberTrupp[]> =>
   getAuthJson<MemberTrupp[]>('/api/v1/trupper/mina', signal)
 
-export const getMessages = (truppId: string, signal?: AbortSignal): Promise<ChatMessage[]> =>
-  getAuthJson<ChatMessage[]>(`${base(truppId)}/messages`, signal)
+export const getTeamChatMeta = (slug: string, signal?: AbortSignal): Promise<TeamChatMeta> =>
+  getAuthJson<TeamChatMeta>(`/api/v1/teams/${encodeURIComponent(slug)}/chat/meta`, signal)
 
-export const getScheduled = (truppId: string, signal?: AbortSignal): Promise<ScheduledMessage[]> =>
-  getAuthJson<ScheduledMessage[]>(`${base(truppId)}/scheduled`, signal)
+export const getMessages = (channel: ChatChannel, signal?: AbortSignal): Promise<ChatMessage[]> =>
+  getAuthJson<ChatMessage[]>(`${base(channel)}/messages`, signal)
 
+export const getScheduled = (
+  channel: ChatChannel,
+  signal?: AbortSignal,
+): Promise<ScheduledMessage[]> =>
+  getAuthJson<ScheduledMessage[]>(`${base(channel)}/scheduled`, signal)
+
+/** Anmälningskön är alltid på trupp-nivå (delad moderering, `#202`). */
 export const getReports = (truppId: string, signal?: AbortSignal): Promise<ReportedMessage[]> =>
   getAuthJson<ReportedMessage[]>(
     `/api/v1/admin/trupper/${encodeURIComponent(truppId)}/chat/reports`,
@@ -54,17 +80,33 @@ export const getReports = (truppId: string, signal?: AbortSignal): Promise<Repor
   )
 
 /** Postar nu, eller schemalägger om `publishAt` (ISO-tid i framtiden) anges. */
-export const postMessage = (truppId: string, body: string, publishAt?: string): Promise<void> =>
+export const postMessage = (
+  channel: ChatChannel,
+  body: string,
+  publishAt?: string,
+): Promise<void> =>
   postJson<void>(
-    `${base(truppId)}/messages`,
+    `${base(channel)}/messages`,
     publishAt === undefined ? { body } : { body, publishAt },
   )
 
-export const deleteMessage = (truppId: string, id: string): Promise<void> =>
-  postJson<void>(`${base(truppId)}/messages/${id}`, undefined, { method: 'DELETE' })
+export const deleteMessage = (channel: ChatChannel, id: string): Promise<void> =>
+  postJson<void>(`${base(channel)}/messages/${id}`, undefined, { method: 'DELETE' })
 
-export const cancelScheduled = (truppId: string, id: string): Promise<void> =>
-  postJson<void>(`${base(truppId)}/scheduled/${id}`, undefined, { method: 'DELETE' })
+export const cancelScheduled = (channel: ChatChannel, id: string): Promise<void> =>
+  postJson<void>(`${base(channel)}/scheduled/${id}`, undefined, { method: 'DELETE' })
 
-export const reportMessage = (truppId: string, id: string): Promise<void> =>
-  postJson<void>(`${base(truppId)}/messages/${id}/report`)
+export const reportMessage = (channel: ChatChannel, id: string): Promise<void> =>
+  postJson<void>(`${base(channel)}/messages/${id}/report`)
+
+/**
+ * Adminens moderering: tar bort ett anmält meddelande oavsett kanal (`#202`). Kön spänner
+ * hela truppen, så raderingen går via trupp-admin-endpointen — inte via medlemskanalen (som
+ * nekar ett lag-meddelande).
+ */
+export const adminDeleteMessage = (truppId: string, id: string): Promise<void> =>
+  postJson<void>(
+    `/api/v1/admin/trupper/${encodeURIComponent(truppId)}/chat/messages/${id}`,
+    undefined,
+    { method: 'DELETE' },
+  )

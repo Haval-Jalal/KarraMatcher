@@ -46,9 +46,13 @@ public sealed class ChatService(
     IPushOutbox push,
     TimeProvider clock)
 {
-    /// <summary>Postar nu, eller schemalägger om en framtida tid anges (kräver ledare).</summary>
+    /// <summary>
+    /// Postar nu, eller schemalägger om en framtida tid anges (kräver ledare). Kanalen är
+    /// truppen (<paramref name="teamId"/> null) eller ett lag i truppen (`#202`).
+    /// </summary>
     public async Task<ChatPostOutcome> PostAsync(
         Guid truppId,
+        Guid? teamId,
         Guid accountId,
         string body,
         DateTimeOffset? publishAt,
@@ -72,7 +76,7 @@ public sealed class ChatService(
         {
             Id = Guid.NewGuid(),
             AgeGroupId = truppId,
-            TeamId = null,
+            TeamId = teamId,
             AuthorAccountId = accountId,
             Body = body.Trim(),
             CreatedUtc = now,
@@ -85,17 +89,17 @@ public sealed class ChatService(
 
         if (!scheduled)
         {
-            await NotifyAsync(truppId, accountId, cancellationToken).ConfigureAwait(false);
+            await NotifyAsync(truppId, teamId, accountId, cancellationToken).ConfigureAwait(false);
         }
 
         return scheduled ? ChatPostOutcome.Scheduled : ChatPostOutcome.Posted;
     }
 
-    /// <summary>De senaste publicerade meddelandena i trupp-chatten (äldst först).</summary>
+    /// <summary>De senaste publicerade meddelandena i kanalen (äldst först).</summary>
     public async Task<IReadOnlyList<ChatMessageDto>> ListAsync(
-        Guid truppId, CancellationToken cancellationToken)
+        Guid truppId, Guid? teamId, CancellationToken cancellationToken)
     {
-        var messages = await chat.ListPublishedAsync(truppId, null, 100, cancellationToken)
+        var messages = await chat.ListPublishedAsync(truppId, teamId, 100, cancellationToken)
             .ConfigureAwait(false);
 
         var names = await accounts
@@ -105,12 +109,12 @@ public sealed class ChatService(
         return [.. messages.Select(m => ToDto(m, names))];
     }
 
-    /// <summary>Den inloggades egna schemalagda meddelanden i trupp-chatten.</summary>
+    /// <summary>Den inloggades egna schemalagda meddelanden i kanalen.</summary>
     public async Task<IReadOnlyList<ScheduledMessageDto>> ListScheduledAsync(
-        Guid truppId, Guid accountId, CancellationToken cancellationToken)
+        Guid truppId, Guid? teamId, Guid accountId, CancellationToken cancellationToken)
     {
         var messages = await chat
-            .ListScheduledForAuthorAsync(truppId, null, accountId, cancellationToken)
+            .ListScheduledForAuthorAsync(truppId, teamId, accountId, cancellationToken)
             .ConfigureAwait(false);
 
         return
@@ -120,11 +124,14 @@ public sealed class ChatService(
         ];
     }
 
-    /// <summary>Adminens moderering: anmälda meddelanden med antal anmälningar.</summary>
+    /// <summary>
+    /// Adminens moderering: anmälda meddelanden i hela truppen — trupp-kanalen och alla dess
+    /// lag-kanaler (`#202`: moderering delas med trupp-chatten).
+    /// </summary>
     public async Task<IReadOnlyList<ReportedMessageDto>> ListReportedAsync(
         Guid truppId, CancellationToken cancellationToken)
     {
-        var rows = await chat.ListReportedAsync(truppId, null, cancellationToken).ConfigureAwait(false);
+        var rows = await chat.ListReportedForTruppAsync(truppId, cancellationToken).ConfigureAwait(false);
 
         var names = await accounts
             .DisplayNamesAsync([.. rows.Select(r => r.AuthorAccountId).Distinct()], cancellationToken)
@@ -145,6 +152,7 @@ public sealed class ChatService(
     /// <summary>Tar bort ett meddelande: eget alltid, annat om anroparen är admin. Töms direkt.</summary>
     public async Task<ChatModerationOutcome> DeleteAsync(
         Guid truppId,
+        Guid? teamId,
         Guid messageId,
         Guid accountId,
         bool actorIsAdmin,
@@ -152,7 +160,7 @@ public sealed class ChatService(
     {
         var message = await chat.FindMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
 
-        if (message is null || message.AgeGroupId != truppId || message.TeamId != null)
+        if (message is null || message.AgeGroupId != truppId || message.TeamId != teamId)
         {
             return ChatModerationOutcome.NotFound;
         }
@@ -178,9 +186,48 @@ public sealed class ChatService(
         return ChatModerationOutcome.Ok;
     }
 
+    /// <summary>
+    /// Adminens moderering: tar bort valfritt meddelande i truppen, oavsett kanal (`#202`).
+    ///
+    /// <para>
+    /// Anmälningskön spänner hela truppen (trupp-kanalen och alla lag-kanaler), så adminens
+    /// radering får inte vara kanalbunden. Behörigheten är redan prövad (AdminOfTrupp); här
+    /// räcker att meddelandet hör till truppen. Texten töms direkt, tombstonen blir kvar.
+    /// </para>
+    /// </summary>
+    public async Task<ChatModerationOutcome> DeleteByAdminAsync(
+        Guid truppId,
+        Guid messageId,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
+        var message = await chat.FindMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
+
+        if (message is null || message.AgeGroupId != truppId)
+        {
+            return ChatModerationOutcome.NotFound;
+        }
+
+        if (message.DeletedUtc is null)
+        {
+            message.DeletedUtc = clock.GetUtcNow().UtcDateTime;
+            message.DeletedByAccountId = actorAccountId;
+            message.Body = string.Empty;
+
+            await audit.RecordAsync(
+                AuditActions.ChatMessageDeleted, actorAccountId, cancellationToken, messageId)
+                .ConfigureAwait(false);
+
+            await chat.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return ChatModerationOutcome.Ok;
+    }
+
     /// <summary>Avbokar ett eget (eller, som admin, valfritt) schemalagt meddelande innan det går ut.</summary>
     public async Task<ChatModerationOutcome> CancelScheduledAsync(
         Guid truppId,
+        Guid? teamId,
         Guid messageId,
         Guid accountId,
         bool actorIsAdmin,
@@ -190,7 +237,7 @@ public sealed class ChatService(
 
         if (message is null
             || message.AgeGroupId != truppId
-            || message.TeamId != null
+            || message.TeamId != teamId
             || message.PublishedUtc is not null
             || message.DeletedUtc is not null)
         {
@@ -212,6 +259,7 @@ public sealed class ChatService(
     /// <summary>Anmäler ett publicerat meddelande. Idempotent per anmälare.</summary>
     public async Task<ChatModerationOutcome> ReportAsync(
         Guid truppId,
+        Guid? teamId,
         Guid messageId,
         Guid accountId,
         CancellationToken cancellationToken)
@@ -220,7 +268,7 @@ public sealed class ChatService(
 
         if (message is null
             || message.AgeGroupId != truppId
-            || message.TeamId != null
+            || message.TeamId != teamId
             || message.PublishedUtc is null)
         {
             return ChatModerationOutcome.NotFound;
@@ -268,7 +316,8 @@ public sealed class ChatService(
 
         foreach (var message in due)
         {
-            await NotifyAsync(message.AgeGroupId, message.AuthorAccountId, cancellationToken)
+            await NotifyAsync(
+                message.AgeGroupId, message.TeamId, message.AuthorAccountId, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -276,20 +325,25 @@ public sealed class ChatService(
     }
 
     /// <summary>
-    /// Notiserar truppens medlemmar (utom författaren) om ett nytt meddelande.
+    /// Notiserar kanalens medlemmar (utom författaren) om ett nytt meddelande — hela truppen
+    /// för trupp-kanalen, lagets medlemmar för en lag-kanal (`#202`).
     ///
     /// <para>
-    /// Chatt-inställningen är per lag men chatten per trupp, så vi tolkar "Chatt av"
-    /// konservativt: har man stängt av Chatt för något lag i truppen får man ingen notis.
-    /// Mottagarna är förfiltrerade här; ett lag-id i truppen skickas med bara för att
-    /// leverans-lagret ska ha en nyckel — filtret där blir då tomt. Aldrig ett barns namn
-    /// eller meddelandetexten i notisen (§KM.1/§KM.10).
+    /// Chatt-inställningen är per lag men tolkas konservativt: har man stängt av Chatt för
+    /// något lag i truppen får man ingen chatt-notis. Mottagarna är förfiltrerade här; ett
+    /// lag-id skickas med bara för att leverans-lagret ska ha en nyckel — filtret där blir då
+    /// tomt. Aldrig ett barns namn eller meddelandetexten i notisen (§KM.1/§KM.10).
     /// </para>
     /// </summary>
-    private async Task NotifyAsync(Guid truppId, Guid authorAccountId, CancellationToken cancellationToken)
+    private async Task NotifyAsync(
+        Guid truppId, Guid? teamId, Guid authorAccountId, CancellationToken cancellationToken)
     {
-        var members = await membership.MemberAccountIdsForTruppAsync(truppId, cancellationToken)
-            .ConfigureAwait(false);
+        var members = teamId is null
+            ? await membership.MemberAccountIdsForTruppAsync(truppId, cancellationToken)
+                .ConfigureAwait(false)
+            : await membership.MemberAccountIdsAsync(teamId.Value, cancellationToken)
+                .ConfigureAwait(false);
+
         var disabled = (await chat.ChatDisabledAccountIdsAsync(truppId, cancellationToken)
             .ConfigureAwait(false)).ToHashSet();
 
@@ -302,15 +356,18 @@ public sealed class ChatService(
             return;
         }
 
-        var teamId = await chat.AnyTeamIdAsync(truppId, cancellationToken).ConfigureAwait(false);
+        // Ett lag-id att fästa notisen vid (leverans-lagrets per-lag-nyckel). För en lag-kanal
+        // är det laget självt; för trupp-kanalen räcker vilket lag som helst i truppen.
+        var pushTeamId = teamId ?? await chat.AnyTeamIdAsync(truppId, cancellationToken)
+            .ConfigureAwait(false);
 
-        if (teamId is null)
+        if (pushTeamId is null)
         {
             return;
         }
 
         push.Enqueue(PushDispatch.ToAccounts(
-            teamId.Value,
+            pushTeamId.Value,
             recipients,
             PushCategory.Chat,
             new PushMessage(

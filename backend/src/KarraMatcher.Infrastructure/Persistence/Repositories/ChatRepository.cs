@@ -10,6 +10,15 @@ internal sealed class ChatRepository(KarraMatcherDbContext context) : IChatRepos
     public Task<bool> TruppExistsAsync(Guid ageGroupId, CancellationToken cancellationToken) =>
         context.AgeGroups.AsNoTracking().AnyAsync(a => a.Id == ageGroupId, cancellationToken);
 
+    public async Task<TeamChannel?> FindTeamChannelAsync(
+        string slug, CancellationToken cancellationToken) =>
+        await context.Teams
+            .AsNoTracking()
+            .Where(t => t.Slug == slug)
+            .Select(t => new TeamChannel(t.Id, t.AgeGroupId))
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task AddMessageAsync(ChatMessage message, CancellationToken cancellationToken) =>
         await context.ChatMessages.AddAsync(message, cancellationToken).ConfigureAwait(false);
 
@@ -63,10 +72,11 @@ internal sealed class ChatRepository(KarraMatcherDbContext context) : IChatRepos
     public async Task AddReportAsync(ChatReport report, CancellationToken cancellationToken) =>
         await context.ChatReports.AddAsync(report, cancellationToken).ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<ReportedMessageRow>> ListReportedAsync(
-        Guid ageGroupId, Guid? teamId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ReportedMessageRow>> ListReportedForTruppAsync(
+        Guid ageGroupId, CancellationToken cancellationToken)
     {
-        var messages = InChannel(context.ChatMessages.AsNoTracking(), ageGroupId, teamId);
+        // Hela truppen: trupp-kanalen och alla dess lag-kanaler (alla rader med denna AgeGroupId).
+        var messages = context.ChatMessages.AsNoTracking().Where(m => m.AgeGroupId == ageGroupId);
 
         return await (
             from r in context.ChatReports.AsNoTracking()
