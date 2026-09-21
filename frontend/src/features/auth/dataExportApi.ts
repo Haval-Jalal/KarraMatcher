@@ -14,7 +14,7 @@ import { getAuthJson } from '@/lib/api'
 export type CarpoolDirectionCode = 'ToMatch' | 'FromMatch' | 'Both'
 export type CarpoolOfferStatusCode = 'Open' | 'Withdrawn'
 export type CarpoolRequestStatusCode = 'Pending' | 'Accepted' | 'Denied' | 'Retracted'
-export type AttendanceStatusCode = 'Coming' | 'CantCome' | 'Maybe'
+export type AttendanceReplyCode = 'Coming' | 'NotComing'
 
 export interface AccountExportContact {
   email: string
@@ -47,11 +47,11 @@ export interface CarpoolRequestExport {
 }
 
 export interface AttendanceResponseExport {
-  matchOpponent: string
-  matchKickoffUtc: string
-  status: AttendanceStatusCode
-  count: number
-  createdUtc: string
+  eventLabel: string
+  eventKickoffUtc: string
+  childName: string
+  reply: AttendanceReplyCode
+  respondedUtc: string
 }
 
 export interface NotificationPreferenceExport {

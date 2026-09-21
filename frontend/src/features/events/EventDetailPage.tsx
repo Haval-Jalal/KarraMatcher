@@ -24,8 +24,8 @@ import { useEvent } from './useEvent'
  * Adressen är delbar och nås direkt från en kalenderpost — Vercels SPA-fallback gör att en
  * djuplänk fungerar även utan att någon varit på startsidan först (§KM.11).
  *
- * Samåkning, kallelse och spelarkort gäller matcher; för en träning eller övrig händelse
- * visas de inte.
+ * Samåkning och spelarkort gäller matcher; kallelsen gäller match och träning (§KM.7).
+ * Övrig händelse visar ingen av dem.
  */
 export function EventDetailPage() {
   const { id } = useParams({ from: '/handelse/$id' })
@@ -68,8 +68,11 @@ export function EventDetailPage() {
     )
   }
 
-  const { event, team } = data
+  const { event, team, truppId } = data
   const isMatch = event.type === 'Match'
+  // Kallelsen gäller match och träning (§KM.7): hela truppen tränar ihop, och en match
+  // kallar ett lag som fylls på med barn ur andra lag. Övrig händelse har ingen kallelse.
+  const hasKallelse = event.type === 'Match' || event.type === 'Training'
 
   /*
    * Barnen som spelar i det har laget. Lases direkt fran enheten, inte genom en hook.
@@ -154,13 +157,18 @@ export function EventDetailPage() {
       )}
 
       {/*
-        Samåkning, kallelse och spelarkort gäller matcher (§KM.12/§KM.7/§KM.2). En träning
-        eller övrig händelse visar dem inte.
+        Samåkning och spelarkort gäller matcher (§KM.12/§KM.2); kallelsen gäller match och
+        träning (§KM.7). En övrig händelse visar ingen av dem.
       */}
       {isMatch && !isCancelled && <CarpoolSection match={event} />}
 
-      {isMatch && !isCancelled && (
-        <AttendanceSection matchId={event.id} teamSlug={team.slug} kickoffUtc={event.kickoffUtc} />
+      {hasKallelse && !isCancelled && (
+        <AttendanceSection
+          eventId={event.id}
+          truppId={truppId}
+          teamName={team.name}
+          kickoffUtc={event.kickoffUtc}
+        />
       )}
 
       {isMatch && <MatchReportCard match={event} children={childrenForMatch} />}
