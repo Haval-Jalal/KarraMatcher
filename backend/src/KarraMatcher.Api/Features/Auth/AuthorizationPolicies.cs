@@ -69,6 +69,9 @@ public static class AuthorizationPolicies
     /// <summary>Medlem av laget i adressen — admin, tränare eller vårdnadshavare (v2, §KM.3).</summary>
     public const string MemberOfTeam = "medlem-av-laget";
 
+    /// <summary>Medlem av truppen i adressen — för trupp-chatten (v2, §KM.3, `#201`).</summary>
+    public const string MemberOfTrupp = "medlem-av-truppen";
+
     /// <summary>Medlem av händelsens lag (v2, §KM.3, `#198`).</summary>
     public const string MemberOfEvent = "medlem-av-handelsen";
 
@@ -99,6 +102,10 @@ public static class AuthorizationPolicies
         options.AddPolicy(MemberOfTeam, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new MemberOfTeamRequirement()));
+
+        options.AddPolicy(MemberOfTrupp, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new MemberOfTruppRequirement()));
 
         options.AddPolicy(MemberOfEvent, policy => policy
             .RequireAuthenticatedUser()

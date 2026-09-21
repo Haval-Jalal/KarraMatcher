@@ -4,6 +4,7 @@ import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
 import { CoachEventsPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
+import { ChatPage } from '@/features/chat'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { EventDetailPage, TeamSchedulePage } from '@/features/events'
@@ -226,6 +227,43 @@ const playerCardChildRoute = createRoute({
 })
 
 /**
+ * Trupp-chatten (§KM.1/§KM.10, `#201`). Kräver inloggning i `beforeLoad`; medlemskapet i
+ * truppen prövas server-side. `/chatt` landar på medlemmens första trupp, `/chatt/{truppId}`
+ * är push-notisens djuplänk och förväljer den truppen.
+ */
+const chatIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/chatt',
+  beforeLoad: async ({ location }) => {
+    if (getAccessToken() === null && hasSessionHint()) {
+      await renewSession()
+    }
+
+    if (getAccessToken() === null) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
+    }
+  },
+  component: ChatPage,
+})
+
+const chatTruppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/chatt/$truppId',
+  beforeLoad: async ({ location }) => {
+    if (getAccessToken() === null && hasSessionHint()) {
+      await renewSession()
+    }
+
+    if (getAccessToken() === null) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
+    }
+  },
+  component: ChatPage,
+})
+
+/**
  * Integritetstexten (§KM.6). Publik: en gäst ska kunna läsa vad appen sparar innan hen loggar
  * in, inte efter. Nås från fotens länk och från Mitt konto.
  */
@@ -248,6 +286,8 @@ export const routeTree = rootRoute.addChildren([
   applyRoute,
   playerCardRoute,
   playerCardChildRoute,
+  chatIndexRoute,
+  chatTruppRoute,
   privacyRoute,
 ])
 

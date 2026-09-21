@@ -15,6 +15,13 @@ public sealed class MemberOfTeamRequirement : IAuthorizationRequirement
     public const string RouteValue = "slug";
 }
 
+/// <summary>Kravet att vara medlem av truppen i adressen (v2, `#201`).</summary>
+public sealed class MemberOfTruppRequirement : IAuthorizationRequirement
+{
+    /// <summary>Routevärdet som bär truppens (åldersgruppens) id.</summary>
+    public const string RouteValue = "truppId";
+}
+
 /// <summary>Kravet att vara medlem av händelsens lag (v2, `#191`, `#198`).</summary>
 public sealed class MemberOfEventRequirement : IAuthorizationRequirement
 {
@@ -80,6 +87,41 @@ internal sealed class MemberOfTeamHandler(
 
         if (await membership.IsMemberOfTeamBySlugAsync(accountId.Value, slug, ct)
             .ConfigureAwait(false))
+        {
+            context.Succeed(requirement);
+        }
+    }
+}
+
+internal sealed class MemberOfTruppHandler(
+    IHttpContextAccessor accessor,
+    IMembershipService membership)
+    : AuthorizationHandler<MemberOfTruppRequirement>
+{
+    protected override async Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        MemberOfTruppRequirement requirement)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (Membership.IsSuperAdmin(context.User))
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
+        var accountId = Membership.AccountId(context.User);
+        var raw = accessor.HttpContext?.Request.RouteValues[MemberOfTruppRequirement.RouteValue]
+            as string;
+
+        if (accountId is null || !Guid.TryParse(raw, out var truppId))
+        {
+            return;
+        }
+
+        var ct = accessor.HttpContext?.RequestAborted ?? CancellationToken.None;
+
+        if (await membership.IsMemberOfTruppAsync(accountId.Value, truppId, ct).ConfigureAwait(false))
         {
             context.Succeed(requirement);
         }

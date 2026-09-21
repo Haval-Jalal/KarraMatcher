@@ -118,7 +118,8 @@ public class PersistenceModelTests
         Assert.Equal(
             [
                 "Account", "AgeGroup", "AttendanceCall", "AttendanceInvitation", "AuditEntry",
-                "CarpoolOffer", "CarpoolRequest", "Child", "Club", "Event", "GuardianConsent",
+                "CarpoolOffer", "CarpoolRequest", "ChatMessage", "ChatReport", "Child", "Club", "Event",
+                "GuardianConsent",
                 "Guardianship", "Invitation",
                 "LoginCode", "MembershipApplication", "NotificationPreference",
                 "PushSubscription", "RefreshToken", "Sport",

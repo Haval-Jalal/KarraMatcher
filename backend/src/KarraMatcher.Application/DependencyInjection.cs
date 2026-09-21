@@ -49,6 +49,8 @@ public static class DependencyInjection
         services.AddScoped<Features.Attendance.AttendanceGate>();
         services.AddScoped<Features.Attendance.AttendanceService>();
         services.AddScoped<Features.Jobs.EventReminderService>();
+        services.AddScoped<Features.Chat.ChatService>();
+        services.AddScoped<Features.Chat.ChatRetentionService>();
         services.AddScoped<Features.Push.NotificationSettingsService>();
         services.AddScoped<Features.Push.PushRetentionService>();
 
