@@ -1,132 +1,61 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
+import { useRoster } from '@/features/children'
 import { ApiError } from '@/lib/api'
 import { hasKickedOff } from '@/lib/time'
 
-import { openAttendanceCall, remindNonResponders, type AttendanceStatus } from './attendanceApi'
-import { AttendanceResponseForm } from './AttendanceResponseForm'
+import type { AttendanceReply, MyChildInvitation } from './attendanceApi'
 import {
-  attendanceStateQueryKey,
-  attendanceSummaryQueryKey,
-  useAttendanceState,
-  useAttendanceSummary,
+  useKallelseSummary,
+  useMyKallelse,
+  useRemind,
+  useRespond,
+  useSetKallelse,
 } from './useAttendance'
 
 /**
- * Kallelsen på matchsidan (`#57`, `#58`, §KM.7).
+ * Den riktade kallelsen på händelsesidan (§KM.7, `#199`).
+ *
+ * <h3>Två vyer</h3>
+ *
+ * En vårdnadshavare ser sina egna kallade barn och svarar Ja/Nej per barn. En admin för
+ * truppen ser i stället en väljare — barn ur alla lag, så ett lag kan fyllas på — och en
+ * sammanställning över vilka som svarat vad.
  *
  * <h3>Osynlig tills klubben slår på den</h3>
  *
- * Kallelsen levereras avstängd. Servern svarar `404` för ett lag där den är av, och då
- * renderar den här sektionen ingenting alls — inte en tom rubrik, inte en inaktiv knapp.
- * Funktionen finns helt enkelt inte förrän en administratör slår på den (§KM.7).
- *
- * <h3>Tränaren kallar, den vuxna svarar, tränaren ser summan</h3>
- *
- * Är kallelsen på men inte öppnad för matchen ser en tränare knappen att kalla. När den är
- * öppnad ser alla svarsformuläret — även tränaren, som också kan ha en familj som ska med —
- * och tränaren ser dessutom summeringen: hur många som kommer, och vilka vuxna som svarat
- * (`#58`). Ingen lista över dem som *inte* svarat: den kräver en koppling som inte finns än
- * (§KM.1), och byggs i `#63`.
+ * Servern svarar `404` på vårdnadshavarens vy för ett lag där kallelsen är avslagen (§KM.7).
+ * Då renderar den här sektionen ingenting för en vanlig medlem.
  */
 export function AttendanceSection({
-  matchId,
-  teamSlug,
+  eventId,
+  truppId,
+  teamName,
   kickoffUtc,
 }: {
-  matchId: string
-  teamSlug: string
+  eventId: string
+  truppId: string
+  teamName: string
   kickoffUtc: string
 }) {
-  const { status, canManage } = useAuth()
-  const queryClient = useQueryClient()
-  const [calling, setCalling] = useState(false)
-  const [callFailed, setCallFailed] = useState(false)
-  const [reminding, setReminding] = useState(false)
-  const [remindResult, setRemindResult] = useState<string | null>(null)
-
+  const { status, isSuperAdmin, adminOf } = useAuth()
   const isSignedIn = status === 'inloggad'
-  const isManager = canManage(teamSlug)
+  const isAdmin = isSuperAdmin || adminOf.includes(truppId)
 
-  const { data, isPending, error } = useAttendanceState(matchId, isSignedIn)
+  const my = useMyKallelse(eventId, isSignedIn)
 
-  // Summeringen hämtas bara för en tränare med en öppnad kallelse — annars finns inget att
-  // summera, och anropet skulle ändå svara 403 eller 404.
-  const { data: summary } = useAttendanceSummary(
-    teamSlug,
-    matchId,
-    isSignedIn && isManager && data?.callOpen === true,
-  )
-
-  // Gästen och den vars lag saknar kallelsen (404) ser ingenting — funktionen finns inte
-  // för dem (§KM.7).
   if (!isSignedIn) {
     return null
   }
 
-  if (error instanceof ApiError && error.status === 404) {
+  const gateOff = my.error instanceof ApiError && my.error.status === 404
+  const myChildren = gateOff ? [] : (my.data?.children ?? [])
+  const guardianVisible = !gateOff && (my.data?.callOpen ?? false) && myChildren.length > 0
+
+  // Gäst, avslagen kallelse eller inga egna kallade barn — och inte admin: ingenting.
+  if (!isAdmin && !guardianVisible) {
     return null
-  }
-
-  if (data === undefined) {
-    // Ett riktigt fel är värt en rad, men inte en hel felruta som stjäl matchsidan — resten
-    // av matchen står kvar. Under själva hämtningen visas ingenting, så inget hoppar till.
-    if (error && !isPending) {
-      return (
-        <section className="attendance" aria-labelledby="kallelse">
-          <h2 id="kallelse" className="attendance__heading">
-            Kallelse
-          </h2>
-          <p className="attendance__note" role="alert">
-            Kallelsen kan inte hämtas just nu.
-          </p>
-        </section>
-      )
-    }
-
-    return null
-  }
-
-  async function reload(): Promise<void> {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: attendanceStateQueryKey(matchId) }),
-      queryClient.invalidateQueries({ queryKey: attendanceSummaryQueryKey(matchId) }),
-    ])
-  }
-
-  async function call(): Promise<void> {
-    setCalling(true)
-    setCallFailed(false)
-
-    try {
-      await openAttendanceCall(teamSlug, matchId)
-      await reload()
-    } catch {
-      setCallFailed(true)
-    } finally {
-      setCalling(false)
-    }
-  }
-
-  async function remind(): Promise<void> {
-    setReminding(true)
-    setRemindResult(null)
-
-    try {
-      const result = await remindNonResponders(teamSlug, matchId)
-      setRemindResult(
-        result.reminded === 1
-          ? 'Påminde 1 förälder.'
-          : `Påminde ${String(result.reminded)} föräldrar.`,
-      )
-      await reload()
-    } catch {
-      setRemindResult('Påminnelsen gick inte att skicka just nu. Försök igen om en stund.')
-    } finally {
-      setReminding(false)
-    }
   }
 
   const closed = hasKickedOff(kickoffUtc)
@@ -137,118 +66,297 @@ export function AttendanceSection({
         Kallelse
       </h2>
 
-      {!data.callOpen && isManager && (
-        <div className="actions">
-          <button
-            type="button"
-            className="button"
-            disabled={calling}
-            onClick={() => {
-              void call()
-            }}
-          >
-            {calling ? 'Kallar…' : 'Kalla till matchen'}
-          </button>
-          {callFailed && (
-            <p className="state state--error" role="alert">
-              Kallelsen gick inte att öppna just nu. Försök igen om en stund.
-            </p>
-          )}
-        </div>
+      {guardianVisible && (
+        <GuardianReplies eventId={eventId} childInvitations={myChildren} closed={closed} />
       )}
 
-      {!data.callOpen && !isManager && (
-        <p className="attendance__note">Tränaren har inte kallat till den här matchen än.</p>
-      )}
+      {isAdmin && <AdminKallelse truppId={truppId} eventId={eventId} teamName={teamName} />}
+    </section>
+  )
+}
 
-      {data.callOpen && closed && (
-        <p className="attendance__note">
-          {data.myResponse
-            ? `Du svarade: ${summarize(data.myResponse.status, data.myResponse.count)}.`
-            : 'Matchen har spelats.'}
+function GuardianReplies({
+  eventId,
+  childInvitations,
+  closed,
+}: {
+  eventId: string
+  childInvitations: MyChildInvitation[]
+  closed: boolean
+}) {
+  const respond = useRespond(eventId)
+  const [failed, setFailed] = useState(false)
+
+  function answer(childId: string, reply: AttendanceReply): void {
+    setFailed(false)
+    respond.mutate({ childId, reply }, { onError: () => setFailed(true) })
+  }
+
+  return (
+    <div className="attendance__guardian">
+      <p className="attendance__note">
+        {closed
+          ? 'Händelsen har börjat — svaren går inte längre att ändra.'
+          : 'Svara för varje barn. Du kan ändra ända fram till start.'}
+      </p>
+
+      <ul className="attendance__children">
+        {childInvitations.map((child) => (
+          <li key={child.childId} className="attendance__child">
+            <span className="attendance__child-name">{child.displayName}</span>
+            <span
+              className="attendance__reply"
+              role="group"
+              aria-label={`Svar för ${child.displayName}`}
+            >
+              <button
+                type="button"
+                className="button button--small"
+                aria-pressed={child.reply === 'Coming'}
+                disabled={closed || respond.isPending}
+                onClick={() => {
+                  answer(child.childId, 'Coming')
+                }}
+              >
+                Ja
+              </button>
+              <button
+                type="button"
+                className="button button--small"
+                aria-pressed={child.reply === 'NotComing'}
+                disabled={closed || respond.isPending}
+                onClick={() => {
+                  answer(child.childId, 'NotComing')
+                }}
+              >
+                Nej
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {failed && (
+        <p className="state state--error" role="alert">
+          Svaret gick inte att spara just nu. Försök igen om en stund.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function AdminKallelse({
+  truppId,
+  eventId,
+  teamName,
+}: {
+  truppId: string
+  eventId: string
+  teamName: string
+}) {
+  const roster = useRoster(truppId)
+  const summary = useKallelseSummary(truppId, eventId, true)
+  const send = useSetKallelse(truppId, eventId)
+  const remind = useRemind(truppId, eventId)
+
+  // null tills adminen rört urvalet: då speglar vyn de barn som redan är kallade (ur
+  // sammanställningen). Ett urval härleds alltså utan en seedande effekt — first-render och
+  // en sen laddad sammanställning ger båda rätt förkryssning.
+  const [selected, setSelected] = useState<Set<string> | null>(null)
+  const [failure, setFailure] = useState<string | null>(null)
+  const [remindMsg, setRemindMsg] = useState<string | null>(null)
+
+  const rosterChildren = roster.data?.children ?? []
+  const rosterTeams = roster.data?.teams ?? []
+  const current = selected ?? new Set(summary.data?.children.map((child) => child.childId) ?? [])
+
+  function toggle(childId: string): void {
+    const next = new Set(current)
+    if (next.has(childId)) {
+      next.delete(childId)
+    } else {
+      next.add(childId)
+    }
+    setSelected(next)
+  }
+
+  function selectTeam(): void {
+    setSelected(
+      new Set(rosterChildren.filter((child) => child.teamName === teamName).map((c) => c.id)),
+    )
+  }
+
+  function selectAll(): void {
+    setSelected(new Set(rosterChildren.map((child) => child.id)))
+  }
+
+  function submit(): void {
+    setFailure(null)
+    send.mutate([...current], {
+      onError: (error) =>
+        setFailure(
+          error instanceof ApiError ? error.message : 'Kallelsen gick inte att skicka just nu.',
+        ),
+    })
+  }
+
+  function nudge(): void {
+    setRemindMsg(null)
+    remind.mutate(undefined, {
+      onSuccess: (result) =>
+        setRemindMsg(
+          result.reminded === 1
+            ? 'Påminde 1 barns vårdnadshavare.'
+            : `Påminde ${String(result.reminded)} barns vårdnadshavare.`,
+        ),
+      onError: () => setRemindMsg('Påminnelsen gick inte att skicka just nu.'),
+    })
+  }
+
+  const groups = [
+    ...rosterTeams.map((team) => ({
+      key: team.id,
+      name: team.name,
+      colorHex: team.colorHex,
+      children: rosterChildren.filter((child) => child.teamId === team.id),
+    })),
+    {
+      key: 'otilldelade',
+      name: 'Otilldelade',
+      colorHex: null as string | null,
+      children: rosterChildren.filter((child) => child.teamId === null),
+    },
+  ]
+
+  return (
+    <div className="attendance__admin">
+      <h3 className="attendance__subheading">Skicka kallelse</h3>
+
+      {roster.isLoading && <p className="state">Hämtar truppen…</p>}
+      {roster.isError && (
+        <p className="state state--error" role="alert">
+          Kunde inte hämta truppens barn.
         </p>
       )}
 
-      {data.callOpen && !closed && (
+      {roster.data && (
         <>
-          {data.myResponse && (
-            <p className="attendance__current" role="status">
-              Ditt svar: <strong>{summarize(data.myResponse.status, data.myResponse.count)}</strong>
-              . Du kan ändra det ända fram till avspark.
+          <div className="actions">
+            <button type="button" className="button button--small" onClick={selectTeam}>
+              Hela laget {teamName}
+            </button>
+            <button type="button" className="button button--small" onClick={selectAll}>
+              Hela truppen
+            </button>
+          </div>
+
+          {groups.map((group) => (
+            <div key={group.key} className="roster-group">
+              <h4>
+                {group.colorHex !== null && (
+                  <span
+                    className="admin-color"
+                    style={{ backgroundColor: group.colorHex }}
+                    aria-hidden="true"
+                  />
+                )}
+                {group.name}
+              </h4>
+              <ul className="admin-list">
+                {group.children.length === 0 && <li className="state">Inga barn här.</li>}
+                {group.children.map((child) => (
+                  <li key={child.id} className="admin-list__row">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={current.has(child.id)}
+                        onChange={() => {
+                          toggle(child.id)
+                        }}
+                      />{' '}
+                      {child.displayName}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {failure !== null && (
+            <p className="state state--error" role="alert">
+              {failure}
             </p>
           )}
-          <AttendanceResponseForm
-            matchId={matchId}
-            current={data.myResponse}
-            onSubmitted={reload}
-          />
+
+          <div className="actions">
+            <button type="button" className="button" disabled={send.isPending} onClick={submit}>
+              {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
+            </button>
+          </div>
         </>
       )}
 
-      {/* Tränarens summering (#58). Bara den som sköter laget, och bara när kallelsen är öppnad. */}
-      {data.callOpen && isManager && summary && (
+      {summary.data && summary.data.callOpen && (
         <div className="attendance__summary">
-          <h3 className="attendance__subheading">Svar hittills</h3>
+          <h4 className="attendance__subheading">Svar hittills</h4>
           <p className="attendance__totals">
-            <strong>{summary.comingPeople}</strong> kommer
-            {summary.maybePeople > 0 ? `, ${String(summary.maybePeople)} kanske` : ''}
-            {summary.cantComeFamilies > 0 ? `, ${String(summary.cantComeFamilies)} kan inte` : ''}
+            <strong>{summary.data.coming}</strong> kommer, {summary.data.notComing} kan inte,{' '}
+            {summary.data.notAnswered} har inte svarat
           </p>
 
-          {summary.responders.length === 0 ? (
-            <p className="attendance__note">Ingen har svarat än.</p>
+          {summary.data.children.length === 0 ? (
+            <p className="attendance__note">Inga barn är kallade än.</p>
           ) : (
-            <ul className="attendance__responders">
-              {summary.responders.map((responder) => (
-                <li key={responder.id}>
-                  {responder.name ?? 'Namnlöst konto'} —{' '}
-                  {summarize(responder.status, responder.count)}
+            <ul className="admin-list">
+              {summary.data.children.map((child) => (
+                <li key={child.childId} className="admin-list__row">
+                  <span>
+                    {child.colorHex !== null && (
+                      <span
+                        className="admin-color"
+                        style={{ backgroundColor: child.colorHex }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {child.displayName}
+                  </span>
+                  <span>{replyLabel(child.reply)}</span>
                 </li>
               ))}
             </ul>
           )}
 
-          {summary.notAnsweredCount > 0 && (
-            <div className="attendance__unanswered">
-              <p className="attendance__note">
-                {summary.notAnsweredCount} har inte svarat
-                {summary.notAnsweredNames.length > 0
-                  ? `: ${summary.notAnsweredNames.join(', ')}`
-                  : ''}
-                .
-              </p>
+          {summary.data.notAnswered > 0 && (
+            <div className="actions">
               <button
                 type="button"
-                className="button button--action"
-                disabled={reminding}
-                onClick={() => {
-                  void remind()
-                }}
+                className="button button--small"
+                disabled={remind.isPending}
+                onClick={nudge}
               >
-                {reminding ? 'Påminner…' : 'Påminn dem som inte svarat'}
+                {remind.isPending ? 'Påminner…' : 'Påminn dem som inte svarat'}
               </button>
-              {remindResult !== null && (
-                <p className="attendance__note" role="status">
-                  {remindResult}
-                </p>
-              )}
             </div>
+          )}
+
+          {remindMsg !== null && (
+            <p className="attendance__note" role="status">
+              {remindMsg}
+            </p>
           )}
         </div>
       )}
-    </section>
+    </div>
   )
 }
 
-function summarize(status: AttendanceStatus, count: number): string {
-  switch (status) {
+function replyLabel(reply: AttendanceReply | null): string {
+  switch (reply) {
     case 'Coming':
-      return `Kommer (${String(count)})`
-    case 'CantCome':
-      return 'Kan inte'
-    case 'Maybe':
-      return count > 0 ? `Kanske (${String(count)})` : 'Kanske'
+      return 'Ja'
+    case 'NotComing':
+      return 'Nej'
     default:
-      return 'Okänt'
+      return '–'
   }
 }

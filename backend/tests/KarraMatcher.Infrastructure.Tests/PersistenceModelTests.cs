@@ -117,7 +117,7 @@ public class PersistenceModelTests
 
         Assert.Equal(
             [
-                "Account", "AgeGroup", "AttendanceCall", "AttendanceResponse", "AuditEntry",
+                "Account", "AgeGroup", "AttendanceCall", "AttendanceInvitation", "AuditEntry",
                 "CarpoolOffer", "CarpoolRequest", "Child", "Club", "Event", "GuardianConsent",
                 "Guardianship", "Invitation",
                 "LoginCode", "MembershipApplication", "NotificationPreference",
@@ -128,17 +128,17 @@ public class PersistenceModelTests
     }
 
     [Fact]
-    public void Narvarosvar_ForsvinnerMedSittKonto()
+    public void Kallelseinbjudan_ForsvinnerMedBarnet()
     {
-        // §KM.6: kontoraderingen forlitar sig pa kaskad (DeleteAccountCommandHandler tar bort
-        // kontot och later databasen ta resten). Restrict eller SetNull hade lamnat kvar ett
-        // svar som pekar pa ett konto som inte finns -- och en radering som inte ar fullstandig.
-        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceResponse))!;
+        // §KM.6/§KM.1: nar ett barn tas bort ur truppen ska dess kallelse-rader folja med.
+        // Kallelsesvaret bar inte nagon konto-nyckel (RespondedByAccountId har ingen FK, som
+        // audit-raden) -- svaret overlever att den svarandes konto raderas.
+        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceInvitation))!;
 
-        var toAccount = entity.GetForeignKeys()
-            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(Domain.Accounts.Account));
+        var toChild = entity.GetForeignKeys()
+            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(Domain.Children.Child));
 
-        Assert.Equal(DeleteBehavior.Cascade, toAccount.DeleteBehavior);
+        Assert.Equal(DeleteBehavior.Cascade, toChild.DeleteBehavior);
     }
 
     [Fact]
@@ -159,18 +159,18 @@ public class PersistenceModelTests
     }
 
     [Fact]
-    public void Narvarosvar_HarUniktIndexPerKontoOchMatch()
+    public void Kallelseinbjudan_HarUniktIndexPerBarnOchKallelse()
     {
-        // Ett svar per konto och match. Handlern uppdaterar det befintliga; indexet ar
-        // garantin mot dubbletter fran tva samtidiga anrop.
-        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceResponse));
+        // Ett barn kallas en gang per kallelse. Indexet ar garantin mot dubbletter och
+        // tjanar summeringen per kallelse via sitt CallId-prefix.
+        var entity = Model().FindEntityType(typeof(Domain.Attendance.AttendanceInvitation));
         Assert.NotNull(entity);
 
         var index = entity.GetIndexes().SingleOrDefault(i =>
             i.Properties.Select(p => p.Name).SequenceEqual(
                 [
-                    nameof(Domain.Attendance.AttendanceResponse.MatchId),
-                    nameof(Domain.Attendance.AttendanceResponse.AccountId),
+                    nameof(Domain.Attendance.AttendanceInvitation.CallId),
+                    nameof(Domain.Attendance.AttendanceInvitation.ChildId),
                 ]));
 
         Assert.NotNull(index);

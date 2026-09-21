@@ -4,66 +4,81 @@ using KarraMatcher.Domain.Attendance;
 namespace KarraMatcher.Application.Tests;
 
 /// <summary>
-/// Reglerna för ett närvarosvar (`#57`, §KM.7).
-///
-/// <para>
-/// Antalet prövas server-side, inte bara i formuläret. "Kommer" utan någon som kommer är
-/// inget svar; "kan inte" och "kanske" får vara noll.
-/// </para>
+/// Reglerna för den riktade kallelsen (§KM.7, `#199`): admin skickar ett urval barn, och en
+/// vårdnadshavare svarar Ja/Nej per barn.
 /// </summary>
 public class AttendanceResponseValidatorTests
 {
-    private readonly SubmitAttendanceResponseCommandValidator _validator = new();
+    private readonly SetKallelseCommandValidator _set = new();
+    private readonly RespondToKallelseCommandValidator _respond = new();
 
-    private static SubmitAttendanceResponseCommand Command(AttendanceStatus status, int count) =>
-        new(Guid.NewGuid(), Guid.NewGuid(), status, count);
-
-    [Theory]
-    [InlineData(AttendanceStatus.Coming, 1)]
-    [InlineData(AttendanceStatus.Coming, 4)]
-    [InlineData(AttendanceStatus.CantCome, 0)]
-    [InlineData(AttendanceStatus.CantCome, 3)]
-    [InlineData(AttendanceStatus.Maybe, 0)]
-    [InlineData(AttendanceStatus.Maybe, 2)]
-    public void Validate_RimligtSvar_ArGodkant(AttendanceStatus status, int count)
+    [Fact]
+    public void Set_MedGiltigtUrval_ArGodkant()
     {
-        Assert.True(_validator.Validate(Command(status, count)).IsValid);
+        var command = new SetKallelseCommand(
+            Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid(), Guid.NewGuid()], Guid.NewGuid());
+
+        Assert.True(_set.Validate(command).IsValid);
     }
 
     [Fact]
-    public void Validate_KommerUtanAntal_ArUnderkant()
+    public void Set_TomtUrval_ArGodkant()
     {
-        // Ett "kommer" utan nagon som kommer sager ingenting -- bara "kommer" kraver minst en.
-        Assert.False(_validator.Validate(Command(AttendanceStatus.Coming, 0)).IsValid);
+        // Ett tomt urval ar giltigt -- det tomma en kallelse eller kallar ingen an.
+        var command = new SetKallelseCommand(Guid.NewGuid(), Guid.NewGuid(), [], Guid.NewGuid());
+
+        Assert.True(_set.Validate(command).IsValid);
     }
 
     [Theory]
-    [InlineData(5)]
-    [InlineData(-1)]
-    public void Validate_AntalUtanforGransen_ArUnderkant(int count)
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public void Set_TomtId_ArUnderkant(bool emptyTrupp, bool emptyEvent, bool emptyActor)
     {
-        Assert.False(_validator.Validate(Command(AttendanceStatus.Maybe, count)).IsValid);
+        var command = new SetKallelseCommand(
+            emptyTrupp ? Guid.Empty : Guid.NewGuid(),
+            emptyEvent ? Guid.Empty : Guid.NewGuid(),
+            [Guid.NewGuid()],
+            emptyActor ? Guid.Empty : Guid.NewGuid());
+
+        Assert.False(_set.Validate(command).IsValid);
+    }
+
+    [Theory]
+    [InlineData(AttendanceReply.Coming)]
+    [InlineData(AttendanceReply.NotComing)]
+    public void Respond_MedGiltigtSvar_ArGodkant(AttendanceReply reply)
+    {
+        var command = new RespondToKallelseCommand(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), reply);
+
+        Assert.True(_respond.Validate(command).IsValid);
     }
 
     [Fact]
-    public void Validate_OkandStatus_ArUnderkant()
+    public void Respond_OkantSvar_ArUnderkant()
     {
         // Ett varde utanfor enumen kan inte komma fran gransnittet, men en klient som skickar
-        // ratt att slippa (int)7 ska motas av 400, inte tyst sparas som nagot.
-        Assert.False(_validator.Validate(Command((AttendanceStatus)7, 1)).IsValid);
+        // (int)7 ska motas av 400, inte tyst sparas som nagot.
+        var command = new RespondToKallelseCommand(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), (AttendanceReply)7);
+
+        Assert.False(_respond.Validate(command).IsValid);
     }
 
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public void Validate_TomtId_ArUnderkant(bool emptyMatch, bool emptyAccount)
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public void Respond_TomtId_ArUnderkant(bool emptyEvent, bool emptyChild, bool emptyAccount)
     {
-        var command = new SubmitAttendanceResponseCommand(
-            emptyMatch ? Guid.Empty : Guid.NewGuid(),
+        var command = new RespondToKallelseCommand(
+            emptyEvent ? Guid.Empty : Guid.NewGuid(),
+            emptyChild ? Guid.Empty : Guid.NewGuid(),
             emptyAccount ? Guid.Empty : Guid.NewGuid(),
-            AttendanceStatus.Coming,
-            1);
+            AttendanceReply.Coming);
 
-        Assert.False(_validator.Validate(command).IsValid);
+        Assert.False(_respond.Validate(command).IsValid);
     }
 }

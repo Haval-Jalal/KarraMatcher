@@ -6,23 +6,25 @@ using System.Text.Json;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
-using KarraMatcher.Domain.Attendance;
+using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KarraMatcher.Api.Integration.Tests;
 
 /// <summary>
-/// Kallelsen och närvarosvaren (`#57`, §KM.7, §KM.1).
+/// Den riktade kallelsen per barn (§KM.7, §KM.1, `#199`).
 ///
 /// <para>
-/// Tränaren kallar; en inloggad vuxen svarar för sin familj med ett antal — aldrig ett barn.
-/// Allt ligger bakom grinden: med flaggan av är funktionen <c>404</c>, som om den inte fanns.
+/// En admin för truppen kallar utvalda barn — händelsens färg-lag plus vid behov barn ur de
+/// andra lagen. Varje vårdnadshavare svarar Ja/Nej per eget barn. Barn visas som "Liam J".
+/// Allt ligger bakom flaggan: med den av är funktionen 404 för vårdnadshavaren.
 /// </para>
 /// </summary>
 public sealed class AttendanceTests(KarraMatcherApiFactory factory)
@@ -30,7 +32,16 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
 {
     private static WebApplicationFactoryClientOptions ClientOptions => new() { HandleCookies = true };
 
-    private sealed record Fixture(string Slug, Guid MatchId, Guid CoachId, Guid ParentId);
+    private sealed record Fixture(
+        Guid TruppId,
+        Guid EventId,
+        Guid AdminId,
+        Guid SvartChild,
+        Guid SvartGuardian,
+        Guid SvartChild2,
+        Guid SvartGuardian2,
+        Guid GulChild,
+        Guid GulGuardian);
 
     private async Task<Fixture> SeedAsync(
         string suffix,
@@ -39,21 +50,23 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
-
         var now = DateTime.UtcNow;
 
         var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = $"klubb-n-{suffix}" };
-        var ageGroup = new AgeGroup
+        var trupp = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
+        var svart = new Team
         {
             Id = Guid.NewGuid(),
-            ClubId = club.Id,
-            Name = "P2016",
-            Season = "2026",
+            AgeGroupId = trupp.Id,
+            Name = "Svart",
+            ColorHex = "#161616",
+            Slug = $"svart-n-{suffix}",
+            AttendanceEnabled = enabled,
         };
-        var team = new Team
+        var gul = new Team
         {
             Id = Guid.NewGuid(),
-            AgeGroupId = ageGroup.Id,
+            AgeGroupId = trupp.Id,
             Name = "Gul",
             ColorHex = "#D9A21B",
             Slug = $"gul-n-{suffix}",
@@ -71,58 +84,110 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
-            TeamId = team.Id,
+            TeamId = svart.Id,
+            Type = EventType.Match,
             KickoffUtc = now.AddDays(kickoffDays),
             OpponentName = "Torslanda",
             VenueId = venue.Id,
             IsHome = true,
             Status = EventStatus.Scheduled,
-            IcsSequence = 0,
             UpdatedUtc = now,
         };
+        var admin = new Account { Id = Guid.NewGuid(), Email = $"admin-n-{suffix}@example.com", CreatedUtc = now };
 
-        var coach = new Account { Id = Guid.NewGuid(), Email = $"tranare-n-{suffix}@example.com", CreatedUtc = now };
-        var parent = new Account { Id = Guid.NewGuid(), Email = $"foralder-n-{suffix}@example.com", CreatedUtc = now };
+        context.Clubs.Add(club);
+        context.AgeGroups.Add(trupp);
+        context.Teams.AddRange(svart, gul);
+        context.Venues.Add(venue);
+        context.Events.Add(match);
+        context.Accounts.Add(admin);
+        await context.SaveChangesAsync(CancellationToken.None);
 
-        // Foraldern ar medlem av laget (v2, §KM.3): vardnadshavare till ett barn i det. Utan
-        // medlemskap kan hen inte na narvaroendpointen. Tranaren nar sina endpoints via
-        // CoachOfTeam-anspraket och behover ingen vardnadskoppling.
+        var (svartChild, svartGuardian) = await SeedChildAsync(suffix, "s1", trupp.Id, svart.Id);
+        var (svartChild2, svartGuardian2) = await SeedChildAsync(suffix, "s2", trupp.Id, svart.Id);
+        var (gulChild, gulGuardian) = await SeedChildAsync(suffix, "g1", trupp.Id, gul.Id);
+
+        return new Fixture(
+            trupp.Id, match.Id, admin.Id,
+            svartChild, svartGuardian, svartChild2, svartGuardian2, gulChild, gulGuardian);
+    }
+
+    private async Task<(Guid ChildId, Guid GuardianId)> SeedChildAsync(
+        string suffix, string tag, Guid truppId, Guid teamId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+        var now = DateTime.UtcNow;
+
+        var guardian = new Account
+        {
+            Id = Guid.NewGuid(),
+            Email = $"vh-{tag}-n-{suffix}@example.com",
+            CreatedUtc = now,
+        };
         var child = new Child
         {
             Id = Guid.NewGuid(),
             FirstName = "Liam",
             LastInitial = "J",
-            AgeGroupId = ageGroup.Id,
-            TeamId = team.Id,
+            AgeGroupId = truppId,
+            TeamId = teamId,
             CreatedUtc = now,
         };
 
-        context.Clubs.Add(club);
-        context.AgeGroups.Add(ageGroup);
-        context.Teams.Add(team);
-        context.Venues.Add(venue);
-        context.Events.Add(match);
-        context.Accounts.AddRange(coach, parent);
+        context.Accounts.Add(guardian);
         context.Children.Add(child);
         context.Guardianships.Add(new Guardianship
         {
             Id = Guid.NewGuid(),
-            AccountId = parent.Id,
+            AccountId = guardian.Id,
             ChildId = child.Id,
             GrantedUtc = now,
         });
-
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return new Fixture(team.Slug, match.Id, coach.Id, parent.Id);
+        return (child.Id, guardian.Id);
     }
 
-    private string TokenFor(Guid accountId, params string[] coachOf)
+    private string AdminToken(Guid truppId) =>
+        Token(Guid.NewGuid(), new AccountRoles(false, [truppId.ToString()], []));
+
+    private string PlainToken(Guid accountId) =>
+        Token(accountId, AccountRoles.None);
+
+    private string Token(Guid accountId, AccountRoles roles)
     {
         using var scope = factory.Services.CreateScope();
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(accountId, "konto@example.com", new AccountRoles(false, [], coachOf)).Token;
+        return issuer.Issue(accountId, "konto@example.com", roles).Token;
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpMethod method, string path, string token, object? payload = null)
+    {
+        using var client = factory.CreateClient(ClientOptions);
+        var (csrf, cookie) = await CsrfAsync(client, token);
+
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("X-CSRF-TOKEN", csrf);
+        request.Headers.Add("Cookie", cookie);
+
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload);
+        }
+
+        return await client.SendAsync(request, CancellationToken.None);
+    }
+
+    private async Task<HttpResponseMessage> GetAsync(string path, string token)
+    {
+        using var client = factory.CreateClient(ClientOptions);
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return await client.SendAsync(request, CancellationToken.None);
     }
 
     private static async Task<(string Token, string Cookie)> CsrfAsync(HttpClient client, string token)
@@ -141,348 +206,191 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         return (body.GetProperty("token").GetString()!, cookie);
     }
 
-    private async Task<HttpResponseMessage> CallAsync(string slug, Guid matchId, string token)
-    {
-        using var client = factory.CreateClient(ClientOptions);
-        var (csrf, cookie) = await CsrfAsync(client, token);
+    private static string AdminBase(Fixture f) =>
+        $"/api/v1/admin/trupper/{f.TruppId}/events/{f.EventId}/kallelse";
 
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"/api/v1/teams/{slug}/matches/{matchId}/attendance/call");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request.Headers.Add("X-CSRF-TOKEN", csrf);
-        request.Headers.Add("Cookie", cookie);
+    private Task<HttpResponseMessage> SetKallelseAsync(Fixture f, params Guid[] childIds) =>
+        SendAsync(HttpMethod.Put, AdminBase(f), AdminToken(f.TruppId), new { childIds });
 
-        return await client.SendAsync(request, CancellationToken.None);
-    }
-
-    private async Task<HttpResponseMessage> SubmitAsync(
-        Guid matchId,
-        string token,
-        string status,
-        int count)
-    {
-        using var client = factory.CreateClient(ClientOptions);
-        var (csrf, cookie) = await CsrfAsync(client, token);
-
-        var request = new HttpRequestMessage(
+    private Task<HttpResponseMessage> RespondAsync(Guid eventId, Guid childId, Guid guardianId, string reply) =>
+        SendAsync(
             HttpMethod.Put,
-            $"/api/v1/matches/{matchId}/attendance/response")
-        {
-            Content = JsonContent.Create(new { status, count }),
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request.Headers.Add("X-CSRF-TOKEN", csrf);
-        request.Headers.Add("Cookie", cookie);
+            $"/api/v1/events/{eventId}/kallelse/children/{childId}",
+            PlainToken(guardianId),
+            new { reply });
 
-        return await client.SendAsync(request, CancellationToken.None);
-    }
-
-    private async Task<HttpResponseMessage> StateAsync(Guid matchId, string token)
+    private async Task<JsonElement> SummaryAsync(Fixture f)
     {
-        using var client = factory.CreateClient(ClientOptions);
+        var response = await GetAsync(AdminBase(f), AdminToken(f.TruppId));
+        response.EnsureSuccessStatusCode();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/matches/{matchId}/attendance");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        return await client.SendAsync(request, CancellationToken.None);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None)).Clone();
     }
 
-    // ---- Grinden ---------------------------------------------------------------------
+    // ---- Admin skickar kallelse ------------------------------------------------------
 
     [Fact]
-    public async Task AvslagenFlagga_KallaGerFyrahundrafyra()
+    public async Task Admin_KallarSvartPlusGulFillIn_OchAuditloggas()
     {
-        var fixture = await SeedAsync("gate-call", enabled: false);
+        var f = await SeedAsync("set");
 
-        var response = await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
+        var set = await SetKallelseAsync(f, f.SvartChild, f.SvartChild2, f.GulChild);
+        Assert.Equal(HttpStatusCode.NoContent, set.StatusCode);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await AssertAuditedAsync(AuditActions.AttendanceCallOpened, f.EventId);
+
+        var summary = await SummaryAsync(f);
+        Assert.True(summary.GetProperty("callOpen").GetBoolean());
+        Assert.Equal(3, summary.GetProperty("children").GetArrayLength());
+        Assert.Equal(3, summary.GetProperty("notAnswered").GetInt32());
     }
 
     [Fact]
-    public async Task AvslagenFlagga_LagetGerFyrahundrafyra()
+    public async Task Kalla_MedBarnUtanforTruppen_Ger400()
     {
-        var fixture = await SeedAsync("gate-state", enabled: false);
+        var f = await SeedAsync("outside");
 
-        var response = await StateAsync(fixture.MatchId, TokenFor(fixture.ParentId));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    // ---- Tranaren kallar -------------------------------------------------------------
-
-    [Fact]
-    public async Task Tranare_KanKalla_OchOmKallelseArIdempotent()
-    {
-        var fixture = await SeedAsync("call");
-        var token = TokenFor(fixture.CoachId, fixture.Slug);
-
-        var first = await CallAsync(fixture.Slug, fixture.MatchId, token);
-        var second = await CallAsync(fixture.Slug, fixture.MatchId, token);
-
-        Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, second.StatusCode);
-    }
-
-    [Fact]
-    public async Task IckeTranare_KanInteKalla()
-    {
-        // En inloggad vuxen som inte ar tranare for laget nekas -- CoachOfTeam provas mot
-        // slugen i adressen.
-        var fixture = await SeedAsync("not-coach");
-
-        var response = await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.ParentId));
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Tranare_KanInteKallaEnMatchIAnnatLag()
-    {
-        // Slugen i adressen racker inte: att matchen faktiskt hor till laget provas i tjansten.
-        // En frammande match under egen slug ger 404, inte en kallelse i fel lag.
-        var fixture = await SeedAsync("wrong-team");
-
-        var response = await CallAsync(fixture.Slug, Guid.NewGuid(), TokenFor(fixture.CoachId, fixture.Slug));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    // ---- Foraldern svarar ------------------------------------------------------------
-
-    [Fact]
-    public async Task Foralder_SvararOchAndrarAndaTillAvspark()
-    {
-        var fixture = await SeedAsync("respond");
-        await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
-
-        var parent = TokenFor(fixture.ParentId);
-
-        var first = await SubmitAsync(fixture.MatchId, parent, "Coming", 2);
-        Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
-
-        var afterFirst = await ReadStateAsync(fixture.MatchId, parent);
-        Assert.True(afterFirst.CallOpen);
-        Assert.Equal("Coming", afterFirst.Status);
-        Assert.Equal(2, afterFirst.Count);
-
-        var changed = await SubmitAsync(fixture.MatchId, parent, "Maybe", 1);
-        Assert.Equal(HttpStatusCode.NoContent, changed.StatusCode);
-
-        var afterChange = await ReadStateAsync(fixture.MatchId, parent);
-        Assert.Equal("Maybe", afterChange.Status);
-        Assert.Equal(1, afterChange.Count);
-    }
-
-    [Fact]
-    public async Task Svar_UtanKallelse_GerConflict()
-    {
-        // Tranaren har inte kallat an -- ett svar hor ingenstans.
-        var fixture = await SeedAsync("no-call");
-
-        var response = await SubmitAsync(fixture.MatchId, TokenFor(fixture.ParentId), "Coming", 1);
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Svar_EfterAvspark_GerConflict()
-    {
-        // Matchen har redan borjat -- ett svar sager ingenting langre.
-        var fixture = await SeedAsync("closed", kickoffDays: -1);
-        await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
-
-        var response = await SubmitAsync(fixture.MatchId, TokenFor(fixture.ParentId), "Coming", 1);
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Svar_KommerUtanAntal_GerBadRequest()
-    {
-        var fixture = await SeedAsync("no-count");
-        await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
-
-        var response = await SubmitAsync(fixture.MatchId, TokenFor(fixture.ParentId), "Coming", 0);
+        var response = await SetKallelseAsync(f, f.SvartChild, Guid.NewGuid());
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task KanInte_TvingasTillNoll()
+    public async Task Kalla_ForEventIAnnanTrupp_Ger404()
     {
-        // "Kan inte" tvingas till noll server-side, oavsett vad som skickas.
-        var fixture = await SeedAsync("cant");
-        await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
+        var f = await SeedAsync("idor");
+        var other = await SeedAsync("idor-other");
 
-        var parent = TokenFor(fixture.ParentId);
-        var submit = await SubmitAsync(fixture.MatchId, parent, "CantCome", 3);
-        Assert.Equal(HttpStatusCode.NoContent, submit.StatusCode);
+        // Admin for sin egen trupp, men eventet hor till en annan trupp -> 404 (EventNotInTrupp).
+        var response = await SendAsync(
+            HttpMethod.Put,
+            $"/api/v1/admin/trupper/{f.TruppId}/events/{other.EventId}/kallelse",
+            AdminToken(f.TruppId),
+            new { childIds = new[] { f.SvartChild } });
 
-        var state = await ReadStateAsync(fixture.MatchId, parent);
-        Assert.Equal("CantCome", state.Status);
-        Assert.Equal(0, state.Count);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ---- Vardnadshavaren svarar ------------------------------------------------------
+
+    [Fact]
+    public async Task GulFillIn_Vardnadshavare_KanSeOchSvara()
+    {
+        var f = await SeedAsync("fillin");
+        await SetKallelseAsync(f, f.SvartChild, f.GulChild);
+
+        // Gul-fill-in-barnets vardnadshavare ar INTE medlem av Svart, men ser sitt eget barn.
+        var mine = await GetAsync($"/api/v1/events/{f.EventId}/kallelse", PlainToken(f.GulGuardian));
+        mine.EnsureSuccessStatusCode();
+        var body = await mine.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+
+        Assert.True(body.GetProperty("callOpen").GetBoolean());
+        var children = body.GetProperty("children").EnumerateArray().ToArray();
+        Assert.Single(children);
+        Assert.Equal(f.GulChild, children[0].GetProperty("childId").GetGuid());
+        Assert.Equal("Liam J", children[0].GetProperty("displayName").GetString());
+
+        var answer = await RespondAsync(f.EventId, f.GulChild, f.GulGuardian, "Coming");
+        Assert.Equal(HttpStatusCode.NoContent, answer.StatusCode);
     }
 
     [Fact]
-    public async Task Laget_BarIngenBarnuppgift()
+    public async Task IckeVardnadshavare_KanInteSvara_Ger404()
     {
-        // §KM.1: svaret ar en status och ett antal. Ingen namn- eller barnuppgift far finnas
-        // i svaret till klienten.
-        var fixture = await SeedAsync("no-child");
-        await CallAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
+        var f = await SeedAsync("not-guardian");
+        await SetKallelseAsync(f, f.SvartChild);
 
-        var parent = TokenFor(fixture.ParentId);
-        await SubmitAsync(fixture.MatchId, parent, "Coming", 2);
+        // GulGuardian ar inte vardnadshavare for SvartChild.
+        var response = await RespondAsync(f.EventId, f.SvartChild, f.GulGuardian, "Coming");
 
-        var response = await StateAsync(fixture.MatchId, parent);
-        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
-
-        foreach (var forbidden in new[] { "name", "namn", "child", "barn", "player", "spelare" })
-        {
-            Assert.DoesNotContain(forbidden, body, StringComparison.OrdinalIgnoreCase);
-        }
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    // ---- Tranarens summering (#58) ---------------------------------------------------
-
-    private async Task<HttpResponseMessage> SummaryAsync(string slug, Guid matchId, string token)
+    [Fact]
+    public async Task Svar_JaOchNej_SynsISummeringen()
     {
-        using var client = factory.CreateClient(ClientOptions);
+        var f = await SeedAsync("summary");
+        await SetKallelseAsync(f, f.SvartChild, f.SvartChild2, f.GulChild);
 
-        var request = new HttpRequestMessage(
-          HttpMethod.Get,
-          $"/api/v1/teams/{slug}/matches/{matchId}/attendance/summary");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await RespondAsync(f.EventId, f.SvartChild, f.SvartGuardian, "Coming")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await RespondAsync(f.EventId, f.SvartChild2, f.SvartGuardian2, "NotComing")).StatusCode);
 
-        return await client.SendAsync(request, CancellationToken.None);
+        var summary = await SummaryAsync(f);
+        Assert.Equal(1, summary.GetProperty("coming").GetInt32());
+        Assert.Equal(1, summary.GetProperty("notComing").GetInt32());
+        Assert.Equal(1, summary.GetProperty("notAnswered").GetInt32());
     }
 
-    private async Task SeedResponsesAsync(
-      Guid matchId,
-      (string Name, AttendanceStatus Status, int Count)[] responders)
+    [Fact]
+    public async Task Svar_KanAndras()
+    {
+        var f = await SeedAsync("change");
+        await SetKallelseAsync(f, f.SvartChild);
+
+        await RespondAsync(f.EventId, f.SvartChild, f.SvartGuardian, "Coming");
+        await RespondAsync(f.EventId, f.SvartChild, f.SvartGuardian, "NotComing");
+
+        var summary = await SummaryAsync(f);
+        Assert.Equal(0, summary.GetProperty("coming").GetInt32());
+        Assert.Equal(1, summary.GetProperty("notComing").GetInt32());
+    }
+
+    [Fact]
+    public async Task Svar_EfterAvspark_Ger409()
+    {
+        var f = await SeedAsync("closed", kickoffDays: -1);
+        await SetKallelseAsync(f, f.SvartChild);
+
+        var response = await RespondAsync(f.EventId, f.SvartChild, f.SvartGuardian, "Coming");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Svar_UtanKallelse_Ger404()
+    {
+        // Ingen kallelse har oppnats for barnet -> ett svar hor ingenstans (samlas till 404).
+        var f = await SeedAsync("no-call");
+
+        var response = await RespondAsync(f.EventId, f.SvartChild, f.SvartGuardian, "Coming");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ---- Grinden ---------------------------------------------------------------------
+
+    [Fact]
+    public async Task AvslagenFlagga_VardnadshavareGet_Ger404()
+    {
+        var f = await SeedAsync("gate-mine", enabled: false);
+
+        var response = await GetAsync($"/api/v1/events/{f.EventId}/kallelse", PlainToken(f.SvartGuardian));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AvslagenFlagga_AdminSet_Ger409()
+    {
+        var f = await SeedAsync("gate-set", enabled: false);
+
+        var response = await SetKallelseAsync(f, f.SvartChild);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    private async Task AssertAuditedAsync(string action, Guid subjectId)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
-        var now = DateTime.UtcNow;
 
-        context.AttendanceCalls.Add(new AttendanceCall
-        {
-            Id = Guid.NewGuid(),
-            MatchId = matchId,
-            OpenedByAccountId = Guid.NewGuid(),
-            OpenedUtc = now,
-        });
+        var found = await context.AuditEntries.AsNoTracking()
+            .AnyAsync(e => e.Action == action && e.SubjectId == subjectId, CancellationToken.None);
 
-        foreach (var (name, status, count) in responders)
-        {
-            var account = new Account
-            {
-                Id = Guid.NewGuid(),
-                Email = $"{name.ToLowerInvariant()}-{Guid.NewGuid():N}@example.com",
-                FirstName = name,
-                CreatedUtc = now,
-            };
-            context.Accounts.Add(account);
-            context.AttendanceResponses.Add(new AttendanceResponse
-            {
-                Id = Guid.NewGuid(),
-                MatchId = matchId,
-                AccountId = account.Id,
-                Status = status,
-                Count = count,
-                CreatedUtc = now,
-                UpdatedUtc = now,
-            });
-        }
-
-        await context.SaveChangesAsync(CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Tranare_SerSummeringMedAntalOchNamn()
-    {
-        var fixture = await SeedAsync("summary");
-        await SeedResponsesAsync(
-          fixture.MatchId,
-          [
-            ("Anna", AttendanceStatus.Coming, 2),
-        ("Bengt", AttendanceStatus.CantCome, 0),
-        ("Cecilia", AttendanceStatus.Maybe, 1),
-          ]);
-
-        var response = await SummaryAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
-        response.EnsureSuccessStatusCode();
-
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
-
-        Assert.Equal(2, body.GetProperty("comingPeople").GetInt32());
-        Assert.Equal(1, body.GetProperty("maybePeople").GetInt32());
-        Assert.Equal(1, body.GetProperty("cantComeFamilies").GetInt32());
-        Assert.Equal(3, body.GetProperty("respondedFamilies").GetInt32());
-
-        var raw = await response.Content.ReadAsStringAsync(CancellationToken.None);
-        Assert.Contains("Anna", raw, StringComparison.Ordinal);
-        Assert.Contains("Cecilia", raw, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task Summering_SomIckeTranare_Nekas()
-    {
-        var fixture = await SeedAsync("summary-parent");
-
-        var response = await SummaryAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.ParentId));
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Summering_ForMatchIAnnatLag_GerFyrahundrafyra()
-    {
-        var fixture = await SeedAsync("summary-wrong-team");
-
-        var response = await SummaryAsync(fixture.Slug, Guid.NewGuid(), TokenFor(fixture.CoachId, fixture.Slug));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AvslagenFlagga_SummeringGerFyrahundrafyra()
-    {
-        var fixture = await SeedAsync("summary-gate", enabled: false);
-
-        var response = await SummaryAsync(fixture.Slug, fixture.MatchId, TokenFor(fixture.CoachId, fixture.Slug));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    private sealed record ResponseView(string Status, int Count);
-
-    private sealed record StateView(bool CallOpen, ResponseView? MyResponse)
-    {
-        public string? Status => MyResponse?.Status;
-
-        public int? Count => MyResponse?.Count;
-    }
-
-    private async Task<StateView> ReadStateAsync(Guid matchId, string token)
-    {
-        var response = await StateAsync(matchId, token);
-        response.EnsureSuccessStatusCode();
-
-        var element = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
-
-        var callOpen = element.GetProperty("callOpen").GetBoolean();
-
-        if (element.TryGetProperty("myResponse", out var mine)
-            && mine.ValueKind == JsonValueKind.Object)
-        {
-            return new StateView(
-                callOpen,
-                new ResponseView(mine.GetProperty("status").GetString()!, mine.GetProperty("count").GetInt32()));
-        }
-
-        return new StateView(callOpen, null);
+        Assert.True(found, $"Ingen audit-rad '{action}' för {subjectId}.");
     }
 }

@@ -76,7 +76,14 @@ export function stubApi(options: {
     vi.fn((input: unknown) => {
       const url = String(input)
 
-      // Enskild händelse först: /api/v1/events/{id} innehåller också "/events".
+      // Kallelsen ligger under /api/v1/events/{id}/kallelse — fångas före händelse-detaljen.
+      // Default: 404 (kallelsen inte påslagen), så en detaljsida som inte bryr sig om den
+      // renderar ingen kallelse-sektion.
+      if (url.includes('/kallelse')) {
+        return Promise.resolve(jsonResponse({ title: 'Kallelsen är inte påslagen' }, 404))
+      }
+
+      // Enskild händelse: /api/v1/events/{id} innehåller också "/events".
       if (url.includes('/api/v1/events/')) {
         if (options.match === 'error') return Promise.reject(new TypeError('Failed to fetch'))
         if (options.match === 'notFound') {
@@ -86,7 +93,9 @@ export function stubApi(options: {
           team: testTeams[0],
           match: testEvent('a', '2026-09-20T12:00:00Z'),
         }
-        return Promise.resolve(jsonResponse({ team: detail.team, event: detail.match }))
+        return Promise.resolve(
+          jsonResponse({ team: detail.team, event: detail.match, truppId: 'trupp-stub' }),
+        )
       }
 
       if (url.includes('/events')) {
@@ -98,13 +107,10 @@ export function stubApi(options: {
         return Promise.resolve(jsonResponse({ team: schedule.team, events: schedule.matches }))
       }
 
-      // Samåkning och kallelse ligger kvar under /api/v1/matches/{id}/… (kvarhållet
-      // MatchId, §KM.12). En detaljsida som renderas i ett test som inte bryr sig om dem
-      // ska inte krascha: tomt för samåkning, 404 (ej påslagen kallelse) för närvaro.
+      // Samåkning ligger kvar under /api/v1/matches/{id}/carpool (kvarhållet MatchId,
+      // §KM.12). En detaljsida som renderas i ett test som inte bryr sig om den ska inte
+      // krascha: tom lista.
       if (url.includes('/carpool')) return Promise.resolve(jsonResponse([]))
-      if (url.includes('/attendance')) {
-        return Promise.resolve(jsonResponse({ title: 'Kallelsen är inte påslagen' }, 404))
-      }
 
       if (options.teams === 'error') return Promise.reject(new TypeError('Failed to fetch'))
       return Promise.resolve(jsonResponse(options.teams ?? testTeams))

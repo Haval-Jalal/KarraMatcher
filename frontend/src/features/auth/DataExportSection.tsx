@@ -6,7 +6,7 @@ import { formatFullDate, formatKickoffTime, formatMatchDate } from '@/lib/time'
 import {
   getAccountExport,
   type AccountExport,
-  type AttendanceStatusCode,
+  type AttendanceReplyCode,
   type CarpoolDirectionCode,
   type CarpoolOfferStatusCode,
   type CarpoolRequestStatusCode,
@@ -171,8 +171,8 @@ function ExportView({ data }: { data: AccountExport }) {
         <ul>
           {data.attendanceResponses.map((response, index) => (
             <li key={index}>
-              {matchLabel(response.matchOpponent, response.matchKickoffUtc)} —{' '}
-              {attendanceStatus(response.status)}, {response.count} personer.
+              {matchLabel(response.eventLabel, response.eventKickoffUtc)} — {response.childName}:{' '}
+              {attendanceReply(response.reply)}.
             </li>
           ))}
         </ul>
@@ -249,14 +249,12 @@ function requestStatus(code: CarpoolRequestStatusCode): string {
   }
 }
 
-function attendanceStatus(code: AttendanceStatusCode): string {
+function attendanceReply(code: AttendanceReplyCode): string {
   switch (code) {
     case 'Coming':
-      return 'Kommer'
-    case 'CantCome':
-      return 'Kan inte'
-    case 'Maybe':
-      return 'Kanske'
+      return 'Ja'
+    case 'NotComing':
+      return 'Nej'
   }
 }
 

@@ -5,130 +5,61 @@ using KarraMatcher.Domain.Attendance;
 
 namespace KarraMatcher.Application.Features.Attendance;
 
-/// <summary>Tränaren kallar till en match. Laget står i adressen, inte i kroppen.</summary>
-public sealed record OpenAttendanceCallCommand(string Slug, Guid MatchId, Guid ActorAccountId)
-    : ICommand<OpenCallOutcome>;
+/// <summary>
+/// Admin skickar/uppdaterar kallelsen: vilka barn ur truppen som kallas till händelsen.
+/// Truppen och händelsen står i adressen, barnen i kroppen (§KM.7, `#199`).
+/// </summary>
+public sealed record SetKallelseCommand(
+    Guid TruppId,
+    Guid EventId,
+    IReadOnlyList<Guid> ChildIds,
+    Guid ActorAccountId) : ICommand<SetKallelseOutcome>;
 
-/// <summary>En vuxen svarar för sin familj: status och antal, aldrig ett barn.</summary>
-public sealed record SubmitAttendanceResponseCommand(
-    Guid MatchId,
+/// <summary>En vårdnadshavare svarar Ja/Nej för ett av sina barn.</summary>
+public sealed record RespondToKallelseCommand(
+    Guid EventId,
+    Guid ChildId,
     Guid AccountId,
-    AttendanceStatus Status,
-    int Count) : ICommand<SubmitResponseOutcome>;
+    AttendanceReply Reply) : ICommand<RespondOutcome>;
 
-/// <summary>Ett konts eget läge på en match: öppen kallelse, avspark, eget svar.</summary>
-public sealed record GetAttendanceStateQuery(Guid MatchId, Guid AccountId)
-    : IQuery<AttendanceStateDto?>;
+/// <summary>Den inloggades egna kallade barn för en händelse.</summary>
+public sealed record GetMyKallelseQuery(Guid EventId, Guid AccountId) : IQuery<MyKallelseDto?>;
 
-/// <summary>Tränarens summering för en match. Laget står i adressen (CoachOfTeam).</summary>
-public sealed record GetAttendanceSummaryQuery(string Slug, Guid MatchId)
-    : IQuery<AttendanceSummaryDto?>;
+/// <summary>Adminens sammanställning för en händelse. Truppen står i adressen (AdminOfTrupp).</summary>
+public sealed record GetKallelseSummaryQuery(Guid TruppId, Guid EventId) : IQuery<KallelseSummaryDto?>;
 
-/// <summary>Påminner dem som inte svarat. Ger antalet, eller null när matchen inte hör till laget.</summary>
-public sealed record RemindNonRespondersCommand(string Slug, Guid MatchId) : ICommand<int?>;
+/// <summary>Påminner dem som inte svarat. Antalet, eller null när händelsen inte hör till truppen.</summary>
+public sealed record RemindNonRespondersCommand(Guid TruppId, Guid EventId) : ICommand<int?>;
 
-internal sealed class OpenAttendanceCallCommandValidator
-    : AbstractValidator<OpenAttendanceCallCommand>
+internal sealed class SetKallelseCommandValidator : AbstractValidator<SetKallelseCommand>
 {
-    public OpenAttendanceCallCommandValidator()
+    public SetKallelseCommandValidator()
     {
-        RuleFor(c => c.Slug).NotEmpty();
-        RuleFor(c => c.MatchId).NotEmpty();
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.EventId).NotEmpty();
         RuleFor(c => c.ActorAccountId).NotEmpty();
+        RuleFor(c => c.ChildIds).NotNull();
     }
 }
 
-internal sealed class SubmitAttendanceResponseCommandValidator
-    : AbstractValidator<SubmitAttendanceResponseCommand>
+internal sealed class RespondToKallelseCommandValidator
+    : AbstractValidator<RespondToKallelseCommand>
 {
-    /// <summary>Fyra ur en familj till en match. Gränsen prövas här, inte bara i formuläret.</summary>
-    internal const int MaxCount = 4;
-
-    public SubmitAttendanceResponseCommandValidator()
+    public RespondToKallelseCommandValidator()
     {
-        RuleFor(c => c.MatchId).NotEmpty();
+        RuleFor(c => c.EventId).NotEmpty();
+        RuleFor(c => c.ChildId).NotEmpty();
         RuleFor(c => c.AccountId).NotEmpty();
-
-        RuleFor(c => c.Status)
-            .IsInEnum().WithMessage("Välj Kommer, Kan inte eller Kanske.");
-
-        RuleFor(c => c.Count)
-            .InclusiveBetween(0, MaxCount)
-            .WithMessage($"Antalet måste vara mellan 0 och {MaxCount}.");
-
-        /*
-         * Ett "kommer" utan nagon som kommer ar inget svar. "Kan inte" tvingas till noll i
-         * tjansten, och "kanske" far vara noll -- den som inte vet hur manga anger det den
-         * tror. Bara "kommer" kraver minst en.
-         */
-        RuleFor(c => c.Count)
-            .GreaterThanOrEqualTo(1)
-            .When(c => c.Status == AttendanceStatus.Coming)
-            .WithMessage("Ange hur många som kommer.");
+        RuleFor(c => c.Reply).IsInEnum().WithMessage("Svara Ja eller Nej.");
     }
 }
 
-internal sealed class OpenAttendanceCallCommandHandler(AttendanceService service)
-    : ICommandHandler<OpenAttendanceCallCommand, OpenCallOutcome>
+internal sealed class GetKallelseSummaryQueryValidator : AbstractValidator<GetKallelseSummaryQuery>
 {
-    public Task<OpenCallOutcome> HandleAsync(
-        OpenAttendanceCallCommand command,
-        CancellationToken cancellationToken)
+    public GetKallelseSummaryQueryValidator()
     {
-        ArgumentNullException.ThrowIfNull(command);
-
-        return service.OpenCallAsync(
-            command.Slug, command.MatchId, command.ActorAccountId, cancellationToken);
-    }
-}
-
-internal sealed class SubmitAttendanceResponseCommandHandler(AttendanceService service)
-    : ICommandHandler<SubmitAttendanceResponseCommand, SubmitResponseOutcome>
-{
-    public Task<SubmitResponseOutcome> HandleAsync(
-        SubmitAttendanceResponseCommand command,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-
-        return service.SubmitResponseAsync(
-            command.MatchId, command.AccountId, command.Status, command.Count, cancellationToken);
-    }
-}
-
-internal sealed class GetAttendanceStateQueryHandler(AttendanceService service)
-    : IQueryHandler<GetAttendanceStateQuery, AttendanceStateDto?>
-{
-    public Task<AttendanceStateDto?> HandleAsync(
-        GetAttendanceStateQuery query,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(query);
-
-        return service.GetStateAsync(query.MatchId, query.AccountId, cancellationToken);
-    }
-}
-
-internal sealed class GetAttendanceSummaryQueryValidator
-    : AbstractValidator<GetAttendanceSummaryQuery>
-{
-    public GetAttendanceSummaryQueryValidator()
-    {
-        RuleFor(q => q.Slug).NotEmpty();
-        RuleFor(q => q.MatchId).NotEmpty();
-    }
-}
-
-internal sealed class GetAttendanceSummaryQueryHandler(AttendanceService service)
-    : IQueryHandler<GetAttendanceSummaryQuery, AttendanceSummaryDto?>
-{
-    public Task<AttendanceSummaryDto?> HandleAsync(
-        GetAttendanceSummaryQuery query,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(query);
-
-        return service.GetSummaryAsync(query.Slug, query.MatchId, cancellationToken);
+        RuleFor(q => q.TruppId).NotEmpty();
+        RuleFor(q => q.EventId).NotEmpty();
     }
 }
 
@@ -137,8 +68,59 @@ internal sealed class RemindNonRespondersCommandValidator
 {
     public RemindNonRespondersCommandValidator()
     {
-        RuleFor(c => c.Slug).NotEmpty();
-        RuleFor(c => c.MatchId).NotEmpty();
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.EventId).NotEmpty();
+    }
+}
+
+internal sealed class SetKallelseCommandHandler(AttendanceService service)
+    : ICommandHandler<SetKallelseCommand, SetKallelseOutcome>
+{
+    public Task<SetKallelseOutcome> HandleAsync(
+        SetKallelseCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.SetKallelseAsync(
+            command.TruppId, command.EventId, command.ChildIds, command.ActorAccountId,
+            cancellationToken);
+    }
+}
+
+internal sealed class RespondToKallelseCommandHandler(AttendanceService service)
+    : ICommandHandler<RespondToKallelseCommand, RespondOutcome>
+{
+    public Task<RespondOutcome> HandleAsync(
+        RespondToKallelseCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.RespondAsync(
+            command.EventId, command.ChildId, command.AccountId, command.Reply, cancellationToken);
+    }
+}
+
+internal sealed class GetMyKallelseQueryHandler(AttendanceService service)
+    : IQueryHandler<GetMyKallelseQuery, MyKallelseDto?>
+{
+    public Task<MyKallelseDto?> HandleAsync(
+        GetMyKallelseQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return service.GetMineAsync(query.EventId, query.AccountId, cancellationToken);
+    }
+}
+
+internal sealed class GetKallelseSummaryQueryHandler(AttendanceService service)
+    : IQueryHandler<GetKallelseSummaryQuery, KallelseSummaryDto?>
+{
+    public Task<KallelseSummaryDto?> HandleAsync(
+        GetKallelseSummaryQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return service.GetSummaryAsync(query.TruppId, query.EventId, cancellationToken);
     }
 }
 
@@ -146,11 +128,10 @@ internal sealed class RemindNonRespondersCommandHandler(AttendanceService servic
     : ICommandHandler<RemindNonRespondersCommand, int?>
 {
     public Task<int?> HandleAsync(
-        RemindNonRespondersCommand command,
-        CancellationToken cancellationToken)
+        RemindNonRespondersCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return service.RemindNonRespondersAsync(command.Slug, command.MatchId, cancellationToken);
+        return service.RemindNonRespondersAsync(command.TruppId, command.EventId, cancellationToken);
     }
 }

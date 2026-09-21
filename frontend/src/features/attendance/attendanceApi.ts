@@ -1,136 +1,112 @@
 import { getAuthJson, postJson } from '@/lib/api'
 
 /**
- * Kallelsen och närvarosvaren mot API:t (`#57`, §KM.7).
+ * Den riktade kallelsen per barn (§KM.7, `#199`).
  *
- * <h3>Inget barn passerar</h3>
+ * <h3>Per barn, Ja/Nej</h3>
  *
- * En vuxen svarar för sin familj med ett antal — aldrig ett namn. Det finns med avsikt
- * ingen typ här som beskriver ett barn (§KM.1): servern har inga sådana uppgifter, och
- * klienten skickar inga.
+ * En kallelse riktas mot utvalda barn ur hela truppen (ett lag fylls på med barn ur andra
+ * lag vid behov). En vårdnadshavare svarar per barn: Ja (Coming) eller Nej (NotComing) —
+ * inget "kanske". Barn visas som "Liam J" (§KM.1), aldrig hela efternamnet.
  *
  * <h3>Bakom grinden</h3>
  *
- * Är kallelsen avslagen för laget svarar servern `404` (§KM.7). Läget hämtas därför bara
- * för en inloggad läsare, och en `404` betyder "funktionen finns inte här" — inte ett fel.
+ * Är kallelsen avslagen för laget svarar servern `404` på vårdnadshavarens vy (§KM.7) — då
+ * renderar anroparen ingenting, i stället för ett fel.
  */
 
-/** Hur en vuxen svarar. Speglar `AttendanceStatus` i backend. */
-export type AttendanceStatus = 'Coming' | 'CantCome' | 'Maybe'
+/** Hur en vårdnadshavare svarar för ett barn. Speglar `AttendanceReply` i backend. */
+export type AttendanceReply = 'Coming' | 'NotComing'
 
-/** Taket för hur många ur en familj som kan anges — som i backend. */
-export const MAX_ATTENDANCE_COUNT = 4
-
-/** Ett eget svar så som API:t levererar det. */
-export interface AttendanceResponse {
-  status: AttendanceStatus
-  count: number
-  /** När svaret senast ändrades, i UTC. */
-  updatedUtc: string
+/** Ett av mina barn i en kallelse, med mitt svar. */
+export interface MyChildInvitation {
+  childId: string
+  /** Barnets namn i minimal form: "Liam J". */
+  displayName: string
+  /** Mitt svar, eller null om jag inte svarat än. */
+  reply: AttendanceReply | null
 }
 
-/** Läget för en inloggad vuxen på en match. Speglar `AttendanceStateDto`. */
-export interface AttendanceState {
-  /** Sant när tränaren har kallat. Är den falsk finns inget att svara på än. */
+/** Vårdnadshavarens vy av en kallelse. Speglar `MyKallelseDto`. */
+export interface MyKallelse {
+  /** Sant när en kallelse har öppnats för händelsen. */
   callOpen: boolean
-  /** Avspark i UTC. Efter den går svaret inte längre att ändra. */
+  /** Starttid i UTC. Efter den går svaret inte längre att ändra. */
   kickoffUtc: string
-  /** Mitt eget svar, eller null om jag inte svarat än. */
-  myResponse: AttendanceResponse | null
+  /** Mina egna kallade barn. */
+  children: MyChildInvitation[]
 }
 
-const base = (matchId: string) => `/api/v1/matches/${encodeURIComponent(matchId)}/attendance`
-
-/**
- * Mitt eget läge på en match.
- *
- * Kräver konto och ligger bakom grinden. En `404` betyder att kallelsen är avslagen för
- * laget — anroparen renderar då ingenting, i stället för ett fel.
- */
-export function getAttendanceState(
-  matchId: string,
-  signal?: AbortSignal,
-): Promise<AttendanceState> {
-  return getAuthJson<AttendanceState>(base(matchId), signal)
+/** Ett kallat barn i adminens sammanställning. Speglar `KallelseChildDto`. */
+export interface KallelseChild {
+  childId: string
+  /** "Liam J" — aldrig hela efternamnet (§KM.1). */
+  displayName: string
+  /** Barnets lag, för att visa varifrån en inkallad kommer. */
+  teamName: string | null
+  colorHex: string | null
+  reply: AttendanceReply | null
 }
 
+/** Adminens sammanställning av en kallelse. Speglar `KallelseSummaryDto`. */
+export interface KallelseSummary {
+  callOpen: boolean
+  /** Antal barn som svarat Ja. */
+  coming: number
+  /** Antal barn som svarat Nej. */
+  notComing: number
+  /** Antal kallade barn utan svar. */
+  notAnswered: number
+  children: KallelseChild[]
+}
+
+const guardianBase = (eventId: string) => `/api/v1/events/${encodeURIComponent(eventId)}/kallelse`
+
+const adminBase = (truppId: string, eventId: string) =>
+  `/api/v1/admin/trupper/${encodeURIComponent(truppId)}/events/${encodeURIComponent(eventId)}/kallelse`
+
 /**
- * Tränaren kallar till matchen.
+ * Mina egna kallade barn för en händelse.
  *
- * Laget står i adressen — behörigheten prövas mot slugen, det finns inget lagfält att
- * skicka.
+ * Kräver konto. En `404` betyder att kallelsen är avslagen för laget (§KM.7) — anroparen
+ * renderar då ingenting, i stället för ett fel.
  */
-export function openAttendanceCall(teamSlug: string, matchId: string): Promise<void> {
+export function getMyKallelse(eventId: string, signal?: AbortSignal): Promise<MyKallelse> {
+  return getAuthJson<MyKallelse>(guardianBase(eventId), signal)
+}
+
+/** Sparar eller ändrar mitt svar för ett barn. Går att ändra ända fram till avspark. */
+export function respond(eventId: string, childId: string, reply: AttendanceReply): Promise<void> {
   return postJson<void>(
-    `/api/v1/teams/${encodeURIComponent(teamSlug)}/matches/${encodeURIComponent(matchId)}/attendance/call`,
+    `${guardianBase(eventId)}/children/${encodeURIComponent(childId)}`,
+    { reply },
+    { method: 'PUT' },
   )
 }
 
-/** Sparar eller ändrar mitt svar. Går att ändra ända fram till avspark. */
-export function submitAttendanceResponse(
-  matchId: string,
-  status: AttendanceStatus,
-  count: number,
-): Promise<void> {
-  return postJson<void>(`${base(matchId)}/response`, { status, count }, { method: 'PUT' })
-}
-
-/** Ett svar så som tränaren ser det i summeringen. Namnet är en vuxens (`#154`). */
-export interface AttendanceResponder {
-  /** Svarets id — en stabil nyckel för listan, inte kontots id. */
-  id: string
-  /** Den svarande vuxnas namn, eller null om hen inte fyllt i något. Aldrig ett barn. */
-  name: string | null
-  status: AttendanceStatus
-  count: number
-}
-
 /**
- * Tränarens summering för en match. Speglar `AttendanceSummaryDto`.
+ * Adminens sammanställning: kallade barn med lag och svar, samt Ja/Nej/ej-svarat-antal.
  *
- * Ingen lista över dem som *inte* svarat — den kräver en förälder↔lag-koppling som inte
- * finns (§KM.1) och hör hemma i `#63`. Summeringen räknar bara dem som svarat.
+ * Kräver admin för truppen (truppens id står i adressen). Bär barnens namn, därför aldrig
+ * för en gäst och aldrig i en delad cache.
  */
-export interface AttendanceSummary {
-  /** Summan av antalen från dem som svarat Kommer — hur många som faktiskt dyker upp. */
-  comingPeople: number
-  maybePeople: number
-  cantComeFamilies: number
-  respondedFamilies: number
-  responders: AttendanceResponder[]
-  /**
-   * Hur många som förväntas svara men inte gjort det — lagets prenumeranter med konto minus
-   * dem som svarat. Kan nås av en påminnelse.
-   */
-  notAnsweredCount: number
-  /** Namnen på dem som inte svarat och fyllt i ett namn. Aldrig ett barn. */
-  notAnsweredNames: string[]
-}
-
-/**
- * Tränarens summering. Kräver tränarskap för laget (laget står i adressen), och bär de
- * svarande vuxnas namn — därför aldrig för en gäst och aldrig i en delad cache.
- */
-export function getAttendanceSummary(
-  teamSlug: string,
-  matchId: string,
+export function getKallelseSummary(
+  truppId: string,
+  eventId: string,
   signal?: AbortSignal,
-): Promise<AttendanceSummary> {
-  return getAuthJson<AttendanceSummary>(
-    `/api/v1/teams/${encodeURIComponent(teamSlug)}/matches/${encodeURIComponent(matchId)}/attendance/summary`,
-    signal,
-  )
+): Promise<KallelseSummary> {
+  return getAuthJson<KallelseSummary>(adminBase(truppId, eventId), signal)
 }
 
 /**
- * Påminner dem som inte svarat. Notisen går bara till lagets prenumeranter med konto som
- * ännu inte svarat — aldrig till någon som redan svarat. Svarar med antalet som påmindes.
+ * Skickar eller uppdaterar kallelsen: vilka barn ur truppen som kallas. Full synk — mängden
+ * ersätter den föregående (redan kallade barn behåller sitt svar server-side).
  */
-export function remindNonResponders(
-  teamSlug: string,
-  matchId: string,
-): Promise<{ reminded: number }> {
-  return postJson<{ reminded: number }>(
-    `/api/v1/teams/${encodeURIComponent(teamSlug)}/matches/${encodeURIComponent(matchId)}/attendance/remind`,
-  )
+export function setKallelse(truppId: string, eventId: string, childIds: string[]): Promise<void> {
+  return postJson<void>(adminBase(truppId, eventId), { childIds }, { method: 'PUT' })
+}
+
+/** Påminner vårdnadshavarna till de kallade barn som inte svarat. Svarar med antalet. */
+export function remind(truppId: string, eventId: string): Promise<{ reminded: number }> {
+  return postJson<{ reminded: number }>(`${adminBase(truppId, eventId)}/remind`)
 }

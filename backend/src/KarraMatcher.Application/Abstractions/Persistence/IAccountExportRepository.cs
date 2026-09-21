@@ -64,13 +64,13 @@ public sealed record CarpoolRequestExportRow(
     CarpoolRequestStatus Status,
     DateTime CreatedUtc);
 
-/// <summary>Ett närvarosvar föräldern lämnat för sin familj (§KM.7) — ett antal, aldrig ett namn.</summary>
+/// <summary>Ett kallelsesvar vårdnadshavaren lämnat för ett av sina barn (§KM.7, `#199`).</summary>
 public sealed record AttendanceResponseExportRow(
-    string MatchOpponent,
-    DateTime MatchKickoffUtc,
-    AttendanceStatus Status,
-    int Count,
-    DateTime CreatedUtc);
+    string EventLabel,
+    DateTime EventKickoffUtc,
+    string ChildName,
+    AttendanceReply Reply,
+    DateTime RespondedUtc);
 
 /// <summary>Notisinställningen för ett lag.</summary>
 public sealed record NotificationPreferenceExportRow(

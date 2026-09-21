@@ -165,7 +165,7 @@ public partial class PlayerStatisticsTests
          * ar vuxnas egna ord om sin egen resa. Inget barn namns i nagondera (§KM.1), och
          * bada gallras 30 dagar efter matchen (§KM.12).
          *
-         * AttendanceCalls och AttendanceResponses tillkom i #57 och ar medvetet med.
+         * AttendanceCalls och AttendanceInvitations (kallelsen per barn, #199) ar medvetet med.
          * Kallelsen bar matchens id och nar den oppnades; svaret bar en status (Kommer / Kan
          * inte / Kanske) och ett antal 0-4. Ingendera har ett falt som pekar ut ett barn --
          * en vuxen svarar for sin familj, och vilket barn som avses vet bara familjens egen
@@ -173,7 +173,7 @@ public partial class PlayerStatisticsTests
          */
         Assert.Equal(
             [
-                "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceResponses", "AuditEntries",
+                "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceInvitations", "AuditEntries",
                 "CarpoolOffers", "CarpoolRequests", "Children", "Clubs", "Events", "GuardianConsents",
                 "Guardianships",
                 "Invitations", "LoginCodes", "MembershipApplications",

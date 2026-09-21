@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,61 +7,54 @@ import { emptyResponse, jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
- * Kallelsen på matchsidan (`#57`, §KM.7).
+ * Den riktade kallelsen per barn (§KM.7, `#199`).
  *
- * Det som vaktas: att funktionen är osynlig när grinden är av (404), att tränaren ser
- * knappen att kalla, att en vuxen kan svara med ett antal, och att "kan inte" inte frågar
- * efter ett antal. Inget barn nämns någonstans (§KM.1).
+ * Det som vaktas: en vårdnadshavare ser sina egna kallade barn och svarar Ja/Nej per barn;
+ * en gäst/avslagen kallelse (404) ser ingenting; en admin väljer barn tvärs över lagen och
+ * skickar; summeringen räknar Ja/Nej/ej-svarat. Barn visas som "Liam J" (§KM.1).
  */
 
+const TRUPP = 'trupp-1'
+const EVENT = 'm1'
+const FUTURE = '2026-12-20T11:00:00Z'
+
 const PARENT_TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
+const ADMIN_TOKEN = `x.${btoa(JSON.stringify({ email: 'admin@example.com', 'admin-trupp': TRUPP }))}.y`
 
-function coachToken(slug: string): string {
-  return `x.${btoa(JSON.stringify({ email: 'tranare@example.com', coach: slug }))}.y`
-}
+const team = { slug: 'svart', name: 'Svart', ageGroup: 'P2016', colorHex: '#161616' }
 
-const team = { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' }
-
-function matchAt(kickoffUtc: string) {
+function eventDetail() {
   return {
-    id: 'm1',
-    type: 'Match',
-    kickoffUtc,
-    title: null,
-    opponent: 'Torslanda',
-    isHome: false,
-    status: 'Scheduled',
-    address: 'Klarebergsvallen, Göteborg',
-    venue: {
-      name: 'Klarebergsvallen',
-      address: 'Klarebergsvallen, Göteborg',
-      latitude: 57.8,
-      longitude: 12,
+    team,
+    truppId: TRUPP,
+    event: {
+      id: EVENT,
+      type: 'Match',
+      kickoffUtc: FUTURE,
+      title: null,
+      opponent: 'Torslanda',
+      isHome: false,
+      status: 'Scheduled',
+      address: 'Klarebergsvallen',
+      venue: {
+        name: 'Klarebergsvallen',
+        address: 'Klarebergsvallen',
+        latitude: 57.8,
+        longitude: 12,
+      },
     },
   }
 }
 
-const FUTURE = '2026-12-20T11:00:00Z'
-const PAST = '2026-01-10T11:00:00Z'
-
-interface StateBody {
-  callOpen: boolean
-  kickoffUtc: string
-  myResponse: { status: string; count: number; updatedUtc: string } | null
+interface Options {
+  token?: string
+  mine?: Record<string, unknown> | 'gate-off'
+  summary?: unknown
+  roster?: unknown
 }
 
-/**
- * Svarar som API:t. `/api/v1/matches/m1/attendance` innehåller också `/api/v1/matches/`,
- * så kallelsens adresser måste fångas före matchen.
- */
-function stubApi(options: {
-  token?: string
-  state?: StateBody | 'gate-off'
-  kickoffUtc?: string
-  summary?: unknown
-}) {
+function stub(options: Options) {
   const token = options.token ?? PARENT_TOKEN
-  const kickoffUtc = options.kickoffUtc ?? FUTURE
   const sent: { url: string; method: string; body: unknown }[] = []
 
   vi.stubGlobal(
@@ -69,7 +62,6 @@ function stubApi(options: {
     vi.fn((input: unknown, init?: RequestInit) => {
       const url = String(input)
       const method = init?.method ?? 'GET'
-
       sent.push({
         url,
         method,
@@ -80,42 +72,44 @@ function stubApi(options: {
       if (url.includes('/auth/refresh'))
         return Promise.resolve(jsonResponse({ accessToken: token }))
 
-      if (url.includes('/attendance/summary')) {
+      // Påminnelse
+      if (url.includes('/remind')) return Promise.resolve(jsonResponse({ reminded: 2 }))
+
+      // Vårdnadshavarens svar för ett barn: PUT /events/{id}/kallelse/children/{childId}
+      if (url.includes('/kallelse/children/')) return Promise.resolve(emptyResponse(204))
+
+      // Adminens kallelse (GET summering / PUT urval): /admin/.../kallelse
+      if (url.includes('/admin/') && url.includes('/kallelse')) {
+        if (method === 'PUT') return Promise.resolve(emptyResponse(204))
         return Promise.resolve(
           jsonResponse(
             options.summary ?? {
-              comingPeople: 0,
-              maybePeople: 0,
-              cantComeFamilies: 0,
-              respondedFamilies: 0,
-              responders: [],
+              callOpen: true,
+              coming: 0,
+              notComing: 0,
+              notAnswered: 0,
+              children: [],
             },
           ),
         )
       }
 
-      if (url.includes('/attendance/remind')) {
-        return Promise.resolve(jsonResponse({ reminded: 2 }))
+      // Vårdnadshavarens vy: GET /events/{id}/kallelse
+      if (url.includes('/kallelse')) {
+        if (options.mine === 'gate-off') return Promise.resolve(emptyResponse(404))
+        return Promise.resolve(
+          jsonResponse(options.mine ?? { callOpen: true, kickoffUtc: FUTURE, children: [] }),
+        )
       }
 
-      if (url.includes('/attendance/call')) return Promise.resolve(emptyResponse(204))
-      if (url.includes('/attendance/response')) return Promise.resolve(emptyResponse(204))
-
-      if (url.includes('/attendance')) {
-        if (options.state === 'gate-off') return Promise.resolve(emptyResponse(404))
-
-        return Promise.resolve(
-          jsonResponse(options.state ?? { callOpen: false, kickoffUtc, myResponse: null }),
-        )
+      // Truppens roster (adminens barnväljare): /admin/trupper/{id}/children
+      if (url.includes('/children')) {
+        return Promise.resolve(options.roster ?? jsonResponse({ teams: [], children: [] }))
       }
 
       if (url.includes('/carpool')) return Promise.resolve(jsonResponse([]))
 
-      // Detaljsidan hämtar händelsen på /api/v1/events/{id} (`#198`). Närvarons egna
-      // adresser ligger kvar under /api/v1/matches/ och fångas ovan.
-      if (url.includes('/api/v1/events/')) {
-        return Promise.resolve(jsonResponse({ team, event: matchAt(kickoffUtc) }))
-      }
+      if (url.includes('/api/v1/events/')) return Promise.resolve(jsonResponse(eventDetail()))
 
       return Promise.resolve(jsonResponse({}))
     }),
@@ -133,204 +127,147 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('grinden håller funktionen osynlig', () => {
+describe('vårdnadshavaren svarar per barn', () => {
   it('en gäst ser ingen kallelse', async () => {
-    stubApi({ state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null } })
+    stub({ mine: { callOpen: true, kickoffUtc: FUTURE, children: [] } })
 
-    renderRoute('/handelse/m1')
+    renderRoute(`/handelse/${EVENT}`)
 
-    // Matchen laddar; kallelsen ska aldrig dyka upp for en utloggad.
     expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Kallelse' })).not.toBeInTheDocument()
   })
 
   it('en inloggad vars lag har kallelsen avslagen ser ingenting (404)', async () => {
     setAccessToken(PARENT_TOKEN)
-    stubApi({ state: 'gate-off' })
+    stub({ mine: 'gate-off' })
 
-    renderRoute('/handelse/m1')
+    renderRoute(`/handelse/${EVENT}`)
 
     expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Kallelse' })).not.toBeInTheDocument(),
     )
   })
-})
 
-describe('tränaren kallar', () => {
-  it('ser knappen och öppnar kallelsen', async () => {
-    setAccessToken(coachToken('gul'))
-    const sent = stubApi({
-      token: coachToken('gul'),
-      state: { callOpen: false, kickoffUtc: FUTURE, myResponse: null },
+  it('ser sina egna kallade barn och svarar Ja', async () => {
+    setAccessToken(PARENT_TOKEN)
+    const sent = stub({
+      mine: {
+        callOpen: true,
+        kickoffUtc: FUTURE,
+        children: [{ childId: 'c1', displayName: 'Liam J', reply: null }],
+      },
     })
 
-    renderRoute('/handelse/m1')
+    renderRoute(`/handelse/${EVENT}`)
 
-    const button = await screen.findByRole('button', { name: 'Kalla till matchen' })
-    await userEvent.click(button)
+    const group = await screen.findByRole('group', { name: 'Svar för Liam J' })
+    await userEvent.click(within(group).getByRole('button', { name: 'Ja' }))
 
-    await waitFor(() =>
-      expect(
-        sent.some(
-          (r) => r.method === 'POST' && r.url.includes('/teams/gul/matches/m1/attendance/call'),
-        ),
-      ).toBe(true),
-    )
+    await waitFor(() => {
+      const put = sent.find(
+        (r) => r.method === 'PUT' && r.url.includes(`/events/${EVENT}/kallelse/children/c1`),
+      )
+      expect(put?.body).toEqual({ reply: 'Coming' })
+    })
+  })
+})
+
+describe('adminen skickar kallelse', () => {
+  const roster = jsonResponse({
+    teams: [
+      { id: 't-svart', name: 'Svart', colorHex: '#161616' },
+      { id: 't-gul', name: 'Gul', colorHex: '#D9A21B' },
+    ],
+    children: [
+      {
+        id: 'c1',
+        firstName: 'Liam',
+        lastInitial: 'J',
+        displayName: 'Liam J',
+        teamId: 't-svart',
+        teamName: 'Svart',
+        guardians: [],
+      },
+      {
+        id: 'c2',
+        firstName: 'Nora',
+        lastInitial: 'K',
+        displayName: 'Nora K',
+        teamId: 't-gul',
+        teamName: 'Gul',
+        guardians: [],
+      },
+    ],
   })
 
-  it('en förälder ser en upplysning i stället för knappen innan tränaren kallat', async () => {
-    setAccessToken(PARENT_TOKEN)
-    stubApi({ state: { callOpen: false, kickoffUtc: FUTURE, myResponse: null } })
+  it('väljer barn tvärs över lagen och skickar', async () => {
+    setAccessToken(ADMIN_TOKEN)
+    const sent = stub({
+      token: ADMIN_TOKEN,
+      roster,
+      summary: { callOpen: true, coming: 0, notComing: 0, notAnswered: 0, children: [] },
+    })
 
-    renderRoute('/handelse/m1')
+    renderRoute(`/handelse/${EVENT}`)
 
-    expect(
-      await screen.findByText('Tränaren har inte kallat till den här matchen än.'),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Kalla till matchen' })).not.toBeInTheDocument()
+    // Snabbval "Hela laget Svart" väljer Liam; sen kryssas en Gul-spelare in som fyllnad.
+    await userEvent.click(await screen.findByRole('button', { name: 'Hela laget Svart' }))
+    await userEvent.click(screen.getByLabelText('Nora K'))
+    await userEvent.click(screen.getByRole('button', { name: 'Skicka kallelse' }))
+
+    await waitFor(() => {
+      const put = sent.find(
+        (r) =>
+          r.method === 'PUT' && r.url.includes(`/admin/trupper/${TRUPP}/events/${EVENT}/kallelse`),
+      )
+      const ids = (put?.body as { childIds: string[] } | undefined)?.childIds ?? []
+      expect([...ids].sort()).toEqual(['c1', 'c2'])
+    })
   })
 
-  it('ser summeringen: antal och vilka vuxna som svarat', async () => {
-    setAccessToken(coachToken('gul'))
-    stubApi({
-      token: coachToken('gul'),
-      state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null },
+  it('visar sammanställningen och kan påminna', async () => {
+    setAccessToken(ADMIN_TOKEN)
+    const sent = stub({
+      token: ADMIN_TOKEN,
+      roster,
       summary: {
-        comingPeople: 5,
-        maybePeople: 1,
-        cantComeFamilies: 2,
-        respondedFamilies: 4,
-        responders: [
-          { id: 'a', name: 'Anna Berg', status: 'Coming', count: 3 },
-          { id: 'b', name: 'Bengt Ek', status: 'CantCome', count: 0 },
+        callOpen: true,
+        coming: 3,
+        notComing: 1,
+        notAnswered: 2,
+        children: [
+          {
+            childId: 'c1',
+            displayName: 'Liam J',
+            teamName: 'Svart',
+            colorHex: '#161616',
+            reply: 'Coming',
+          },
+          {
+            childId: 'c2',
+            displayName: 'Nora K',
+            teamName: 'Gul',
+            colorHex: '#D9A21B',
+            reply: null,
+          },
         ],
       },
     })
 
-    renderRoute('/handelse/m1')
+    renderRoute(`/handelse/${EVENT}`)
 
-    expect(await screen.findByRole('heading', { name: 'Svar hittills' })).toBeInTheDocument()
-    // Exakt "5", inte /5/: matchens relativa dagsetikett ("Om 95 dagar") innehåller också
-    // en femma, och det talet ändras med dagens datum. En delsträngsmatchning blir därför
-    // en tidsinställd bomb — den föll den dag matchen råkade ligga 95 dagar bort.
-    expect(screen.getByText('5', { exact: true })).toBeInTheDocument()
-    expect(screen.getByText(/Anna Berg/)).toBeInTheDocument()
-    expect(screen.getByText(/Bengt Ek/)).toBeInTheDocument()
-  })
-
-  it('ser vilka som inte svarat och kan påminna dem', async () => {
-    setAccessToken(coachToken('gul'))
-    const sent = stubApi({
-      token: coachToken('gul'),
-      state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null },
-      summary: {
-        comingPeople: 3,
-        maybePeople: 0,
-        cantComeFamilies: 0,
-        respondedFamilies: 1,
-        responders: [{ id: 'a', name: 'Anna Berg', status: 'Coming', count: 3 }],
-        notAnsweredCount: 2,
-        notAnsweredNames: ['Bengt Ek', 'Cecilia Dahl'],
-      },
-    })
-
-    renderRoute('/handelse/m1')
-
-    expect(await screen.findByText(/2 har inte svarat/)).toBeInTheDocument()
-    expect(screen.getByText(/Bengt Ek, Cecilia Dahl/)).toBeInTheDocument()
+    const heading = await screen.findByRole('heading', { name: 'Svar hittills' })
+    const summary = heading.closest('.attendance__summary') as HTMLElement
+    expect(screen.getByText(/3/, { selector: '.attendance__totals strong' })).toBeInTheDocument()
+    // Liam J förekommer även i barnväljaren ovan — leta i just sammanställningen.
+    expect(within(summary).getByText('Liam J')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Påminn dem som inte svarat' }))
 
     await waitFor(() =>
-      expect(sent.some((r) => r.method === 'POST' && r.url.includes('/attendance/remind'))).toBe(
-        true,
-      ),
+      expect(sent.some((r) => r.method === 'POST' && r.url.includes('/remind'))).toBe(true),
     )
-    expect(await screen.findByText('Påminde 2 föräldrar.')).toBeInTheDocument()
-  })
-
-  it('en förälder ser ingen summering', async () => {
-    // Summeringen bar de svarande vuxnas namn -- lagets egen sak, bara for tranaren (§KM.1).
-    setAccessToken(PARENT_TOKEN)
-    stubApi({
-      state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null },
-      summary: {
-        comingPeople: 5,
-        maybePeople: 0,
-        cantComeFamilies: 0,
-        respondedFamilies: 5,
-        responders: [{ id: 'a', name: 'Anna Berg', status: 'Coming', count: 5 }],
-      },
-    })
-
-    renderRoute('/handelse/m1')
-
-    // Formuläret finns (föräldern kan svara), men summeringen och namnen gör det inte.
-    expect(await screen.findByRole('button', { name: 'Svara' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Svar hittills' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Anna Berg')).not.toBeInTheDocument()
-  })
-})
-
-describe('den vuxna svarar', () => {
-  it('skickar status och antal', async () => {
-    setAccessToken(PARENT_TOKEN)
-    const sent = stubApi({ state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null } })
-
-    renderRoute('/handelse/m1')
-
-    await userEvent.selectOptions(await screen.findByLabelText('Hur många kommer?'), '2')
-    await userEvent.click(screen.getByRole('button', { name: 'Svara' }))
-
-    await waitFor(() => {
-      const put = sent.find((r) => r.method === 'PUT' && r.url.includes('/attendance/response'))
-      expect(put?.body).toEqual({ status: 'Coming', count: 2 })
-    })
-  })
-
-  it('visar det egna svaret och låter det ändras', async () => {
-    setAccessToken(PARENT_TOKEN)
-    stubApi({
-      state: {
-        callOpen: true,
-        kickoffUtc: FUTURE,
-        myResponse: { status: 'Coming', count: 2, updatedUtc: '2026-09-10T18:00:00Z' },
-      },
-    })
-
-    renderRoute('/handelse/m1')
-
-    expect(await screen.findByText(/Ditt svar:/)).toBeInTheDocument()
-    expect(screen.getByText('Kommer (2)')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ändra svar' })).toBeInTheDocument()
-  })
-
-  it('frågar inte efter ett antal för "kan inte"', async () => {
-    setAccessToken(PARENT_TOKEN)
-    stubApi({ state: { callOpen: true, kickoffUtc: FUTURE, myResponse: null } })
-
-    renderRoute('/handelse/m1')
-
-    await userEvent.click(await screen.findByLabelText('Kan inte'))
-
-    expect(screen.queryByLabelText('Hur många kommer?')).not.toBeInTheDocument()
-  })
-
-  it('går inte att svara på en match som spelats', async () => {
-    setAccessToken(PARENT_TOKEN)
-    stubApi({
-      kickoffUtc: PAST,
-      state: {
-        callOpen: true,
-        kickoffUtc: PAST,
-        myResponse: { status: 'Coming', count: 1, updatedUtc: '2026-01-09T18:00:00Z' },
-      },
-    })
-
-    renderRoute('/handelse/m1')
-
-    expect(await screen.findByText(/Du svarade: Kommer \(1\)/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Svara|Ändra svar/ })).not.toBeInTheDocument()
+    expect(await screen.findByText(/Påminde 2/)).toBeInTheDocument()
   })
 })
