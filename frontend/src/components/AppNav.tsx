@@ -117,6 +117,18 @@ export function AppNav() {
           <li>
             <Link
               className="app-nav__link"
+              to="/chatt"
+              aria-current={current === 'chatt' ? 'page' : undefined}
+            >
+              Chatt
+            </Link>
+          </li>
+        )}
+
+        {status === 'inloggad' && (
+          <li>
+            <Link
+              className="app-nav__link"
               to="/konto"
               aria-current={current === 'konto' ? 'page' : undefined}
             >
@@ -130,7 +142,15 @@ export function AppNav() {
 }
 
 type Section =
-  'matcher' | 'spelarkort' | 'tranare' | 'logga-in' | 'konto' | 'superadmin' | 'admin' | null
+  | 'matcher'
+  | 'spelarkort'
+  | 'chatt'
+  | 'tranare'
+  | 'logga-in'
+  | 'konto'
+  | 'superadmin'
+  | 'admin'
+  | null
 
 /**
  * Vilken meny­post adressen hör till.
@@ -148,6 +168,7 @@ function sectionOf(pathname: string): Section {
   if (pathname === '/konto') return 'konto'
   if (pathname === '/superadmin') return 'superadmin'
   if (pathname === '/admin') return 'admin'
+  if (pathname.startsWith('/chatt')) return 'chatt'
 
   if (pathname === '/' || pathname.startsWith('/lag/') || pathname.startsWith('/handelse/')) {
     return 'matcher'

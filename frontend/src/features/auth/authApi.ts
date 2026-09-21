@@ -108,6 +108,18 @@ export function coachTeamsFromToken(token: string): string[] {
   return Array.isArray(claim) ? claim.filter((slug) => typeof slug === 'string') : []
 }
 
+/**
+ * Kontots id ur token (`sub`), för att känna igen den inloggades egna inlägg (`#201`).
+ *
+ * Som resten här: bara för vad som <em>visas</em> (t.ex. en "Ta bort"-knapp på ett eget
+ * chattmeddelande). Servern avgör vad som faktiskt får göras.
+ */
+export function accountIdFromToken(token: string): string | null {
+  const sub = claimsFromToken(token)?.sub
+
+  return typeof sub === 'string' ? sub : null
+}
+
 /** Sant om kontot är administratör, alltså tränare för alla lag. */
 export function isAdminFromToken(token: string): boolean {
   const claims = claimsFromToken(token)
@@ -146,6 +158,7 @@ export function adminTruppFromToken(token: string): string[] {
 
 interface TokenClaims {
   email?: string
+  sub?: string
   coach?: string | string[]
   role?: unknown
   superadmin?: unknown
