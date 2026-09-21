@@ -103,6 +103,7 @@ internal static class AuthenticationSetup
 
         // Medlemskaps-handlers är Scoped: de läser medlemskap mot databasen per request (v2).
         services.AddScoped<IAuthorizationHandler, MemberOfTeamHandler>();
+        services.AddScoped<IAuthorizationHandler, MemberOfTruppHandler>();
         services.AddScoped<IAuthorizationHandler, MemberOfEventHandler>();
 
         services.AddAntiforgery(options =>

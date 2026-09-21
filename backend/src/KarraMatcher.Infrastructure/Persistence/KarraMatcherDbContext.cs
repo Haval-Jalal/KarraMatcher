@@ -4,6 +4,7 @@ using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Chat;
 using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
@@ -48,6 +49,10 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<AttendanceCall> AttendanceCalls => Set<AttendanceCall>();
 
     public DbSet<AttendanceInvitation> AttendanceInvitations => Set<AttendanceInvitation>();
+
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
+    public DbSet<ChatReport> ChatReports => Set<ChatReport>();
 
     public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
         Set<Domain.Push.PushSubscription>();

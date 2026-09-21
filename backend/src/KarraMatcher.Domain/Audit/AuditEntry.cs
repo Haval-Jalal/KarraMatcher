@@ -101,6 +101,10 @@ public static class AuditActions
     public const string AttendanceDisabled = "narvaro.avslagen";
     public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";
 
+    // Chatt (§KM.1/§KM.10, `#201`) — aldrig meddelandetexten, bara id och åtgärd.
+    public const string ChatMessageDeleted = "chatt.meddelande.raderat";
+    public const string ChatMessageReported = "chatt.meddelande.anmalt";
+
     public const string CarpoolOfferCreated = "samakning.erbjudande.skapat";
     public const string CarpoolOfferWithdrawn = "samakning.erbjudande.tillbakadraget";
     public const string CarpoolRequestCreated = "samakning.forfragan.skickad";

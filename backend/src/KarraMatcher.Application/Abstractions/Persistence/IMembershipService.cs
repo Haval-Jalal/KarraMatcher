@@ -1,5 +1,9 @@
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
+/// <summary>En trupp den inloggade är medlem av — för medlemmens egna vyer (t.ex. chatt, `#201`).</summary>
+/// <param name="IsLeader">Sant om kontot är admin för truppen eller tränare för något av dess lag (får schemalägga).</param>
+public sealed record MemberTruppDto(Guid Id, string ClubName, string Name, string Season, bool IsLeader);
+
 /// <summary>
 /// Avgör om ett konto är <b>medlem</b> och därmed får se en trupps eller ett lags innehåll
 /// (v2, `#191`). Appen är stängd (§KM.3): inloggning räcker inte, man måste höra till.
@@ -17,6 +21,34 @@ public interface IMembershipService
     public Task<bool> IsMemberOfTeamAsync(
         Guid accountId,
         Guid teamId,
+        CancellationToken cancellationToken);
+
+    /// <summary>Trupperna den inloggade är medlem av — för medlemmens egna vyer (`#201`).</summary>
+    public Task<IReadOnlyList<MemberTruppDto>> MemberTrupperAsync(
+        Guid accountId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Är kontot en <em>ledare</em> i truppen — admin för truppen eller tränare för något av
+    /// dess lag (eller superadmin)? Ledare får schemalägga chatt-meddelanden (`#201`).
+    /// </summary>
+    public Task<bool> IsLeaderOfTruppAsync(
+        Guid accountId,
+        Guid ageGroupId,
+        CancellationToken cancellationToken);
+
+    /// <summary>Är kontot medlem av truppen (åldersgruppen) — via valfritt av dess lag eller trupp-roll?</summary>
+    public Task<bool> IsMemberOfTruppAsync(
+        Guid accountId,
+        Guid ageGroupId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Konto-id för alla medlemmar av truppen (tvärs över dess lag) — för att rikta en
+    /// trupp-notis (`#201`). Global superadmin räknas inte som medlem här.
+    /// </summary>
+    public Task<IReadOnlyList<Guid>> MemberAccountIdsForTruppAsync(
+        Guid ageGroupId,
         CancellationToken cancellationToken);
 
     /// <summary>

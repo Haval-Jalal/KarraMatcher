@@ -68,6 +68,8 @@ builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushRetentionWo
 // Notisutskicken sker utanfor request-traden (#61). En tranare som flyttar en match ska fa
 // sitt svar direkt, inte efter att femton notiser gatt ivag over internet.
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushDispatchWorker>();
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Chat.ChatRetentionWorker>();
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Chat.ChatReleaseWorker>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
