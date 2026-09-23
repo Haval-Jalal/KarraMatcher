@@ -116,8 +116,12 @@
 
 **v2 (epic `#205`) — alla issues byggda.** `#189`–`#206` klara. FE gäst-grind (`#242`) och
 klient-push (`#244`) därutöver klara. **Kvar innan v2 kan driftsättas: bara migreringen mot Neon**
-— migrationerna `#198`–`#201` + `AddAuditCorrelationId` är incheckade men inte körda mot
-databasen än. Kör dem samlat vid driftsättningen. Mindre FE-städning kvar som egna uppgifter (se nedan).
+— v2-migrationerna (`AddV2DomainModel` → `AddAuditCorrelationId`) är incheckade men inte körda
+mot databasen än. **Runbook finns:** [`docs/DEPLOY-NEON-MIGRATION.md`](./DEPLOY-NEON-MIGRATION.md)
+— säkerhetskopiera först (den enda oåterkalleliga raden är en `DROP TABLE "AttendanceResponses"`,
+den gamla antalsnärvaron; `Matches`→`Events` byter bara namn och behåller data), granska den
+idempotenta SQL:en, applicera via skript eller `Database__ApplyMigrationsOnStartup=true`, verifiera.
+Mindre FE-städning kvar som egna uppgifter (se nedan).
 
 **Två saker att bära med efter `#191`:**
 
