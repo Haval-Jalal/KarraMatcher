@@ -18,8 +18,8 @@
  */
 
 // Byt version för att slänga gamla cachar. Namnen är prefixade så att städningen nedan
-// bara rör våra egna.
-const VERSION = 'v1'
+// bara rör våra egna. v2: push- och notificationclick-hanterare (`#244`).
+const VERSION = 'v2'
 const SHELL_CACHE = `karra-skal-${VERSION}`
 const DATA_CACHE = `karra-data-${VERSION}`
 const CACHE_PREFIX = 'karra-'
@@ -56,6 +56,78 @@ self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting()
   }
+})
+
+/*
+ * ── Notiser (§KM.10, `#244`) ──────────────────────────────────────────────────────
+ *
+ * Backend skickar en krypterad nyttolast med exakt `title`, `body` och `url` — aldrig något
+ * om ett barn, ett spelarkort eller en förälders fritext (se PushMessage på serversidan). Vi
+ * visar det som det är och sparar ingenting: en notis loggas inte och når inte vår cache.
+ */
+self.addEventListener('push', (event) => {
+  // Utan data finns inget att visa. En tom notis är värre än ingen, så vi avstår hellre.
+  if (!event.data) {
+    return
+  }
+
+  let payload
+  try {
+    payload = event.data.json()
+  } catch {
+    return
+  }
+
+  const title =
+    typeof payload.title === 'string' && payload.title !== '' ? payload.title : 'Kärra Matcher'
+  const url = typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/'
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: typeof payload.body === 'string' ? payload.body : '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      // Samma mål samlas i en notis i stället för att stapla likadana: två samåkningssvar
+      // för samma match blir en rad, inte två.
+      tag: url,
+      data: { url },
+    }),
+  )
+})
+
+/**
+ * Ett klick öppnar appen på notisens adress — och återanvänder en redan öppen flik hellre
+ * än att öppna en till, så att en förälder inte får tre Kärra Matcher-flikar av tre notiser.
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+
+  const data = event.notification.data
+  const url = data && typeof data.url === 'string' ? data.url : '/'
+  const target = new URL(url, self.location.origin).href
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      for (const client of windows) {
+        if (client.url === target && 'focus' in client) {
+          return client.focus()
+        }
+      }
+
+      const open = windows.find((client) => 'focus' in client)
+
+      if (open) {
+        // En öppen flik navigeras dit och lyfts fram, om webbläsaren tillåter navigate().
+        if ('navigate' in open) {
+          return open.navigate(target).then((navigated) => (navigated ?? open).focus())
+        }
+
+        return open.focus()
+      }
+
+      return self.clients.openWindow ? self.clients.openWindow(target) : undefined
+    }),
+  )
 })
 
 /**

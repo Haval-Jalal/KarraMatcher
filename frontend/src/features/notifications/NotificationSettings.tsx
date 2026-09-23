@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
 
-import { NotificationInstallTip } from './NotificationInstallTip'
+import { DevicePushToggle } from './DevicePushToggle'
 import { saveNotificationSettings, type NotificationSettings as Settings } from './notificationsApi'
 import { notificationSettingsQueryKey, useNotificationSettings } from './useNotificationSettings'
 
@@ -72,6 +72,9 @@ export function NotificationSettings({ teamSlug }: { teamSlug: string }) {
   return (
     <section className="notif-settings" aria-labelledby="notiser">
       <h2 id="notiser">Notiser</h2>
+
+      <DevicePushToggle teamSlug={teamSlug} />
+
       <p className="notif-settings__lead">Välj vilka notiser du vill ha för det här laget.</p>
 
       {ROWS.map(({ key, label, description }) => (
@@ -97,8 +100,6 @@ export function NotificationSettings({ teamSlug }: { teamSlug: string }) {
           Det gick inte att spara just nu. Försök igen om en stund.
         </p>
       )}
-
-      <NotificationInstallTip />
     </section>
   )
 }
