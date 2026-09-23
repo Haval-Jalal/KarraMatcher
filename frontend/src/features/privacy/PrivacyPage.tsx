@@ -25,9 +25,9 @@ export function PrivacyPage() {
       </header>
 
       <p>
-        Appen är byggd för att samla så lite som möjligt om er. Det mesta går att använda helt utan
-        konto: matchtider, kalender, väder och vägbeskrivning. Nedan står precis vad som sparas när
-        du väl gör något mer.
+        Appen är byggd för att samla så lite som möjligt om er. Lagets innehåll kräver inloggning;
+        spelarkortet på din telefon når du utan konto och det lämnar aldrig telefonen. Nedan står
+        precis vad som sparas.
       </p>
 
       <section aria-labelledby="spelarkortet">

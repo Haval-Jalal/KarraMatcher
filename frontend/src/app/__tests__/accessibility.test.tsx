@@ -117,7 +117,7 @@ describe('lagväljaren är navigation, inte växlingsknappar', () => {
 })
 
 describe('allt går att nå med tangentbord', () => {
-  it('når lagen, matchen och kalendern genom att tabba', async () => {
+  it('når lagen och matchen genom att tabba', async () => {
     stubApi({
       matches: {
         team: testTeams[0]!,

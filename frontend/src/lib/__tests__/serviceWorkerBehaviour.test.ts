@@ -181,14 +181,6 @@ describe('service workern rör inte det den inte ska', () => {
 
     expect(await handle(scope, request, new Response('{}'))).toBeNull()
   })
-
-  it('lämnar kalenderfiler i fred', async () => {
-    // De laddas ner och hör hemma i telefonens kalender, inte i vår cache.
-    const scope = startWorker()
-    const request = requestFor('https://karra-matcher.vercel.app/calendar/gul.ics')
-
-    expect(await handle(scope, request, new Response('BEGIN:VCALENDAR'))).toBeNull()
-  })
 })
 
 describe('service workern gör schemat läsbart utan nät', () => {

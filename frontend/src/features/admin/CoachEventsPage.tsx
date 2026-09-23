@@ -61,9 +61,7 @@ export function CoachEventsPage() {
     <main>
       <header className="app-header">
         <h1>Sköt laget</h1>
-        <p className="app-header__subtitle">
-          Ändringar syns direkt för föräldrarna, och kalenderprenumerationerna uppdateras.
-        </p>
+        <p className="app-header__subtitle">Ändringar syns direkt för föräldrarna i schemat.</p>
       </header>
 
       {adding || editing !== null ? (
@@ -136,9 +134,9 @@ export function CoachEventsPage() {
           <h2>Ta bort {eventLabel(confirmDelete)}?</h2>
 
           <p className="state" role="alert">
-            Händelsen försvinner helt, även ur föräldrarnas kalendrar.{' '}
+            Händelsen försvinner helt ur schemat.{' '}
             <strong>Ska en match ställas in ska du välja Ställ in i stället</strong> — då blir den
-            kvar i kalendern, markerad som inställd.
+            kvar i schemat, markerad som inställd.
           </p>
 
           <div className="actions">

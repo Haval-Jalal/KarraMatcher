@@ -73,9 +73,9 @@ export interface MatchReport {
    * säger att ingen sådan väg ska finnas.
    *
    * <para>
-   * Lagnamn är inte personuppgifter; de står redan i det publika schemat och i ICS-feeden.
-   * Tomt för rapporter som fanns före version 4 och för koder från den gamla appen, som
-   * bär datumet men inte motståndaren.
+   * Lagnamn är inte personuppgifter; de står redan i lagets schema. Tomt för rapporter som
+   * fanns före version 4 och för koder från den gamla appen, som bär datumet men inte
+   * motståndaren.
    * </para>
    */
   opponent: string | null

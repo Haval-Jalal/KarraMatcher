@@ -190,29 +190,6 @@ describe('Matchdetaljsidan — vägbeskrivning', () => {
   })
 })
 
-describe('Matchdetaljsidan — kalenderfil', () => {
-  it('erbjuder nedladdning för en match som spelas', async () => {
-    stubApi({ match: detail() })
-
-    renderRoute(`/handelse/${MATCH_ID}`)
-
-    const link = await screen.findByRole('link', { name: /Lägg till i kalendern/ })
-    expect(link).toHaveAttribute('href', `/calendar/handelse/${MATCH_ID}.ics`)
-    expect(link).toHaveAttribute('download')
-  })
-
-  it('döljer kalenderknappen för en inställd match', async () => {
-    // Samma regel som vägbeskrivningen: en kalenderpost för en match som inte spelas är
-    // sämre än ingen post alls — den ligger kvar och påminner om fel sak.
-    stubApi({ match: detail({ status: 'Cancelled' }) })
-
-    renderRoute(`/handelse/${MATCH_ID}`)
-
-    await screen.findByText(/Händelsen är inställd/)
-    expect(screen.queryByRole('link', { name: /Lägg till i kalendern/ })).not.toBeInTheDocument()
-  })
-})
-
 describe('Matchdetaljsidan — väder', () => {
   it('visar temperatur, beskrivning och nederbördsrisk', async () => {
     stubApi({ match: detail({ kickoffUtc: FUTURE_KICKOFF }) })

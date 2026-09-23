@@ -13,7 +13,7 @@ import { renderRoute } from '@/test/renderRoute'
  * Det här görs stående vid en plan, på en telefon. Testerna vaktar de två saker som gör
  * verklig skada om de går fel: att tiden tränaren skriver blir rätt ögonblick, och att
  * "ta bort" inte går att förväxla med "ställ in" — det senare är nästan alltid det rätta,
- * eftersom kalenderposten ska bli kvar (§KM.4).
+ * eftersom en inställd match ska bli kvar i schemat, markerad som inställd.
  * </para>
  */
 

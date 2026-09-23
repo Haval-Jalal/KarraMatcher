@@ -4,7 +4,6 @@ import { ApiError } from '@/lib/api'
 import { EventList } from './EventList'
 import { ScheduleSkeleton } from './ScheduleSkeleton'
 import { NextEventCard } from './NextEventCard'
-import { TeamCalendarLink } from './TeamCalendarLink'
 import { selectNextEvent } from './selectNextEvent'
 import { useTeamEvents } from './useTeamEvents'
 
@@ -67,7 +66,6 @@ export function EventListSection({ slug }: { slug: string }) {
       {next && <NextEventCard event={next} />}
       <h2 className="match-list__title">Schema</h2>
       <EventList events={data.events} {...(next ? { excludeId: next.id } : {})} />
-      <TeamCalendarLink slug={slug} />
     </>
   )
 }

@@ -61,8 +61,8 @@ export function AccountPage() {
       </header>
 
       <p className="state">
-        Kontot används för samåkning och för tränarnas funktioner. Matchtider, kalender och
-        vägbeskrivning fungerar utan det — även för den som aldrig loggar in.
+        Kontot ger dig lagets schema, kallelser och samåkning. Spelarkortet på din telefon når du
+        utan konto — det lämnar aldrig telefonen.
       </p>
 
       <section aria-labelledby="mitt-namn">
