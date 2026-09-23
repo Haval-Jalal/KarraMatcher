@@ -19,6 +19,10 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEn
         // dar nagon far plats att klistra in en anvandares text.
         builder.Property(e => e.Details).HasMaxLength(512);
 
+        // Samma tak som correlation-id:t får i CorrelationIdMiddleware. Ett request-id, inte
+        // en personuppgift (§KM.10).
+        builder.Property(e => e.CorrelationId).HasMaxLength(64);
+
         builder.HasIndex(e => e.SubjectId);
 
         // Ingen frammande nyckel till Accounts -- posten om en radering ska finnas kvar

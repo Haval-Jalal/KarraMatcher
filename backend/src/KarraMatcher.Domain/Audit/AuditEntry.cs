@@ -46,6 +46,19 @@ public sealed class AuditEntry
     /// </summary>
     public string? Details { get; set; }
 
+    /// <summary>
+    /// Requestens correlation-id (§KM.10) — samma id som loggraderna bär och som klienten
+    /// får i <c>X-Correlation-Id</c>.
+    ///
+    /// <para>
+    /// Det är det som gör posten spårbar: ringer en förälder om att något gick fel går
+    /// audit-raden att koppla till just den requestens loggar, och tvärtom. Det är ett
+    /// request-id, inte en personuppgift — aldrig ett namn, en adress eller fritext.
+    /// Tomt när åtgärden inte skedde i en request (i dag skriver bara request-vägar hit).
+    /// </para>
+    /// </summary>
+    public string? CorrelationId { get; set; }
+
     public DateTime OccurredUtc { get; set; }
 }
 
