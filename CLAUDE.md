@@ -238,10 +238,17 @@ egna siffror och skoj* och delas med ingen.
 
 ### §KM.8 Offline och PWA
 
-- Schemat ska gå att läsa utan nät (service worker cachar lagets matcher och statiska tillgångar).
-- v1 är **offline-medveten**, inte offline-först: skrivningar köas inte, användaren får tydligt besked.
-  Full synk är ett `STANDARDER-VID-BEHOV`-element.
-- Service worker får aldrig cacha auth-svar. Spelarkortet ligger i enhetens egen lagring, inte i sw-cachen.
+- **Appskalet och statiska tillgångar** ska gå att läsa utan nät: den installerade appen öppnas
+  och ger ett tydligt svenskt besked i stället för webbläsarens felsida.
+- **Innehållet kräver uppkoppling (v2, `#191`/`#249`).** Den stängda appen märker varje API-svar
+  `private, no-store`; service workern cachar därför **inget under `/api/`** — medlemmens schema,
+  kallelser och samåkning hämtas färskt och lagras aldrig på enheten. Offline når felet appen,
+  som säger till. (I den öppna v1 cachades det publika schemat för offline-läsning; det utgick när
+  schemat blev medlemsstängt.)
+- Appen är **offline-medveten**, inte offline-först: skrivningar köas inte, användaren får tydligt
+  besked. Full synk är ett `STANDARDER-VID-BEHOV`-element.
+- Service worker får aldrig cacha auth-svar eller annat `/api/`-innehåll. Spelarkortet ligger i
+  enhetens egen lagring, inte i sw-cachen.
 
 ### §KM.9 Språk
 

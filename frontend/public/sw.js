@@ -1,9 +1,16 @@
 /*
  * Service worker för Kärra Matcher (§KM.8).
  *
- * Täckningen vid fotbollsplanerna är opålitlig, så lagets schema och appskalet ska gå att
- * läsa utan nät. Appen är däremot **offline-medveten, inte offline-först**: skrivningar
- * köas inte, och användaren får tydligt besked i stället.
+ * Täckningen vid fotbollsplanerna är opålitlig, så **appskalet och de statiska tillgångarna**
+ * ska gå att läsa utan nät: den installerade appen öppnas och ger ett tydligt svenskt besked
+ * i stället för webbläsarens felsida.
+ *
+ * **Innehållet kräver uppkoppling (v2, `#191`/`#249`).** Den stängda appen märker varje
+ * API-svar `private, no-store`, och service workern cachar därför **ingenting under `/api/`** —
+ * medlemmens schema, kallelser och samåkning hämtas färskt och lagras aldrig på enheten.
+ * Offline når felet appen, som säger till. (I den öppna v1 cachades det publika schemat för
+ * offline-läsning; det utgick när schemat blev medlemsstängt.) Appen är alltså
+ * **offline-medveten, inte offline-först**: skrivningar köas inte, användaren får besked.
  *
  * Handskriven och utan bibliotek, med bara runtime-cache. Det som normalt kräver ett
  * verktyg är att förcacha listan över byggda filer med deras innehållshashar — och det
@@ -11,17 +18,16 @@
  *
  * ── Den viktigaste regeln ──────────────────────────────────────────────────────────
  *
- * Ett svar med `no-store` eller `private` i `Cache-Control` sparas aldrig. Backend sätter
- * exakt de headrarna på allt som inte uttryckligen är publikt, vilket betyder att samma
- * header som håller ett svar borta från Vercels edge håller det borta härifrån. Auth-svar
- * kan därmed inte hamna i cachen ens om någon glömmer en särskild regel för dem.
+ * `/api/` rör vi aldrig — anropet går rakt till nätet. Som extra skydd för de svar vi *ändå*
+ * cachar (skalet, ikoner, manifest) gäller: ett svar med `no-store` eller `private` i
+ * `Cache-Control` sparas aldrig. Samma header som håller ett svar borta från Vercels edge
+ * håller det borta härifrån.
  */
 
 // Byt version för att slänga gamla cachar. Namnen är prefixade så att städningen nedan
-// bara rör våra egna. v2: push- och notificationclick-hanterare (`#244`).
-const VERSION = 'v2'
+// bara rör våra egna. v3: `/api/` cachas inte längre; data-cachen är borttagen (`#249`).
+const VERSION = 'v3'
 const SHELL_CACHE = `karra-skal-${VERSION}`
-const DATA_CACHE = `karra-data-${VERSION}`
 const CACHE_PREFIX = 'karra-'
 
 /** Appskalet. Allt annat cachas när det hämtas. */
@@ -41,7 +47,7 @@ self.addEventListener('activate', (event) => {
         Promise.all(
           names
             .filter((name) => name.startsWith(CACHE_PREFIX))
-            .filter((name) => name !== SHELL_CACHE && name !== DATA_CACHE)
+            .filter((name) => name !== SHELL_CACHE)
             .map((name) => caches.delete(name)),
         ),
       )
@@ -228,8 +234,11 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Autentiserat innehåll cachas aldrig (§KM.8, v2). Den stängda appen (#191) märker varje
+  // API-svar `private, no-store`; att spara medlemmens schema på enheten vore att lagra privat
+  // lagdata där den inte behövs. Vi låter anropet passera rakt till nätet — är nätet nere når
+  // felet appen, som säger till på svenska i stället för att visa gammal data.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirst(request, DATA_CACHE))
     return
   }
 
