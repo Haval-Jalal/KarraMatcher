@@ -1,0 +1,34 @@
+# Auto-mergar Dependabots egna PR:er — och bara dem (§0 p.8, beslut 2026-09-23).
+#
+# Villkoret `github.actor == 'dependabot[bot]'` gör att workflowen aldrig rör en PR som en
+# människa skapat: våra egna PR:er granskas och mergas manuellt precis som förut. Bara
+# patch- och minor-uppdateringar auto-mergas; en major (t.ex. TypeScript 6 -> 7) lämnas för
+# manuell granskning. `--auto` mergar inte direkt utan väntar tills de required CI-checkerna
+# (Backend, Frontend, Playwright) är gröna — en röd bump mergas alltså aldrig.
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    steps:
+      - name: Hämta uppdateringens metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Slå på auto-merge för patch och minor
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

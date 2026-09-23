@@ -57,6 +57,7 @@ Vad det globala lagret bidrar med:
 6. **Konsekvens > smarthet.** Följ befintliga mönster i kodbasen.
 7. **Branch per ändring — aldrig direktpush till `main`.** Skapa **alltid** en egen branch *innan* du ändrar något (`feature/<kort-namn>`, `fix/...`, `docs/...`). Sammanslagning sker via PR (se punkt 8).
 8. **Review och merge av PR är ALLTID manuellt (människa).** Agenten får **absolut inte** granska, godkänna eller merga en PR — och får **inte heller fråga** om det är okej. Agentens tillåtna steg: skapa branch → ändra → committa → **pusha** branchen (och får öppna PR). Review, approve och merge görs alltid av en människa.
+   - **Enda undantaget (beslut 2026-09-23): Dependabots egna PR:er med patch-/minor-uppdateringar** auto-mergas av en workflow (`.github/workflows/dependabot-auto-merge.yml`) **när alla required CI-checkar är gröna** (Backend, Frontend, Playwright — via branch protection på `main`). Major-uppdateringar och **alla PR:er som en människa skapar** mergas fortfarande manuellt av en människa. Agenten mergar aldrig själv en PR.
 9. **Projektboard uppdateras alltid — utan att bli påmind.**
    - Innan första kodraden: flytta issue till **`In Progress`**.
    - När PR öppnas: flytta issue till **`In Review`**.
