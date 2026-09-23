@@ -1,8 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
-import { SignInLink } from '@/components/SignInLink'
-import { useAuth } from '@/features/auth'
 import type { TeamEvent } from '@/features/events'
 import { ApiError } from '@/lib/api'
 
@@ -26,13 +24,10 @@ import { carpoolOffersQueryKey, useCarpoolOffers } from './useCarpool'
  * inte, och då spelar det ingen roll vad den kan.
  */
 export function CarpoolSection({ match }: { match: TeamEvent }) {
-  const { status } = useAuth()
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
 
   const { data: offers, isPending, error, refetch, isFetching } = useCarpoolOffers(match.id)
-
-  const isSignedIn = status === 'inloggad'
 
   async function reload(): Promise<void> {
     await queryClient.invalidateQueries({ queryKey: carpoolOffersQueryKey(match.id) })
@@ -69,58 +64,41 @@ export function CarpoolSection({ match }: { match: TeamEvent }) {
       {offers !== undefined && offers.length > 0 && (
         <ul className="carpool__offers">
           {offers.map((offer) => (
-            <CarpoolOfferCard
-              key={offer.id}
-              matchId={match.id}
-              offer={offer}
-              isSignedIn={isSignedIn}
-              onChanged={reload}
-            />
+            <CarpoolOfferCard key={offer.id} matchId={match.id} offer={offer} onChanged={reload} />
           ))}
         </ul>
       )}
 
       {/*
-        Gästen ser erbjudandena men deltar inte (§KM.3). Skillnaden sägs rakt ut och
-        knappen leder till inloggningen — en knapp som i stället hade skickat ett anrop och
-        fått `401` läser som att appen är trasig (`#54`).
+        Ingen gäst-variant här längre: hela händelsesidan kräver inloggning (§KM.3, `#242`),
+        så den som ser samåkningen är alltid medlem. En utloggad möts av inloggningen redan
+        på vägen in, inte av en knapp som svarar `401`.
       */}
-      {!isSignedIn && offers !== undefined && (
-        <div className="carpool__guest">
-          <p>
-            Du kan se vem som kör utan att logga in. För att erbjuda skjuts eller fråga om en plats
-            behöver du ett konto.
-          </p>
-          <SignInLink>Logga in för att samåka</SignInLink>
+      {adding ? (
+        <CarpoolOfferForm
+          kickoffUtc={match.kickoffUtc}
+          onSubmit={async (input) => {
+            await createOffer(match.id, input)
+            setAdding(false)
+            await reload()
+          }}
+          onCancel={() => {
+            setAdding(false)
+          }}
+        />
+      ) : (
+        <div className="actions">
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              setAdding(true)
+            }}
+          >
+            Erbjud skjuts
+          </button>
         </div>
       )}
-
-      {isSignedIn &&
-        (adding ? (
-          <CarpoolOfferForm
-            kickoffUtc={match.kickoffUtc}
-            onSubmit={async (input) => {
-              await createOffer(match.id, input)
-              setAdding(false)
-              await reload()
-            }}
-            onCancel={() => {
-              setAdding(false)
-            }}
-          />
-        ) : (
-          <div className="actions">
-            <button
-              type="button"
-              className="button"
-              onClick={() => {
-                setAdding(true)
-              }}
-            >
-              Erbjud skjuts
-            </button>
-          </div>
-        ))}
     </section>
   )
 }

@@ -5,10 +5,12 @@ import { App } from '@/app/App'
 import { queryClient } from '@/app/queryClient'
 
 describe('App', () => {
-  it('monterar utan att krascha och visar startsidan', async () => {
+  it('monterar utan att krascha och möter en gäst med inloggningen', async () => {
+    // Appen är stängd (§KM.3, `#242`): en gäst på rotadressen skickas till inloggningen i
+    // stället för att se ett tomt schema. Att den monterar och grinden håller räcker här.
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: 'Kärra Matcher' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
   })
 })
 

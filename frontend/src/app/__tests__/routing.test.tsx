@@ -3,15 +3,20 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
+import { clearSession, setAccessToken } from '@/lib/session'
 import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 beforeEach(() => {
   localStorage.clear()
+  // Innehållet är stängt (§KM.3, `#242`): alla dessa vyer kräver inloggning. Gäst-grinden
+  // prövas för sig i "gästgrinden" nedan.
+  setAccessToken('test-token')
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearSession()
 })
 
 describe('routing', () => {
@@ -75,5 +80,39 @@ describe('routing', () => {
     renderRoute('/finns-inte')
 
     expect(await screen.findByRole('heading', { name: 'Sidan finns inte' })).toBeInTheDocument()
+  })
+})
+
+describe('gästgrinden', () => {
+  it('skickar en gäst till inloggningen med vägen tillbaka i next', async () => {
+    // §KM.3, `#242`: allt innehåll kräver inloggning. En gäst på en delad länk möts av
+    // inloggningen — och `next` bär adressen med, så hen kommer tillbaka dit efteråt.
+    clearSession()
+    stubApi({})
+
+    const { router } = renderRoute('/lag/gul')
+
+    expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/logga-in')
+    expect(router.state.location.search).toMatchObject({ next: '/lag/gul' })
+  })
+
+  it('skickar en gäst från en händelselänk till inloggningen', async () => {
+    clearSession()
+    stubApi({})
+
+    const { router } = renderRoute('/handelse/abc')
+
+    expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
+    expect(router.state.location.search).toMatchObject({ next: '/handelse/abc' })
+  })
+
+  it('släpper in en inloggad på samma länk', async () => {
+    setAccessToken('test-token')
+    stubApi({ matches: { team: testTeams[0]!, matches: [] } })
+
+    renderRoute('/lag/gul')
+
+    expect(await screen.findByText('P2016 Gul')).toBeInTheDocument()
   })
 })

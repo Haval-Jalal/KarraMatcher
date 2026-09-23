@@ -23,6 +23,39 @@ const rootRoute = createRootRoute({
 })
 
 /**
+ * Kräver en inloggad session för en route, annars omdirigering till inloggningen (§KM.3).
+ *
+ * <h3>Varför i `beforeLoad` och inte i komponenten</h3>
+ *
+ * En utloggad ska aldrig se en skyddad vy blinka förbi — och framför allt ska hen inte
+ * utlösa det API-anrop som den stängda backend ändå svarar `401` på. Det anropet kan inte
+ * cachas på edgen och skulle väcka Render i onödan (§KM.11). Grinden fångar det före anropet.
+ *
+ * <h3>Sessionen förlängs först</h3>
+ *
+ * Access-token lever bara en kvart. En återvändande förälder med en giltig refresh-cookie
+ * ska slippa inloggningsrutan, så vi försöker förnya innan vi ger upp. Bara den som verkligen
+ * saknar session skickas vidare — med `next`, så att hen kommer tillbaka dit hen var på väg.
+ *
+ * <para>
+ * Grinden är bekvämlighet, inte skydd: servern avgör vad som faktiskt får läsas (§KM.3).
+ * Den här sparar bara en gäst från ett 401 där en inloggningsuppmaning hade varit svaret.
+ * </para>
+ */
+async function requireSession(pathname: string): Promise<void> {
+  if (getAccessToken() === null && hasSessionHint()) {
+    await renewSession()
+  }
+
+  if (getAccessToken() === null) {
+    // TanStack Router signalerar omdirigering genom att man kastar resultatet av redirect().
+    // Det är ramverkets dokumenterade API och inte ett kastat undantag.
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: '/logga-in', search: { next: pathname } })
+  }
+}
+
+/**
  * Startsidan skickar vidare till senast valda lag.
  *
  * Omdirigeringen sker i `beforeLoad` och inte i en effekt, så att en återvändande förälder
@@ -32,7 +65,10 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: () => {
+  beforeLoad: async ({ location }) => {
+    // Startsidan listar lagen den inloggade hör till (§KM.3) — en gäst har inget att se här.
+    await requireSession(location.pathname)
+
     const remembered = readSetting(SELECTED_TEAM_STORAGE_KEY)
 
     if (remembered !== null && remembered !== '') {
@@ -47,23 +83,27 @@ const indexRoute = createRoute({
 })
 
 /**
- * Lagets schema. Adressen är delbar — en förälder skickar den i föräldragruppen och
- * mottagaren landar på rätt lag utan att välja något.
+ * Lagets schema. Kräver inloggning (§KM.3) — en delad adress landar en medlem direkt på rätt
+ * lag, men en gäst möts av inloggningen i stället för ett tomt schema. Medlemskapet i laget
+ * avgör servern; grinden här sparar bara gästen från ett 401.
  */
 const teamRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lag/$slug',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: TeamSchedulePage,
 })
 
 /** Exporteras för tester, som bygger en egen router med minneshistorik. */
 /**
- * En händelse på egen adress. Nås från listan, från "nästa"-kortet, och så småningom
- * direkt från en kalenderpost eller en push-notis.
+ * En händelse på egen adress. Nås från listan, från "nästa"-kortet, och från en push-notis.
+ * Kräver inloggning (§KM.3) — händelsen är truppens interna, inte en publik matchtid längre;
+ * medlemskapet avgör servern, grinden sparar gästen från ett 401.
  */
 const eventRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/handelse/$id',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: EventDetailPage,
 })
 
@@ -99,16 +139,7 @@ const loginRoute = createRoute({
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/konto',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: AccountPage,
 })
 
@@ -122,16 +153,7 @@ const accountRoute = createRoute({
 const coachRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lag/$slug/tranare',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: CoachEventsPage,
 })
 
@@ -145,16 +167,7 @@ const coachRoute = createRoute({
 const superadminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/superadmin',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: SuperAdminPage,
 })
 
@@ -165,16 +178,7 @@ const superadminRoute = createRoute({
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: AdminPage,
 })
 
@@ -234,32 +238,14 @@ const playerCardChildRoute = createRoute({
 const chatIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/chatt',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: ChatPage,
 })
 
 const chatTruppRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/chatt/$truppId',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: ChatPage,
 })
 
@@ -270,16 +256,7 @@ const chatTruppRoute = createRoute({
 const teamChatRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lag/$slug/chatt',
-  beforeLoad: async ({ location }) => {
-    if (getAccessToken() === null && hasSessionHint()) {
-      await renewSession()
-    }
-
-    if (getAccessToken() === null) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/logga-in', search: { next: location.pathname } })
-    }
-  },
+  beforeLoad: ({ location }) => requireSession(location.pathname),
   component: TeamChatPage,
 })
 

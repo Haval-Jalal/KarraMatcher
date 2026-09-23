@@ -2,23 +2,27 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { clearSession, setAccessToken } from '@/lib/session'
 import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
- * Tillgängligheten i den publika delen (§KM.0 A3).
+ * Tillgängligheten i medlemsdelen (§KM.0 A3).
  *
  * Mor- och farföräldrar är riktiga användare här, och några av dem använder skärmläsare
  * eller enbart tangentbord. Testerna nedan låser de krav som annars eroderar tyst — det
  * märks inte i en granskning att en knapp blivit en div, förrän någon inte kan använda den.
+ * Vyerna kräver inloggning (§KM.3, `#242`), så varje test loggar in först.
  */
 
 beforeEach(() => {
   localStorage.clear()
+  setAccessToken('test-token')
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearSession()
 })
 
 describe('sidtitel per vy', () => {

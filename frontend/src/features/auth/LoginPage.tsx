@@ -79,8 +79,8 @@ export function LoginPage() {
       <header className="app-header">
         <h1>Logga in</h1>
         <p className="app-header__subtitle">
-          Du behöver bara ett konto för att lägga upp samåkning eller sköta ett lag. Matchtiderna är
-          öppna för alla.
+          Logga in för att se lagets schema, kallelser och samåkning — appen är bara för medlemmar.
+          Spelarkortet på din telefon når du utan konto.
         </p>
       </header>
 
