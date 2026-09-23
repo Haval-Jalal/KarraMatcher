@@ -118,34 +118,59 @@ beforeEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('service workern cachar aldrig auth-svar', () => {
+describe('service workern rör aldrig autentiserat innehåll', () => {
+  it.each(['/api/v1/teams', '/api/v1/me', '/api/v1/teams/gul/events'])(
+    'lämnar %s till nätet och cachar det aldrig (§KM.8, v2)',
+    async (path) => {
+      // Den stängda appen (#191) märker varje API-svar private/no-store. Service workern rör
+      // inte /api/ alls — medlemmens schema hämtas färskt och lagras aldrig på enheten.
+      const scope = startWorker()
+      const response = new Response('[]', { status: 200 })
+
+      const result = await handle(
+        scope,
+        requestFor(`https://karra-matcher.vercel.app${path}`),
+        response,
+      )
+
+      expect(result).toBeNull()
+      expect(scope.cache.put).not.toHaveBeenCalled()
+    },
+  )
+})
+
+describe('service workern respekterar cache-headrar för det den ändå cachar', () => {
+  // Skalet, ikoner och manifest cachas för offline-öppning. Guarden gäller dem: ett svar
+  // märkt no-store/private sparas aldrig — samma header som håller det borta från Vercels edge.
   it.each([
     ['no-store', 'private, no-store'],
     ['private', 'private'],
     ['bara no-store', 'no-store'],
-  ])('sparar inte ett svar märkt %s', async (_name, cacheControl) => {
-    // Backend sätter "private, no-store" på allt som inte uttryckligen är publikt. Samma
-    // header som håller svaret borta från Vercels edge håller det borta härifrån — så ett
-    // auth-svar kan inte hamna i cachen ens om någon glömmer en särskild regel för det.
+  ])('sparar inte ett rot-svar märkt %s', async (_name, cacheControl) => {
     const scope = startWorker()
     const response = new Response('{}', {
       status: 200,
       headers: { 'Cache-Control': cacheControl },
     })
 
-    await handle(scope, requestFor('https://karra-matcher.vercel.app/api/v1/me'), response)
+    await handle(
+      scope,
+      requestFor('https://karra-matcher.vercel.app/manifest.webmanifest'),
+      response,
+    )
 
     expect(scope.cache.put).not.toHaveBeenCalled()
   })
 
-  it('sparar ett publikt svar', async () => {
+  it('sparar ett vanligt rot-svar', async () => {
     const scope = startWorker()
-    const response = new Response('[]', {
-      status: 200,
-      headers: { 'Cache-Control': 'public, max-age=0, s-maxage=300' },
-    })
+    const response = new Response('{}', { status: 200 })
 
-    await handle(scope, requestFor('https://karra-matcher.vercel.app/api/v1/teams'), response)
+    await handle(
+      scope,
+      requestFor('https://karra-matcher.vercel.app/manifest.webmanifest'),
+      response,
+    )
 
     expect(scope.cache.put).toHaveBeenCalledTimes(1)
   })
@@ -154,7 +179,11 @@ describe('service workern cachar aldrig auth-svar', () => {
     const scope = startWorker()
     const response = new Response('nej', { status: 500 })
 
-    await handle(scope, requestFor('https://karra-matcher.vercel.app/api/v1/teams'), response)
+    await handle(
+      scope,
+      requestFor('https://karra-matcher.vercel.app/manifest.webmanifest'),
+      response,
+    )
 
     expect(scope.cache.put).not.toHaveBeenCalled()
   })
@@ -183,39 +212,24 @@ describe('service workern rör inte det den inte ska', () => {
   })
 })
 
-describe('service workern gör schemat läsbart utan nät', () => {
-  it('svarar ur cachen när nätet är nere', async () => {
-    // Täckningen vid fotbollsplanerna är opålitlig (§KM.8). Det här är hela poängen.
-    const cached = new Response('[{"slug":"gul"}]')
-    const scope = startWorker({ cachedResponse: cached })
+describe('service workern gör appskalet läsbart utan nät', () => {
+  it('faller inte tillbaka till en cache för /api/ (network-only)', () => {
+    // Schemat cachas inte längre (§KM.8, v2): är nätet nere når felet appen, som säger till
+    // på svenska. Ett tyst tomt svar hade sett ut som "inga matcher".
+    const scope = startWorker({ cachedResponse: new Response('[{"slug":"gul"}]') })
     scope.setNetwork(() => Promise.reject(new TypeError('Failed to fetch')))
 
-    let result: Promise<Response> | null = null
+    let result: Promise<Response> | Response | undefined
     scope.fetchHandler({
       request: requestFor('https://karra-matcher.vercel.app/api/v1/teams'),
       respondWith: (value) => {
-        result = value as Promise<Response>
+        result = value
       },
     })
 
-    expect(await (result as unknown as Promise<Response>)).toBe(cached)
-  })
-
-  it('kastar vidare när varken nät eller cache finns', async () => {
-    // Utan cachat svar ska felet nå appen, som säger till på svenska. Ett tomt svar hade
-    // sett ut som "inga matcher".
-    const scope = startWorker()
-    scope.setNetwork(() => Promise.reject(new TypeError('Failed to fetch')))
-
-    let result: Promise<Response> | null = null
-    scope.fetchHandler({
-      request: requestFor('https://karra-matcher.vercel.app/api/v1/teams'),
-      respondWith: (value) => {
-        result = value as Promise<Response>
-      },
-    })
-
-    await expect(result as unknown as Promise<Response>).rejects.toThrow(TypeError)
+    // Service workern rör inte /api/ — den låter anropet passera, och webbläsarens egna
+    // nätverksfel når appen. Ingen cache maskerar det som gammal data.
+    expect(result).toBeUndefined()
   })
 })
 
