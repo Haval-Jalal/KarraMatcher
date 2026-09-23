@@ -235,6 +235,7 @@ describe('aktuell sida märks ut', () => {
      * tre hor till samma menypost, annars ser den ut att slappa taget nar man klickar sig
      * in i den.
      */
+    setAccessToken(PARENT)
     stubApi()
 
     renderRoute('/lag/gul')

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { readCard, useMatchReports, writeCard } from '@/features/playercard'
 import { emptyCard } from '@/features/playercard/storage/schema'
+import { clearSession, setAccessToken } from '@/lib/session'
 import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
@@ -42,10 +43,14 @@ function openMatch(options: { cancelled?: boolean } = {}) {
 
 beforeEach(() => {
   localStorage.clear()
+  // Matchrapporten fylls i på händelsesidan, som kräver inloggning (§KM.3). Rapporten
+  // själv är device-only (§KM.2) — inloggningen är för att nå sidan, inte för att spara.
+  setAccessToken('test-token')
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearSession()
 })
 
 describe('ingenting lämnar telefonen', () => {

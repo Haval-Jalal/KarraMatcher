@@ -1,12 +1,20 @@
 import { screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TeamEvent } from '@/features/events'
+import { clearSession, setAccessToken } from '@/lib/session'
 import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
+beforeEach(() => {
+  // Händelsesidan kräver inloggning (§KM.3); en gäst skickas till inloggningen i stället.
+  // Att gästen omdirigeras prövas i routing-testet — här är alla inloggade medlemmar.
+  setAccessToken('test-token')
+})
+
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearSession()
 })
 
 const MATCH_ID = '11111111-2222-3333-4444-555555555555'

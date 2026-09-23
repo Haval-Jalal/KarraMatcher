@@ -158,6 +158,7 @@ describe('erbjudandena går att läsa av', () => {
   it('visar lediga platser, avgångstid och avgångsplats', async () => {
     // Tiden lagras i UTC och visas i svensk tid (§KM.5). Testerna kör i
     // America/Los_Angeles, så en implementation som använder webbläsarens zon faller här.
+    setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: [offer()] })
 
     renderRoute('/handelse/m1')
@@ -170,6 +171,7 @@ describe('erbjudandena går att läsa av', () => {
   })
 
   it('säger ifrån när ingen erbjudit skjuts', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: [] })
 
     renderRoute('/handelse/m1')
@@ -181,6 +183,7 @@ describe('erbjudandena går att läsa av', () => {
 
   it('säger att nätet är nere i stället för att visa en tom lista', async () => {
     // Appen används på fotbollsplaner med dålig täckning. Resten av matchen står kvar.
+    setAccessToken(SIGNED_IN_TOKEN)
     stubApi({ offers: 'error' })
 
     renderRoute('/handelse/m1')
@@ -352,56 +355,20 @@ describe('att lägga upp en skjuts', () => {
       })
     })
   })
-
-  it('erbjuder inte gästen att lägga upp något', async () => {
-    // Gästen ser samåkningen men deltar inte (§KM.3).
-    stubApi({ offers: [offer()] })
-
-    renderRoute('/handelse/m1')
-
-    expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Erbjud skjuts' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Fråga om plats' })).not.toBeInTheDocument()
-  })
 })
 
-describe('gästen leds till inloggning i stället för in i en vägg', () => {
-  it('byter ut knapparna mot en väg in, inte mot tomhet', async () => {
+describe('gästen kommer inte in', () => {
+  it('skickas till inloggningen i stället för händelsesidan', async () => {
     /*
-     * Kanterna pa §KM.3, sedda fran en foralder. En dold knapp och en knapp som svarar 401
-     * ser lika trasiga ut -- bada far nagon att ge upp och skriva i gruppchatten i stallet.
+     * §KM.3, `#242`: händelsesidan är stängd. En gäst möts av inloggningen direkt, inte av
+     * ett halvt laddat kort eller en knapp som svarar 401 — båda får någon att ge upp och
+     * skriva i gruppchatten i stället. Vägen tillbaka via `next` prövas i routing-testet.
      */
-    stubApi({ offers: [offer()] })
-
     renderRoute('/handelse/m1')
-
-    expect(await screen.findByText('2 platser kvar')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Logga in för att samåka' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: 'Logga in för att fråga om plats' }),
-    ).toBeInTheDocument()
-  })
-
-  it('lämnar tillbaka föräldern till matchen efter inloggningen', async () => {
-    // Den som var på väg att fråga om en plats ska inte behöva leta upp matchen igen.
-    stubApi({ offers: [offer()] })
-
-    const user = userEvent.setup()
-    renderRoute('/handelse/m1')
-
-    await user.click(await screen.findByRole('link', { name: 'Logga in för att fråga om plats' }))
 
     expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
-
-    await user.type(screen.getByLabelText('Mejladress'), 'foralder@example.com')
-    await user.click(screen.getByRole('button', { name: 'Skicka kod' }))
-
-    await user.type(await screen.findByLabelText('Kod från mejlet'), '123456')
-    await user.click(screen.getByRole('button', { name: 'Logga in' }))
-
-    // Tillbaka på matchen, och nu som någon som får fråga.
-    expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Fråga om plats' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Torslanda/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Erbjud skjuts' })).not.toBeInTheDocument()
   })
 })
 

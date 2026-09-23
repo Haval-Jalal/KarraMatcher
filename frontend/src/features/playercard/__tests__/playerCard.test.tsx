@@ -11,6 +11,7 @@ import {
   writeCard,
 } from '@/features/playercard'
 import { emptyCard, type Child, type MatchReport } from '@/features/playercard/storage/schema'
+import { clearSession, setAccessToken } from '@/lib/session'
 import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
@@ -57,10 +58,14 @@ function openCard(reports: MatchReport[], name = 'Elias') {
 
 beforeEach(() => {
   localStorage.clear()
+  // Ett par tester fyller i en rapport via händelsesidan, som kräver inloggning (§KM.3).
+  // Själva spelarkortssidan (/spelarkort/$childId) är device-only och öppen (§KM.2).
+  setAccessToken('test-token')
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearSession()
 })
 
 describe('totalerna', () => {

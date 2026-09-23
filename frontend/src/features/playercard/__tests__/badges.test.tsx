@@ -12,6 +12,7 @@ import {
   writeCard,
 } from '@/features/playercard'
 import { emptyCard, type Child, type MatchReport } from '@/features/playercard/storage/schema'
+import { clearSession, setAccessToken } from '@/lib/session'
 import { stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 import CSS from '@/styles/index.css?raw'
@@ -54,10 +55,13 @@ function cardWith(reports: MatchReport[], seen: string[] = []) {
 
 beforeEach(() => {
   localStorage.clear()
+  // Firandet sker i matchrapporten på händelsesidan, som kräver inloggning (§KM.3).
+  setAccessToken('test-token')
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearSession()
 })
 
 describe('märken räknas ur den lokala statistiken', () => {

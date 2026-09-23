@@ -128,13 +128,13 @@ afterEach(() => {
 })
 
 describe('vårdnadshavaren svarar per barn', () => {
-  it('en gäst ser ingen kallelse', async () => {
-    stub({ mine: { callOpen: true, kickoffUtc: FUTURE, children: [] } })
-
+  it('skickar en gäst till inloggningen i stället för händelsen', async () => {
+    // §KM.3: händelsen är truppens interna. En gäst når den inte — hen möts av
+    // inloggningen, inte av ett halvt laddat kort eller ett 401.
     renderRoute(`/handelse/${EVENT}`)
 
-    expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Kallelse' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Torslanda/ })).not.toBeInTheDocument()
   })
 
   it('en inloggad vars lag har kallelsen avslagen ser ingenting (404)', async () => {

@@ -1,7 +1,5 @@
 import { useState } from 'react'
 
-import { SignInLink } from '@/components/SignInLink'
-
 import { formatDayAndMonth, formatKickoffTime } from '@/lib/time'
 
 import {
@@ -29,25 +27,22 @@ import { useCarpoolRequests } from './useCarpool'
  *
  * <h3>Vem som ser vad</h3>
  *
- * Föraren ser förfrågningarna och svarar på dem. Den som frågat ser sin egen. En gäst ser
- * erbjudandet men inga förfrågningar alls — hämtningen är avstängd utan konto, så en gäst
- * kostar inte ett 401 i onödan.
+ * Föraren ser förfrågningarna och svarar på dem. Den som frågat ser sin egen. Hela sidan
+ * kräver inloggning (§KM.3, `#242`), så den som ser ett erbjudande är alltid medlem.
  */
 export function CarpoolOfferCard({
   matchId,
   offer,
-  isSignedIn,
   onChanged,
 }: {
   matchId: string
   offer: CarpoolOffer
-  isSignedIn: boolean
   onChanged: () => Promise<void>
 }) {
   const [asking, setAsking] = useState(false)
   const [confirmWithdraw, setConfirmWithdraw] = useState(false)
 
-  const { data: requests } = useCarpoolRequests(matchId, offer.id, isSignedIn)
+  const { data: requests } = useCarpoolRequests(matchId, offer.id, true)
 
   const mine = requests ?? []
 
@@ -156,18 +151,7 @@ export function CarpoolOfferCard({
         </>
       )}
 
-      {/*
-        Gästen får samma knapp som alla andra, men den går till inloggningen. Att dölja den
-        hade varit ett tystare fel: erbjudandet syns, och då ser det ut som att det inte går
-        att fråga om (`#54`, §KM.3).
-      */}
-      {!offer.isMine && !isSignedIn && (
-        <div className="actions">
-          <SignInLink variant="secondary">Logga in för att fråga om plats</SignInLink>
-        </div>
-      )}
-
-      {!offer.isMine && isSignedIn && (
+      {!offer.isMine && (
         <>
           <CarpoolRequestList
             requests={mine}
