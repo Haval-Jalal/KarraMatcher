@@ -52,6 +52,13 @@ if (testingEnabled)
 
     builder.Services.AddTestingSupport();
 }
+// Correlation-id:t (satt av CorrelationIdMiddleware) görs läsbart för de HTTP-omedvetna
+// lagren, så att audit-loggen kan koppla en post till requestens loggrader (§KM.10, #204).
+// IHttpContextAccessor registreras redan i AddKarraAuthentication.
+builder.Services.AddScoped<
+    KarraMatcher.Application.Abstractions.Diagnostics.ICorrelationContext,
+    KarraMatcher.Api.Diagnostics.HttpCorrelationContext>();
+
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraAuthentication(builder.Environment);

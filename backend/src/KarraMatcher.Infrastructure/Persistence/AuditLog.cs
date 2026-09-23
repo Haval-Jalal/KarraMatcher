@@ -1,9 +1,13 @@
 using KarraMatcher.Application.Abstractions.Audit;
+using KarraMatcher.Application.Abstractions.Diagnostics;
 using KarraMatcher.Domain.Audit;
 
 namespace KarraMatcher.Infrastructure.Persistence;
 
-internal sealed class AuditLog(KarraMatcherDbContext context, TimeProvider clock) : IAuditLog
+internal sealed class AuditLog(
+    KarraMatcherDbContext context,
+    TimeProvider clock,
+    ICorrelationContext correlation) : IAuditLog
 {
     public async Task RecordAsync(
         string action,
@@ -19,6 +23,7 @@ internal sealed class AuditLog(KarraMatcherDbContext context, TimeProvider clock
                 ActorAccountId = actorAccountId,
                 SubjectId = subjectId,
                 Details = details,
+                CorrelationId = correlation.CorrelationId,
                 OccurredUtc = clock.GetUtcNow().UtcDateTime,
             },
             cancellationToken).ConfigureAwait(false);
