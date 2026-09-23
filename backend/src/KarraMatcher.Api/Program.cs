@@ -70,6 +70,7 @@ builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushRetentionWo
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Push.PushDispatchWorker>();
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Chat.ChatRetentionWorker>();
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Chat.ChatReleaseWorker>();
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Attendance.AttendanceRetentionWorker>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {

@@ -204,6 +204,21 @@ egna siffror och skoj* och delas med ingen.
   När ett barn tas bort ur en trupp raderas dess profil och kopplingar direkt. Ett raderat barn
   försvinner ur kallelser, målgrupper och chattmedlemskap. Spelarkortet raderas separat på
   enheten, av familjen själv; servern har aldrig sett det.
+- **Kaskaden är schemats ansvar, inte en kom-ihåg-lista.** Varje främmande nyckel mot ett konto
+  och mot ett barn är `Cascade` — raderas det principala försvinner raderna med det. Två
+  arkitekturtester (`AlltSomPekarPaEttKonto_ForsvinnerMedDet`, `AlltSomPekarPaEttBarn_ForsvinnerMedDet`)
+  räknar upp nycklarna och fäller bygget om någon lägger till en tabell som pekar på ett konto
+  eller ett barn utan att den kaskaderar. **Namngivna undantag:** en audit-not (t.ex.
+  `AttendanceCall.OpenedByAccountId`, `AttendanceInvitation.RespondedByAccountId`,
+  `ChatMessage.DeletedByAccountId`) har med flit *ingen* främmande nyckel — den överlever
+  raderingen som ett id utan namn eller e-post (§KM.10), och push-prenumerationens kontokoppling
+  är `SetNull` (#63), inte kaskad.
+- **Gallring — automatisk och tidsbestämd, körs i processen (inte cron):** samåkning för en match
+  gallras **30 dagar** efter matchen (§KM.12), en kallelse med sina per-barn-svar **30 dagar** efter
+  händelsen (§KM.7/`#203`), och chattmeddelanden efter **90 dagar** (`#201`). Varje gallring har
+  ett eget arbetar-jobb med samma mönster (dygnsintervall, idempotent, loggar bara antal, ett fel
+  fäller aldrig API:t) och läser aldrig in fritexten den raderar. Det enda dygns-cronjobbet på
+  Vercel är reserverat åt kvällspåminnelsen (§KM.11) — gallringen får det inte.
 - Ingen tredjepartsspårning, ingen besöksanalys, inga externa skript i FE utöver väder (Open-Meteo)
   och utgående kartlänkar. Nya tredjeparter kräver beslut i handoff-filen.
 
