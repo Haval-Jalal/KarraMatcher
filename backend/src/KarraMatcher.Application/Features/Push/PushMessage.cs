@@ -19,7 +19,7 @@ namespace KarraMatcher.Application.Features.Push;
 /// </summary>
 /// <param name="Title">Kort rubrik. Det enda som säkert syns på en låsskärm.</param>
 /// <param name="Body">En rad till. Får vara tom.</param>
-/// <param name="Url">Relativ adress i appen som notisen öppnar, t.ex. <c>/match/{id}</c>.</param>
+/// <param name="Url">Relativ adress i appen som notisen öppnar, t.ex. <c>/handelse/{id}</c>.</param>
 public sealed record PushMessage(string Title, string Body, string Url);
 
 /// <summary>

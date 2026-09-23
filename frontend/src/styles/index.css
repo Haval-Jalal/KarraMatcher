@@ -2060,6 +2060,13 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-muted);
 }
 
+/* Enhetsväxeln (`#244`) sitter överst och skiljs från kategorierna med en linje. */
+.notif-device {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* Superadmin-konsolen (§KM.3, #192). Verktygsmässig men konsekvent med resten. */
 .superadmin {
   display: flex;

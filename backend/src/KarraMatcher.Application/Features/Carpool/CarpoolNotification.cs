@@ -47,5 +47,7 @@ internal static class CarpoolNotification
         "Ett erbjudande du var med på har dragits tillbaka. Öppna för att se.",
         Url(matchId));
 
-    private static string Url(Guid matchId) => $"/match/{matchId}";
+    // Samåkningen bär internt `MatchId`, men det pekar på en händelse (§KM.12, `#198`), så
+    // djuplänken är händelsesidan `/handelse/{id}` — inte den utgångna `/match/`-adressen.
+    private static string Url(Guid matchId) => $"/handelse/{matchId}";
 }
