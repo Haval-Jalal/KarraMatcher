@@ -1,7 +1,5 @@
-export { CalendarLink } from './CalendarLink'
 export { EventWeather } from './EventWeather'
 export { useWeather } from './useWeather'
-export { TeamCalendarLink } from './TeamCalendarLink'
 export { EventList } from './EventList'
 export { NextEventCard } from './NextEventCard'
 export { selectNextEvent } from './selectNextEvent'

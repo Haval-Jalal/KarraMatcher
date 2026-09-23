@@ -10,8 +10,6 @@ import { AttendanceSection } from '@/features/attendance'
 import { CarpoolSection } from '@/features/carpool'
 import { MatchReportCard, readCard } from '@/features/playercard'
 
-import { CalendarLink } from './CalendarLink'
-
 import { DirectionsLink } from './DirectionsLink'
 import { EventWeather } from './EventWeather'
 import { eventLabel, eventTypeLabel } from './types'
@@ -21,7 +19,7 @@ import { useEvent } from './useEvent'
  * En händelse på egen adress, t.ex. `/handelse/{id}`.
  *
  * Samlar allt en förälder behöver inför avfärd: när, var, vad, och om den alls blir av.
- * Adressen är delbar och nås direkt från en kalenderpost — Vercels SPA-fallback gör att en
+ * Adressen är delbar och nås direkt från en push-notis — Vercels SPA-fallback gör att en
  * djuplänk fungerar även utan att någon varit på startsidan först (§KM.11).
  *
  * Samåkning och spelarkort gäller matcher; kallelsen gäller match och träning (§KM.7).
@@ -152,7 +150,6 @@ export function EventDetailPage() {
       {!isCancelled && !isPostponed && (
         <div className="actions">
           <DirectionsLink venueName={event.venue.name} address={event.address} />
-          <CalendarLink event={event} />
         </div>
       )}
 

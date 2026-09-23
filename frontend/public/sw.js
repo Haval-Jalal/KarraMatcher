@@ -222,11 +222,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Kalenderfiler laddas ner och hör hemma i telefonens kalender, inte i vår cache.
-  if (url.pathname.startsWith('/calendar/')) {
-    return
-  }
-
   // Byggda filer är innehållshashade: samma namn betyder alltid samma innehåll.
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(cacheFirst(request, SHELL_CACHE))

@@ -34,7 +34,7 @@ export function DevicePushToggle({ teamSlug }: { teamSlug: string }) {
     return (
       <div className="notif-device">
         <p className="notif-settings__tip" role="note">
-          Den här webbläsaren kan inte visa notiser. Schemat och kalendern fungerar ändå.
+          Den här webbläsaren kan inte visa notiser. Schemat fungerar ändå.
         </p>
         <NotificationInstallTip />
       </div>
