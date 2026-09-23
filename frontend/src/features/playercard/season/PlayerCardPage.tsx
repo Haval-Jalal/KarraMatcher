@@ -4,6 +4,7 @@ import { formatMatchDate } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { BadgeList } from '../badges/BadgeList'
+import { SportQuiz } from '../quiz/SportQuiz'
 import { readCard } from '../storage/playerCardStore'
 import { possessive, seasonFor, summarise, type SeasonRow } from './season'
 
@@ -88,6 +89,12 @@ export function PlayerCardPage() {
         <h2>Märken</h2>
 
         <BadgeList card={card} childId={child.id} />
+      </section>
+
+      <section>
+        <h2>Sportquiz</h2>
+
+        <SportQuiz />
       </section>
 
       {season.rows.length > 0 && (

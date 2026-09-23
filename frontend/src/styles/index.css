@@ -938,6 +938,90 @@ a.match-card:focus-visible .match-card__opponent {
   }
 }
 
+/* ---- Sportquiz ----------------------------------------------------------------- */
+
+.quiz {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.quiz__intro,
+.quiz__record {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.quiz__record {
+  color: var(--text-muted);
+}
+
+.quiz__progress {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz__question,
+.quiz__result {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+/* Rubriken tar emot fokus vid varje ny fråga men ska inte se ut som en kontroll. */
+.quiz__question:focus-visible,
+.quiz__result:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.quiz__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: stretch;
+}
+
+/* Hela bredden och stor träffyta — samma stora knappar som resten av appen. */
+.quiz__option {
+  width: 100%;
+  text-align: left;
+}
+
+/*
+ * Efter svaret markeras rätt alternativ och ett eventuellt felval. Färgen är aldrig ensam
+ * bärare: beskedet ovanför ("Rätt!"/"Inte riktigt — rätt svar är …") säger samma sak i text
+ * (§KM.0 A3). Knapparna är avstängda efteråt, så den dämpade opaciteten från disabled tas
+ * bort här för att markeringen ska synas.
+ */
+.quiz__option--correct,
+.quiz__option--wrong {
+  opacity: 1;
+}
+
+.quiz__option--correct {
+  border-color: var(--team-accent);
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.quiz__option--wrong {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.quiz__feedback {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
 /* ---- Säkerhetskopia ------------------------------------------------------------ */
 
 .backup {
