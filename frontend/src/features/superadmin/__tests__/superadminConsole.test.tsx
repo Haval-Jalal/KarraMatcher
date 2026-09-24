@@ -84,10 +84,13 @@ describe('Superadmin-konsolen', () => {
 
     const section = await screen.findByRole('region', { name: 'Sporter' })
 
-    // Skapa-formuläret ligger bakom en knapp (`#251`).
+    // Skapa-formuläret ligger bakom en knapp (`#251`); sluggen föreslås ur namnet (`#257`).
     await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
     await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
-    await user.type(within(section).getByLabelText(/Slug/), 'fotboll')
+
+    // Sluggen fylldes i automatiskt — ingen handpassning behövs.
+    expect(within(section).getByLabelText(/Slug/)).toHaveValue('fotboll')
+
     await user.click(within(section).getByRole('button', { name: 'Spara' }))
 
     await waitFor(() => {
@@ -103,6 +106,25 @@ describe('Superadmin-konsolen', () => {
 
     // Listan speglar servern efter skapandet.
     expect(await within(section).findByText('Fotboll')).toBeInTheDocument()
+  })
+
+  it('stannar kvar för att lägga till fler, med kvitto (#257)', async () => {
+    const user = userEvent.setup()
+    stubApi(superToken)
+    setAccessToken(superToken)
+
+    renderRoute('/superadmin')
+
+    const section = await screen.findByRole('region', { name: 'Sporter' })
+
+    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
+    await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
+    await user.click(within(section).getByRole('button', { name: 'Spara' }))
+
+    // Kvitto, formuläret kvar (Spara syns), och fälten tömda för nästa.
+    expect(await within(section).findByText('Fotboll sparades.')).toBeInTheDocument()
+    expect(within(section).getByRole('button', { name: 'Spara' })).toBeInTheDocument()
+    expect(within(section).getByLabelText('Namn')).toHaveValue('')
   })
 
   it('flikarna visar en sektion i taget', async () => {
@@ -143,6 +165,9 @@ describe('Superadmin-konsolen', () => {
 
     await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
     await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
+
+    // Skriv över det auto-föreslagna med något ogiltigt.
+    await user.clear(within(section).getByLabelText(/Slug/))
     await user.type(within(section).getByLabelText(/Slug/), 'Med Mellanslag')
     await user.click(within(section).getByRole('button', { name: 'Spara' }))
 

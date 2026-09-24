@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -24,21 +24,30 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
   const trupper = useTrupper()
   const create = useCreateTrupp()
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { clubId: '', sportId: '', name: '', season: '' },
   })
 
+  useEffect(() => {
+    if (adding) {
+      setFocus('clubId')
+    }
+  }, [adding, setFocus])
+
   function closeForm(): void {
     setAdding(false)
     setFailure(null)
+    setSuccess(null)
     reset()
   }
 
@@ -85,14 +94,20 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
           onSubmit={(event) => {
             void handleSubmit(async (values) => {
               try {
+                const created = values.name.trim()
                 await create.mutateAsync({
                   clubId: values.clubId,
                   sportId: values.sportId,
-                  name: values.name.trim(),
+                  name: created,
                   season: values.season.trim(),
                 })
-                closeForm()
+                // Kvar i formuläret för fler trupper: fälten töms, kvittot syns, fokus åter.
+                reset()
+                setFailure(null)
+                setSuccess(`${created} sparades.`)
+                setFocus('clubId')
               } catch (error) {
+                setSuccess(null)
                 setFailure(superadminError(error))
               }
             })(event)
@@ -144,6 +159,12 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
             {errors.season && <p className="form__error">{errors.season.message}</p>}
           </div>
 
+          {success !== null && (
+            <p className="form__success" role="status">
+              {success}
+            </p>
+          )}
+
           {failure !== null && (
             <p className="state state--error" role="alert">
               {failure}
@@ -155,7 +176,7 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
               {isSubmitting ? 'Sparar…' : 'Spara'}
             </button>
             <button type="button" className="button" onClick={closeForm}>
-              Avbryt
+              Stäng
             </button>
           </div>
         </form>

@@ -9,6 +9,7 @@
 
 ## 🔎 Snabbstatus
 - **Fas:** **M0 (15/15), M1 (17/17), M1.5 (4/4), M2 (6/6) och M3 klara** — `#40` truppvyn utgick 2026-09-10, se *Viktiga beslut*. Repot är publikt
+- **Skapa-flödet putsat (`#257`)** — skapa-formulären för sport/klubb/trupp/lag (och admin-tilldelning) fick fyra förbättringar: **slug föreslås automatiskt ur namnet** (redigerbar, hanterar åäö) så en admin slipper handpilla en teknisk sträng; **kvitto** (`role="status"`) efter sparat; **fokus i första fältet** när formuläret öppnas; och **"fortsätt lägga till flera"** — formuläret stängs inte efter Spara utan töms för nästa (bra för flera lag i rad), med en "Stäng"-knapp. Ny `slugify`-hjälpare + test. Rent FE, 609 tester gröna.
 - **Installerad app loggade ut vid varje öppning (`#255`)** — den tysta sessionsåterförnyelsen vid start kördes bara om en `localStorage`-flagga fanns. iOS ITP gallrar skrivbar lagring efter ~7 dagar, medan den `HttpOnly` refresh-cookien lever 60 dagar och är undantagen — så en hemskärms-app kunde sitta på en giltig cookie men vägra använda den. Flaggan togs bort: appen försöker nu **alltid** förnya mot cookien vid kallstart (i stängda v2 finns inga anonyma besökare, så §KM.11-skälet bakom flaggan är borta; en gäst får ett ofarligt 401). Rent FE, 599 tester gröna. **Kräver deploy + omtest på riktig iPhone.**
 - **UX-polish efter live-test.** Efter att v2 driftsatts och testats live började en runda gränssnittsputs. **`#251` (superadmin-konsolen) klar** — de fyra staplade sektionerna (Sporter/Klubbar/Trupper/Lag & admins) ligger nu bakom **flikar** (en i taget, tillgänglig tablist/tabpanel + piltangenter), och skapa-formulären är gömda bakom en **"Lägg till"-knapp** i stället för alltid öppna. Ny `Tabs`-komponent.
 - **Nav-flikarna stabila (`#253`)** — huvudmenyn (`AppNav`) bytte innehåll beroende på sida: en admin/superadmin som inte är tränare fick "Tränare"-länken bara på ett lag-schema och blev av med den överallt annars. Orsak: `isAdmin` vidgade villkoret tillsammans med `teamInPath`. Nu styr rollen ensam — tränare ser länken på varje sida, en admin som inte är tränare ser den inte alls. Rent FE.
@@ -24,7 +25,7 @@
 - **v2 (tidigare):** **`#200` (aviseringar per medlemskap) klar** — en lag-notis når bara lagets **medlemmar** (aldrig anonyma), per-typ **Händelser / Kallelser / Samåkning / Chatt**. Riktade utskick oförändrade. Se *Viktiga beslut*.
 - **v2 (tidigare):** **`#199` (riktad kallelse per barn) klar** — antals-närvaron ersatt av kallelse **per barn**: admin kallar utvalda barn **tvärs över lagen**, vårdnadshavare svarar **Ja/Nej** per barn, sammanställning + påminnelse. Bakom `AttendanceEnabled`-grinden. Se *Viktiga beslut*.
 - **v2 (tidigare):** **`#198` (event-modell) klar** — match-only omgjord till generisk **händelse** (match/träning/övrigt), full Match→Event-omdöpning BE+FE, route `/handelse/$id`. **Medveten gräns:** närvaro och samåkning behåller sitt interna `MatchId` (pekar på Events). Se *Viktiga beslut*.
-- **Senast uppdaterad:** 2026-09-24 (#255) av Haval
+- **Senast uppdaterad:** 2026-09-24 (#257) av Haval
 - **Aktuell milstolpe:** M7 — Notiser (2 av 6 klara). M5 klar 6 av 6. M6 omskriven 2026-09-10 utan barnuppgifter: `#56` klar, `#57`/`#58` kvar
 - **Hälsa:** 🟢 på plan — appen är i drift och användbar för föräldrar utan konto
 

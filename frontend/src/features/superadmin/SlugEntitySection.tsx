@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { slugify } from './slugify'
 import { superadminError } from './superadminError'
 
 /** En post med namn och stabil slug — en sport eller en klubb (`#192`). */
@@ -44,18 +45,35 @@ export function SlugEntitySection({
   onRename: (id: string, name: string) => Promise<unknown>
 }) {
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  // Slug föreslås ur namnet tills man ändrar den för hand — då slutar vi skriva över den.
+  const [slugEdited, setSlugEdited] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: '', slug: '' } })
+
+  const nameField = register('name')
+  const slugField = register('slug')
+
+  // Fokus i namnfältet när formuläret öppnas, så man kan börja skriva direkt.
+  useEffect(() => {
+    if (adding) {
+      setFocus('name')
+    }
+  }, [adding, setFocus])
 
   function closeForm(): void {
     setAdding(false)
     setFailure(null)
+    setSuccess(null)
+    setSlugEdited(false)
     reset()
   }
 
@@ -98,9 +116,17 @@ export function SlugEntitySection({
           onSubmit={(event) => {
             void handleSubmit(async (values) => {
               try {
-                await onCreate(values.name.trim(), values.slug.trim())
-                closeForm()
+                const created = values.name.trim()
+                await onCreate(created, values.slug.trim())
+                // Kvar i formuläret för att lägga till fler: fälten töms, kvittot syns, och
+                // markören står redo i namnfältet igen.
+                reset()
+                setSlugEdited(false)
+                setFailure(null)
+                setSuccess(`${created} sparades.`)
+                setFocus('name')
               } catch (error) {
+                setSuccess(null)
                 setFailure(superadminError(error))
               }
             })(event)
@@ -113,7 +139,15 @@ export function SlugEntitySection({
               type="text"
               autoComplete="off"
               aria-invalid={errors.name ? true : undefined}
-              {...register('name')}
+              {...nameField}
+              onChange={(event) => {
+                void nameField.onChange(event)
+                setSuccess(null)
+                // Föreslå slug ur namnet tills den ändrats för hand.
+                if (!slugEdited) {
+                  setValue('slug', slugify(event.target.value))
+                }
+              }}
             />
             {errors.name && <p className="form__error">{errors.name.message}</p>}
           </div>
@@ -125,10 +159,20 @@ export function SlugEntitySection({
               type="text"
               autoComplete="off"
               aria-invalid={errors.slug ? true : undefined}
-              {...register('slug')}
+              {...slugField}
+              onChange={(event) => {
+                void slugField.onChange(event)
+                setSlugEdited(true)
+              }}
             />
             {errors.slug && <p className="form__error">{errors.slug.message}</p>}
           </div>
+
+          {success !== null && (
+            <p className="form__success" role="status">
+              {success}
+            </p>
+          )}
 
           {failure !== null && (
             <p className="state state--error" role="alert">
@@ -141,7 +185,7 @@ export function SlugEntitySection({
               {isSubmitting ? 'Sparar…' : 'Spara'}
             </button>
             <button type="button" className="button" onClick={closeForm}>
-              Avbryt
+              Stäng
             </button>
           </div>
         </form>
