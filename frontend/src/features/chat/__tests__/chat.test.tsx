@@ -129,7 +129,7 @@ describe('trupp-chatt', () => {
     })
   })
 
-  it('anmälan skickar en POST till report-endpointen', async () => {
+  it('anmälan kräver en motivering och POST:ar den, med kvitto', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'm@example.com', sub: 'me' })
     setAccessToken(token)
@@ -143,11 +143,25 @@ describe('trupp-chatt', () => {
     const row = (await screen.findByText('Hej alla')).closest('li') as HTMLElement
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
 
+    // Motivering är obligatorisk: skicka-knappen är avstängd tills något skrivits.
+    const submit = within(row).getByRole('button', { name: 'Skicka anmälan' })
+    expect(submit).toBeDisabled()
+
+    await user.type(within(row).getByLabelText(/Varför anmäler/), 'Stötande språk')
+    await user.click(within(row).getByRole('button', { name: 'Skicka anmälan' }))
+
     await waitFor(() => {
       expect(
-        sent.some((r) => r.url.includes('/chat/messages/m1/report') && r.method === 'POST'),
+        sent.some(
+          (r) =>
+            r.url.includes('/chat/messages/m1/report') &&
+            r.method === 'POST' &&
+            (r.body as { reason: string }).reason === 'Stötande språk',
+        ),
       ).toBe(true)
     })
+
+    expect(await screen.findByText(/anmält till truppens admin/)).toBeInTheDocument()
   })
 
   it('en ledare kan schemalägga — anropet bär en tid', async () => {
@@ -181,7 +195,7 @@ describe('trupp-chatt', () => {
     })
   })
 
-  it('en admin ser anmälda meddelanden', async () => {
+  it('en admin ser anmälda meddelanden med motiveringar, men får inte radera under tröskeln', async () => {
     const token = tokenWith({ email: 'admin@example.com', sub: 'adm', 'admin-trupp': 'trupp-1' })
     setAccessToken(token)
     stub(token, true, (url) => {
@@ -194,6 +208,10 @@ describe('trupp-chatt', () => {
             body: 'Hej alla',
             deleted: false,
             reportCount: 2,
+            reasons: [
+              { reason: 'Stötande språk', reportedUtc: '2026-10-01T09:30:00Z' },
+              { reason: 'Spam', reportedUtc: '2026-10-01T09:40:00Z' },
+            ],
           },
         ]
       }
@@ -206,5 +224,54 @@ describe('trupp-chatt', () => {
 
     expect(await screen.findByRole('heading', { name: 'Anmälda meddelanden' })).toBeInTheDocument()
     expect(screen.getByText(/2 anmälningar/)).toBeInTheDocument()
+    // Motiveringarna syns för admin.
+    expect(screen.getByText('Stötande språk')).toBeInTheDocument()
+    expect(screen.getByText('Spam')).toBeInTheDocument()
+
+    // Under tröskeln (2 < 3): ingen "Ta bort", utan en förklaring. Kö-raden hittas via motiveringen.
+    const row = screen.getByText('Stötande språk').closest('.admin-list__row') as HTMLElement
+    expect(within(row).queryByRole('button', { name: 'Ta bort' })).not.toBeInTheDocument()
+    expect(within(row).getByText(/minst 3 anmälningar/)).toBeInTheDocument()
+  })
+
+  it('en admin kan radera ur kön när tröskeln nåtts', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'admin@example.com', sub: 'adm', 'admin-trupp': 'trupp-1' })
+    setAccessToken(token)
+    const sent = stub(token, true, (url) => {
+      if (url.includes('/chat/reports')) {
+        return [
+          {
+            messageId: 'm1',
+            authorAccountId: 'a1',
+            authorName: 'Tor T',
+            body: 'Hej alla',
+            deleted: false,
+            reportCount: 3,
+            reasons: [
+              { reason: 'Ett', reportedUtc: '2026-10-01T09:30:00Z' },
+              { reason: 'Två', reportedUtc: '2026-10-01T09:40:00Z' },
+              { reason: 'Tre', reportedUtc: '2026-10-01T09:50:00Z' },
+            ],
+          },
+        ]
+      }
+      if (url.includes('/chat/scheduled')) return []
+      if (url.includes('/chat/messages')) return MESSAGES
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    const row = (await screen.findByText('Tre')).closest('.admin-list__row') as HTMLElement
+    await user.click(within(row).getByRole('button', { name: 'Ta bort' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) => r.url.includes('/admin/trupper/trupp-1/chat/messages/m1') && r.method === 'DELETE',
+        ),
+      ).toBe(true)
+    })
   })
 })

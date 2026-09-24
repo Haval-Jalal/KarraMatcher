@@ -1383,6 +1383,40 @@ a.match-card:focus-visible .match-card__opponent {
   font-weight: 600;
 }
 
+/* ---- Chatt: anmälan (#263) ------------------------------------------------ */
+
+/* Full bredd så formuläret hamnar under meddelanderaden i den flex-wrap:ade listan. */
+.chat-report {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.chat-report textarea {
+  width: 100%;
+}
+
+.chat-report__done {
+  flex-basis: 100%;
+  margin: 6px 0 0;
+  color: var(--focus);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.chat-report__reasons {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: var(--text-sm);
+}
+
+.chat-report__gate {
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
 /* ---- Väntan --------------------------------------------------------------- */
 
 .loading {

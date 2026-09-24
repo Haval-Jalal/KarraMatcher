@@ -19,13 +19,12 @@ public sealed record PostChatMessageCommand(
     string Body,
     DateTimeOffset? PublishAt) : ICommand<ChatPostOutcome>;
 
-/// <summary>Tar bort ett meddelande (eget, eller vilket som helst om anroparen är admin).</summary>
+/// <summary>Tar bort ett eget meddelande (`#263`: admin raderar andras bara ur kön, vid tröskeln).</summary>
 public sealed record DeleteChatMessageCommand(
     Guid TruppId,
     Guid? TeamId,
     Guid MessageId,
-    Guid AccountId,
-    bool ActorIsAdmin) : ICommand<ChatModerationOutcome>;
+    Guid AccountId) : ICommand<ChatModerationOutcome>;
 
 /// <summary>Avbokar ett schemalagt meddelande innan det går ut.</summary>
 public sealed record CancelScheduledChatMessageCommand(
@@ -35,12 +34,13 @@ public sealed record CancelScheduledChatMessageCommand(
     Guid AccountId,
     bool ActorIsAdmin) : ICommand<ChatModerationOutcome>;
 
-/// <summary>Anmäler ett meddelande.</summary>
+/// <summary>Anmäler ett meddelande med en obligatorisk motivering (`#263`).</summary>
 public sealed record ReportChatMessageCommand(
     Guid TruppId,
     Guid? TeamId,
     Guid MessageId,
-    Guid AccountId) : ICommand<ChatModerationOutcome>;
+    Guid AccountId,
+    string Reason) : ICommand<ChatModerationOutcome>;
 
 /// <summary>Adminens moderering: tar bort valfritt meddelande i truppen, oavsett kanal (`#202`).</summary>
 public sealed record AdminDeleteChatMessageCommand(Guid TruppId, Guid MessageId, Guid ActorAccountId)
@@ -107,6 +107,9 @@ internal sealed class ReportChatMessageCommandValidator : AbstractValidator<Repo
         RuleFor(c => c.TruppId).NotEmpty();
         RuleFor(c => c.MessageId).NotEmpty();
         RuleFor(c => c.AccountId).NotEmpty();
+        RuleFor(c => c.Reason)
+            .NotEmpty().WithMessage("Skriv varför du anmäler meddelandet.")
+            .MaximumLength(Domain.Chat.ChatReport.MaxReason).WithMessage("Motiveringen är för lång.");
     }
 }
 
@@ -151,8 +154,7 @@ internal sealed class DeleteChatMessageCommandHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.DeleteAsync(
-            command.TruppId, command.TeamId, command.MessageId, command.AccountId,
-            command.ActorIsAdmin, cancellationToken);
+            command.TruppId, command.TeamId, command.MessageId, command.AccountId, cancellationToken);
     }
 }
 
@@ -179,7 +181,8 @@ internal sealed class ReportChatMessageCommandHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.ReportAsync(
-            command.TruppId, command.TeamId, command.MessageId, command.AccountId, cancellationToken);
+            command.TruppId, command.TeamId, command.MessageId, command.AccountId, command.Reason,
+            cancellationToken);
     }
 }
 

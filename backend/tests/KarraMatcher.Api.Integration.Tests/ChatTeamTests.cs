@@ -156,17 +156,24 @@ public sealed class ChatTeamTests(KarraMatcherApiFactory factory)
     // ---- Moderering ------------------------------------------------------------------
 
     [Fact]
-    public async Task Radera_ILagKanal_EgetEllerAdmin()
+    public async Task Radera_ILagKanal_BaraEget_InteAdminsPaAnnans()
     {
         var f = await SeedAsync("radera");
         var id = await TeamPostAsync(f, f.GulSlug, CoachToken(f), "Coachens rad");
 
-        var denied = await SendAsync(
+        // En vanlig medlem får inte radera någon annans.
+        var deniedGuardian = await SendAsync(
             HttpMethod.Delete, $"/api/v1/teams/{f.GulSlug}/chat/messages/{id}", GulGuardianToken(f));
-        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, deniedGuardian.StatusCode);
 
-        var allowed = await SendAsync(
+        // Inte heller admin — den vägen (`#263`); admin raderar bara ur kön, vid tröskeln.
+        var deniedAdmin = await SendAsync(
             HttpMethod.Delete, $"/api/v1/teams/{f.GulSlug}/chat/messages/{id}", AdminToken(f));
+        Assert.Equal(HttpStatusCode.Forbidden, deniedAdmin.StatusCode);
+
+        // Författaren själv får.
+        var allowed = await SendAsync(
+            HttpMethod.Delete, $"/api/v1/teams/{f.GulSlug}/chat/messages/{id}", CoachToken(f));
         Assert.Equal(HttpStatusCode.NoContent, allowed.StatusCode);
 
         var message = (await TeamArrayAsync(f.GulSlug, "messages", CoachToken(f)))
@@ -182,17 +189,21 @@ public sealed class ChatTeamTests(KarraMatcherApiFactory factory)
         var id = await TeamPostAsync(f, f.GulSlug, CoachToken(f), "Något olämpligt");
 
         var report = await SendAsync(
-            HttpMethod.Post, $"/api/v1/teams/{f.GulSlug}/chat/messages/{id}/report", GulGuardianToken(f));
+            HttpMethod.Post, $"/api/v1/teams/{f.GulSlug}/chat/messages/{id}/report", GulGuardianToken(f),
+            new { reason = "Stötande språk" });
         Assert.Equal(HttpStatusCode.NoContent, report.StatusCode);
         await AssertAuditedAsync("chatt.meddelande.anmalt", id);
 
-        // Truppens admin-kö spänner över lag-kanalerna (delad moderering, `#202`).
+        // Truppens admin-kö spänner över lag-kanalerna (delad moderering, `#202`) och bär motiveringen.
         var reports = await SendAsync(
             HttpMethod.Get, $"/api/v1/admin/trupper/{f.TruppId}/chat/reports", AdminToken(f));
         reports.EnsureSuccessStatusCode();
         var body = await reports.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
         var row = body.EnumerateArray().Single(r => r.GetProperty("messageId").GetGuid() == id);
         Assert.Equal(1, row.GetProperty("reportCount").GetInt32());
+        Assert.Equal(
+            "Stötande språk",
+            row.GetProperty("reasons")[0].GetProperty("reason").GetString());
     }
 
     [Fact]
@@ -200,6 +211,20 @@ public sealed class ChatTeamTests(KarraMatcherApiFactory factory)
     {
         var f = await SeedAsync("admin-radera-lag");
         var id = await TeamPostAsync(f, f.GulSlug, CoachToken(f), "Ska modereras bort");
+
+        // Tröskeln (`#263`): tre skilda medlemmar av laget anmäler innan admin kan radera.
+        foreach (var (token, reason) in new[]
+        {
+            (GulGuardianToken(f), "Stötande"),
+            (CoachToken(f), "Spam"),
+            (AdminToken(f), "Fel kanal"),
+        })
+        {
+            var r = await SendAsync(
+                HttpMethod.Post, $"/api/v1/teams/{f.GulSlug}/chat/messages/{id}/report", token,
+                new { reason });
+            Assert.Equal(HttpStatusCode.NoContent, r.StatusCode);
+        }
 
         // Admin raderar ett lag-kanal-meddelande via den kanalobundna trupp-admin-endpointen.
         var deleted = await SendAsync(

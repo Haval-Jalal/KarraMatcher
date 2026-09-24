@@ -13,6 +13,8 @@ internal sealed class ChatReportConfiguration : IEntityTypeConfiguration<ChatRep
 
         builder.HasKey(r => r.Id);
 
+        builder.Property(r => r.Reason).HasMaxLength(ChatReport.MaxReason).IsRequired();
+
         builder.Property(r => r.CreatedUtc).HasColumnType("timestamp with time zone").IsRequired();
 
         // En medlem anmäler ett meddelande en gång — dubbelanmälan är ingen extra signal.

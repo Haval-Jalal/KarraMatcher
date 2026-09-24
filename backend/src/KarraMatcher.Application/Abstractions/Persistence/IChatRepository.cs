@@ -2,14 +2,19 @@ using KarraMatcher.Domain.Chat;
 
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
-/// <summary>Ett anmält meddelande med antal anmälningar — för adminens moderering (`#201`).</summary>
+/// <summary>En enskild anmälans motivering och tidpunkt (`#263`). Fritext, bara för admin (§KM.10).</summary>
+public sealed record ReportReason(string Reason, DateTime CreatedUtc);
+
+/// <summary>
+/// Ett anmält meddelande med varje anmälans motivering — för adminens moderering (`#201`/`#263`).
+/// </summary>
 public sealed record ReportedMessageRow(
     Guid MessageId,
     Guid AuthorAccountId,
     string Body,
     DateTime? PublishedUtc,
     bool Deleted,
-    int ReportCount);
+    IReadOnlyList<ReportReason> Reasons);
 
 /// <summary>
 /// Läser och skriver chattens meddelanden och anmälningar (§KM.1/§KM.10, `#201`).
@@ -47,6 +52,9 @@ public interface IChatRepository
         Guid messageId, Guid accountId, CancellationToken cancellationToken);
 
     public Task AddReportAsync(ChatReport report, CancellationToken cancellationToken);
+
+    /// <summary>Antal anmälningar av ett meddelande — grinden för adminens radering (`#263`).</summary>
+    public Task<int> ReportCountAsync(Guid messageId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Anmälda meddelanden i hela truppen — trupp-kanalen och alla dess lag-kanaler — med

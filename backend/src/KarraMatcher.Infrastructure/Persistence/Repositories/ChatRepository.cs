@@ -72,26 +72,47 @@ internal sealed class ChatRepository(KarraMatcherDbContext context) : IChatRepos
     public async Task AddReportAsync(ChatReport report, CancellationToken cancellationToken) =>
         await context.ChatReports.AddAsync(report, cancellationToken).ConfigureAwait(false);
 
+    public Task<int> ReportCountAsync(Guid messageId, CancellationToken cancellationToken) =>
+        context.ChatReports.AsNoTracking().CountAsync(r => r.MessageId == messageId, cancellationToken);
+
     public async Task<IReadOnlyList<ReportedMessageRow>> ListReportedForTruppAsync(
         Guid ageGroupId, CancellationToken cancellationToken)
     {
         // Hela truppen: trupp-kanalen och alla dess lag-kanaler (alla rader med denna AgeGroupId).
         var messages = context.ChatMessages.AsNoTracking().Where(m => m.AgeGroupId == ageGroupId);
 
-        return await (
+        // Platt join, sedan gruppering i minnet: att projicera gruppens element till en lista
+        // översätts inte till en enda SQL av EF. Kön är liten (bara anmälda meddelanden).
+        var flat = await (
             from r in context.ChatReports.AsNoTracking()
             join m in messages on r.MessageId equals m.Id
-            group m by new { m.Id, m.AuthorAccountId, m.Body, m.PublishedUtc, m.DeletedUtc } into g
-            orderby g.Count() descending
-            select new ReportedMessageRow(
-                g.Key.Id,
-                g.Key.AuthorAccountId,
-                g.Key.Body,
-                g.Key.PublishedUtc,
-                g.Key.DeletedUtc != null,
-                g.Count()))
+            select new
+            {
+                m.Id,
+                m.AuthorAccountId,
+                m.Body,
+                m.PublishedUtc,
+                m.DeletedUtc,
+                r.Reason,
+                r.CreatedUtc,
+            })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        return
+        [
+            .. flat
+                .GroupBy(x => new { x.Id, x.AuthorAccountId, x.Body, x.PublishedUtc, x.DeletedUtc })
+                .Select(g => new ReportedMessageRow(
+                    g.Key.Id,
+                    g.Key.AuthorAccountId,
+                    g.Key.Body,
+                    g.Key.PublishedUtc,
+                    g.Key.DeletedUtc != null,
+                    [.. g.OrderByDescending(x => x.CreatedUtc)
+                        .Select(x => new ReportReason(x.Reason, x.CreatedUtc))]))
+                .OrderByDescending(row => row.Reasons.Count),
+        ];
     }
 
     public async Task<IReadOnlyList<Guid>> ChatDisabledAccountIdsAsync(

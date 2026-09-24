@@ -36,12 +36,16 @@ public sealed class ChatAdminController(
         return Ok(reports);
     }
 
-    /// <summary>Tar bort ett anmält meddelande, oavsett kanal (trupp eller lag).</summary>
+    /// <summary>
+    /// Tar bort ett anmält meddelande, oavsett kanal (trupp eller lag). Tillåts först när
+    /// meddelandet nått tröskeln av anmälningar (`#263`) — annars <c>409</c>.
+    /// </summary>
     [HttpDelete("messages/{id:guid}")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid truppId, Guid id, CancellationToken cancellationToken)
     {
         var raw = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
@@ -59,11 +63,19 @@ public sealed class ChatAdminController(
             .SendAsync(new AdminDeleteChatMessageCommand(truppId, id, actorId), cancellationToken)
             .ConfigureAwait(false);
 
-        return outcome == ChatModerationOutcome.Ok
-            ? NoContent()
-            : Problem(
+        return outcome switch
+        {
+            ChatModerationOutcome.Ok => NoContent(),
+            ChatModerationOutcome.BelowThreshold => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "För få anmälningar",
+                detail:
+                    $"Ett meddelande kan tas bort först när minst {ChatService.RemovalReportThreshold} "
+                    + "anmälningar kommit in."),
+            _ => Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Meddelandet finns inte",
-                detail: "Kontrollera länken — meddelandet kan ha tagits bort.");
+                detail: "Kontrollera länken — meddelandet kan ha tagits bort."),
+        };
     }
 }

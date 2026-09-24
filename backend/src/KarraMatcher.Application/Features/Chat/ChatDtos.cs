@@ -21,11 +21,18 @@ public sealed record ScheduledMessageDto(Guid Id, string Body, DateTimeOffset Pu
 /// </summary>
 public sealed record TeamChatMetaDto(Guid TruppId, bool IsLeader);
 
-/// <summary>Ett anmält meddelande i adminens moderering (`#201`).</summary>
+/// <summary>En anmälans motivering så som admin ser den (`#263`). Fritext, aldrig ett barns namn.</summary>
+public sealed record ReportReasonDto(string Reason, DateTimeOffset ReportedUtc);
+
+/// <summary>
+/// Ett anmält meddelande i adminens moderering (`#201`/`#263`). <paramref name="Reasons"/> är
+/// varje anmälares motivering; <paramref name="ReportCount"/> är antalet (grinden för radering).
+/// </summary>
 public sealed record ReportedMessageDto(
     Guid MessageId,
     Guid AuthorAccountId,
     string? AuthorName,
     string Body,
     bool Deleted,
-    int ReportCount);
+    int ReportCount,
+    IReadOnlyList<ReportReasonDto> Reasons);

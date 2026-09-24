@@ -28,6 +28,13 @@ function whenText(iso: string): string {
 }
 
 /**
+ * Så många skilda anmälningar ett meddelande behöver innan truppens admin kan radera det
+ * (speglar serverns `ChatService.RemovalReportThreshold`, `#263`). En admin tystar inte en
+ * enskild röst på egen hand. Servern är sanningen — knappen här speglar bara den.
+ */
+const REMOVAL_THRESHOLD = 3
+
+/**
  * En chatt-kanal (§KM.1/§KM.10): trupp-chatten (`#201`) eller ett lag (`#202`). Medlemmar
  * läser/skriver; ledare kan schemalägga; en admin ser anmälningskön (bara på trupp-nivå —
  * moderering delas mellan kanalerna). Barn nämns aldrig av oss här.
@@ -65,9 +72,44 @@ export function ChatChannel({
   const [when, setWhen] = useState('')
   const [failure, setFailure] = useState<string | null>(null)
 
+  // Anmälan: vilket meddelande formuläret är öppet för, motiveringstexten, och senast kvitterade.
+  const [reportingId, setReportingId] = useState<string | null>(null)
+  const [reportText, setReportText] = useState('')
+  const [reportedId, setReportedId] = useState<string | null>(null)
+
   const run = (action: Promise<unknown>) => {
     setFailure(null)
     void action.catch((error: unknown) => setFailure(messageOf(error)))
+  }
+
+  function openReport(messageId: string): void {
+    setFailure(null)
+    setReportedId(null)
+    setReportText('')
+    setReportingId((current) => (current === messageId ? null : messageId))
+  }
+
+  function submitReport(event: React.FormEvent, messageId: string): void {
+    event.preventDefault()
+
+    const reason = reportText.trim()
+
+    if (reason === '') {
+      return
+    }
+
+    setFailure(null)
+    report.mutate(
+      { id: messageId, reason },
+      {
+        onSuccess: () => {
+          setReportingId(null)
+          setReportText('')
+          setReportedId(messageId)
+        },
+        onError: (error: unknown) => setFailure(messageOf(error)),
+      },
+    )
   }
 
   function submit(event: React.FormEvent): void {
@@ -92,8 +134,10 @@ export function ChatChannel({
     })
   }
 
+  // Bara den egna raden går att ta bort här. Admin raderar andras enbart ur anmälningskön,
+  // och först vid tröskeln (`#263`) — inte med en knapp på varje meddelande.
   function canDelete(message: ChatMessage): boolean {
-    return isAdmin || (myAccountId !== null && message.authorAccountId === myAccountId)
+    return myAccountId !== null && message.authorAccountId === myAccountId
   }
 
   return (
@@ -129,8 +173,8 @@ export function ChatChannel({
                   <button
                     type="button"
                     className="button button--small"
-                    disabled={report.isPending}
-                    onClick={() => run(report.mutateAsync(message.id))}
+                    aria-expanded={reportingId === message.id}
+                    onClick={() => openReport(message.id)}
                   >
                     Anmäl
                   </button>
@@ -145,6 +189,44 @@ export function ChatChannel({
                     </button>
                   )}
                 </span>
+              )}
+
+              {reportingId === message.id && (
+                <form className="chat-report" onSubmit={(event) => submitReport(event, message.id)}>
+                  <label htmlFor={`report-${message.id}`}>Varför anmäler du meddelandet?</label>
+                  <textarea
+                    id={`report-${message.id}`}
+                    rows={2}
+                    maxLength={500}
+                    value={reportText}
+                    onChange={(event) => setReportText(event.target.value)}
+                  />
+                  <div className="actions">
+                    <button
+                      type="submit"
+                      className="button button--small"
+                      disabled={report.isPending || reportText.trim() === ''}
+                    >
+                      Skicka anmälan
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--small"
+                      onClick={() => {
+                        setReportingId(null)
+                        setReportText('')
+                      }}
+                    >
+                      Avbryt
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {reportedId === message.id && (
+                <p className="chat-report__done" role="status">
+                  Tack — meddelandet är anmält till truppens admin.
+                </p>
               )}
             </li>
           ))}
@@ -230,28 +312,47 @@ export function ChatChannel({
         <div className="admin-subsection">
           <h3>Anmälda meddelanden</h3>
           <ul className="admin-list">
-            {reports.data.map((item) => (
-              <li key={item.messageId} className="admin-list__row">
-                <span>
-                  <strong>{item.authorName ?? 'Okänd'}</strong>{' '}
-                  <span className="admin-muted">
-                    {item.reportCount} anmälning{item.reportCount === 1 ? '' : 'ar'}
+            {reports.data.map((item) => {
+              const canRemove = item.reportCount >= REMOVAL_THRESHOLD
+
+              return (
+                <li key={item.messageId} className="admin-list__row">
+                  <span>
+                    <strong>{item.authorName ?? 'Okänd'}</strong>{' '}
+                    <span className="admin-muted">
+                      {item.reportCount} anmälning{item.reportCount === 1 ? '' : 'ar'}
+                    </span>
+                    <br />
+                    {item.deleted ? <em className="admin-muted">[borttaget]</em> : item.body}
+                    {item.reasons.length > 0 && (
+                      <ul className="chat-report__reasons">
+                        {item.reasons.map((r) => (
+                          <li key={`${r.reason}-${r.reportedUtc}`}>
+                            <span className="admin-muted">{whenText(r.reportedUtc)}:</span>{' '}
+                            {r.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </span>
-                  <br />
-                  {item.deleted ? <em className="admin-muted">[borttaget]</em> : item.body}
-                </span>
-                {!item.deleted && (
-                  <button
-                    type="button"
-                    className="button button--small"
-                    disabled={adminRemove.isPending}
-                    onClick={() => run(adminRemove.mutateAsync(item.messageId))}
-                  >
-                    Ta bort
-                  </button>
-                )}
-              </li>
-            ))}
+                  {!item.deleted &&
+                    (canRemove ? (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={adminRemove.isPending}
+                        onClick={() => run(adminRemove.mutateAsync(item.messageId))}
+                      >
+                        Ta bort
+                      </button>
+                    ) : (
+                      <span className="admin-muted chat-report__gate">
+                        Kan tas bort när minst {REMOVAL_THRESHOLD} anmälningar kommit in.
+                      </span>
+                    ))}
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
