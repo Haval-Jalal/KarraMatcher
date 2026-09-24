@@ -46,16 +46,20 @@ export function ChildrenPanel({ truppId }: { truppId: string }) {
   const roster = useRoster(truppId)
   const create = useCreateChild(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<CreateValues>({
     resolver: zodResolver(createSchema),
     defaultValues: { firstName: '', lastInitial: '', teamId: '' },
   })
+
+  const firstNameField = register('firstName')
 
   const teams = roster.data?.teams ?? []
 
@@ -110,14 +114,19 @@ export function ChildrenPanel({ truppId }: { truppId: string }) {
             onSubmit={(event) => {
               void handleSubmit(async (values) => {
                 try {
+                  const added = `${values.firstName.trim()} ${values.lastInitial.trim()}`.trim()
                   await create.mutateAsync({
                     firstName: values.firstName.trim(),
                     lastInitial: values.lastInitial.trim(),
                     teamId: values.teamId === '' ? null : values.teamId,
                   })
-                  setFailure(null)
+                  // Kvar för att lägga till fler barn: fälten töms, kvittot syns, fokus åter.
                   reset()
+                  setFailure(null)
+                  setSuccess(`${added} lades till.`)
+                  setFocus('firstName')
                 } catch (error) {
+                  setSuccess(null)
                   setFailure(messageOf(error))
                 }
               })(event)
@@ -125,7 +134,15 @@ export function ChildrenPanel({ truppId }: { truppId: string }) {
           >
             <div className="form__field">
               <label htmlFor={`barn-fornamn-${truppId}`}>Förnamn</label>
-              <input id={`barn-fornamn-${truppId}`} type="text" {...register('firstName')} />
+              <input
+                id={`barn-fornamn-${truppId}`}
+                type="text"
+                {...firstNameField}
+                onChange={(event) => {
+                  void firstNameField.onChange(event)
+                  setSuccess(null)
+                }}
+              />
               {errors.firstName && <p className="form__error">{errors.firstName.message}</p>}
             </div>
 
@@ -151,6 +168,12 @@ export function ChildrenPanel({ truppId }: { truppId: string }) {
                 ))}
               </select>
             </div>
+
+            {success !== null && (
+              <p className="form__success" role="status">
+                {success}
+              </p>
+            )}
 
             {failure !== null && (
               <p className="state state--error" role="alert">

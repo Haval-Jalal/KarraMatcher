@@ -168,6 +168,10 @@ describe('Barn-roster', () => {
         ),
       ).toBe(true)
     })
+
+    // Kvitto efter sparat, och fältet tömt för nästa barn (`#259`).
+    expect(await within(panel).findByText('Ada S lades till.')).toBeInTheDocument()
+    expect(within(panel).getByLabelText('Förnamn')).toHaveValue('')
   })
 
   it('visar ett begripligt fel när samtycke saknas (§KM.6)', async () => {
