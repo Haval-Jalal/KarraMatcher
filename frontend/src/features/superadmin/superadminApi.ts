@@ -26,15 +26,6 @@ export interface Trupp {
   sportId: string
   sportName: string
   name: string
-  season: string
-}
-
-export interface Lag {
-  id: string
-  truppId: string
-  name: string
-  colorHex: string
-  slug: string
 }
 
 export interface TruppAdmin {
@@ -68,34 +59,11 @@ export const getTrupper = (clubId?: string): Promise<Trupp[]> =>
     clubId === undefined ? '/api/v1/admin/trupper' : `/api/v1/admin/trupper?clubId=${clubId}`,
   )
 
-export const createTrupp = (
-  clubId: string,
-  sportId: string,
-  name: string,
-  season: string,
-): Promise<Trupp> => postJson<Trupp>('/api/v1/admin/trupper', { clubId, sportId, name, season })
+export const createTrupp = (clubId: string, sportId: string, name: string): Promise<Trupp> =>
+  postJson<Trupp>('/api/v1/admin/trupper', { clubId, sportId, name })
 
-export const updateTrupp = (
-  id: string,
-  sportId: string,
-  name: string,
-  season: string,
-): Promise<Trupp> =>
-  postJson<Trupp>(`/api/v1/admin/trupper/${id}`, { sportId, name, season }, { method: 'PUT' })
-
-// ---- Lag ---------------------------------------------------------------------------
-export const getLag = (truppId: string): Promise<Lag[]> =>
-  getJson<Lag[]>(`/api/v1/admin/lag?truppId=${truppId}`)
-
-export const createLag = (
-  truppId: string,
-  name: string,
-  colorHex: string,
-  slug: string,
-): Promise<Lag> => postJson<Lag>('/api/v1/admin/lag', { truppId, name, colorHex, slug })
-
-export const updateLag = (id: string, name: string, colorHex: string): Promise<Lag> =>
-  postJson<Lag>(`/api/v1/admin/lag/${id}`, { name, colorHex }, { method: 'PUT' })
+export const updateTrupp = (id: string, sportId: string, name: string): Promise<Trupp> =>
+  postJson<Trupp>(`/api/v1/admin/trupper/${id}`, { sportId, name }, { method: 'PUT' })
 
 // ---- Admins ------------------------------------------------------------------------
 export const getAdmins = (truppId: string): Promise<TruppAdmin[]> =>

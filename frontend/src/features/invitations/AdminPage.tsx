@@ -4,6 +4,7 @@ import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
 import { ChildrenPanel } from '@/features/children'
 import { CoachesPanel } from '@/features/coaches'
+import { LagPanel } from '@/features/lag'
 
 import { InvitationsPanel } from './InvitationsPanel'
 import { useMyTrupper } from './useInvitations'
@@ -83,10 +84,11 @@ export function AdminPage() {
 
         {truppId !== null && (
           <>
+            <LagPanel truppId={truppId} />
+            <ChildrenPanel truppId={truppId} />
+            <CoachesPanel truppId={truppId} />
             <InvitationsPanel truppId={truppId} />
             <ApplicationsPanel truppId={truppId} />
-            <CoachesPanel truppId={truppId} />
-            <ChildrenPanel truppId={truppId} />
           </>
         )}
       </section>

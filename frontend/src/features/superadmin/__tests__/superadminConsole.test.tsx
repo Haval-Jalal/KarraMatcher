@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,11 +7,12 @@ import { jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
- * Superadmin-konsolen (§KM.3, `#192`).
+ * Superadmins uppsättningsguide (§KM.3, `#192`, `#261`).
  *
- * Två saker vaktas ur användarens perspektiv: att superadmin kan skapa en sport (och att
- * anropet bär rätt data), och att en vanlig inloggad inte ens ser vyn — den riktiga grinden
- * är serverns, men vyn ska inte heller visa sig.
+ * Guiden är en kedja: Sport → Klubb → Trupp → tilldela admin. Testerna vaktar att man kan
+ * skapa en sport i steg 1 (och att anropet bär rätt data, med slug föreslagen ur namnet),
+ * att en ogiltig slug stoppas i klienten, att guiden går vidare, och att en vanlig inloggad
+ * inte ens ser vyn.
  */
 
 function tokenWith(claims: Record<string, unknown>): string {
@@ -39,14 +40,12 @@ function stubApi(token: string) {
       })
 
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
-      if (url.includes('/auth/refresh')) {
+      if (url.includes('/auth/refresh'))
         return Promise.resolve(jsonResponse({ accessToken: token }))
-      }
 
       if (url.includes('/api/v1/admin/sports')) {
         if (method === 'POST') {
-          const body = init?.body as string
-          const parsed = JSON.parse(body) as { name: string; slug: string }
+          const parsed = JSON.parse(init?.body as string) as { name: string; slug: string }
           const created = { id: 'sport-1', name: parsed.name, slug: parsed.slug }
           sports.push(created)
           return Promise.resolve(jsonResponse(created, 201))
@@ -74,24 +73,19 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Superadmin-konsolen', () => {
-  it('superadmin kan skapa en sport, och anropet bär rätt data', async () => {
+describe('Uppsättningsguiden', () => {
+  it('skapar en sport i steg 1 och väljer den — anropet bär rätt data', async () => {
     const user = userEvent.setup()
     const { sent } = stubApi(superToken)
     setAccessToken(superToken)
 
     renderRoute('/superadmin')
 
-    const section = await screen.findByRole('region', { name: 'Sporter' })
-
-    // Skapa-formuläret ligger bakom en knapp (`#251`); sluggen föreslås ur namnet (`#257`).
-    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
-    await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
-
-    // Sluggen fylldes i automatiskt — ingen handpassning behövs.
-    expect(within(section).getByLabelText(/Slug/)).toHaveValue('fotboll')
-
-    await user.click(within(section).getByRole('button', { name: 'Spara' }))
+    // Steg 1 är sport. Skapa-formuläret ligger bakom en knapp; sluggen föreslås ur namnet.
+    await user.click(await screen.findByRole('button', { name: 'Skapa ny sport' }))
+    await user.type(screen.getByLabelText('Namn'), 'Fotboll')
+    expect(screen.getByLabelText(/Slug/)).toHaveValue('fotboll')
+    await user.click(screen.getByRole('button', { name: 'Skapa sport' }))
 
     await waitFor(() => {
       expect(
@@ -99,49 +93,51 @@ describe('Superadmin-konsolen', () => {
           (r) =>
             r.url.includes('/api/v1/admin/sports') &&
             r.method === 'POST' &&
-            (r.body as { name: string; slug: string }).slug === 'fotboll',
+            (r.body as { slug: string }).slug === 'fotboll',
         ),
       ).toBe(true)
     })
 
-    // Listan speglar servern efter skapandet.
-    expect(await within(section).findByText('Fotboll')).toBeInTheDocument()
+    // Den skapade sporten dyker upp som ett valt alternativ, och "Nästa" blir möjlig.
+    const choice = await screen.findByRole('radio', { name: /Fotboll/ })
+    expect(choice).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Nästa' })).toBeEnabled()
   })
 
-  it('stannar kvar för att lägga till fler, med kvitto (#257)', async () => {
+  it('går vidare till klubb-steget när en sport valts', async () => {
     const user = userEvent.setup()
     stubApi(superToken)
     setAccessToken(superToken)
 
     renderRoute('/superadmin')
 
-    const section = await screen.findByRole('region', { name: 'Sporter' })
+    await user.click(await screen.findByRole('button', { name: 'Skapa ny sport' }))
+    await user.type(screen.getByLabelText('Namn'), 'Fotboll')
+    await user.click(screen.getByRole('button', { name: 'Skapa sport' }))
 
-    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
-    await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
-    await user.click(within(section).getByRole('button', { name: 'Spara' }))
+    await screen.findByRole('radio', { name: /Fotboll/ })
+    await user.click(screen.getByRole('button', { name: 'Nästa' }))
 
-    // Kvitto, formuläret kvar (Spara syns), och fälten tömda för nästa.
-    expect(await within(section).findByText('Fotboll sparades.')).toBeInTheDocument()
-    expect(within(section).getByRole('button', { name: 'Spara' })).toBeInTheDocument()
-    expect(within(section).getByLabelText('Namn')).toHaveValue('')
+    expect(await screen.findByText('Steg 2 av 4 — Klubb')).toBeInTheDocument()
   })
 
-  it('flikarna visar en sektion i taget', async () => {
+  it('avvisar en ogiltig slug i klienten utan att något skickas', async () => {
     const user = userEvent.setup()
-    stubApi(superToken)
+    const { sent } = stubApi(superToken)
     setAccessToken(superToken)
 
     renderRoute('/superadmin')
 
-    // Sporter är öppen som standard; Klubbar ligger dold bakom sin flik.
-    expect(await screen.findByRole('region', { name: 'Sporter' })).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Klubbar' })).not.toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Skapa ny sport' }))
+    await user.type(screen.getByLabelText('Namn'), 'Fotboll')
+    await user.clear(screen.getByLabelText(/Slug/))
+    await user.type(screen.getByLabelText(/Slug/), 'Med Mellanslag')
+    await user.click(screen.getByRole('button', { name: 'Skapa sport' }))
 
-    await user.click(screen.getByRole('tab', { name: 'Klubbar' }))
-
-    expect(await screen.findByRole('region', { name: 'Klubbar' })).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Sporter' })).not.toBeInTheDocument()
+    expect(await screen.findByText(/Bara små bokstäver/)).toBeInTheDocument()
+    expect(sent.some((r) => r.method === 'POST' && r.url.includes('/api/v1/admin/sports'))).toBe(
+      false,
+    )
   })
 
   it('en vanlig inloggad ser inte konsolen', async () => {
@@ -151,29 +147,6 @@ describe('Superadmin-konsolen', () => {
     renderRoute('/superadmin')
 
     expect(await screen.findByText('Den här vyn är bara för superadmin.')).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Sporter' })).not.toBeInTheDocument()
-  })
-
-  it('en ogiltig slug avvisas i klienten utan att något skickas', async () => {
-    const user = userEvent.setup()
-    const { sent } = stubApi(superToken)
-    setAccessToken(superToken)
-
-    renderRoute('/superadmin')
-
-    const section = await screen.findByRole('region', { name: 'Sporter' })
-
-    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
-    await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
-
-    // Skriv över det auto-föreslagna med något ogiltigt.
-    await user.clear(within(section).getByLabelText(/Slug/))
-    await user.type(within(section).getByLabelText(/Slug/), 'Med Mellanslag')
-    await user.click(within(section).getByRole('button', { name: 'Spara' }))
-
-    expect(await within(section).findByText(/Bara små bokstäver/)).toBeInTheDocument()
-    expect(sent.some((r) => r.method === 'POST' && r.url.includes('/api/v1/admin/sports'))).toBe(
-      false,
-    )
+    expect(screen.queryByRole('button', { name: 'Skapa ny sport' })).not.toBeInTheDocument()
   })
 })

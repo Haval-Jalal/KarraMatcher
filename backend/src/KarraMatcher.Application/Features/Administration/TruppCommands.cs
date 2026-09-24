@@ -4,12 +4,12 @@ namespace KarraMatcher.Application.Features.Administration;
 
 /// <summary>Skapar en trupp. Tunt omslag runt <see cref="TruppAdminService"/> (`#192`).</summary>
 public sealed record CreateTruppCommand(
-    Guid ClubId, Guid SportId, string Name, string Season, Guid ActorAccountId)
+    Guid ClubId, Guid SportId, string Name, Guid ActorAccountId)
     : ICommand<AdminResult<TruppDto>>;
 
-/// <summary>Ändrar en trupps sport, namn och säsong.</summary>
+/// <summary>Ändrar en trupps sport och namn (säsong utgått, `#261`).</summary>
 public sealed record UpdateTruppCommand(
-    Guid Id, Guid SportId, string Name, string Season, Guid ActorAccountId)
+    Guid Id, Guid SportId, string Name, Guid ActorAccountId)
     : ICommand<AdminResult<TruppDto>>;
 
 internal sealed class CreateTruppCommandHandler(TruppAdminService service)
@@ -21,7 +21,7 @@ internal sealed class CreateTruppCommandHandler(TruppAdminService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.CreateAsync(
-            command.ClubId, command.SportId, command.Name, command.Season,
+            command.ClubId, command.SportId, command.Name,
             command.ActorAccountId, cancellationToken);
     }
 }
@@ -35,7 +35,7 @@ internal sealed class UpdateTruppCommandHandler(TruppAdminService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.UpdateAsync(
-            command.Id, command.SportId, command.Name, command.Season,
+            command.Id, command.SportId, command.Name,
             command.ActorAccountId, cancellationToken);
     }
 }

@@ -2068,49 +2068,132 @@ a.match-card:focus-visible .match-card__opponent {
   gap: 24px;
 }
 
-/* Flikar (`#251`). Mobil-först: listan får skrolla i sidled när namnen inte får plats. */
-.tabs {
+/* Uppsättningsguiden (`#261`). Mobil-först: steg-raden får skrolla i sidled. */
+.wizard {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-.tabs__list {
+.wizard__steps {
   display: flex;
   gap: 4px;
+  margin: 0;
+  padding: 0 0 2px;
+  list-style: none;
   overflow-x: auto;
   border-bottom: 2px solid var(--border);
 }
 
-.tabs__tab {
+.wizard__step-button {
   appearance: none;
   border: none;
   background: none;
   font-family: var(--sans);
   font-size: var(--text-sm);
   color: var(--text-muted);
-  padding: 10px 14px;
+  padding: 10px 12px;
   min-height: var(--tap-target);
   white-space: nowrap;
   cursor: pointer;
-  /* Understrykningen ligger i kant med listans linje och markerar aktiv flik. */
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
 }
 
-.tabs__tab:hover {
+.wizard__step-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.wizard__step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  font-size: var(--text-xs);
+}
+
+.wizard__step--current .wizard__step-button {
+  color: var(--text-strong);
+  font-weight: 700;
+  border-bottom-color: var(--focus);
+}
+
+/* Färgen på siffran är aldrig ensam bärare: aria-current och fetare text säger samma sak. */
+.wizard__step--current .wizard__step-number {
+  background: var(--focus);
+  color: var(--surface);
+  border-color: var(--focus);
+}
+
+.wizard__step--done .wizard__step-button {
   color: var(--text);
 }
 
-.tabs__tab--active {
-  color: var(--text-strong);
-  border-bottom-color: var(--focus);
-  font-weight: 700;
-}
-
-.tabs__tab:focus-visible {
+.wizard__step-button:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+.wizard__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard__panel > h3 {
+  margin: 0;
+}
+
+.wizard__context {
+  margin: 0;
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+}
+
+.wizard__choices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wizard__choice {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  min-height: var(--tap-target);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wizard__choice--selected {
+  border-color: var(--focus);
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+
+.wizard__choice:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.wizard__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
 }
 
 .admin-section {

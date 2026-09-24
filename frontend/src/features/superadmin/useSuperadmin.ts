@@ -2,18 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   createClub,
-  createLag,
   createSport,
   createTrupp,
   getAdmins,
   getClubs,
-  getLag,
   getSports,
   getTrupper,
   grantAdmin,
   revokeAdmin,
   updateClub,
-  updateLag,
   updateSport,
   updateTrupp,
 } from './superadminApi'
@@ -30,7 +27,6 @@ export const superadminKeys = {
   sports: ['admin', 'sports'] as const,
   clubs: ['admin', 'clubs'] as const,
   trupper: ['admin', 'trupper'] as const,
-  lag: (truppId: string) => ['admin', 'lag', truppId] as const,
   admins: (truppId: string) => ['admin', 'admins', truppId] as const,
 }
 
@@ -81,8 +77,8 @@ export function useTrupper() {
 export function useCreateTrupp() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (input: { clubId: string; sportId: string; name: string; season: string }) =>
-      createTrupp(input.clubId, input.sportId, input.name, input.season),
+    mutationFn: (input: { clubId: string; sportId: string; name: string }) =>
+      createTrupp(input.clubId, input.sportId, input.name),
     onSuccess: () => client.invalidateQueries({ queryKey: superadminKeys.trupper }),
   })
 }
@@ -90,35 +86,9 @@ export function useCreateTrupp() {
 export function useUpdateTrupp() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (input: { id: string; sportId: string; name: string; season: string }) =>
-      updateTrupp(input.id, input.sportId, input.name, input.season),
+    mutationFn: (input: { id: string; sportId: string; name: string }) =>
+      updateTrupp(input.id, input.sportId, input.name),
     onSuccess: () => client.invalidateQueries({ queryKey: superadminKeys.trupper }),
-  })
-}
-
-export function useLag(truppId: string | null) {
-  return useQuery({
-    queryKey: superadminKeys.lag(truppId ?? ''),
-    queryFn: () => getLag(truppId as string),
-    enabled: truppId !== null,
-  })
-}
-
-export function useCreateLag(truppId: string) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { name: string; colorHex: string; slug: string }) =>
-      createLag(truppId, input.name, input.colorHex, input.slug),
-    onSuccess: () => client.invalidateQueries({ queryKey: superadminKeys.lag(truppId) }),
-  })
-}
-
-export function useUpdateLag(truppId: string) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { id: string; name: string; colorHex: string }) =>
-      updateLag(input.id, input.name, input.colorHex),
-    onSuccess: () => client.invalidateQueries({ queryKey: superadminKeys.lag(truppId) }),
   })
 }
 

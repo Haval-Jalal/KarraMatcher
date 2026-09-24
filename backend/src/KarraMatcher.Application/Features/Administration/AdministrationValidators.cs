@@ -66,7 +66,6 @@ internal sealed class CreateTruppCommandValidator : AbstractValidator<CreateTrup
         RuleFor(c => c.ClubId).NotEmpty().WithMessage("Välj en klubb.");
         RuleFor(c => c.SportId).NotEmpty().WithMessage("Välj en sport.");
         RuleFor(c => c.Name).NotEmpty().WithMessage("Fyll i truppens namn.").MaximumLength(50);
-        RuleFor(c => c.Season).NotEmpty().WithMessage("Fyll i säsongen.").MaximumLength(20);
     }
 }
 
@@ -77,7 +76,6 @@ internal sealed class UpdateTruppCommandValidator : AbstractValidator<UpdateTrup
         RuleFor(c => c.Id).NotEmpty();
         RuleFor(c => c.SportId).NotEmpty().WithMessage("Välj en sport.");
         RuleFor(c => c.Name).NotEmpty().WithMessage("Fyll i truppens namn.").MaximumLength(50);
-        RuleFor(c => c.Season).NotEmpty().WithMessage("Fyll i säsongen.").MaximumLength(20);
     }
 }
 
