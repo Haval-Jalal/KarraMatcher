@@ -1374,6 +1374,15 @@ a.match-card:focus-visible .match-card__opponent {
   font-size: var(--text-sm);
 }
 
+/* Kvitto efter sparat (`#257`). Blått, inte grönt: ingen egen success-token finns, och
+   texten bär budskapet — färgen är bara ett stöd (WCAG 1.4.1). */
+.form__success {
+  margin: 0;
+  color: var(--focus);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
 /* ---- Väntan --------------------------------------------------------------- */
 
 .loading {

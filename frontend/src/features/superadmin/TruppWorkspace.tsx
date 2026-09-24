@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -8,6 +8,7 @@ import { ChildrenPanel } from '@/features/children'
 import { CoachesPanel } from '@/features/coaches'
 import { InvitationsPanel } from '@/features/invitations'
 
+import { slugify } from './slugify'
 import type { Trupp } from './superadminApi'
 import { superadminError } from './superadminError'
 import { useAdmins, useCreateLag, useGrantAdmin, useLag, useRevokeAdmin } from './useSuperadmin'
@@ -74,21 +75,36 @@ function LagPanel({ truppId }: { truppId: string }) {
   const lag = useLag(truppId)
   const create = useCreateLag(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [slugEdited, setSlugEdited] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<LagValues>({
     resolver: zodResolver(lagSchema),
     defaultValues: { name: '', colorHex: '#d9a21b', slug: '' },
   })
 
+  const nameField = register('name')
+  const slugField = register('slug')
+
+  useEffect(() => {
+    if (adding) {
+      setFocus('name')
+    }
+  }, [adding, setFocus])
+
   function closeForm(): void {
     setAdding(false)
     setFailure(null)
+    setSuccess(null)
+    setSlugEdited(false)
     reset()
   }
 
@@ -134,13 +150,20 @@ function LagPanel({ truppId }: { truppId: string }) {
           onSubmit={(event) => {
             void handleSubmit(async (values) => {
               try {
+                const created = values.name.trim()
                 await create.mutateAsync({
-                  name: values.name.trim(),
+                  name: created,
                   colorHex: values.colorHex,
                   slug: values.slug.trim(),
                 })
-                closeForm()
+                // Kvar i formuläret för fler lag: fälten töms, kvittot syns, fokus åter.
+                reset()
+                setSlugEdited(false)
+                setFailure(null)
+                setSuccess(`${created} sparades.`)
+                setFocus('name')
               } catch (error) {
+                setSuccess(null)
                 setFailure(superadminError(error))
               }
             })(event)
@@ -148,7 +171,19 @@ function LagPanel({ truppId }: { truppId: string }) {
         >
           <div className="form__field">
             <label htmlFor="lag-namn">Namn (t.ex. Gul)</label>
-            <input id="lag-namn" type="text" autoComplete="off" {...register('name')} />
+            <input
+              id="lag-namn"
+              type="text"
+              autoComplete="off"
+              {...nameField}
+              onChange={(event) => {
+                void nameField.onChange(event)
+                setSuccess(null)
+                if (!slugEdited) {
+                  setValue('slug', slugify(event.target.value))
+                }
+              }}
+            />
             {errors.name && <p className="form__error">{errors.name.message}</p>}
           </div>
 
@@ -160,9 +195,24 @@ function LagPanel({ truppId }: { truppId: string }) {
 
           <div className="form__field">
             <label htmlFor="lag-slug">Slug (i länkar, ändras inte sedan)</label>
-            <input id="lag-slug" type="text" autoComplete="off" {...register('slug')} />
+            <input
+              id="lag-slug"
+              type="text"
+              autoComplete="off"
+              {...slugField}
+              onChange={(event) => {
+                void slugField.onChange(event)
+                setSlugEdited(true)
+              }}
+            />
             {errors.slug && <p className="form__error">{errors.slug.message}</p>}
           </div>
+
+          {success !== null && (
+            <p className="form__success" role="status">
+              {success}
+            </p>
+          )}
 
           {failure !== null && (
             <p className="state state--error" role="alert">
@@ -175,7 +225,7 @@ function LagPanel({ truppId }: { truppId: string }) {
               {isSubmitting ? 'Sparar…' : 'Spara'}
             </button>
             <button type="button" className="button" onClick={closeForm}>
-              Avbryt
+              Stäng
             </button>
           </div>
         </form>
@@ -195,18 +245,29 @@ function AdminPanel({ truppId }: { truppId: string }) {
   const grant = useGrantAdmin(truppId)
   const revoke = useRevokeAdmin(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<AdminValues>({ resolver: zodResolver(adminSchema), defaultValues: { email: '' } })
+
+  const emailField = register('email')
+
+  useEffect(() => {
+    if (adding) {
+      setFocus('email')
+    }
+  }, [adding, setFocus])
 
   function closeForm(): void {
     setAdding(false)
     setFailure(null)
+    setSuccess(null)
     reset()
   }
 
@@ -260,9 +321,15 @@ function AdminPanel({ truppId }: { truppId: string }) {
           onSubmit={(event) => {
             void handleSubmit(async (values) => {
               try {
-                await grant.mutateAsync(values.email.trim())
-                closeForm()
+                const email = values.email.trim()
+                await grant.mutateAsync(email)
+                // Kvar i formuläret för fler admins: fältet töms, kvittot syns, fokus åter.
+                reset()
+                setFailure(null)
+                setSuccess(`${email} tillagd som admin.`)
+                setFocus('email')
               } catch (error) {
+                setSuccess(null)
                 setFailure(superadminError(error))
               }
             })(event)
@@ -270,9 +337,24 @@ function AdminPanel({ truppId }: { truppId: string }) {
         >
           <div className="form__field">
             <label htmlFor="admin-epost">Adress till ett befintligt konto</label>
-            <input id="admin-epost" type="email" autoComplete="off" {...register('email')} />
+            <input
+              id="admin-epost"
+              type="email"
+              autoComplete="off"
+              {...emailField}
+              onChange={(event) => {
+                void emailField.onChange(event)
+                setSuccess(null)
+              }}
+            />
             {errors.email && <p className="form__error">{errors.email.message}</p>}
           </div>
+
+          {success !== null && (
+            <p className="form__success" role="status">
+              {success}
+            </p>
+          )}
 
           {failure !== null && (
             <p className="state state--error" role="alert">
@@ -285,7 +367,7 @@ function AdminPanel({ truppId }: { truppId: string }) {
               {isSubmitting ? 'Sparar…' : 'Spara'}
             </button>
             <button type="button" className="button" onClick={closeForm}>
-              Avbryt
+              Stäng
             </button>
           </div>
         </form>
