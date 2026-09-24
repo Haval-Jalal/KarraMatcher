@@ -74,6 +74,7 @@ function LagPanel({ truppId }: { truppId: string }) {
   const lag = useLag(truppId)
   const create = useCreateLag(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const {
     register,
@@ -84,6 +85,12 @@ function LagPanel({ truppId }: { truppId: string }) {
     resolver: zodResolver(lagSchema),
     defaultValues: { name: '', colorHex: '#d9a21b', slug: '' },
   })
+
+  function closeForm(): void {
+    setAdding(false)
+    setFailure(null)
+    reset()
+  }
 
   return (
     <div className="admin-subsection">
@@ -108,55 +115,71 @@ function LagPanel({ truppId }: { truppId: string }) {
         </ul>
       )}
 
-      <form
-        className="form"
-        noValidate
-        onSubmit={(event) => {
-          void handleSubmit(async (values) => {
-            try {
-              await create.mutateAsync({
-                name: values.name.trim(),
-                colorHex: values.colorHex,
-                slug: values.slug.trim(),
-              })
-              setFailure(null)
-              reset()
-            } catch (error) {
-              setFailure(superadminError(error))
-            }
-          })(event)
-        }}
-      >
-        <div className="form__field">
-          <label htmlFor="lag-namn">Namn (t.ex. Gul)</label>
-          <input id="lag-namn" type="text" autoComplete="off" {...register('name')} />
-          {errors.name && <p className="form__error">{errors.name.message}</p>}
-        </div>
-
-        <div className="form__field">
-          <label htmlFor="lag-farg">Lagfärg</label>
-          <input id="lag-farg" type="color" {...register('colorHex')} />
-          {errors.colorHex && <p className="form__error">{errors.colorHex.message}</p>}
-        </div>
-
-        <div className="form__field">
-          <label htmlFor="lag-slug">Slug (i länkar, ändras inte sedan)</label>
-          <input id="lag-slug" type="text" autoComplete="off" {...register('slug')} />
-          {errors.slug && <p className="form__error">{errors.slug.message}</p>}
-        </div>
-
-        {failure !== null && (
-          <p className="state state--error" role="alert">
-            {failure}
-          </p>
-        )}
-
+      {!adding ? (
         <div className="actions">
-          <button type="submit" className="button" disabled={isSubmitting}>
-            {isSubmitting ? 'Lägger till…' : 'Lägg till lag'}
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              setAdding(true)
+            }}
+          >
+            Lägg till lag
           </button>
         </div>
-      </form>
+      ) : (
+        <form
+          className="form"
+          noValidate
+          onSubmit={(event) => {
+            void handleSubmit(async (values) => {
+              try {
+                await create.mutateAsync({
+                  name: values.name.trim(),
+                  colorHex: values.colorHex,
+                  slug: values.slug.trim(),
+                })
+                closeForm()
+              } catch (error) {
+                setFailure(superadminError(error))
+              }
+            })(event)
+          }}
+        >
+          <div className="form__field">
+            <label htmlFor="lag-namn">Namn (t.ex. Gul)</label>
+            <input id="lag-namn" type="text" autoComplete="off" {...register('name')} />
+            {errors.name && <p className="form__error">{errors.name.message}</p>}
+          </div>
+
+          <div className="form__field">
+            <label htmlFor="lag-farg">Lagfärg</label>
+            <input id="lag-farg" type="color" {...register('colorHex')} />
+            {errors.colorHex && <p className="form__error">{errors.colorHex.message}</p>}
+          </div>
+
+          <div className="form__field">
+            <label htmlFor="lag-slug">Slug (i länkar, ändras inte sedan)</label>
+            <input id="lag-slug" type="text" autoComplete="off" {...register('slug')} />
+            {errors.slug && <p className="form__error">{errors.slug.message}</p>}
+          </div>
+
+          {failure !== null && (
+            <p className="state state--error" role="alert">
+              {failure}
+            </p>
+          )}
+
+          <div className="actions">
+            <button type="submit" className="button" disabled={isSubmitting}>
+              {isSubmitting ? 'Sparar…' : 'Spara'}
+            </button>
+            <button type="button" className="button" onClick={closeForm}>
+              Avbryt
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }
@@ -172,6 +195,7 @@ function AdminPanel({ truppId }: { truppId: string }) {
   const grant = useGrantAdmin(truppId)
   const revoke = useRevokeAdmin(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const {
     register,
@@ -179,6 +203,12 @@ function AdminPanel({ truppId }: { truppId: string }) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<AdminValues>({ resolver: zodResolver(adminSchema), defaultValues: { email: '' } })
+
+  function closeForm(): void {
+    setAdding(false)
+    setFailure(null)
+    reset()
+  }
 
   return (
     <div className="admin-subsection">
@@ -211,39 +241,55 @@ function AdminPanel({ truppId }: { truppId: string }) {
         </ul>
       )}
 
-      <form
-        className="form"
-        noValidate
-        onSubmit={(event) => {
-          void handleSubmit(async (values) => {
-            try {
-              await grant.mutateAsync(values.email.trim())
-              setFailure(null)
-              reset()
-            } catch (error) {
-              setFailure(superadminError(error))
-            }
-          })(event)
-        }}
-      >
-        <div className="form__field">
-          <label htmlFor="admin-epost">Adress till ett befintligt konto</label>
-          <input id="admin-epost" type="email" autoComplete="off" {...register('email')} />
-          {errors.email && <p className="form__error">{errors.email.message}</p>}
-        </div>
-
-        {failure !== null && (
-          <p className="state state--error" role="alert">
-            {failure}
-          </p>
-        )}
-
+      {!adding ? (
         <div className="actions">
-          <button type="submit" className="button" disabled={isSubmitting}>
-            {isSubmitting ? 'Tilldelar…' : 'Tilldela admin'}
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              setAdding(true)
+            }}
+          >
+            Tilldela admin
           </button>
         </div>
-      </form>
+      ) : (
+        <form
+          className="form"
+          noValidate
+          onSubmit={(event) => {
+            void handleSubmit(async (values) => {
+              try {
+                await grant.mutateAsync(values.email.trim())
+                closeForm()
+              } catch (error) {
+                setFailure(superadminError(error))
+              }
+            })(event)
+          }}
+        >
+          <div className="form__field">
+            <label htmlFor="admin-epost">Adress till ett befintligt konto</label>
+            <input id="admin-epost" type="email" autoComplete="off" {...register('email')} />
+            {errors.email && <p className="form__error">{errors.email.message}</p>}
+          </div>
+
+          {failure !== null && (
+            <p className="state state--error" role="alert">
+              {failure}
+            </p>
+          )}
+
+          <div className="actions">
+            <button type="submit" className="button" disabled={isSubmitting}>
+              {isSubmitting ? 'Sparar…' : 'Spara'}
+            </button>
+            <button type="button" className="button" onClick={closeForm}>
+              Avbryt
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }

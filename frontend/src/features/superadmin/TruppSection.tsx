@@ -24,6 +24,7 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
   const trupper = useTrupper()
   const create = useCreateTrupp()
   const [failure, setFailure] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const {
     register,
@@ -34,6 +35,12 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
     resolver: zodResolver(schema),
     defaultValues: { clubId: '', sportId: '', name: '', season: '' },
   })
+
+  function closeForm(): void {
+    setAdding(false)
+    setFailure(null)
+    reset()
+  }
 
   const canAdd = clubs.length > 0 && sports.length > 0
 
@@ -59,6 +66,18 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
 
       {!canAdd ? (
         <p className="state">Skapa minst en klubb och en sport först.</p>
+      ) : !adding ? (
+        <div className="actions">
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              setAdding(true)
+            }}
+          >
+            Lägg till trupp
+          </button>
+        </div>
       ) : (
         <form
           className="form"
@@ -72,8 +91,7 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
                   name: values.name.trim(),
                   season: values.season.trim(),
                 })
-                setFailure(null)
-                reset()
+                closeForm()
               } catch (error) {
                 setFailure(superadminError(error))
               }
@@ -134,7 +152,10 @@ export function TruppSection({ clubs, sports }: { clubs: Club[]; sports: Sport[]
 
           <div className="actions">
             <button type="submit" className="button" disabled={isSubmitting}>
-              {isSubmitting ? 'Lägger till…' : 'Lägg till trupp'}
+              {isSubmitting ? 'Sparar…' : 'Spara'}
+            </button>
+            <button type="button" className="button" onClick={closeForm}>
+              Avbryt
             </button>
           </div>
         </form>

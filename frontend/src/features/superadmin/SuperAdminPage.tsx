@@ -1,6 +1,7 @@
 import { useAuth } from '@/features/auth'
 
 import { SlugEntitySection } from './SlugEntitySection'
+import { Tabs } from './Tabs'
 import { TruppSection } from './TruppSection'
 import { TruppWorkspace } from './TruppWorkspace'
 import {
@@ -58,29 +59,51 @@ export function SuperAdminPage() {
         <p>Sporter, klubbar, trupper, lag och admins.</p>
       </header>
 
-      <SlugEntitySection
-        title="Sporter"
-        singular="sport"
-        items={sports.data ?? []}
-        isLoading={sports.isLoading}
-        isError={sports.isError}
-        onCreate={(name, slug) => createSport.mutateAsync({ name, slug })}
-        onRename={(id, name) => updateSport.mutateAsync({ id, name })}
+      <Tabs
+        label="Superadmin-sektioner"
+        tabs={[
+          {
+            key: 'sporter',
+            label: 'Sporter',
+            panel: (
+              <SlugEntitySection
+                title="Sporter"
+                singular="sport"
+                items={sports.data ?? []}
+                isLoading={sports.isLoading}
+                isError={sports.isError}
+                onCreate={(name, slug) => createSport.mutateAsync({ name, slug })}
+                onRename={(id, name) => updateSport.mutateAsync({ id, name })}
+              />
+            ),
+          },
+          {
+            key: 'klubbar',
+            label: 'Klubbar',
+            panel: (
+              <SlugEntitySection
+                title="Klubbar"
+                singular="klubb"
+                items={clubs.data ?? []}
+                isLoading={clubs.isLoading}
+                isError={clubs.isError}
+                onCreate={(name, slug) => createClub.mutateAsync({ name, slug })}
+                onRename={(id, name) => updateClub.mutateAsync({ id, name })}
+              />
+            ),
+          },
+          {
+            key: 'trupper',
+            label: 'Trupper',
+            panel: <TruppSection clubs={clubs.data ?? []} sports={sports.data ?? []} />,
+          },
+          {
+            key: 'lag-admins',
+            label: 'Lag & admins',
+            panel: <TruppWorkspace trupper={trupper.data ?? []} />,
+          },
+        ]}
       />
-
-      <SlugEntitySection
-        title="Klubbar"
-        singular="klubb"
-        items={clubs.data ?? []}
-        isLoading={clubs.isLoading}
-        isError={clubs.isError}
-        onCreate={(name, slug) => createClub.mutateAsync({ name, slug })}
-        onRename={(id, name) => updateClub.mutateAsync({ id, name })}
-      />
-
-      <TruppSection clubs={clubs.data ?? []} sports={sports.data ?? []} />
-
-      <TruppWorkspace trupper={trupper.data ?? []} />
     </main>
   )
 }

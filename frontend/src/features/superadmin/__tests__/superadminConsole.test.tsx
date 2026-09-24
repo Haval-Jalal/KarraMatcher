@@ -84,9 +84,11 @@ describe('Superadmin-konsolen', () => {
 
     const section = await screen.findByRole('region', { name: 'Sporter' })
 
+    // Skapa-formuläret ligger bakom en knapp (`#251`).
+    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
     await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
     await user.type(within(section).getByLabelText(/Slug/), 'fotboll')
-    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
+    await user.click(within(section).getByRole('button', { name: 'Spara' }))
 
     await waitFor(() => {
       expect(
@@ -101,6 +103,23 @@ describe('Superadmin-konsolen', () => {
 
     // Listan speglar servern efter skapandet.
     expect(await within(section).findByText('Fotboll')).toBeInTheDocument()
+  })
+
+  it('flikarna visar en sektion i taget', async () => {
+    const user = userEvent.setup()
+    stubApi(superToken)
+    setAccessToken(superToken)
+
+    renderRoute('/superadmin')
+
+    // Sporter är öppen som standard; Klubbar ligger dold bakom sin flik.
+    expect(await screen.findByRole('region', { name: 'Sporter' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Klubbar' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Klubbar' }))
+
+    expect(await screen.findByRole('region', { name: 'Klubbar' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Sporter' })).not.toBeInTheDocument()
   })
 
   it('en vanlig inloggad ser inte konsolen', async () => {
@@ -122,9 +141,10 @@ describe('Superadmin-konsolen', () => {
 
     const section = await screen.findByRole('region', { name: 'Sporter' })
 
+    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
     await user.type(within(section).getByLabelText('Namn'), 'Fotboll')
     await user.type(within(section).getByLabelText(/Slug/), 'Med Mellanslag')
-    await user.click(within(section).getByRole('button', { name: 'Lägg till sport' }))
+    await user.click(within(section).getByRole('button', { name: 'Spara' }))
 
     expect(await within(section).findByText(/Bara små bokstäver/)).toBeInTheDocument()
     expect(sent.some((r) => r.method === 'POST' && r.url.includes('/api/v1/admin/sports'))).toBe(
