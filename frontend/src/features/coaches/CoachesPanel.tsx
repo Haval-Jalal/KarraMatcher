@@ -54,13 +54,17 @@ function CoachTeamCard({ truppId, team }: { truppId: string; team: CoachTeam }) 
   const grant = useGrantCoach(truppId)
   const revoke = useRevokeCoach(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<GrantValues>({ resolver: zodResolver(grantSchema), defaultValues: { email: '' } })
+
+  const emailField = register('email')
 
   return (
     <div className="roster-group">
@@ -103,10 +107,15 @@ function CoachTeamCard({ truppId, team }: { truppId: string; team: CoachTeam }) 
         onSubmit={(event) => {
           void handleSubmit(async (values) => {
             try {
-              await grant.mutateAsync({ teamId: team.teamId, email: values.email.trim() })
-              setFailure(null)
+              const email = values.email.trim()
+              await grant.mutateAsync({ teamId: team.teamId, email })
+              // Kvar för att tillsätta fler: fältet töms, kvittot syns, fokus åter.
               reset()
+              setFailure(null)
+              setSuccess(`${email} tillsatt som tränare.`)
+              setFocus('email')
             } catch (error) {
+              setSuccess(null)
               setFailure(messageOf(error))
             }
           })(event)
@@ -120,10 +129,20 @@ function CoachTeamCard({ truppId, team }: { truppId: string; team: CoachTeam }) 
             id={`tranare-epost-${team.teamId}`}
             type="email"
             autoComplete="off"
-            {...register('email')}
+            {...emailField}
+            onChange={(event) => {
+              void emailField.onChange(event)
+              setSuccess(null)
+            }}
           />
           {errors.email && <p className="form__error">{errors.email.message}</p>}
         </div>
+
+        {success !== null && (
+          <p className="form__success" role="status">
+            {success}
+          </p>
+        )}
 
         {failure !== null && (
           <p className="state state--error" role="alert">
