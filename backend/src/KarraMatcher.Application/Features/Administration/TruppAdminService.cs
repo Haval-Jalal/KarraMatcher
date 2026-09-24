@@ -16,19 +16,20 @@ namespace KarraMatcher.Application.Features.Administration;
 /// </summary>
 public sealed class TruppAdminService(IAdministrationRepository repository, IAuditLog audit)
 {
+    // Säsongen utgick (`#261`): en trupp identifieras nu av klubb + namn. Kolumnen finns kvar
+    // men lämnas tom för nya trupper, så det unika villkoret blir i praktiken (klubb, namn).
+    private const string NoSeason = "";
+
     public async Task<AdminResult<TruppDto>> CreateAsync(
         Guid clubId,
         Guid sportId,
         string name,
-        string season,
         Guid actorAccountId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(season);
 
         name = name.Trim();
-        season = season.Trim();
 
         if (!await repository.ClubExistsAsync(clubId, cancellationToken).ConfigureAwait(false)
             || !await repository.SportExistsAsync(sportId, cancellationToken).ConfigureAwait(false))
@@ -36,7 +37,7 @@ public sealed class TruppAdminService(IAdministrationRepository repository, IAud
             return AdminResults.ReferenceMissing<TruppDto>();
         }
 
-        if (await repository.TruppNameTakenAsync(clubId, name, season, null, cancellationToken)
+        if (await repository.TruppNameTakenAsync(clubId, name, NoSeason, null, cancellationToken)
             .ConfigureAwait(false))
         {
             return AdminResults.Conflict<TruppDto>();
@@ -48,13 +49,13 @@ public sealed class TruppAdminService(IAdministrationRepository repository, IAud
             ClubId = clubId,
             SportId = sportId,
             Name = name,
-            Season = season,
+            Season = NoSeason,
         };
 
         await repository.AddTruppAsync(trupp, cancellationToken).ConfigureAwait(false);
         await audit.RecordAsync(
             AuditActions.TruppCreated, actorAccountId, cancellationToken, trupp.Id,
-            $"{name} {season}").ConfigureAwait(false);
+            name).ConfigureAwait(false);
         await repository.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Läses om med klubb och sport inlästa, så svaret kan visa deras namn.
@@ -67,15 +68,12 @@ public sealed class TruppAdminService(IAdministrationRepository repository, IAud
         Guid id,
         Guid sportId,
         string name,
-        string season,
         Guid actorAccountId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(season);
 
         name = name.Trim();
-        season = season.Trim();
 
         var trupp = await repository.FindTruppAsync(id, cancellationToken).ConfigureAwait(false);
 
@@ -89,21 +87,22 @@ public sealed class TruppAdminService(IAdministrationRepository repository, IAud
             return AdminResults.ReferenceMissing<TruppDto>();
         }
 
-        if (await repository.TruppNameTakenAsync(trupp.ClubId, name, season, id, cancellationToken)
+        // Säsongen (`#261`) rörs inte längre vid ändring; den befintliga behålls i unikhetskollen.
+        if (await repository
+            .TruppNameTakenAsync(trupp.ClubId, name, trupp.Season, id, cancellationToken)
             .ConfigureAwait(false))
         {
             return AdminResults.Conflict<TruppDto>();
         }
 
-        var before = $"{trupp.Name} {trupp.Season}";
+        var before = trupp.Name;
 
         trupp.SportId = sportId;
         trupp.Name = name;
-        trupp.Season = season;
 
         await audit.RecordAsync(
             AuditActions.TruppUpdated, actorAccountId, cancellationToken, trupp.Id,
-            $"{before} -> {name} {season}").ConfigureAwait(false);
+            $"{before} -> {name}").ConfigureAwait(false);
         await repository.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         var reloaded = await repository.FindTruppAsync(trupp.Id, cancellationToken).ConfigureAwait(false);

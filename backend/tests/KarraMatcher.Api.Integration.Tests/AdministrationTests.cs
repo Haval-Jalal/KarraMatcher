@@ -132,20 +132,20 @@ public sealed class AdministrationTests(KarraMatcherApiFactory factory)
         Assert.Equal("Kärra hier", trupp.GetProperty("clubName").GetString());
 
         var lagResponse = await SendAsync(
-            HttpMethod.Post, "/api/v1/admin/lag", superAdmin: true,
-            new { truppId, name = "Gul", colorHex = "#D9A21B", slug = "gul-hier" });
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppId}/lag", superAdmin: true,
+            new { name = "Gul", colorHex = "#D9A21B", slug = "gul-hier" });
 
         Assert.Equal(HttpStatusCode.Created, lagResponse.StatusCode);
         await AssertAuditedAsync(AuditActions.LagCreated, lagResponse);
 
         var list = await SendAsync(
-            HttpMethod.Get, $"/api/v1/admin/lag?truppId={truppId}", superAdmin: true);
+            HttpMethod.Get, $"/api/v1/admin/trupper/{truppId}/lag", superAdmin: true);
         var lag = await list.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
         Assert.Single(lag.EnumerateArray());
     }
 
     [Fact]
-    public async Task Trupp_MedDubblettNamnOchSasong_Ger409()
+    public async Task Trupp_MedDubblettNamn_Ger409()
     {
         var sportId = await CreateSportAsync("fotboll-dubb");
         var clubId = await CreateClubAsync("karra-dubb");
@@ -179,14 +179,41 @@ public sealed class AdministrationTests(KarraMatcherApiFactory factory)
         var truppId = await CreateTruppAsync("slug-krock");
 
         await SendAsync(
-            HttpMethod.Post, "/api/v1/admin/lag", superAdmin: true,
-            new { truppId, name = "Blå", colorHex = "#1B5FD9", slug = "delad-slug" });
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppId}/lag", superAdmin: true,
+            new { name = "Blå", colorHex = "#1B5FD9", slug = "delad-slug" });
 
         var again = await SendAsync(
-            HttpMethod.Post, "/api/v1/admin/lag", superAdmin: true,
-            new { truppId, name = "Vit", colorHex = "#D9D9D9", slug = "delad-slug" });
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppId}/lag", superAdmin: true,
+            new { name = "Vit", colorHex = "#D9D9D9", slug = "delad-slug" });
 
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+    }
+
+    [Fact]
+    public async Task Lag_SkapasAvTruppensAdmin_Ger201()
+    {
+        // Poängen med #261: lag är truppens admins ansvar, inte bara superadmins.
+        var truppId = await CreateTruppAsync("admin-lag");
+        var adminRoles = new AccountRoles(false, [truppId.ToString()], []);
+
+        var response = await SendWithRolesAsync(
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppId}/lag", adminRoles, "admin@test",
+            new { name = "Grön", colorHex = "#1B9E4B", slug = "gron-admin" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Lag_NekasForAdminAvAnnanTrupp_Ger403()
+    {
+        var truppId = await CreateTruppAsync("admin-fel-trupp");
+        var annanTruppAdmin = new AccountRoles(false, [Guid.NewGuid().ToString()], []);
+
+        var response = await SendWithRolesAsync(
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppId}/lag", annanTruppAdmin, "fel@test",
+            new { name = "Röd", colorHex = "#D91B1B", slug = "rod-fel" });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     // ---- Admin-tilldelning -----------------------------------------------------------
@@ -328,12 +355,19 @@ public sealed class AdministrationTests(KarraMatcherApiFactory factory)
         await AssertAuditedAsync(action, dto.GetProperty("id").GetGuid());
     }
 
-    private async Task<HttpResponseMessage> SendAsync(
+    private Task<HttpResponseMessage> SendAsync(
         HttpMethod method, string path, bool superAdmin, object? payload = null)
     {
         var roles = superAdmin ? new AccountRoles(true, [], []) : AccountRoles.None;
-        var token = TestAuth.TokenFor(
-            factory.Services, Guid.NewGuid(), roles, superAdmin ? "super@test" : "user@test");
+        return SendWithRolesAsync(
+            method, path, roles, superAdmin ? "super@test" : "user@test", payload);
+    }
+
+    /// <summary>Skickar med en godtycklig rolluppsättning — för att pröva admin- och medlemsvägar.</summary>
+    private async Task<HttpResponseMessage> SendWithRolesAsync(
+        HttpMethod method, string path, AccountRoles roles, string email, object? payload = null)
+    {
+        var token = TestAuth.TokenFor(factory.Services, Guid.NewGuid(), roles, email);
 
         using var client = factory.CreateClient(ClientOptions);
         var (csrf, cookie) = await GetCsrfAsync(client, token);

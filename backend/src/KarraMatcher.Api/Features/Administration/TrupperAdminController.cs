@@ -51,7 +51,7 @@ public sealed class TrupperAdminController(
         var result = await commands
             .SendAsync(
                 new CreateTruppCommand(
-                    request.ClubId, request.SportId, request.Name, request.Season, actor.Value),
+                    request.ClubId, request.SportId, request.Name, actor.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -77,7 +77,7 @@ public sealed class TrupperAdminController(
 
         var result = await commands
             .SendAsync(
-                new UpdateTruppCommand(id, request.SportId, request.Name, request.Season, actor.Value),
+                new UpdateTruppCommand(id, request.SportId, request.Name, actor.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -86,7 +86,7 @@ public sealed class TrupperAdminController(
 }
 
 /// <summary>Det superadmin fyller i för en ny trupp.</summary>
-public sealed record TruppRequest(Guid ClubId, Guid SportId, string Name, string Season);
+public sealed record TruppRequest(Guid ClubId, Guid SportId, string Name);
 
 /// <summary>Ändring av en trupp — klubben byter den inte.</summary>
-public sealed record TruppUpdateRequest(Guid SportId, string Name, string Season);
+public sealed record TruppUpdateRequest(Guid SportId, string Name);
