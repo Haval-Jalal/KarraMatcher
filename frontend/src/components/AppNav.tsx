@@ -18,21 +18,24 @@ import { useAuth } from '@/features/auth'
  * sidan — auktoriseringen ligger i backend, precis som `coachTeamsFromToken` redan påpekar.
  */
 export function AppNav() {
-  const { status, coachOf, isAdmin, isSuperAdmin, adminOf } = useAuth()
+  const { status, coachOf, isSuperAdmin, adminOf } = useAuth()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   const teamInPath = /^\/lag\/([^/]+)/.exec(pathname)?.[1] ?? null
 
   /*
-   * Vilket lag tranarlanken pekar pa. Star man redan pa ett lag man skoter ar det laget
-   * ratt svar; annars det forsta man ar tranare for. En administrator som inte tittar pa
-   * nagot lag far ingen lank -- vi vet inte vilket lag hen menade, och att gissa at en
-   * administrator ar samre an att lata hen valja lag forst.
+   * Tranarlanken ar for den som ar tranare. Om man tittar pa ett lag man sjalv skoter
+   * pekar lanken dit; annars pa det forsta laget man ar tranare for.
+   *
+   * Vilket lag den pekar pa far bero pa sidan -- men *om* den syns far det inte gora det.
+   * Tidigare vidgade `isAdmin` villkoret sa att en administrator fick lanken bara pa en
+   * lagsida (dar `teamInPath` fanns) och blev av med den overallt annars -- menyn bytte
+   * innehall nar man klickade runt (`#253`). Nu styr rollen ensam: en tranare ser lanken
+   * pa varje sida, en administrator som inte ar tranare ser den inte alls (hen skoter
+   * truppen via Admin/Superadmin i stallet).
    */
   const coachTeam =
-    teamInPath !== null && (isAdmin || coachOf.includes(teamInPath))
-      ? teamInPath
-      : (coachOf[0] ?? null)
+    teamInPath !== null && coachOf.includes(teamInPath) ? teamInPath : (coachOf[0] ?? null)
 
   const current = sectionOf(pathname)
 

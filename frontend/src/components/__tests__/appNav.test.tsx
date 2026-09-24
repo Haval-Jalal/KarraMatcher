@@ -28,6 +28,7 @@ function tokenWith(claims: Record<string, unknown>): string {
 
 const PARENT = tokenWith({ email: 'foralder@example.com' })
 const COACH = tokenWith({ email: 'tranare@example.com', coach: ['gul'] })
+const ADMIN = tokenWith({ email: 'admin@example.com', role: 'admin' })
 
 /** Släpper loss en förnyelse som hålls tillbaka. Sätts av stubben. */
 let releaseRenewal: (() => void) | null = null
@@ -73,11 +74,11 @@ function stubApi(options: { refresh?: 'ok' | 'nej' | 'håller'; token?: string }
         return Promise.resolve(jsonResponse({ title: 'Matchen finns inte' }, 404))
       }
 
-      if (url.includes('/matches')) {
+      if (url.includes('/events')) {
         return Promise.resolve(
           jsonResponse({
             team: { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
-            matches: [],
+            events: [],
           }),
         )
       }
@@ -208,6 +209,22 @@ describe('menyn visar rätt sak för rätt person', () => {
 
     renderRoute('/spelarkort')
 
+    await within(await menu()).findByRole('link', { name: 'Mitt konto' })
+
+    expect(within(await menu()).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
+  })
+
+  it('byter inte innehåll beroende på sida: en admin som inte är tränare får ingen tränarlänk ens på en lagsida', async () => {
+    /*
+     * `#253`. Tidigare vidgade `isAdmin` tranarlanken sa att en administrator fick den bara
+     * pa en lagsida (dar teamInPath fanns) och blev av med den overallt annars -- menyn
+     * bytte innehall nar man klickade runt. Nu styr rollen ensam.
+     */
+    signedInAs(ADMIN)
+
+    renderRoute('/lag/gul')
+
+    // Vänta in att sessionen förnyats så menyn är i sitt inloggade läge.
     await within(await menu()).findByRole('link', { name: 'Mitt konto' })
 
     expect(within(await menu()).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
