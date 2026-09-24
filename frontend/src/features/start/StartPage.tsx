@@ -17,7 +17,7 @@ export function StartPage() {
   return (
     <main>
       <header className="app-header">
-        <h1>Kärra Matcher</h1>
+        <h1>Truppen</h1>
         <p className="app-header__subtitle">Välj lag för att se matcherna</p>
       </header>
 

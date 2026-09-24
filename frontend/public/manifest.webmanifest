@@ -1,7 +1,7 @@
 {
-  "name": "Kärra Matcher",
-  "short_name": "Kärra",
-  "description": "Matchtider, spelplatser och kalender för Kärra KIF P2016.",
+  "name": "Truppen",
+  "short_name": "Truppen",
+  "description": "Kallelser, matcher, samåkning och chatt för din trupp.",
   "lang": "sv",
   "dir": "ltr",
   "start_url": "/",

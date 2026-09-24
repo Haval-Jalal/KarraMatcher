@@ -1,5 +1,5 @@
 /*
- * Service worker för Kärra Matcher (§KM.8).
+ * Service worker för Truppen (§KM.8).
  *
  * Täckningen vid fotbollsplanerna är opålitlig, så **appskalet och de statiska tillgångarna**
  * ska gå att läsa utan nät: den installerade appen öppnas och ger ett tydligt svenskt besked
@@ -85,7 +85,7 @@ self.addEventListener('push', (event) => {
   }
 
   const title =
-    typeof payload.title === 'string' && payload.title !== '' ? payload.title : 'Kärra Matcher'
+    typeof payload.title === 'string' && payload.title !== '' ? payload.title : 'Truppen'
   const url = typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/'
 
   event.waitUntil(
@@ -103,7 +103,7 @@ self.addEventListener('push', (event) => {
 
 /**
  * Ett klick öppnar appen på notisens adress — och återanvänder en redan öppen flik hellre
- * än att öppna en till, så att en förälder inte får tre Kärra Matcher-flikar av tre notiser.
+ * än att öppna en till, så att en förälder inte får tre Truppen-flikar av tre notiser.
  */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()

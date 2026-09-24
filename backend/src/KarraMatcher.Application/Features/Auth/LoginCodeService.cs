@@ -118,7 +118,7 @@ public sealed class LoginCodeService(
 
         await email.SendAsync(
             normalized,
-            "Din inloggningskod till Kärra Matcher",
+            "Din inloggningskod till Truppen",
             $"""
              Din kod är {code}
 
