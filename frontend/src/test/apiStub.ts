@@ -76,6 +76,14 @@ export function stubApi(options: {
     vi.fn((input: unknown) => {
       const url = String(input)
 
+      // Sessionen: appen försöker alltid förnya mot cookien vid kallstart (`#255`). En gäst
+      // (inget konto satt i testet) får 401 och skickas till inloggningen. Ett inloggat test
+      // sätter access-token direkt och når aldrig hit.
+      if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+      if (url.includes('/auth/refresh')) {
+        return Promise.resolve(jsonResponse({ title: 'Ingen session' }, 401))
+      }
+
       // Kallelsen ligger under /api/v1/events/{id}/kallelse — fångas före händelse-detaljen.
       // Default: 404 (kallelsen inte påslagen), så en detaljsida som inte bryr sig om den
       // renderar ingen kallelse-sektion.

@@ -31,8 +31,15 @@ function stub(token: string, routes: (url: string, method: string) => unknown): 
       sent.push({ url, method })
 
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
-      if (url.includes('/auth/refresh'))
-        return Promise.resolve(jsonResponse({ accessToken: token }))
+      // Tomt token = utloggad: förnyelsen mot cookien svarar 401, och gästen möts av
+      // inloggningen (`#255`). Annars ger den access-token som en inloggad medlem.
+      if (url.includes('/auth/refresh')) {
+        return Promise.resolve(
+          token === ''
+            ? jsonResponse({ title: 'Ingen session' }, 401)
+            : jsonResponse({ accessToken: token }),
+        )
+      }
 
       return Promise.resolve(jsonResponse(routes(url, method)))
     }),

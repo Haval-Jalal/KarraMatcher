@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { postJson, renewSession } from '@/lib/api'
-import { clearSession, getAccessToken, hasSessionHint, setAccessToken } from '@/lib/session'
+import { clearSession, getAccessToken, setAccessToken } from '@/lib/session'
 import { jsonResponse } from '@/test/apiStub'
 
 /**
@@ -37,22 +37,12 @@ describe('access-token lämnar aldrig minnet', () => {
     expect(stored).not.toContain('en.access.token')
   })
 
-  it('sparar bara att någon loggat in, inte vad', () => {
-    // Flaggan är ingen behörighet. Den avgör bara om appen ska försöka förnya vid start,
-    // och den som sätter den för hand blir inte inloggad — bara mött av ett 401.
-    setAccessToken('en.access.token')
-
-    expect(hasSessionHint()).toBe(true)
-    expect(JSON.stringify(localStorage)).not.toContain('en.access.token')
-  })
-
-  it('glömmer allt vid utloggning', () => {
+  it('glömmer access-token vid utloggning', () => {
     setAccessToken('en.access.token')
 
     clearSession()
 
     expect(getAccessToken()).toBeNull()
-    expect(hasSessionHint()).toBe(false)
   })
 })
 
