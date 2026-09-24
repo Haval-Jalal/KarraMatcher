@@ -178,8 +178,9 @@ describe('menyn visar rätt sak för rätt person', () => {
      * Utan det har hade "Logga in" blinkat forbi for varje inloggad foralder vid varje
      * start -- det ser ut som att appen glomt bort en.
      */
+    // Ingen token i minnet: appen förnyar mot cookien vid start (`#255`), och medan det
+    // svaret dröjer (`håller`) är status 'okänd'. Släpps svaret loss bär det PARENT-token.
     stubApi({ refresh: 'håller' })
-    setAccessToken(PARENT)
 
     renderRoute('/spelarkort')
 

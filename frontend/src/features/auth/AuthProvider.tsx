@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { renewSession } from '@/lib/api'
-import { getAccessToken, hasSessionHint } from '@/lib/session'
+import { getAccessToken } from '@/lib/session'
 
 import {
   adminTruppFromToken,
@@ -36,24 +36,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     /*
-     * Vid start forsoker appen forlanga sessionen mot cookien -- men bara om nagon
-     * faktiskt loggat in har tidigare.
+     * Vid kallstart forsoker appen forlanga sessionen mot refresh-cookien (§KM.11). Ingen
+     * localStorage-ledtrad langre (`#255`): iOS gallrar skrivbar lagring men inte den
+     * httpOnly cookien, sa en installerad app ska kunna logga in sig sjalv fran cookien
+     * aven efter att lagringen rensats. I stangda v2 finns inga anonyma besokare, sa det
+     * extra anropet for en gast (ett 401) ar ofarligt.
      *
-     * Utan den kontrollen hade varje besok gjort ett anrop mot inloggningen, aven for de
-     * allra flesta som aldrig loggar in. Det anropet gar inte att cacha pa Vercels edge
-     * och skulle darfor vacka Render varje gang nagon oppnar schemat -- precis de femtio
-     * sekunderna §KM.11 finns till for att slippa.
+     * Bara nar access-token saknas: har route-vakten redan fornyat racker det, och en ny
+     * fornyelse hade roterat refresh-token i onodan.
      */
     async function restore() {
-      if (!hasSessionHint()) {
-        if (!cancelled) {
-          setStatus('utloggad')
-        }
-
-        return
+      if (getAccessToken() === null) {
+        await renewSession()
       }
-
-      await renewSession()
 
       if (!cancelled) {
         read()

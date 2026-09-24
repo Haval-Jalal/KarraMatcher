@@ -14,7 +14,7 @@ import { StartPage } from '@/features/start/StartPage'
 import { SuperAdminPage } from '@/features/superadmin'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
 import { renewSession } from '@/lib/api'
-import { getAccessToken, hasSessionHint } from '@/lib/session'
+import { getAccessToken } from '@/lib/session'
 import { readSetting } from '@/lib/storage'
 
 const rootRoute = createRootRoute({
@@ -43,7 +43,10 @@ const rootRoute = createRootRoute({
  * </para>
  */
 async function requireSession(pathname: string): Promise<void> {
-  if (getAccessToken() === null && hasSessionHint()) {
+  // Saknas access-token i minnet försöker vi förnya mot refresh-cookien (§KM.11, `#255`) —
+  // alltid, utan localStorage-ledtråd, så en installerad app loggar in sig själv från cookien
+  // även efter att iOS gallrat lagringen. Lyckas det inte skickas gästen till inloggningen.
+  if (getAccessToken() === null) {
     await renewSession()
   }
 

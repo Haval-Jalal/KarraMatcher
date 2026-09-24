@@ -1,5 +1,3 @@
-import { readSetting, writeSetting } from '@/lib/storage'
-
 /**
  * Sessionen så som klienten håller den.
  *
@@ -12,6 +10,16 @@ import { readSetting, writeSetting } from '@/lib/storage'
  *
  * Refresh-token finns inte här alls. Den ligger i en `httpOnly`-cookie som JavaScript inte
  * kommer åt, och skickas av webbläsaren själv (§KM.11).
+ *
+ * <h3>Ingen ledtråd i lagringen (v2, `#255`)</h3>
+ *
+ * Tidigare fanns en `localStorage`-flagga som avgjorde om appen ens skulle *försöka*
+ * förnya sessionen vid start. Den togs bort: iOS gallrar skrivbar lagring (localStorage)
+ * efter ~7 dagar, medan den `httpOnly` refresh-cookien lever 60 dagar och är undantagen —
+ * så en installerad app kunde sitta på en giltig cookie men vägra använda den. I stängda
+ * v2 finns inga anonyma besökare, så det som flaggan skyddade mot (att väcka Render för en
+ * anonym schema-läsare, §KM.11) finns inte längre. Appen försöker i stället alltid förnya
+ * mot cookien vid kallstart; en gäst får ett ofarligt `401`.
  */
 
 let accessToken: string | null = null
@@ -35,43 +43,17 @@ export function onSessionChange(listener: () => void): void {
   sessionChanged = listener
 }
 
-/**
- * Att användaren *har* loggat in någon gång på den här telefonen.
- *
- * <h3>Varför det här får ligga i lagringen</h3>
- *
- * Det är ingen behörighet. Flaggan avgör bara om appen ska *försöka* förnya sessionen vid
- * start — den som sätter den för hand blir inte inloggad, bara mötd av ett 401.
- *
- * Utan flaggan skulle varje besök göra ett anrop mot inloggningen, även för de allra
- * flesta som aldrig loggar in. Det anropet kan inte cachas på Vercels edge och skulle
- * alltså väcka Render varje gång någon öppnar schemat — de femtio sekunderna §KM.11 finns
- * till för att undvika.
- */
-const SESSION_HINT_KEY = 'karra.har-loggat-in'
-
 export function getAccessToken(): string | null {
   return accessToken
 }
 
 export function setAccessToken(token: string | null): void {
   accessToken = token
-
-  if (token !== null) {
-    writeSetting(SESSION_HINT_KEY, '1')
-  }
-
   sessionChanged?.()
 }
 
 /** Rensar allt appen håller om sessionen. Cookien rensas av servern. */
 export function clearSession(): void {
   accessToken = null
-  writeSetting(SESSION_HINT_KEY, '')
   sessionChanged?.()
-}
-
-/** Sant om det är värt att försöka förnya sessionen vid start. */
-export function hasSessionHint(): boolean {
-  return readSetting(SESSION_HINT_KEY) === '1'
 }
