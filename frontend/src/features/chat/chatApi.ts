@@ -39,6 +39,12 @@ export interface ScheduledMessage {
   publishAtUtc: string
 }
 
+/** En enskild anmälans motivering, så som admin ser den (`#263`). */
+export interface ReportReason {
+  reason: string
+  reportedUtc: string
+}
+
 export interface ReportedMessage {
   messageId: string
   authorAccountId: string
@@ -46,6 +52,7 @@ export interface ReportedMessage {
   body: string
   deleted: boolean
   reportCount: number
+  reasons: ReportReason[]
 }
 
 /** En stabil nyckel per kanal, för query-cachen. */
@@ -96,8 +103,9 @@ export const deleteMessage = (channel: ChatChannel, id: string): Promise<void> =
 export const cancelScheduled = (channel: ChatChannel, id: string): Promise<void> =>
   postJson<void>(`${base(channel)}/scheduled/${id}`, undefined, { method: 'DELETE' })
 
-export const reportMessage = (channel: ChatChannel, id: string): Promise<void> =>
-  postJson<void>(`${base(channel)}/messages/${id}/report`)
+/** Anmäler ett meddelande med en obligatorisk motivering (`#263`). */
+export const reportMessage = (channel: ChatChannel, id: string, reason: string): Promise<void> =>
+  postJson<void>(`${base(channel)}/messages/${id}/report`, { reason })
 
 /**
  * Adminens moderering: tar bort ett anmält meddelande oavsett kanal (`#202`). Kön spänner

@@ -109,7 +109,15 @@ export function useCancelScheduled(channel: ChatChannel) {
 }
 
 export function useReport(channel: ChatChannel) {
+  const client = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => reportMessage(channel, id),
+    mutationFn: (input: { id: string; reason: string }) =>
+      reportMessage(channel, input.id, input.reason),
+    onSuccess: () => {
+      // Admins anmälningskö lever på trupp-nivå; håll den i synk om anmälaren ser den.
+      if (channel.kind === 'trupp') {
+        void client.invalidateQueries({ queryKey: chatKeys.reports(channel.truppId) })
+      }
+    },
   })
 }

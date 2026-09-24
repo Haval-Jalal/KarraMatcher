@@ -145,7 +145,7 @@ public sealed class ChatTeamController(
         };
     }
 
-    /// <summary>Tar bort ett meddelande (eget, eller vilket som helst som admin för truppen).</summary>
+    /// <summary>Tar bort ett eget meddelande (admin raderar andras bara ur anmälningskön, `#263`).</summary>
     [HttpDelete("messages/{id:guid}")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -170,8 +170,7 @@ public sealed class ChatTeamController(
 
         var outcome = await commands
             .SendAsync(
-                new DeleteChatMessageCommand(
-                    channel.AgeGroupId, channel.TeamId, id, actor.Value, IsAdminOf(channel.AgeGroupId)),
+                new DeleteChatMessageCommand(channel.AgeGroupId, channel.TeamId, id, actor.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -212,14 +211,18 @@ public sealed class ChatTeamController(
         return Respond(outcome);
     }
 
-    /// <summary>Anmäler ett meddelande. Idempotent.</summary>
+    /// <summary>Anmäler ett meddelande med en obligatorisk motivering (`#263`). Idempotent.</summary>
     [HttpPost("messages/{id:guid}/report")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Report(string slug, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Report(
+        string slug, Guid id, ReportMessageRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var actor = ActorId();
 
         if (actor is null)
@@ -236,7 +239,8 @@ public sealed class ChatTeamController(
 
         var outcome = await commands
             .SendAsync(
-                new ReportChatMessageCommand(channel.AgeGroupId, channel.TeamId, id, actor.Value),
+                new ReportChatMessageCommand(
+                    channel.AgeGroupId, channel.TeamId, id, actor.Value, request.Reason),
                 cancellationToken)
             .ConfigureAwait(false);
 

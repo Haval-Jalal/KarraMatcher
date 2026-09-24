@@ -26,6 +26,9 @@ public enum ChatModerationOutcome
     Ok = 0,
     NotFound = 1,
     NotAllowed = 2,
+
+    /// <summary>Admin försökte radera men meddelandet har färre än tröskeln anmälningar (`#263`).</summary>
+    BelowThreshold = 3,
 }
 
 /// <summary>
@@ -46,6 +49,13 @@ public sealed class ChatService(
     IPushOutbox push,
     TimeProvider clock)
 {
+    /// <summary>
+    /// Så många skilda anmälare ett meddelande behöver innan truppens admin kan radera det
+    /// (`#263`). En admin ska inte kunna tysta en enskild förälder på egen hand — flera i
+    /// truppen måste ha reagerat först. Ett tal på ett ställe, lätt att ändra.
+    /// </summary>
+    public const int RemovalReportThreshold = 3;
+
     /// <summary>
     /// Postar nu, eller schemalägger om en framtida tid anges (kräver ledare). Kanalen är
     /// truppen (<paramref name="teamId"/> null) eller ett lag i truppen (`#202`).
@@ -145,17 +155,22 @@ public sealed class ChatService(
                 names.TryGetValue(r.AuthorAccountId, out var name) ? name : null,
                 r.Deleted ? string.Empty : r.Body,
                 r.Deleted,
-                r.ReportCount)),
+                r.Reasons.Count,
+                [.. r.Reasons.Select(x => new ReportReasonDto(
+                    x.Reason, new DateTimeOffset(x.CreatedUtc, TimeSpan.Zero)))])),
         ];
     }
 
-    /// <summary>Tar bort ett meddelande: eget alltid, annat om anroparen är admin. Töms direkt.</summary>
+    /// <summary>
+    /// Tar bort ett <b>eget</b> meddelande. Töms direkt. En admin raderar inte andras
+    /// meddelanden den här vägen (`#263`) — det sker bara ur anmälningskön, och först vid
+    /// tröskeln (<see cref="DeleteByAdminAsync"/>).
+    /// </summary>
     public async Task<ChatModerationOutcome> DeleteAsync(
         Guid truppId,
         Guid? teamId,
         Guid messageId,
         Guid accountId,
-        bool actorIsAdmin,
         CancellationToken cancellationToken)
     {
         var message = await chat.FindMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
@@ -165,7 +180,7 @@ public sealed class ChatService(
             return ChatModerationOutcome.NotFound;
         }
 
-        if (message.AuthorAccountId != accountId && !actorIsAdmin)
+        if (message.AuthorAccountId != accountId)
         {
             return ChatModerationOutcome.NotAllowed;
         }
@@ -187,12 +202,14 @@ public sealed class ChatService(
     }
 
     /// <summary>
-    /// Adminens moderering: tar bort valfritt meddelande i truppen, oavsett kanal (`#202`).
+    /// Adminens moderering: tar bort ett anmält meddelande i truppen, oavsett kanal (`#202`).
     ///
     /// <para>
     /// Anmälningskön spänner hela truppen (trupp-kanalen och alla lag-kanaler), så adminens
     /// radering får inte vara kanalbunden. Behörigheten är redan prövad (AdminOfTrupp); här
-    /// räcker att meddelandet hör till truppen. Texten töms direkt, tombstonen blir kvar.
+    /// räcker att meddelandet hör till truppen. <b>Grinden (`#263`):</b> radering tillåts först
+    /// när meddelandet har minst <see cref="RemovalReportThreshold"/> anmälningar — en admin
+    /// tystar inte en enskild röst på egen hand. Texten töms direkt, tombstonen blir kvar.
     /// </para>
     /// </summary>
     public async Task<ChatModerationOutcome> DeleteByAdminAsync(
@@ -206,6 +223,13 @@ public sealed class ChatService(
         if (message is null || message.AgeGroupId != truppId)
         {
             return ChatModerationOutcome.NotFound;
+        }
+
+        if (message.DeletedUtc is null
+            && await chat.ReportCountAsync(messageId, cancellationToken).ConfigureAwait(false)
+                < RemovalReportThreshold)
+        {
+            return ChatModerationOutcome.BelowThreshold;
         }
 
         if (message.DeletedUtc is null)
@@ -256,14 +280,20 @@ public sealed class ChatService(
         return ChatModerationOutcome.Ok;
     }
 
-    /// <summary>Anmäler ett publicerat meddelande. Idempotent per anmälare.</summary>
+    /// <summary>
+    /// Anmäler ett publicerat meddelande med en obligatorisk motivering (`#263`). Idempotent
+    /// per anmälare — en andra anmälan från samma konto ändrar inte den första motiveringen.
+    /// </summary>
     public async Task<ChatModerationOutcome> ReportAsync(
         Guid truppId,
         Guid? teamId,
         Guid messageId,
         Guid accountId,
+        string reason,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(reason);
+
         var message = await chat.FindMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
 
         if (message is null
@@ -282,6 +312,7 @@ public sealed class ChatService(
                     Id = Guid.NewGuid(),
                     MessageId = messageId,
                     ReportedByAccountId = accountId,
+                    Reason = reason.Trim(),
                     CreatedUtc = clock.GetUtcNow().UtcDateTime,
                 },
                 cancellationToken).ConfigureAwait(false);

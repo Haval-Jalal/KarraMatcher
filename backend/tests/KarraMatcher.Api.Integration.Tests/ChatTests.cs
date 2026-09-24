@@ -184,8 +184,9 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
-    public async Task RaderaAnnansSomIckeAdmin_Nekas_MenAdminFar()
+    public async Task RaderaAnnans_NekasForBadeVanligMedlemOchAdmin()
     {
+        // #263: admin raderar inte längre andras meddelanden den vägen — bara ur kön, vid tröskeln.
         var f = await SeedAsync("radera-annans");
         var id = await PostAsync(f, CoachToken(f), "Coachens meddelande");
 
@@ -193,23 +194,26 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
             HttpMethod.Delete, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}", GuardianToken(f));
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
 
-        var allowed = await SendAsync(
+        var adminDenied = await SendAsync(
             HttpMethod.Delete, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}", AdminToken(f));
-        Assert.Equal(HttpStatusCode.NoContent, allowed.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, adminDenied.StatusCode);
     }
 
     [Fact]
-    public async Task Anmalan_ArIdempotent_OchSynsForAdmin()
+    public async Task Anmalan_ArIdempotent_BarMotivering_OchSynsForAdmin()
     {
         var f = await SeedAsync("anmalan");
         var id = await PostAsync(f, CoachToken(f), "Något olämpligt");
 
         var first = await SendAsync(
-            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}/report", GuardianToken(f));
+            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}/report", GuardianToken(f),
+            new { reason = "Stötande språk" });
         Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
 
+        // Samma anmälare igen ändrar varken antal eller den första motiveringen (idempotent).
         var again = await SendAsync(
-            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}/report", GuardianToken(f));
+            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}/report", GuardianToken(f),
+            new { reason = "En annan text" });
         Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
 
         await AssertAuditedAsync("chatt.meddelande.anmalt", id);
@@ -220,6 +224,45 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
         var body = await reports.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
         var row = body.EnumerateArray().Single(r => r.GetProperty("messageId").GetGuid() == id);
         Assert.Equal(1, row.GetProperty("reportCount").GetInt32());
+        var reasons = row.GetProperty("reasons");
+        Assert.Equal(1, reasons.GetArrayLength());
+        Assert.Equal("Stötande språk", reasons[0].GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task Anmalan_UtanMotivering_Ger400()
+    {
+        var f = await SeedAsync("anmalan-tom");
+        var id = await PostAsync(f, CoachToken(f), "Meddelande");
+
+        var response = await SendAsync(
+            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages/{id}/report", GuardianToken(f),
+            new { reason = "  " });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminRadering_UnderTroskeln_Ger409_VidTroskeln_TarBort()
+    {
+        var f = await SeedAsync("troskel");
+        var id = await PostAsync(f, CoachToken(f), "Ifrågasatt meddelande");
+
+        // Två anmälningar räcker inte (tröskeln är tre).
+        await ReportAsync(f, GuardianToken(f), id, "Ett");
+        await ReportAsync(f, Guardian2Token(f), id, "Två");
+
+        var tooFew = await SendAsync(
+            HttpMethod.Delete, $"/api/v1/admin/trupper/{f.TruppId}/chat/messages/{id}", AdminToken(f));
+        Assert.Equal(HttpStatusCode.Conflict, tooFew.StatusCode);
+
+        // Den tredje anmälaren låser upp raderingen.
+        await ReportAsync(f, CoachToken(f), id, "Tre");
+
+        var removed = await SendAsync(
+            HttpMethod.Delete, $"/api/v1/admin/trupper/{f.TruppId}/chat/messages/{id}", AdminToken(f));
+        Assert.Equal(HttpStatusCode.NoContent, removed.StatusCode);
+        await AssertAuditedAsync("chatt.meddelande.raderat", id);
     }
 
     // ---- Notis -----------------------------------------------------------------------
@@ -438,7 +481,17 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
 
     private string GuardianToken(Fixture f) => Token(f.GuardianId, AccountRoles.None, "vh@test");
 
+    private string Guardian2Token(Fixture f) => Token(f.Guardian2Id, AccountRoles.None, "vh2@test");
+
     private string NonMemberToken(Fixture f) => Token(f.NonMemberId, AccountRoles.None, "utom@test");
+
+    private async Task ReportAsync(Fixture f, string token, Guid messageId, string reason)
+    {
+        var response = await SendAsync(
+            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages/{messageId}/report", token,
+            new { reason });
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
 
     private string Token(Guid accountId, AccountRoles roles, string email)
     {

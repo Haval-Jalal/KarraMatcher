@@ -96,7 +96,7 @@ public sealed class ChatController(
         };
     }
 
-    /// <summary>Tar bort ett meddelande (eget, eller vilket som helst som admin).</summary>
+    /// <summary>Tar bort ett eget meddelande (admin raderar andras bara ur anmälningskön, `#263`).</summary>
     [HttpDelete("messages/{id:guid}")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -113,9 +113,7 @@ public sealed class ChatController(
         }
 
         var outcome = await commands
-            .SendAsync(
-                new DeleteChatMessageCommand(truppId, null, id, actor.Value, IsAdminOf(truppId)),
-                cancellationToken)
+            .SendAsync(new DeleteChatMessageCommand(truppId, null, id, actor.Value), cancellationToken)
             .ConfigureAwait(false);
 
         return Respond(outcome);
@@ -147,14 +145,18 @@ public sealed class ChatController(
         return Respond(outcome);
     }
 
-    /// <summary>Anmäler ett meddelande. Idempotent.</summary>
+    /// <summary>Anmäler ett meddelande med en obligatorisk motivering (`#263`). Idempotent.</summary>
     [HttpPost("messages/{id:guid}/report")]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Report(Guid truppId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Report(
+        Guid truppId, Guid id, ReportMessageRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var actor = ActorId();
 
         if (actor is null)
@@ -163,7 +165,9 @@ public sealed class ChatController(
         }
 
         var outcome = await commands
-            .SendAsync(new ReportChatMessageCommand(truppId, null, id, actor.Value), cancellationToken)
+            .SendAsync(
+                new ReportChatMessageCommand(truppId, null, id, actor.Value, request.Reason),
+                cancellationToken)
             .ConfigureAwait(false);
 
         return Respond(outcome);
@@ -202,3 +206,6 @@ public sealed class ChatController(
 
 /// <summary>Det medlemmen skickar: texten och en valfri framtida utskickstid (schemaläggning).</summary>
 public sealed record PostMessageRequest(string Body, DateTimeOffset? PublishAt);
+
+/// <summary>Det en anmälan bär: en obligatorisk motivering (`#263`). Fritext, prövas server-side.</summary>
+public sealed record ReportMessageRequest(string Reason);

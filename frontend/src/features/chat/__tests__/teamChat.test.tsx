@@ -115,11 +115,16 @@ describe('lag-chatt', () => {
 
     const row = (await screen.findByText('Vem tar med bollar?')).closest('li') as HTMLElement
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
+    await user.type(within(row).getByLabelText(/Varför anmäler/), 'Fel kanal')
+    await user.click(within(row).getByRole('button', { name: 'Skicka anmälan' }))
 
     await waitFor(() => {
       expect(
         sent.some(
-          (r) => r.url.includes('/api/v1/teams/gul/chat/messages/m1/report') && r.method === 'POST',
+          (r) =>
+            r.url.includes('/api/v1/teams/gul/chat/messages/m1/report') &&
+            r.method === 'POST' &&
+            (r.body as { reason: string }).reason === 'Fel kanal',
         ),
       ).toBe(true)
     })
