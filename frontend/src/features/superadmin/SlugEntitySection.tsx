@@ -44,6 +44,7 @@ export function SlugEntitySection({
   onRename: (id: string, name: string) => Promise<unknown>
 }) {
   const [failure, setFailure] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const {
     register,
@@ -51,6 +52,12 @@ export function SlugEntitySection({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: '', slug: '' } })
+
+  function closeForm(): void {
+    setAdding(false)
+    setFailure(null)
+    reset()
+  }
 
   return (
     <section className="admin-section" aria-labelledby={`${singular}-rubrik`}>
@@ -72,57 +79,73 @@ export function SlugEntitySection({
         </ul>
       )}
 
-      <form
-        className="form"
-        noValidate
-        onSubmit={(event) => {
-          void handleSubmit(async (values) => {
-            try {
-              await onCreate(values.name.trim(), values.slug.trim())
-              setFailure(null)
-              reset()
-            } catch (error) {
-              setFailure(superadminError(error))
-            }
-          })(event)
-        }}
-      >
-        <div className="form__field">
-          <label htmlFor={`${singular}-namn`}>Namn</label>
-          <input
-            id={`${singular}-namn`}
-            type="text"
-            autoComplete="off"
-            aria-invalid={errors.name ? true : undefined}
-            {...register('name')}
-          />
-          {errors.name && <p className="form__error">{errors.name.message}</p>}
-        </div>
-
-        <div className="form__field">
-          <label htmlFor={`${singular}-slug`}>Slug (i länkar, ändras inte sedan)</label>
-          <input
-            id={`${singular}-slug`}
-            type="text"
-            autoComplete="off"
-            aria-invalid={errors.slug ? true : undefined}
-            {...register('slug')}
-          />
-          {errors.slug && <p className="form__error">{errors.slug.message}</p>}
-        </div>
-
-        {failure !== null && (
-          <p className="state state--error" role="alert">
-            {failure}
-          </p>
-        )}
-
+      {!adding ? (
         <div className="actions">
-          <button type="submit" className="button" disabled={isSubmitting}>
-            {isSubmitting ? 'Lägger till…' : `Lägg till ${singular}`}
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              setAdding(true)
+            }}
+          >
+            {`Lägg till ${singular}`}
           </button>
         </div>
-      </form>
+      ) : (
+        <form
+          className="form"
+          noValidate
+          onSubmit={(event) => {
+            void handleSubmit(async (values) => {
+              try {
+                await onCreate(values.name.trim(), values.slug.trim())
+                closeForm()
+              } catch (error) {
+                setFailure(superadminError(error))
+              }
+            })(event)
+          }}
+        >
+          <div className="form__field">
+            <label htmlFor={`${singular}-namn`}>Namn</label>
+            <input
+              id={`${singular}-namn`}
+              type="text"
+              autoComplete="off"
+              aria-invalid={errors.name ? true : undefined}
+              {...register('name')}
+            />
+            {errors.name && <p className="form__error">{errors.name.message}</p>}
+          </div>
+
+          <div className="form__field">
+            <label htmlFor={`${singular}-slug`}>Slug (i länkar, ändras inte sedan)</label>
+            <input
+              id={`${singular}-slug`}
+              type="text"
+              autoComplete="off"
+              aria-invalid={errors.slug ? true : undefined}
+              {...register('slug')}
+            />
+            {errors.slug && <p className="form__error">{errors.slug.message}</p>}
+          </div>
+
+          {failure !== null && (
+            <p className="state state--error" role="alert">
+              {failure}
+            </p>
+          )}
+
+          <div className="actions">
+            <button type="submit" className="button" disabled={isSubmitting}>
+              {isSubmitting ? 'Sparar…' : 'Spara'}
+            </button>
+            <button type="button" className="button" onClick={closeForm}>
+              Avbryt
+            </button>
+          </div>
+        </form>
+      )}
     </section>
   )
 }

@@ -2059,6 +2059,51 @@ a.match-card:focus-visible .match-card__opponent {
   gap: 24px;
 }
 
+/* Flikar (`#251`). Mobil-först: listan får skrolla i sidled när namnen inte får plats. */
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tabs__list {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 2px solid var(--border);
+}
+
+.tabs__tab {
+  appearance: none;
+  border: none;
+  background: none;
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  padding: 10px 14px;
+  min-height: var(--tap-target);
+  white-space: nowrap;
+  cursor: pointer;
+  /* Understrykningen ligger i kant med listans linje och markerar aktiv flik. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tabs__tab:hover {
+  color: var(--text);
+}
+
+.tabs__tab--active {
+  color: var(--text-strong);
+  border-bottom-color: var(--focus);
+  font-weight: 700;
+}
+
+.tabs__tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .admin-section {
   padding: 16px;
   border: 1px solid var(--border);
