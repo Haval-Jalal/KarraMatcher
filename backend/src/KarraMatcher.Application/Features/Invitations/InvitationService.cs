@@ -83,11 +83,11 @@ public sealed partial class InvitationService(
         // skapandet, och admin har länken i svaret att skicka på annat sätt.
         await email.SendAsync(
             normalized,
-            "Inbjudan till Kärra Matcher",
+            "Inbjudan till Truppen",
             $"""
             Hej!
 
-            Du har blivit inbjuden till Kärra Matcher. Öppna länken för att gå med:
+            Du har blivit inbjuden till Truppen. Öppna länken för att gå med:
 
             {acceptUrl}
 

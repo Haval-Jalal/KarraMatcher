@@ -38,7 +38,7 @@ export function TeamSchedulePage() {
   return (
     <main style={teamThemeStyle(accent)}>
       <header className="app-header">
-        <h1>Kärra Matcher</h1>
+        <h1>Truppen</h1>
         <p className="app-header__subtitle">
           {team ? (
             <span className="team-chip">

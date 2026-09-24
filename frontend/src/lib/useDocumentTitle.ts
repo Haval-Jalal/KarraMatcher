@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const APP_NAME = 'Kärra Matcher'
+const APP_NAME = 'Truppen'
 
 /**
  * Sätter sidans titel.
