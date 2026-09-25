@@ -70,7 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isSuperAdmin,
       adminOf,
-      canManage: (teamSlug: string) => isAdmin || coachOf.includes(teamSlug),
+      canManage: (teamSlug: string, truppId?: string) =>
+        isAdmin ||
+        coachOf.includes(teamSlug) ||
+        (truppId !== undefined && adminOf.includes(truppId)),
       refresh: read,
       signOut: async () => {
         await signOutRequest()

@@ -4,6 +4,9 @@ using System.Net.Http.Headers;
 using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
+using KarraMatcher.Domain.Common;
+using KarraMatcher.Domain.Teams;
+using KarraMatcher.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -136,6 +139,79 @@ public sealed class AuthorizationTests(KarraMatcherApiFactory factory)
             $"/probe/teams/{slug}/matches", null, CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task TruppTranare_NarSittEgetFargLag()
+    {
+        // #287: en tränare gäller HELA truppen, så den får sköta vilket som helst av truppens
+        // färg-lags scheman — inte bara det lag den bär ett coach-anspråk för.
+        using var host = CreateHost();
+        var (slug, truppId) = await SeedTeamAsync(host);
+
+        using var client = Authenticated(
+            host.CreateClient(),
+            TokenFor(host.Services, new AccountRoles(false, [truppId.ToString()], [])));
+
+        var response = await client.PostAsync(
+            $"/probe/teams/{slug}/matches", null, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task TruppTranare_NarAnnanTrupp_Nekas()
+    {
+        // Objektnivå: en tränare för en annan trupp når inte det här lagets schema.
+        using var host = CreateHost();
+        var (slug, _) = await SeedTeamAsync(host);
+
+        using var client = Authenticated(
+            host.CreateClient(),
+            TokenFor(host.Services, new AccountRoles(false, [Guid.NewGuid().ToString()], [])));
+
+        var response = await client.PostAsync(
+            $"/probe/teams/{slug}/matches", null, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    /// <summary>Seedar en sport, klubb, trupp och ett färg-lag. Ger lagets slug och truppens id.</summary>
+    private static async Task<(string Slug, Guid TruppId)> SeedTeamAsync(
+        WebApplicationFactory<Program> host)
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+
+        using var scope = host.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var sport = new Sport { Name = "Fotboll", Slug = $"sport-{suffix}" };
+        var club = new Club { Name = "Kärra", Slug = $"klubb-{suffix}" };
+        db.Sports.Add(sport);
+        db.Clubs.Add(club);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var ageGroup = new AgeGroup
+        {
+            ClubId = club.Id,
+            SportId = sport.Id,
+            Name = "P2016",
+            Season = string.Empty,
+        };
+        db.AgeGroups.Add(ageGroup);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var team = new Team
+        {
+            AgeGroupId = ageGroup.Id,
+            Name = "Lila",
+            Slug = $"lila-{suffix}",
+            ColorHex = "#7d3c98",
+        };
+        db.Teams.Add(team);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        return (team.Slug, ageGroup.Id);
     }
 
     [Fact]

@@ -8,6 +8,7 @@ import { teamThemeStyle } from '@/lib/teamTheme'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { EventListSection } from './EventListSection'
+import { useTeamEvents } from './useTeamEvents'
 
 /**
  * Ett lags schema på egen adress, t.ex. `/lag/gul`.
@@ -20,7 +21,12 @@ export function TeamSchedulePage() {
   const { slug } = useParams({ from: '/lag/$slug' })
   const { data: teams } = useTeams()
   const { selectedSlug, selectTeam } = useSelectedTeam()
-  const { status } = useAuth()
+  const { status, canManage } = useAuth()
+
+  // Schemats truppId (via den redan hämtade queryn — samma nyckel, inget extra anrop) låter en
+  // trupp-tränare känna igen sitt eget lag och nå skötsel-vyn kontextuellt (§KM.7, `#287`).
+  const { data: schedule } = useTeamEvents(slug)
+  const mayManage = canManage(slug, schedule?.truppId)
 
   // Att öppna en delad länk ska också bli det ihågkomna valet — annars skickas
   // föräldern tillbaka till sitt gamla lag nästa gång hen öppnar appen.
@@ -49,6 +55,19 @@ export function TeamSchedulePage() {
           )}
         </p>
       </header>
+
+      {/*
+        Skötsel-länken är kontextuell: syns på det lag man tittar på, för den som får sköta det —
+        per-lag-tränare, trupp-tränare (alla sina färg-lag) eller admin. Servern är grinden; det
+        här styr bara vad som visas (`#287`).
+      */}
+      {mayManage && (
+        <p className="actions">
+          <Link className="button button--small" to="/lag/$slug/tranare" params={{ slug }}>
+            Sköt laget
+          </Link>
+        </p>
+      )}
 
       {teams && teams.length > 0 && (
         <>

@@ -22,6 +22,11 @@ function coachToken(slug: string): string {
   return `x.${btoa(JSON.stringify({ email: 'tranare@example.com', coach: slug }))}.y`
 }
 
+/** Token för en trupp-tränare (admin för hela truppen), utan per-lag-anspråk (`#287`). */
+function truppCoachToken(truppId: string): string {
+  return `x.${btoa(JSON.stringify({ email: 'tranare@example.com', 'admin-trupp': truppId }))}.y`
+}
+
 const venue = {
   id: 'venue-1',
   name: 'Klarebergsvallen',
@@ -60,7 +65,8 @@ function stubApi(token: string) {
         return Promise.resolve(
           jsonResponse({
             team: { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
-            matches: [],
+            events: [],
+            truppId: 'trupp-p2016',
           }),
         )
       }
@@ -229,5 +235,21 @@ describe('vyn visas bara för den som sköter laget', () => {
     renderRoute('/lag/gul/tranare')
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/sköter inte det här laget/)
+  })
+
+  it('släpper in en trupp-tränare för ett färg-lag hen inte bär per-lag-anspråk för (#287)', async () => {
+    /*
+     * En tränare gäller hela truppen, så trupp-tränaren når vilket som helst av truppens
+     * färg-lag -- här igenkänt på att lagets truppId (ur schemat) finns i admin-trupp-anspråket,
+     * trots att token saknar coach-anspråk för "gul". Servern är grinden; det här är UX:en.
+     */
+    const token = truppCoachToken('trupp-p2016')
+    stubApi(token)
+    setAccessToken(token)
+
+    renderRoute('/lag/gul/tranare')
+
+    expect(await screen.findByRole('button', { name: 'Lägg till händelse' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

@@ -45,6 +45,18 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
                 .ConfigureAwait(false);
     }
 
+    public Task<Guid?> TruppIdForTeamBySlugAsync(
+        string teamSlug, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(teamSlug);
+
+        return context.Teams
+            .AsNoTracking()
+            .Where(t => t.Slug == teamSlug)
+            .Select(t => (Guid?)t.AgeGroupId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<bool> IsMemberOfEventAsync(
         Guid accountId, Guid eventId, CancellationToken cancellationToken)
     {
