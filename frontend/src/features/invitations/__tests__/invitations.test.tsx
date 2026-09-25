@@ -216,10 +216,10 @@ describe('Trupp-adminvyn', () => {
     expect(await screen.findByText('En förälder väntar på svar på sin ansökan')).toBeInTheDocument()
     expect(screen.getByText('barn')).toBeInTheDocument()
 
-    // Växla till "Barn & lag": lag-panelen dyker upp och översikten försvinner.
+    // Växla till "Barn & lag": Truppen-listan dyker upp och översikten försvinner.
     await user.click(screen.getByRole('tab', { name: 'Barn & lag' }))
 
-    expect(await screen.findByRole('heading', { name: 'Lag' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Liam J/ })).toBeInTheDocument()
     expect(screen.queryByText('En förälder väntar på svar på sin ansökan')).not.toBeInTheDocument()
   })
 })

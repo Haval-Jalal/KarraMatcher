@@ -2,9 +2,8 @@ import { useId, useRef, useState } from 'react'
 
 import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
-import { ChildrenPanel } from '@/features/children'
+import { BarnOchLag } from '@/features/children'
 import { CoachesPanel } from '@/features/coaches'
-import { LagPanel } from '@/features/lag'
 
 import { AdminOverview } from './AdminOverview'
 import { InvitationsPanel } from './InvitationsPanel'
@@ -169,12 +168,7 @@ function AdminSections({ truppId }: { truppId: string }) {
           <AdminOverview truppId={truppId} onGotoApplications={() => setActive('ansokningar')} />
         )}
 
-        {active === 'barn' && (
-          <>
-            <LagPanel truppId={truppId} />
-            <ChildrenPanel truppId={truppId} />
-          </>
-        )}
+        {active === 'barn' && <BarnOchLag truppId={truppId} />}
 
         {active === 'tranare' && <CoachesPanel truppId={truppId} />}
 

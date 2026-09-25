@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,9 +7,9 @@ import { jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
- * Barnhantering (§KM.1, `#196`) ur adminens perspektiv: rostern grupperas per färg-lag,
- * ett barn läggs till med förnamn + initial, och en koppling utan samtycke möts av ett
- * begripligt svenskt fel (§KM.6).
+ * Barnhantering (§KM.1, `#196`/`#283`) ur adminens perspektiv: Truppen listar alla barn och
+ * Lag listar färgerna, man drar sig in i ett barn för att byta lag eller koppla en
+ * vårdnadshavare, och en koppling utan samtycke möts av ett begripligt svenskt fel (§KM.6).
  */
 
 function tokenWith(claims: Record<string, unknown>): string {
@@ -90,16 +90,14 @@ function stub(token: string, routes: (url: string, method: string) => unknown): 
 
 const adminToken = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
 
-async function openTrupp(): Promise<void> {
+async function openTrupp(): Promise<ReturnType<typeof userEvent.setup>> {
   const user = userEvent.setup()
   renderRoute('/admin')
   await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
-  // Barn & lag bor bakom sin flik sedan admin blev översikt + sektioner (#279).
+  // Barn & lag bor bakom sin flik sedan admin blev översikt + sektioner (#279), och är sedan
+  // #283 en borra-in-vy: Truppen (alla barn) och Lag (färgerna), inte en utfälld roster.
   await user.click(await screen.findByRole('tab', { name: 'Barn & lag' }))
-}
-
-function childrenPanel(): HTMLElement {
-  return screen.getByRole('heading', { name: 'Barn' }).closest('.admin-subsection') as HTMLElement
+  return user
 }
 
 beforeEach(() => {
@@ -111,28 +109,29 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Barn-roster', () => {
-  it('grupperar barnen under sitt lag och under Otilldelade', async () => {
+describe('Barn & lag', () => {
+  it('listar alla barn i Truppen och barnen per lag under Lag', async () => {
     stub(adminToken, (url) => {
       if (url.includes('/children')) return { teams: TEAMS, children: CHILDREN }
       return []
     })
     setAccessToken(adminToken)
 
-    await openTrupp()
+    const user = await openTrupp()
 
-    const panel = await waitFor(() => childrenPanel())
-    const gul = within(panel).getByRole('heading', { name: /Gul/ }).closest('.roster-group')!
-    const otilldelade = within(panel)
-      .getByRole('heading', { name: 'Otilldelade' })
-      .closest('.roster-group')!
+    // Truppen: alla barn i en lista.
+    expect(await screen.findByRole('button', { name: /Liam J/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Nora K/ })).toBeInTheDocument()
 
-    expect(within(gul as HTMLElement).getByText('Liam J')).toBeInTheDocument()
-    expect(within(otilldelade as HTMLElement).getByText('Nora K')).toBeInTheDocument()
+    // Lag → Gul: bara Liam (Nora saknar lag).
+    await user.click(screen.getByRole('button', { name: 'Lag' }))
+    await user.click(await screen.findByRole('button', { name: /Gul/ }))
+
+    expect(await screen.findByRole('button', { name: /Liam J/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Nora K/ })).not.toBeInTheDocument()
   })
 
   it('lägger till ett barn — anropet bär förnamn, initial och lag', async () => {
-    const user = userEvent.setup()
     const sent = stub(adminToken, (url, method) => {
       if (url.includes('/children') && method === 'POST') {
         return {
@@ -150,13 +149,14 @@ describe('Barn-roster', () => {
     })
     setAccessToken(adminToken)
 
-    await openTrupp()
+    const user = await openTrupp()
 
-    const panel = await waitFor(() => childrenPanel())
-    await user.type(within(panel).getByLabelText('Förnamn'), 'Ada')
-    await user.type(within(panel).getByLabelText('Efternamnets initial'), 'S')
-    await user.selectOptions(within(panel).getByLabelText('Lag (valfritt)'), 't1')
-    await user.click(within(panel).getByRole('button', { name: 'Lägg till barn' }))
+    // Formuläret ligger bakom en knapp; öppna det och fyll i.
+    await user.click(await screen.findByRole('button', { name: 'Lägg till barn' }))
+    await user.type(screen.getByLabelText('Förnamn'), 'Ada')
+    await user.type(screen.getByLabelText('Efternamnets initial'), 'S')
+    await user.selectOptions(screen.getByLabelText('Lag (valfritt)'), 't1')
+    await user.click(screen.getByRole('button', { name: 'Lägg till barn' }))
 
     await waitFor(() => {
       expect(
@@ -171,13 +171,12 @@ describe('Barn-roster', () => {
       ).toBe(true)
     })
 
-    // Kvitto efter sparat, och fältet tömt för nästa barn (`#259`).
-    expect(await within(panel).findByText('Ada S lades till.')).toBeInTheDocument()
-    expect(within(panel).getByLabelText('Förnamn')).toHaveValue('')
+    // Kvitto efter sparat, och fältet tömt för nästa barn.
+    expect(await screen.findByText('Ada S lades till.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Förnamn')).toHaveValue('')
   })
 
   it('visar ett begripligt fel när samtycke saknas (§KM.6)', async () => {
-    const user = userEvent.setup()
     stub(adminToken, (url, method) => {
       if (url.includes('/guardians') && method === 'POST') {
         return jsonResponse(
@@ -193,17 +192,16 @@ describe('Barn-roster', () => {
     })
     setAccessToken(adminToken)
 
-    await openTrupp()
+    const user = await openTrupp()
 
-    const panel = await waitFor(() => childrenPanel())
-    const liam = within(panel).getByText('Liam J').closest('.roster-child') as HTMLElement
-
+    // Öppna Liam och försök koppla en vårdnadshavare utan samtycke.
+    await user.click(await screen.findByRole('button', { name: /Liam J/ }))
     await user.type(
-      within(liam).getByLabelText('Koppla vårdnadshavare (adress)'),
+      screen.getByLabelText('Koppla en vårdnadshavare (adress)'),
       'foralder@example.com',
     )
-    await user.click(within(liam).getByRole('button', { name: 'Koppla vårdnadshavare' }))
+    await user.click(screen.getByRole('button', { name: 'Koppla vårdnadshavare' }))
 
-    expect(await within(liam).findByRole('alert')).toHaveTextContent('Samtycke saknas')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Samtycke saknas')
   })
 })
