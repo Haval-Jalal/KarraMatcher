@@ -202,18 +202,20 @@ describe('menyn visar rätt sak för rätt person', () => {
     expect(await within(nav).findByRole('link', { name: 'Mitt konto' })).toBeInTheDocument()
   })
 
-  it('visar tränarlänken bara för en tränare', async () => {
+  it('visar "Sköt laget" bara för den som är tränare för ett lag', async () => {
+    // "Sköt laget" är schema-vyn för ett enskilt lag (`coach`-anspråket). Den trupp-breda
+    // tränarrollen (`#285`) heter i stället "Tränare" och går till /admin.
     signedInAs(COACH)
     const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    const link = await within(await openMenu(user)).findByRole('link', { name: 'Tränare' })
+    const link = await within(await openMenu(user)).findByRole('link', { name: 'Sköt laget' })
 
     expect(link).toHaveAttribute('href', '/lag/gul/tranare')
   })
 
-  it('visar ingen tränarlänk för en vanlig förälder', async () => {
+  it('visar ingen "Sköt laget"-länk för en vanlig förälder', async () => {
     signedInAs(PARENT)
     const user = userEvent.setup()
 
@@ -222,14 +224,14 @@ describe('menyn visar rätt sak för rätt person', () => {
     const nav = await openMenu(user)
     await within(nav).findByRole('link', { name: 'Mitt konto' })
 
-    expect(within(nav).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Sköt laget' })).not.toBeInTheDocument()
   })
 
-  it('byter inte innehåll beroende på sida: en admin som inte är tränare får ingen tränarlänk ens på en lagsida', async () => {
+  it('byter inte innehåll beroende på sida: den som inte är lag-tränare får ingen "Sköt laget"-länk ens på en lagsida', async () => {
     /*
-     * `#253`. Tidigare vidgade `isAdmin` tranarlanken sa att en administrator fick den bara
-     * pa en lagsida (dar teamInPath fanns) och blev av med den overallt annars -- menyn
-     * bytte innehall nar man klickade runt. Nu styr rollen ensam.
+     * `#253`. Tidigare vidgade `isAdmin` lag-lanken sa att den bara syntes pa en lagsida (dar
+     * teamInPath fanns) och blev av overallt annars -- menyn bytte innehall nar man klickade
+     * runt. Nu styr rollen ensam.
      */
     signedInAs(ADMIN)
     const user = userEvent.setup()
@@ -240,7 +242,7 @@ describe('menyn visar rätt sak för rätt person', () => {
     const nav = await openMenu(user)
     await within(nav).findByRole('link', { name: 'Mitt konto' })
 
-    expect(within(nav).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Sköt laget' })).not.toBeInTheDocument()
   })
 })
 

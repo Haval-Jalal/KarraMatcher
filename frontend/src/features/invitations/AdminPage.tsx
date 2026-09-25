@@ -3,36 +3,39 @@ import { useId, useRef, useState } from 'react'
 import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
 import { BarnOchLag } from '@/features/children'
-import { CoachesPanel } from '@/features/coaches'
 
 import { AdminOverview } from './AdminOverview'
 import { InvitationsPanel } from './InvitationsPanel'
 import { useMyTrupper } from './useInvitations'
 
-const SECTIONS = ['oversikt', 'barn', 'tranare', 'inbjudningar', 'ansokningar'] as const
+const SECTIONS = ['oversikt', 'barn', 'inbjudningar', 'ansokningar'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 const LABEL: Record<SectionKey, string> = {
   oversikt: 'Översikt',
   barn: 'Barn & lag',
-  tranare: 'Tränare',
   inbjudningar: 'Inbjudningar',
   ansokningar: 'Ansökningar',
 }
 
 /**
- * Trupp-adminens vy (§KM.3, `#193`, omgjord i `#279`).
+ * Tränarens vy för sin trupp (§KM.3, `#193`, omgjord i `#279`, en trupp-bred tränarroll i `#285`).
+ *
+ * <h3>En trupp-bred roll</h3>
+ *
+ * Tränare gäller hela truppen (P2016), inte en enskild färg. En tränare skapar färg-lagen,
+ * tilldelar barnen färger och sköter kallelser, inbjudningar och ansökningar. (Koden kallar
+ * rollen fortfarande "admin", §KM.9 — bara gränssnittet säger "Tränare".)
  *
  * <h3>Översikt först, en sektion i taget</h3>
  *
- * Tidigare låg fem paneler (lag, barn, tränare, inbjudningar, ansökningar) utfällda under
- * varandra i en enda oändlig kolumn. Nu landar man på en lugn översikt och växlar mellan
- * sektionerna med en flikrad — bara den aktiva syns, så den ändlösa scrollen är borta.
+ * Man landar på en lugn översikt och växlar mellan sektionerna med en flikrad — bara den
+ * aktiva syns, så den gamla ändlösa kolumnen är borta.
  *
  * <h3>Synligheten är inte säkerheten</h3>
  *
- * Vyn göms för den som inte är admin för någon trupp, men servern (policyn <c>AdminOfTrupp</c>)
- * är den riktiga grinden. Route-grinden kräver bara inloggning.
+ * Vyn göms för den som inte är tränare för någon trupp, men servern (policyn
+ * <c>AdminOfTrupp</c>) är den riktiga grinden. Route-grinden kräver bara inloggning.
  */
 export function AdminPage() {
   const { status, isSuperAdmin, adminOf } = useAuth()
@@ -51,7 +54,7 @@ export function AdminPage() {
     return (
       <main className="page">
         <h1>Ingen behörighet</h1>
-        <p className="state">Den här vyn är för trupp-admins.</p>
+        <p className="state">Den här vyn är för truppens tränare.</p>
       </main>
     )
   }
@@ -61,8 +64,8 @@ export function AdminPage() {
   return (
     <main className="page admin">
       <header className="app-header">
-        <h1>Admin</h1>
-        <p>Hantera din trupp — barn, lag, tränare och inbjudningar.</p>
+        <h1>Tränare</h1>
+        <p>Hantera din trupp — skapa färg-lag, sortera barnen och bjud in vårdnadshavare.</p>
       </header>
 
       {trupper.isLoading && <p className="state">Hämtar dina trupper…</p>}
@@ -169,8 +172,6 @@ function AdminSections({ truppId }: { truppId: string }) {
         )}
 
         {active === 'barn' && <BarnOchLag truppId={truppId} />}
-
-        {active === 'tranare' && <CoachesPanel truppId={truppId} />}
 
         {active === 'inbjudningar' && <InvitationsPanel truppId={truppId} />}
 

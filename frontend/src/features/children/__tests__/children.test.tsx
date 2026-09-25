@@ -131,6 +131,39 @@ describe('Barn & lag', () => {
     expect(screen.queryByRole('button', { name: /Nora K/ })).not.toBeInTheDocument()
   })
 
+  it('en tränare skapar ett färg-lag i Lag-vyn (#285)', async () => {
+    const sent = stub(adminToken, (url, method) => {
+      if (url.includes('/lag') && method === 'POST') {
+        return { id: 'l9', truppId: 'trupp-1', name: 'Röd', colorHex: '#c0392b', slug: 'rod' }
+      }
+      if (url.includes('/children')) return { teams: [], children: [] }
+      return []
+    })
+    setAccessToken(adminToken)
+
+    const user = await openTrupp()
+
+    // Lag-vyn: en ny trupp har inga färger än — skapa en.
+    await user.click(screen.getByRole('button', { name: 'Lag' }))
+    await user.click(await screen.findByRole('button', { name: 'Skapa färg-lag' }))
+    await user.type(screen.getByLabelText('Färgens namn'), 'Röd')
+    await user.click(screen.getByRole('button', { name: 'Skapa färg-lag' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.url.includes('/api/v1/admin/trupper/trupp-1/lag') &&
+            r.method === 'POST' &&
+            (r.body as { name: string }).name === 'Röd' &&
+            (r.body as { slug: string }).slug === 'rod',
+        ),
+      ).toBe(true)
+    })
+
+    expect(await screen.findByText('Röd skapades.')).toBeInTheDocument()
+  })
+
   it('lägger till ett barn — anropet bär förnamn, initial och lag', async () => {
     const sent = stub(adminToken, (url, method) => {
       if (url.includes('/children') && method === 'POST') {

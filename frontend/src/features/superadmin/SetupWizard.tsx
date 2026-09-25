@@ -32,7 +32,7 @@ import {
  * (man ser att Fotboll och Kärra redan finns och väljer dem i stället för att skapa en till).
  */
 
-const STEPS = ['Sport', 'Klubb', 'Trupp', 'Admin'] as const
+const STEPS = ['Sport', 'Klubb', 'Trupp', 'Tränare'] as const
 
 export function SetupWizard() {
   const [step, setStep] = useState(0)
@@ -131,12 +131,12 @@ export function SetupWizard() {
 
       {step === 3 && selectedTrupp !== null && (
         <div className="wizard__panel">
-          <h3>Steg 4 av 4 — Tilldela admin</h3>
+          <h3>Steg 4 av 4 — Tilldela tränare</h3>
           <p className="wizard__context">
             {selectedTrupp.clubName} · {selectedTrupp.name}
           </p>
           <p className="state">
-            Tilldela en eller flera admins. Sedan sköter de laget, barnen och inbjudningarna i
+            Tilldela en eller flera tränare. Sedan sköter de färg-lagen, barnen och inbjudningarna i
             truppen — du är klar här.
           </p>
           <AdminStep truppId={selectedTrupp.id} />

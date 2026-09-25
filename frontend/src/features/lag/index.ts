@@ -1,1 +1,1 @@
-export { LagPanel } from './LagPanel'
+export { useCreateLag } from './useLag'
