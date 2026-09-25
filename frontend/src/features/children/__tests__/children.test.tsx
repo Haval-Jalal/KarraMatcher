@@ -93,7 +93,9 @@ const adminToken = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp
 async function openTrupp(): Promise<void> {
   const user = userEvent.setup()
   renderRoute('/admin')
-  await user.selectOptions(await screen.findByLabelText('Välj trupp'), 'trupp-1')
+  await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
+  // Barn & lag bor bakom sin flik sedan admin blev översikt + sektioner (#279).
+  await user.click(await screen.findByRole('tab', { name: 'Barn & lag' }))
 }
 
 function childrenPanel(): HTMLElement {
