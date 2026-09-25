@@ -1,9 +1,14 @@
 using KarraMatcher.Domain.Attendance;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
-/// <summary>Händelsens sammanhang som en kallelse behöver: trupp, lag och avspark (`#199`).</summary>
-public sealed record EventContext(Guid AgeGroupId, Guid TeamId, DateTime KickoffUtc);
+/// <summary>
+/// Händelsens sammanhang som en kallelse behöver: trupp, lag, avspark och typ (`#199`, `#289`).
+/// Typen låter servern avvisa en kallelse för en övrig händelse (§KM.7) — samma gräns som FE
+/// visar, men här som den riktiga grinden.
+/// </summary>
+public sealed record EventContext(Guid AgeGroupId, Guid TeamId, DateTime KickoffUtc, EventType Type);
 
 /// <summary>Ett kallat barn med namn, lag och svar — för tränarens summering (`#199`).</summary>
 public sealed record InvitationRow(

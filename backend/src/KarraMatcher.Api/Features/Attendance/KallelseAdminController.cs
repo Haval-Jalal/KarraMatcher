@@ -70,6 +70,11 @@ public sealed class KallelseAdminController(
                 title: "Kallelser är avslagna",
                 detail: "Slå på kallelser för laget innan du skickar en kallelse (§KM.7)."),
 
+            SetKallelseOutcome.EventNotInvitable => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Kallelse gäller inte den här händelsen",
+                detail: "Bara matcher och träningar kan ha en kallelse — inte övriga händelser (§KM.7)."),
+
             // EventNotInTrupp: samma 404 som en okänd händelse — avslöja inte andra truppers id.
             _ => Problem(
                 statusCode: StatusCodes.Status404NotFound,
