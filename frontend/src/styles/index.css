@@ -1572,6 +1572,21 @@ a.match-card:focus-visible .match-card__opponent {
   font-weight: 600;
 }
 
+/* ---- Chatt: meddelanden (#281) -------------------------------------------- */
+
+.chat-messages {
+  gap: 6px;
+}
+
+/*
+ * Egna meddelanden får en varm, nedsänkt ton så ett samtal läses som mitt-mot-andras.
+ * Tonen är signalen utöver författarnamnet — inte en färg ensam (WCAG 1.4.1).
+ */
+.chat-msg--own {
+  background: var(--sunk);
+  border-color: var(--hair-strong);
+}
+
 /* ---- Chatt: anmälan (#263) ------------------------------------------------ */
 
 /* Full bredd så formuläret hamnar under meddelanderaden i den flex-wrap:ade listan. */
