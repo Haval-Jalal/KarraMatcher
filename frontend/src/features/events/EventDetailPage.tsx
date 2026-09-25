@@ -110,15 +110,25 @@ export function EventDetailPage() {
         </p>
       )}
 
-      <dl className="detail">
-        <div className="detail__row">
-          <dt>När</dt>
-          <dd>
-            {formatMatchDate(event.kickoffUtc)} kl. {formatKickoffTime(event.kickoffUtc)}
-            <span className="detail__hint"> ({relativeDayLabel(event.kickoffUtc)})</span>
-          </dd>
-        </div>
+      {/*
+        Avsparkstiden är hjälten: det man öppnar sidan för. Stor och tunn (Barlow Condensed
+        300) med datum och relativ dag som en lugn eyebrow ovanför. Inställd match stryker
+        över tiden — en form, inte bara en färg (WCAG 1.4.1).
+      */}
+      <div className="event-hero">
+        <p className="event-hero__kicker">
+          {formatMatchDate(event.kickoffUtc)} · {relativeDayLabel(event.kickoffUtc)}
+        </p>
+        <p
+          className={
+            isCancelled ? 'event-hero__time event-hero__time--cancelled' : 'event-hero__time'
+          }
+        >
+          {formatKickoffTime(event.kickoffUtc)}
+        </p>
+      </div>
 
+      <dl className="detail">
         <div className="detail__row">
           <dt>Var</dt>
           <dd>

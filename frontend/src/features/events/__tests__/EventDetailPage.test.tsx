@@ -39,9 +39,10 @@ describe('Matchdetaljsidan — innehåll', () => {
     expect(
       await screen.findByRole('heading', { name: /Hemma mot Motstandare/ }),
     ).toBeInTheDocument()
-    // Datum och tid renderas som flera textnoder, så jämförelsen sker mot hela sidans
-    // text. Avspark i svensk tid: 12:00 UTC är 14:00 i september.
-    expect(screen.getByRole('main')).toHaveTextContent('Söndag 20 september kl. 14:00')
+    // Tiden är hjälten (stor och tunn), datumet en eyebrow ovanför — inte längre en
+    // "kl."-fogad rad. Båda ska finnas. Avspark i svensk tid: 12:00 UTC är 14:00 i september.
+    expect(screen.getByRole('main')).toHaveTextContent('Söndag 20 september')
+    expect(screen.getByRole('main')).toHaveTextContent('14:00')
     expect(screen.getByText('Klarebergsvallen')).toBeInTheDocument()
     expect(screen.getByText('Klarebergsvallen, Karra')).toBeInTheDocument()
     expect(screen.getByText('Hemmamatch')).toBeInTheDocument()

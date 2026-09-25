@@ -27,9 +27,10 @@ const onDisk = new Set(
 const referenced = [...FONTS_CSS.matchAll(/url\('\/fonts\/([^']+)'\)/g)].map((m) => m[1] as string)
 
 describe('varje deklarerat snitt finns på disk', () => {
-  it('hittar minst de fyra snitten vi räknar med', () => {
-    // Barlow 400 och 600, Barlow Condensed 600 och 700 — i två delmängder vardera.
-    expect(referenced).toHaveLength(8)
+  it('hittar de snitt vi räknar med', () => {
+    // Barlow 400 och 600, Barlow Condensed 300, 600 och 700 — i två delmängder vardera.
+    // Condensed 300 (tunn) bär matchdetaljens stora avsparkstid (`#277`).
+    expect(referenced).toHaveLength(10)
   })
 
   it.each([...new Set(referenced)])('%s finns i public/fonts', (file) => {
