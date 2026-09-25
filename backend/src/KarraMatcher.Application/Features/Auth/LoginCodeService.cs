@@ -33,6 +33,7 @@ public sealed class LoginCodeService(
     IEmailSender email,
     SessionIssuer sessions,
     IOptions<AuthOptions> options,
+    IOptions<DemoAccessOptions> demoAccess,
     TimeProvider clock)
 {
     /// <summary>
@@ -99,7 +100,11 @@ public sealed class LoginCodeService(
         // fem försök till, mot en ny kod, utan att de gamla slutade gälla.
         await codes.ConsumeOutstandingAsync(normalized, now, cancellationToken).ConfigureAwait(false);
 
-        var code = GenerateCode();
+        // Demokonton (test, `#269`) loggar in med en fast kod och får inget mejl — så appen
+        // går att prova utan verifierad avsändardomän. Gäller enbart de två demoadresserna;
+        // ett riktigt konto får alltid en slumpad, mejlad kod.
+        var isDemo = demoAccess.Value.AllowsFixedCode(normalized);
+        var code = isDemo ? demoAccess.Value.Code : GenerateCode();
 
         await codes.AddAsync(
             new LoginCode
@@ -113,6 +118,11 @@ public sealed class LoginCodeService(
             cancellationToken).ConfigureAwait(false);
 
         await codes.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (isDemo)
+        {
+            return;
+        }
 
         var minutes = (int)Options.LoginCodeLifetime.TotalMinutes;
 

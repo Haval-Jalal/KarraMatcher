@@ -43,6 +43,9 @@ public sealed class LoginCodeServiceTests
         LoginCodeResendCooldown = TimeSpan.FromSeconds(60),
     };
 
+    // Demo-inloggningen är av som standard; testerna som rör den slår på den själva.
+    private readonly DemoAccessOptions _demoAccess = new();
+
     private LoginCodeService CreateService() => new(
         _codes,
         _accounts,
@@ -55,6 +58,7 @@ public sealed class LoginCodeServiceTests
             _clock,
             NullLogger<SessionIssuer>.Instance),
         Options.Create(_options),
+        Options.Create(_demoAccess),
         _clock);
 
     /// <summary>Koden som just skickades, läst ur mejlet — som en förälder gör.</summary>
@@ -243,6 +247,61 @@ public sealed class LoginCodeServiceTests
 
         Assert.Null(wrongCode);
         Assert.Null(unknownEmail);
+    }
+
+    // ---- Demo-inloggning (#269) ------------------------------------------------------
+
+    private const string DemoAdmin = "demo-admin@truppen.se";
+    private const string DemoCode = "424242";
+
+    private void EnableDemo()
+    {
+        _demoAccess.Enabled = true;
+        _demoAccess.AdminEmail = DemoAdmin;
+        _demoAccess.GuardianEmail = "demo-foralder@truppen.se";
+        _demoAccess.Code = DemoCode;
+    }
+
+    [Fact]
+    public async Task DemoKonto_LoggarInMedFastKod_UtanMejl()
+    {
+        // Poängen med #269: demokontot kan logga in utan att ett mejl behöver nå fram.
+        EnableDemo();
+        var service = CreateService();
+
+        await service.RequestAsync(DemoAdmin, CancellationToken.None);
+
+        Assert.Equal(0, _email.SentCount);
+
+        var session = await service.VerifyAsync(DemoAdmin, DemoCode, CancellationToken.None);
+        Assert.NotNull(session);
+    }
+
+    [Fact]
+    public async Task DemoKod_GallerInteEttRiktigtKonto()
+    {
+        // Den fasta koden får bara låsa upp demoadresserna — aldrig ett riktigt konto.
+        EnableDemo();
+        var service = CreateService();
+
+        await service.RequestAsync("foralder@example.com", CancellationToken.None);
+
+        Assert.Equal(1, _email.SentCount); // en riktig, mejlad kod
+        Assert.Null(await service.VerifyAsync("foralder@example.com", DemoCode, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DemoAvstangt_ForDemoadress_SkickarMejlSomVanligt()
+    {
+        // Med flaggan av är demoadressen ett konto som alla andra: slumpad kod, mejlad.
+        _demoAccess.Enabled = false;
+        _demoAccess.AdminEmail = DemoAdmin;
+        _demoAccess.Code = DemoCode;
+        var service = CreateService();
+
+        await service.RequestAsync(DemoAdmin, CancellationToken.None);
+
+        Assert.Equal(1, _email.SentCount);
     }
 
     // ---- Kontot ----------------------------------------------------------------------

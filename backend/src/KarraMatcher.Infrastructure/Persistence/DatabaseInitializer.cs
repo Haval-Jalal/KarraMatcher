@@ -19,6 +19,7 @@ public static partial class DatabaseInitializer
 {
     public const string MigrateKey = "Database:ApplyMigrationsOnStartup";
     public const string SeedKey = "Database:SeedOnStartup";
+    public const string DemoLoginKey = "DemoSeed:Enabled";
 
     public static async Task InitializeDatabaseAsync(
         this IServiceProvider services,
@@ -45,6 +46,13 @@ public static partial class DatabaseInitializer
             var result = await seeder.SeedAsync(cancellationToken).ConfigureAwait(false);
             LogSeeded(logger, result.Teams, result.Venues, result.MatchesAdded);
         }
+
+        // Skyddsräcke (#269): en fast demo-kod är en avsiktlig bakdörr. Säg det högt vid varje
+        // start så den inte råkar bli kvar på i skarp drift.
+        if (Enabled(configuration, DemoLoginKey))
+        {
+            LogDemoLoginActive(logger);
+        }
     }
 
     /// <summary>Allt utom ett uttryckligt "true" betyder av.</summary>
@@ -58,4 +66,8 @@ public static partial class DatabaseInitializer
     [LoggerMessage(EventId = 2001, Level = LogLevel.Information,
         Message = "Startdata klar: {Teams} lag, {Venues} spelplatser, {MatchesAdded} nya matcher")]
     private static partial void LogSeeded(ILogger logger, int teams, int venues, int matchesAdded);
+
+    [LoggerMessage(EventId = 2002, Level = LogLevel.Warning,
+        Message = "DEMO-INLOGGNING AR PA: demokontona loggar in med en fast kod. Stang av (DemoSeed:Enabled=false) fore lansering.")]
+    private static partial void LogDemoLoginActive(ILogger logger);
 }

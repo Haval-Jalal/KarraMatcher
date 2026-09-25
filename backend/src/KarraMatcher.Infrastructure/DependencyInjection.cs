@@ -77,6 +77,14 @@ public static class DependencyInjection
         services.Configure<Application.Features.Jobs.JobOptions>(
             configuration.GetSection(Application.Features.Jobs.JobOptions.SectionName));
 
+        /*
+         * Demo-inloggning (#269): de tva demokontona loggar in med en fast kod utan mejl.
+         * Inte ValidateOnStart -- avstangt som standard, och en tom sektion ska inte falla
+         * driftsattningen. Las ur samma sektion som demo-seeden (DemoSeed).
+         */
+        services.Configure<Application.Features.Auth.DemoAccessOptions>(
+            configuration.GetSection(Application.Features.Auth.DemoAccessOptions.SectionName));
+
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
