@@ -155,11 +155,11 @@ describe('inställd match är omisskännlig', () => {
 })
 
 describe('tiden bär kortet', () => {
-  it('sätts i det smala snittet och i skalans näst största steg', () => {
+  it('sätts i det smala snittet och i skalans största steg — radankaret i agendan', () => {
     const time = rule('.match-card__time')
 
     expect(time).toContain('font-family: var(--display)')
-    expect(time).toContain('font-size: var(--text-xl)')
+    expect(time).toContain('font-size: var(--text-2xl)')
   })
 
   it('är tyngre än motståndaren och platsen', () => {
