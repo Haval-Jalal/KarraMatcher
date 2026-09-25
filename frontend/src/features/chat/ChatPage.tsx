@@ -2,17 +2,17 @@ import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
-import { accountIdFromToken } from '@/features/auth/authApi'
-import { getAccessToken } from '@/lib/session'
 
-import { ChatChannel } from './ChatChannel'
+import { ChatView } from './ChatView'
 import { useMyTrupper } from './useChat'
 
 /**
- * Trupp-chatten (§KM.1/§KM.10, `#201`).
+ * Chatten (§KM.1/§KM.10, `#201`/`#202`/`#294`): en samlad vy med en kanalväxlare — truppens
+ * primärkanal och de lag-kanaler medlemmen når, alla på ett ställe (`ChatView`).
  *
- * Bara medlemmar (server-side grind). En admin/tränare kan schemalägga; en admin ser också
- * anmälda meddelanden (trupp-övergripande, `#202`). Lag-kanalerna bor på `/lag/{slug}/chatt`.
+ * Bara medlemmar (server-side grind). Är man med i flera trupper väljer man trupp här;
+ * kanalerna inom den valda truppen väljs i växlaren. Ledarskap och admin är trupp-breda, så de
+ * gäller alla truppens kanaler.
  */
 export function ChatPage() {
   const auth = useAuth()
@@ -28,9 +28,6 @@ export function ChatPage() {
 
   const isAdmin = truppId !== null && (auth.isSuperAdmin || auth.adminOf.includes(truppId))
   const isLeader = trupp?.isLeader ?? false
-
-  const token = getAccessToken()
-  const myAccountId = token === null ? null : accountIdFromToken(token)
 
   return (
     <main className="page">
@@ -71,13 +68,7 @@ export function ChatPage() {
       )}
 
       {truppId !== null && (
-        <ChatChannel
-          key={truppId}
-          channel={{ kind: 'trupp', truppId }}
-          isLeader={isLeader}
-          isAdmin={isAdmin}
-          myAccountId={myAccountId}
-        />
+        <ChatView key={truppId} truppId={truppId} isLeader={isLeader} isAdmin={isAdmin} />
       )}
     </main>
   )

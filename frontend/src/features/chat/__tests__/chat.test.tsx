@@ -18,6 +18,11 @@ function tokenWith(claims: Record<string, unknown>): string {
 
 const TRUPP = { id: 'trupp-1', clubName: 'Kärra', name: 'P2016', season: '2026' }
 
+/** Standard: bara primärkanalen, så växlaren döljs och de enkanaliga testerna är oförändrade. */
+const PRIMARY_ONLY = [
+  { kind: 'Trupp', teamId: null, slug: null, name: 'P2016 chatt', colorHex: null },
+]
+
 const MESSAGES = [
   {
     id: 'm1',
@@ -47,6 +52,7 @@ function stub(
   token: string,
   isLeader: boolean,
   routes: (url: string, method: string) => unknown,
+  channels: unknown[] = PRIMARY_ONLY,
 ): Sent[] {
   const sent: Sent[] = []
 
@@ -66,6 +72,9 @@ function stub(
         return Promise.resolve(jsonResponse({ accessToken: token }))
       if (url.endsWith('/api/v1/trupper/mina')) {
         return Promise.resolve(jsonResponse([{ ...TRUPP, isLeader }]))
+      }
+      if (url.endsWith('/chat/channels')) {
+        return Promise.resolve(jsonResponse(channels))
       }
 
       const result = routes(url, method)
@@ -272,6 +281,50 @@ describe('trupp-chatt', () => {
           (r) => r.url.includes('/admin/trupper/trupp-1/chat/messages/m1') && r.method === 'DELETE',
         ),
       ).toBe(true)
+    })
+  })
+})
+
+describe('kanalväxlare (#294)', () => {
+  it('listar truppens kanaler och byter kanal', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+    setAccessToken(token)
+    const sent = stub(
+      token,
+      false,
+      (url) => {
+        if (url.includes('/chat/messages')) return MESSAGES
+        return []
+      },
+      [
+        { kind: 'Trupp', teamId: null, slug: null, name: 'P2016 chatt', colorHex: null },
+        {
+          kind: 'Team',
+          teamId: 't-svart',
+          slug: 'svart',
+          name: 'Lag Svart chatt',
+          colorHex: '#161616',
+        },
+        { kind: 'Team', teamId: 't-gul', slug: 'gul', name: 'Lag Gul chatt', colorHex: '#D9A21B' },
+      ],
+    )
+
+    renderRoute('/chatt/trupp-1')
+
+    // Växlaren listar alla kanaler; primärkanalen är vald och läser trupp-kanalen.
+    const tablist = await screen.findByRole('tablist', { name: 'Kanaler' })
+    expect(within(tablist).getByRole('tab', { name: 'P2016 chatt' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(within(tablist).getByRole('tab', { name: 'Lag Svart chatt' })).toBeInTheDocument()
+
+    // Byt till Lag Svart → nu läses lagets egen kanal.
+    await user.click(within(tablist).getByRole('tab', { name: 'Lag Svart chatt' }))
+
+    await waitFor(() => {
+      expect(sent.some((r) => r.url.includes('/api/v1/teams/svart/chat/messages'))).toBe(true)
     })
   })
 })

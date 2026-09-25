@@ -2485,6 +2485,60 @@ a.match-card:focus-visible .match-card__opponent {
   border-bottom-color: var(--team-accent);
 }
 
+/* Chattens kanalväxlare: samma tysta flikrad som admin-tabs, med en färgprick per lag.
+   Aktiv flik bärs av vikt (och en list under) — färgen är ett tillägg, aldrig enda signalen. */
+.chat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 8px 0 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.chat-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap-target);
+  padding: 0 12px;
+  font-family: var(--display);
+  font-size: var(--text-base);
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.chat-tabs__tab:hover {
+  color: var(--ink);
+}
+
+.chat-tabs__tab--active {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--team-accent);
+}
+
+.chat-tabs__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--hair-strong);
+}
+
+.chat-panel {
+  padding-top: 8px;
+}
+
+.chat-panel:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
 .admin-panel {
   padding-top: 8px;
 }
