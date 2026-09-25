@@ -23,6 +23,19 @@ export interface TeamChatMeta {
   isLeader: boolean
 }
 
+/**
+ * En kanal i truppen som den inloggade får se (`#293`/`#298`). `kind` är `Trupp` för
+ * primärkanalen ("{trupp} chatt") och `Team` för en lag-kanal ("Lag {färg} chatt"); servern
+ * avgör vilka som kommer med. Färgen är null för primärkanalen.
+ */
+export interface ChatChannelSummary {
+  kind: 'Trupp' | 'Team'
+  teamId: string | null
+  slug: string | null
+  name: string
+  colorHex: string | null
+}
+
 export interface ChatMessage {
   id: string
   authorAccountId: string
@@ -66,6 +79,16 @@ const base = (channel: ChatChannel): string =>
 
 export const getMyTrupper = (signal?: AbortSignal): Promise<MemberTrupp[]> =>
   getAuthJson<MemberTrupp[]>('/api/v1/trupper/mina', signal)
+
+/** Kanalerna den inloggade får se i truppen — primärkanalen först, sedan nåbara lag (`#293`). */
+export const getChatChannels = (
+  truppId: string,
+  signal?: AbortSignal,
+): Promise<ChatChannelSummary[]> =>
+  getAuthJson<ChatChannelSummary[]>(
+    `/api/v1/trupper/${encodeURIComponent(truppId)}/chat/channels`,
+    signal,
+  )
 
 export const getTeamChatMeta = (slug: string, signal?: AbortSignal): Promise<TeamChatMeta> =>
   getAuthJson<TeamChatMeta>(`/api/v1/teams/${encodeURIComponent(slug)}/chat/meta`, signal)

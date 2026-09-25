@@ -5,6 +5,7 @@ import {
   channelKey,
   adminDeleteMessage,
   deleteMessage,
+  getChatChannels,
   getMessages,
   getMyTrupper,
   getReports,
@@ -19,6 +20,7 @@ import {
 
 export const chatKeys = {
   myTrupper: ['chat', 'mina-trupper'] as const,
+  channels: (truppId: string) => ['chat', 'channels', truppId] as const,
   teamMeta: (slug: string) => ['chat', 'team-meta', slug] as const,
   messages: (channel: ChatChannel) => ['chat', 'messages', channelKey(channel)] as const,
   scheduled: (channel: ChatChannel) => ['chat', 'scheduled', channelKey(channel)] as const,
@@ -29,6 +31,14 @@ export function useMyTrupper() {
   return useQuery({
     queryKey: chatKeys.myTrupper,
     queryFn: ({ signal }) => getMyTrupper(signal),
+  })
+}
+
+export function useChatChannels(truppId: string | null) {
+  return useQuery({
+    queryKey: chatKeys.channels(truppId ?? ''),
+    queryFn: ({ signal }) => getChatChannels(truppId as string, signal),
+    enabled: truppId !== null,
   })
 }
 

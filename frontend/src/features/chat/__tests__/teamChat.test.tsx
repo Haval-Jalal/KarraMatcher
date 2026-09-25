@@ -52,6 +52,20 @@ function stub(token: string, isLeader: boolean): Sent[] {
       if (url.includes('/chat/meta')) {
         return Promise.resolve(jsonResponse({ truppId: 'trupp-1', isLeader }))
       }
+      if (url.endsWith('/chat/channels')) {
+        return Promise.resolve(
+          jsonResponse([
+            { kind: 'Trupp', teamId: null, slug: null, name: 'P2016 chatt', colorHex: null },
+            {
+              kind: 'Team',
+              teamId: 't-gul',
+              slug: 'gul',
+              name: 'Lag Gul chatt',
+              colorHex: '#D9A21B',
+            },
+          ]),
+        )
+      }
       if (url.includes('/report')) return Promise.resolve(jsonResponse({}))
       if (url.includes('/chat/scheduled')) return Promise.resolve(jsonResponse([]))
       if (url.includes('/chat/messages')) return Promise.resolve(jsonResponse(MESSAGES))

@@ -1,18 +1,17 @@
 import { useParams } from '@tanstack/react-router'
 
 import { useAuth } from '@/features/auth'
-import { accountIdFromToken } from '@/features/auth/authApi'
-import { getAccessToken } from '@/lib/session'
 
-import { ChatChannel } from './ChatChannel'
+import { ChatView } from './ChatView'
 import { useTeamChatMeta } from './useChat'
 
 /**
- * Lag-chatten (§KM.1/§KM.10, `#202`) — en egen kanal per färg-lag, på `/lag/{slug}/chatt`.
+ * Lag-chattens djuplänk (`/lag/{slug}/chatt`, `#202`) — samma samlade vy som `/chatt`, men med
+ * det här laget förvalt i kanalväxlaren (`#294`). Nås kontextuellt från lag-sidan.
  *
- * Bara lagets medlemmar (server-side grind). Ledare (`meta.isLeader`) kan schemalägga; en
- * admin för truppen (via `adminOf`, truppens id från meta) kan radera vad som helst.
- * Anmälningskön finns bara på trupp-sidan — moderering delas mellan kanalerna.
+ * Bara lagets medlemmar (server-side grind). Truppens id kommer ur lag-metan; ledarskap och
+ * admin är trupp-breda och gäller därför alla truppens kanaler. Anmälningskön (delad moderering)
+ * visar sig bara på trupp-kanalen, inuti `ChatView`.
  */
 export function TeamChatPage() {
   const auth = useAuth()
@@ -23,13 +22,10 @@ export function TeamChatPage() {
     meta.data !== undefined && (auth.isSuperAdmin || auth.adminOf.includes(meta.data.truppId))
   const isLeader = meta.data?.isLeader ?? false
 
-  const token = getAccessToken()
-  const myAccountId = token === null ? null : accountIdFromToken(token)
-
   return (
     <main className="page">
       <header className="app-header">
-        <h1>Lagchatt</h1>
+        <h1>Chatt</h1>
       </header>
 
       {meta.isLoading && <p className="state">Hämtar…</p>}
@@ -40,11 +36,11 @@ export function TeamChatPage() {
       )}
 
       {meta.data && (
-        <ChatChannel
-          channel={{ kind: 'team', slug }}
+        <ChatView
+          truppId={meta.data.truppId}
           isLeader={isLeader}
           isAdmin={isAdmin}
-          myAccountId={myAccountId}
+          initialTeamSlug={slug}
         />
       )}
     </main>
