@@ -1,146 +1,278 @@
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 import { useAuth } from '@/features/auth'
 
 /**
- * Appens huvudmeny (`#148`).
+ * Appens huvudmeny (`#148`, omgjord till hamburgmeny i `#273`).
  *
- * <h3>Varför den behövdes i efterhand</h3>
+ * <h3>En lugn topbar + en drawer</h3>
  *
- * Fyra milstolpar byggde varsin sida och antog att någon annan kopplade ihop dem. Resultatet
- * var att spelarkortet, inloggningen och kontosidan låg i drift utan att gå att nå annat än
- * genom att skriva adressen — appen såg ut att bestå av enbart matchschemat.
+ * Den gamla länkraden växte för varje roll. I den varma Andrum-designen bor navigeringen i
+ * stället bakom en hamburgare: en tyst topbar (knapp + ordmärket "Truppen") och en drawer som
+ * glider in. Drawern är en riktig dialog för tangentbordet — fokus flyttas in när den öppnas
+ * och tillbaka till knappen när den stängs, Esc och överlägget stänger, och `inert` tar bort
+ * den ur både tabbordning och skärmläsare när den är stängd.
  *
  * <h3>Menyn visar, den tillåter inget</h3>
  *
- * Tränarlänken syns bara för den som är tränare, men det är ett bekvämlighetsval och ingen
- * säkerhetsgräns. Den som ändrar sin egen token får se länken och möts av `403` på andra
- * sidan — auktoriseringen ligger i backend, precis som `coachTeamsFromToken` redan påpekar.
+ * Tränarlänken syns bara för en tränare, men det är ett bekvämlighetsval och ingen
+ * säkerhetsgräns — auktoriseringen ligger i backend. Samma sak för Admin och Superadmin.
  */
 export function AppNav() {
-  const { status, coachOf, isSuperAdmin, adminOf } = useAuth()
+  const { status, coachOf, isSuperAdmin, adminOf, signOut } = useAuth()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const navigate = useNavigate()
+
+  const [open, setOpen] = useState(false)
+  const panelRef = useRef<HTMLElement>(null)
+  const burgerRef = useRef<HTMLButtonElement>(null)
+  const wasOpen = useRef(false)
+  const panelId = useId()
+
+  const close = useCallback(() => setOpen(false), [])
+
+  // Medan menyn är öppen: fånga fokus i drawern, stäng på Esc, lås bakgrundens skroll.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const panel = panelRef.current
+    const focusables = (): HTMLElement[] =>
+      panel ? [...panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')] : []
+
+    focusables()[0]?.focus()
+
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false)
+        return
+      }
+
+      if (event.key !== 'Tab') {
+        return
+      }
+
+      const items = focusables()
+
+      if (items.length === 0) {
+        return
+      }
+
+      const first = items[0]!
+      const last = items[items.length - 1]!
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown, true)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+
+  // När menyn stängts (efter att ha varit öppen) återlämnas fokus till hamburgaren.
+  useEffect(() => {
+    if (wasOpen.current && !open) {
+      burgerRef.current?.focus()
+    }
+
+    wasOpen.current = open
+  }, [open])
 
   const teamInPath = /^\/lag\/([^/]+)/.exec(pathname)?.[1] ?? null
 
   /*
-   * Tranarlanken ar for den som ar tranare. Om man tittar pa ett lag man sjalv skoter
-   * pekar lanken dit; annars pa det forsta laget man ar tranare for.
-   *
-   * Vilket lag den pekar pa far bero pa sidan -- men *om* den syns far det inte gora det.
-   * Tidigare vidgade `isAdmin` villkoret sa att en administrator fick lanken bara pa en
-   * lagsida (dar `teamInPath` fanns) och blev av med den overallt annars -- menyn bytte
-   * innehall nar man klickade runt (`#253`). Nu styr rollen ensam: en tranare ser lanken
-   * pa varje sida, en administrator som inte ar tranare ser den inte alls (hen skoter
-   * truppen via Admin/Superadmin i stallet).
+   * Tranarlanken pekar pa det lag man tittar pa om man skoter det, annars pa det forsta laget
+   * man ar tranare for. Vilket lag den pekar pa far bero pa sidan -- men *om* den syns styr
+   * rollen ensam (annars bytte menyn innehall nar man klickade runt, `#253`).
    */
   const coachTeam =
     teamInPath !== null && coachOf.includes(teamInPath) ? teamInPath : (coachOf[0] ?? null)
 
   const current = sectionOf(pathname)
+  const loggedIn = status === 'inloggad'
+
+  async function handleSignOut(): Promise<void> {
+    setOpen(false)
+    await signOut()
+    await navigate({ to: '/logga-in' })
+  }
 
   return (
-    <nav className="app-nav" aria-label="Huvudmeny">
-      <ul className="app-nav__list">
-        <li>
-          <Link
-            className="app-nav__link"
-            to="/"
-            aria-current={current === 'matcher' ? 'page' : undefined}
-          >
-            Matcher
-          </Link>
-        </li>
+    <header className="topbar">
+      <button
+        ref={burgerRef}
+        type="button"
+        className="burger"
+        aria-label="Meny"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
 
-        <li>
-          <Link
-            className="app-nav__link"
-            to="/spelarkort"
-            aria-current={current === 'spelarkort' ? 'page' : undefined}
-          >
-            Spelarkort
-          </Link>
-        </li>
+      <span className="wordmark">Truppen</span>
 
-        {status === 'inloggad' && coachTeam !== null && (
-          <li>
-            <Link
-              className="app-nav__link"
-              to="/lag/$slug/tranare"
-              params={{ slug: coachTeam }}
-              aria-current={current === 'tranare' ? 'page' : undefined}
+      <div className={open ? 'drawer drawer--open' : 'drawer'} inert={!open}>
+        <button
+          type="button"
+          className="drawer__overlay"
+          aria-label="Stäng menyn"
+          tabIndex={-1}
+          onClick={close}
+        />
+
+        <nav ref={panelRef} id={panelId} className="drawer__panel" aria-label="Huvudmeny">
+          <div className="drawer__head">
+            <span className="wordmark">Truppen</span>
+            <button
+              type="button"
+              className="drawer__close"
+              aria-label="Stäng menyn"
+              onClick={close}
             >
-              Tränare
-            </Link>
-          </li>
-        )}
+              <span aria-hidden="true">✕</span>
+            </button>
+          </div>
 
-        {/*
-          Ingenting alls medan status ar 'okand'. Sessionen fornyas vid start, och att visa
-          "Logga in" under den halvsekunden hade blinkat till for varje inloggad foralder --
-          det ser ut som att appen glomt bort en.
-        */}
-        {status === 'utloggad' && (
-          <li>
-            <Link
-              className="app-nav__link"
-              to="/logga-in"
-              aria-current={current === 'logga-in' ? 'page' : undefined}
-            >
-              Logga in
-            </Link>
-          </li>
-        )}
+          <ul className="drawer__list">
+            <li>
+              <Link
+                className="drawer__link"
+                onClick={close}
+                to="/"
+                aria-current={current === 'matcher' ? 'page' : undefined}
+              >
+                Matcher
+              </Link>
+            </li>
 
-        {status === 'inloggad' && isSuperAdmin && (
-          <li>
-            <Link
-              className="app-nav__link"
-              to="/superadmin"
-              aria-current={current === 'superadmin' ? 'page' : undefined}
-            >
-              Superadmin
-            </Link>
-          </li>
-        )}
+            <li>
+              <Link
+                className="drawer__link"
+                onClick={close}
+                to="/spelarkort"
+                aria-current={current === 'spelarkort' ? 'page' : undefined}
+              >
+                Spelarkort
+              </Link>
+            </li>
 
-        {status === 'inloggad' && adminOf.length > 0 && (
-          <li>
-            <Link
-              className="app-nav__link"
-              to="/admin"
-              aria-current={current === 'admin' ? 'page' : undefined}
-            >
-              Admin
-            </Link>
-          </li>
-        )}
+            {loggedIn && coachTeam !== null && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/lag/$slug/tranare"
+                  params={{ slug: coachTeam }}
+                  aria-current={current === 'tranare' ? 'page' : undefined}
+                >
+                  Tränare
+                </Link>
+              </li>
+            )}
 
-        {status === 'inloggad' && (
-          <li>
-            <Link
-              className="app-nav__link"
-              to="/chatt"
-              aria-current={current === 'chatt' ? 'page' : undefined}
-            >
-              Chatt
-            </Link>
-          </li>
-        )}
+            {loggedIn && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/chatt"
+                  aria-current={current === 'chatt' ? 'page' : undefined}
+                >
+                  Chatt
+                </Link>
+              </li>
+            )}
 
-        {status === 'inloggad' && (
-          <li>
-            <Link
-              className="app-nav__link"
-              to="/konto"
-              aria-current={current === 'konto' ? 'page' : undefined}
-            >
-              Mitt konto
-            </Link>
-          </li>
-        )}
-      </ul>
-    </nav>
+            {loggedIn && adminOf.length > 0 && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/admin"
+                  aria-current={current === 'admin' ? 'page' : undefined}
+                >
+                  Admin
+                </Link>
+              </li>
+            )}
+
+            {loggedIn && isSuperAdmin && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/superadmin"
+                  aria-current={current === 'superadmin' ? 'page' : undefined}
+                >
+                  Superadmin
+                </Link>
+              </li>
+            )}
+
+            {loggedIn && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/konto"
+                  aria-current={current === 'konto' ? 'page' : undefined}
+                >
+                  Mitt konto
+                </Link>
+              </li>
+            )}
+
+            {/*
+              Ingenting alls medan status ar 'okand'. Sessionen fornyas vid start, och att visa
+              "Logga in" under den halvsekunden hade blinkat till for varje inloggad foralder.
+            */}
+            {status === 'utloggad' && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/logga-in"
+                  aria-current={current === 'logga-in' ? 'page' : undefined}
+                >
+                  Logga in
+                </Link>
+              </li>
+            )}
+
+            {loggedIn && (
+              <li>
+                <button
+                  type="button"
+                  className="drawer__link drawer__link--action"
+                  onClick={() => void handleSignOut()}
+                >
+                  Logga ut
+                </button>
+              </li>
+            )}
+          </ul>
+        </nav>
+      </div>
+    </header>
   )
 }
 

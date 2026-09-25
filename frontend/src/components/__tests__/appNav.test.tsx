@@ -97,12 +97,14 @@ function signedInAs(token: string) {
 }
 
 /**
- * Menyn, när routern hunnit rendera.
+ * Menyn, när den är öppen.
  *
- * Asynkron med flit: `RouterProvider` visar ingenting förrän routen är löst, så en synkron
- * sökning hade letat i en tom sida och sagt att menyn saknas.
+ * Navigeringen bor bakom hamburgaren (`#273`): stängd är drawern `inert` och därmed borta ur
+ * både tabbordning och skärmläsarträd, så länkarna går inte att nå förrän man öppnat. Den här
+ * hjälparen speglar det en användare gör — trycker på "Meny" — och lämnar tillbaka nav-landmärket.
  */
-function menu() {
+async function openMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Meny' }))
   return screen.findByRole('navigation', { name: 'Huvudmeny' })
 }
 
@@ -117,12 +119,13 @@ afterEach(() => {
 })
 
 describe('menyn når appens delar', () => {
-  it('har ett tillgängligt namn', async () => {
+  it('har ett tillgängligt namn när den öppnats', async () => {
     stubApi()
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    expect(await screen.findByRole('navigation', { name: 'Huvudmeny' })).toBeInTheDocument()
+    expect(await openMenu(user)).toBeInTheDocument()
   })
 
   it('tar en från startsidan till spelarkortet med ett klick', async () => {
@@ -135,7 +138,7 @@ describe('menyn når appens delar', () => {
 
     renderRoute('/')
 
-    await user.click(within(await menu()).getByRole('link', { name: 'Spelarkort' }))
+    await user.click(within(await openMenu(user)).getByRole('link', { name: 'Spelarkort' }))
 
     expect(await screen.findByRole('heading', { name: 'Spelarkortet' })).toBeInTheDocument()
   })
@@ -146,7 +149,7 @@ describe('menyn når appens delar', () => {
 
     renderRoute('/spelarkort')
 
-    await user.click(await within(await menu()).findByRole('link', { name: 'Logga in' }))
+    await user.click(await within(await openMenu(user)).findByRole('link', { name: 'Logga in' }))
 
     expect(await screen.findByRole('heading', { name: 'Logga in' })).toBeInTheDocument()
   })
@@ -155,22 +158,25 @@ describe('menyn når appens delar', () => {
 describe('menyn visar rätt sak för rätt person', () => {
   it('erbjuder inloggning åt den som är utloggad', async () => {
     stubApi()
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    expect(await within(await menu()).findByRole('link', { name: 'Logga in' })).toBeInTheDocument()
-    expect(within(await menu()).queryByRole('link', { name: 'Mitt konto' })).not.toBeInTheDocument()
+    const nav = await openMenu(user)
+    expect(await within(nav).findByRole('link', { name: 'Logga in' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Mitt konto' })).not.toBeInTheDocument()
   })
 
-  it('erbjuder kontosidan åt den som är inloggad', async () => {
+  it('erbjuder kontosidan och utloggning åt den som är inloggad', async () => {
     signedInAs(PARENT)
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    expect(
-      await within(await menu()).findByRole('link', { name: 'Mitt konto' }),
-    ).toBeInTheDocument()
-    expect(within(await menu()).queryByRole('link', { name: 'Logga in' })).not.toBeInTheDocument()
+    const nav = await openMenu(user)
+    expect(await within(nav).findByRole('link', { name: 'Mitt konto' })).toBeInTheDocument()
+    expect(within(nav).getByRole('button', { name: 'Logga ut' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Logga in' })).not.toBeInTheDocument()
   })
 
   it('visar ingen av dem medan sessionen fortfarande förnyas', async () => {
@@ -181,15 +187,16 @@ describe('menyn visar rätt sak för rätt person', () => {
     // Ingen token i minnet: appen förnyar mot cookien vid start (`#255`), och medan det
     // svaret dröjer (`håller`) är status 'okänd'. Släpps svaret loss bär det PARENT-token.
     stubApi({ refresh: 'håller' })
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    const nav = await menu()
+    const nav = await openMenu(user)
 
     expect(within(nav).queryByRole('link', { name: 'Logga in' })).not.toBeInTheDocument()
     expect(within(nav).queryByRole('link', { name: 'Mitt konto' })).not.toBeInTheDocument()
 
-    // Och nar svaret val kommer: kontosidan, aldrig inloggningen.
+    // Och nar svaret val kommer: kontosidan, aldrig inloggningen. Menyn står kvar öppen.
     releaseRenewal?.()
 
     expect(await within(nav).findByRole('link', { name: 'Mitt konto' })).toBeInTheDocument()
@@ -197,22 +204,25 @@ describe('menyn visar rätt sak för rätt person', () => {
 
   it('visar tränarlänken bara för en tränare', async () => {
     signedInAs(COACH)
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    const link = await within(await menu()).findByRole('link', { name: 'Tränare' })
+    const link = await within(await openMenu(user)).findByRole('link', { name: 'Tränare' })
 
     expect(link).toHaveAttribute('href', '/lag/gul/tranare')
   })
 
   it('visar ingen tränarlänk för en vanlig förälder', async () => {
     signedInAs(PARENT)
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    await within(await menu()).findByRole('link', { name: 'Mitt konto' })
+    const nav = await openMenu(user)
+    await within(nav).findByRole('link', { name: 'Mitt konto' })
 
-    expect(within(await menu()).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
   })
 
   it('byter inte innehåll beroende på sida: en admin som inte är tränare får ingen tränarlänk ens på en lagsida', async () => {
@@ -222,23 +232,26 @@ describe('menyn visar rätt sak för rätt person', () => {
      * bytte innehall nar man klickade runt. Nu styr rollen ensam.
      */
     signedInAs(ADMIN)
+    const user = userEvent.setup()
 
     renderRoute('/lag/gul')
 
     // Vänta in att sessionen förnyats så menyn är i sitt inloggade läge.
-    await within(await menu()).findByRole('link', { name: 'Mitt konto' })
+    const nav = await openMenu(user)
+    await within(nav).findByRole('link', { name: 'Mitt konto' })
 
-    expect(within(await menu()).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
   })
 })
 
 describe('aktuell sida märks ut', () => {
   it('märker ut spelarkortet', async () => {
     stubApi()
+    const user = userEvent.setup()
 
     renderRoute('/spelarkort')
 
-    const nav = await screen.findByRole('navigation', { name: 'Huvudmeny' })
+    const nav = await openMenu(user)
 
     expect(within(nav).getByRole('link', { name: 'Spelarkort' })).toHaveAttribute(
       'aria-current',
@@ -255,10 +268,11 @@ describe('aktuell sida märks ut', () => {
      */
     setAccessToken(PARENT)
     stubApi()
+    const user = userEvent.setup()
 
     renderRoute('/lag/gul')
 
-    const nav = await menu()
+    const nav = await openMenu(user)
 
     await waitFor(() => {
       expect(within(nav).getByRole('link', { name: 'Matcher' })).toHaveAttribute(
@@ -271,10 +285,11 @@ describe('aktuell sida märks ut', () => {
   it('märker inte ut någonting på en adress som inte finns', async () => {
     // En 404-sida ska inte pasta att man star i schemat.
     stubApi()
+    const user = userEvent.setup()
 
     renderRoute('/finns-inte')
 
-    const nav = await screen.findByRole('navigation', { name: 'Huvudmeny' })
+    const nav = await openMenu(user)
 
     for (const link of within(nav).getAllByRole('link')) {
       expect(link).not.toHaveAttribute('aria-current')
