@@ -357,6 +357,13 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
         return [.. ids];
     }
 
+    public Task<string?> TruppNameAsync(Guid ageGroupId, CancellationToken cancellationToken) =>
+        context.AgeGroups
+            .AsNoTracking()
+            .Where(a => a.Id == ageGroupId)
+            .Select(a => a.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<TeamChannelInfo>> AccessibleTeamChannelsAsync(
         Guid accountId, Guid ageGroupId, CancellationToken cancellationToken)
     {

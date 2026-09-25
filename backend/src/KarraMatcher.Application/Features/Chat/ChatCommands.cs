@@ -259,12 +259,21 @@ internal sealed class GetChatChannelsQueryHandler(IMembershipService membership)
     {
         ArgumentNullException.ThrowIfNull(query);
 
+        var truppName = await membership
+            .TruppNameAsync(query.TruppId, cancellationToken)
+            .ConfigureAwait(false);
+
         var teams = await membership
             .AccessibleTeamChannelsAsync(query.AccountId, query.TruppId, cancellationToken)
             .ConfigureAwait(false);
 
-        // Primärkanalen först, sedan lag-kanalerna (redan namnordnade av tjänsten).
-        var channels = new List<ChatChannelDto>(teams.Count + 1) { ChatChannelDto.Trupp() };
+        // Primärkanalen först ("{trupp} chatt"), sedan lag-kanalerna (redan namnordnade av
+        // tjänsten). Truppen finns alltid här — endpointen vaktas av MemberOfTrupp — men om
+        // namnet mot förmodan saknas faller vi tillbaka på "Truppen" i stället för att kasta.
+        var channels = new List<ChatChannelDto>(teams.Count + 1)
+        {
+            ChatChannelDto.Trupp(string.IsNullOrWhiteSpace(truppName) ? "Truppen" : truppName),
+        };
         channels.AddRange(teams.Select(
             t => ChatChannelDto.Team(t.TeamId, t.Slug, t.Name, t.ColorHex)));
 

@@ -15,8 +15,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace KarraMatcher.Api.Integration.Tests;
 
 /// <summary>
-/// Kanallistan (§KM.3, `#293`): vilka chatt-kanaler en medlem får se i en trupp — primärkanalen
-/// ("Truppen") plus nåbara lag-kanaler. Vårdnadshavare ser sitt barns lag, admin/tränare ser
+/// Kanallistan (§KM.3, `#293`/`#298`): vilka chatt-kanaler en medlem får se i en trupp —
+/// primärkanalen ("{trupp} chatt") plus nåbara lag-kanaler ("Lag {färg} chatt"). Vårdnadshavare
+/// ser sitt barns lag, admin/tränare ser
 /// alla, ett nyskapat lag syns direkt (utan meddelanden), en icke-medlem nekas. Behörigheten
 /// avgörs server-side; det här är det som gör en kanalväxlare möjlig.
 /// </summary>
@@ -174,11 +175,11 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
 
         var channels = await ChannelsAsync(f.TruppId, f.AdminId);
 
-        // Primärkanalen först, sedan varje lag i truppen.
+        // Primärkanalen först (namngiven efter truppen), sedan varje lag i truppen.
         Assert.Equal("Trupp", Kind(channels[0]));
-        Assert.Equal("Truppen", Name(channels[0]));
-        Assert.True(HasTeam(channels, "Svart"));
-        Assert.True(HasTeam(channels, "Gul"));
+        Assert.Equal("P2016 chatt", Name(channels[0]));
+        Assert.True(HasTeam(channels, "Lag Svart chatt"));
+        Assert.True(HasTeam(channels, "Lag Gul chatt"));
         Assert.Equal(3, channels.Count);
     }
 
@@ -192,8 +193,8 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         var channels = await ChannelsAsync(f.TruppId, f.SvartGuardianId);
 
         Assert.Equal("Trupp", Kind(channels[0]));
-        Assert.True(HasTeam(channels, "Svart"));
-        Assert.False(HasTeam(channels, "Gul")); // inte medlem av Gul
+        Assert.True(HasTeam(channels, "Lag Svart chatt"));
+        Assert.False(HasTeam(channels, "Lag Gul chatt")); // inte medlem av Gul
         Assert.Equal(2, channels.Count);
 
         // Lag-kanalen bär lagets slug och färg, så växlaren kan länka och färglägga.
@@ -225,7 +226,7 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         var f = await SeedAsync("nytt-lag");
 
         var before = await ChannelsAsync(f.TruppId, f.AdminId);
-        Assert.False(HasTeam(before, "Blå"));
+        Assert.False(HasTeam(before, "Lag Blå chatt"));
 
         // Ett nytt lag skapas — ingen chatt-kanal-åtgärd, inga meddelanden.
         using (var scope = factory.Services.CreateScope())
@@ -243,7 +244,7 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         }
 
         var after = await ChannelsAsync(f.TruppId, f.AdminId);
-        Assert.True(HasTeam(after, "Blå"));
+        Assert.True(HasTeam(after, "Lag Blå chatt"));
         Assert.Equal(before.Count + 1, after.Count);
     }
 
