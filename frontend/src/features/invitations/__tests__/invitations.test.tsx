@@ -133,7 +133,10 @@ describe('Trupp-adminvyn', () => {
 
     renderRoute('/admin')
 
-    await user.selectOptions(await screen.findByLabelText('Välj trupp'), 'trupp-1')
+    await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
+
+    // Efter val landar man på Översikt; Inbjudningar bor bakom sin flik (#279).
+    await user.click(await screen.findByRole('tab', { name: 'Inbjudningar' }))
 
     const panel = await screen.findByRole('heading', { name: 'Inbjudningar' })
     const section = panel.closest('.admin-subsection') as HTMLElement
@@ -154,5 +157,69 @@ describe('Trupp-adminvyn', () => {
         ),
       ).toBe(true)
     })
+  })
+
+  it('landar på översikt och växlar till en sektion (#279)', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token, (url) => {
+      if (url.includes('/my-trupper')) {
+        return [
+          { id: 'trupp-1', clubName: 'Kärra', sportName: 'Fotboll', name: 'P2016', season: '2026' },
+        ]
+      }
+      if (url.includes('/children')) {
+        return {
+          teams: [{ id: 'gul', name: 'Gul', colorHex: '#D9A21B' }],
+          children: [
+            {
+              id: 'c1',
+              firstName: 'Liam',
+              lastInitial: 'J',
+              displayName: 'Liam J',
+              teamId: 'gul',
+              teamName: 'Gul',
+              guardians: [],
+            },
+            {
+              id: 'c2',
+              firstName: 'Nova',
+              lastInitial: 'S',
+              displayName: 'Nova S',
+              teamId: 'gul',
+              teamName: 'Gul',
+              guardians: [],
+            },
+          ],
+        }
+      }
+      if (url.includes('/applications')) {
+        return [
+          {
+            id: 'a1',
+            applicantName: 'Sara S',
+            applicantEmail: 'sara@example.com',
+            status: 'Pending',
+            createdUtc: '2026-09-16T10:00:00Z',
+          },
+        ]
+      }
+      return []
+    })
+    setAccessToken(token)
+
+    renderRoute('/admin')
+
+    await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
+
+    // Översikt är default: nyckeltal och en "Att göra"-rad som pekar på Ansökningar.
+    expect(await screen.findByText('En förälder väntar på svar på sin ansökan')).toBeInTheDocument()
+    expect(screen.getByText('barn')).toBeInTheDocument()
+
+    // Växla till "Barn & lag": lag-panelen dyker upp och översikten försvinner.
+    await user.click(screen.getByRole('tab', { name: 'Barn & lag' }))
+
+    expect(await screen.findByRole('heading', { name: 'Lag' })).toBeInTheDocument()
+    expect(screen.queryByText('En förälder väntar på svar på sin ansökan')).not.toBeInTheDocument()
   })
 })

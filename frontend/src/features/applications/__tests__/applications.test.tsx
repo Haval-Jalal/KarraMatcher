@@ -119,7 +119,10 @@ describe('Ansökningskön', () => {
 
     renderRoute('/admin')
 
-    await user.selectOptions(await screen.findByLabelText('Välj trupp'), 'trupp-1')
+    await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
+
+    // Ansökningar bor bakom sin flik sedan admin blev översikt + sektioner (#279).
+    await user.click(await screen.findByRole('tab', { name: 'Ansökningar' }))
 
     const heading = await screen.findByRole('heading', { name: 'Ansökningar' })
     const section = heading.closest('.admin-subsection') as HTMLElement

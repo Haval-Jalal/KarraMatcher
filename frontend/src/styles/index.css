@@ -2431,6 +2431,128 @@ a.match-card:focus-visible .match-card__opponent {
   padding-top: 16px;
 }
 
+/* ---- Admin: översikt + sektioner (`#279`) --------------------------------- */
+
+.admin-trupp-picker {
+  margin: 16px 0 8px;
+  max-width: 420px;
+}
+
+/* Flikraden: en tyst rad; aktiv flik bärs av vikt OCH en accent-list under (WCAG 1.4.1). */
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 8px 0 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.admin-tabs__tab {
+  min-height: var(--tap-target);
+  padding: 0 12px;
+  font-family: var(--display);
+  font-size: var(--text-base);
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.admin-tabs__tab:hover {
+  color: var(--ink);
+}
+
+.admin-tabs__tab--active {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--team-accent);
+}
+
+.admin-panel {
+  padding-top: 8px;
+}
+
+.admin-panel:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.admin-overview {
+  padding-top: 8px;
+}
+
+/* Nyckeltal som lugna hårlinje-kort. */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+/* Det som väntar får en varm accent-kant — syns vid en blick. */
+.stat-card--attention {
+  border-left: 3px solid var(--team-accent);
+}
+
+.stat-card__value {
+  font-family: var(--display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card__label {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+/* "Att göra": en klickbar rad som tar en rakt till Ansökningar. */
+.admin-todo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 10px 14px;
+  font-size: var(--text-base);
+  text-align: left;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.admin-todo:hover {
+  border-color: var(--hair-strong);
+}
+
+.admin-todo__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--team-accent);
+  box-shadow: 0 0 0 1px var(--hair-strong);
+}
+
 .admin-section {
   padding: 16px;
   border: 1px solid var(--border);
