@@ -2568,6 +2568,124 @@ a.match-card:focus-visible .match-card__opponent {
   box-shadow: 0 0 0 1px var(--hair-strong);
 }
 
+/* ---- Barn & lag: drill-down (`#283`) -------------------------------------- */
+
+.barn-lag {
+  padding-top: 4px;
+}
+
+/* Två ingångar: Truppen / Lag — en tyst segment-växel. */
+.subtabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 4px;
+  background: var(--sunk);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+}
+
+.subtabs__tab {
+  flex: 1;
+  min-height: 40px;
+  font-family: var(--display);
+  font-size: var(--text-base);
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.subtabs__tab--active {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--card);
+  box-shadow: var(--shadow-soft);
+}
+
+/* En lista att borra in i: varje rad en knapp med chevron. */
+.drill-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.drill-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 10px 6px 10px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--hair);
+  cursor: pointer;
+}
+
+.drill-list__item:hover {
+  background: var(--sunk);
+}
+
+.drill-list__name {
+  flex: 1 1 auto;
+  font-weight: 500;
+}
+
+.drill-list__chevron {
+  flex: 0 0 auto;
+  color: var(--ink-faint);
+  font-size: var(--text-lg);
+}
+
+.team-tag-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.drill-back {
+  min-height: var(--tap-target);
+  padding: 4px 0;
+  font-family: var(--display);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.drill-back:hover {
+  color: var(--ink);
+}
+
+.drill-title {
+  margin: 4px 0 12px;
+}
+
+.child-detail__block {
+  padding: 12px 0;
+  border-top: 1px solid var(--hair);
+}
+
+.child-detail__block > h4 {
+  margin: 0 0 8px;
+}
+
+.child-detail__select {
+  max-width: 240px;
+}
+
 .admin-section {
   padding: 16px;
   border: 1px solid var(--border);
