@@ -15,7 +15,7 @@ namespace KarraMatcher.Infrastructure.Persistence.Seed;
 /// som efter en körning, eftersom varje rad slås upp på sin naturliga nyckel.
 /// Det är ett krav — seeden körs vid varje driftsättning.
 /// </summary>
-public sealed class DatabaseSeeder(KarraMatcherDbContext context, IConfiguration configuration)
+public sealed partial class DatabaseSeeder(KarraMatcherDbContext context, IConfiguration configuration)
 {
     /// <summary>Konfignyckeln för superadminens mejladress. Sätts som miljövariabel i drift.</summary>
     public const string SuperAdminEmailKey = "SuperAdmin:Email";
@@ -33,6 +33,9 @@ public sealed class DatabaseSeeder(KarraMatcherDbContext context, IConfiguration
         await EnsureSuperAdminAsync(cancellationToken).ConfigureAwait(false);
 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Demodata (admin/förälder/barn) för testning — bara när DemoSeed uttryckligen ber om det.
+        await EnsureDemoAsync(ageGroup, teams, cancellationToken).ConfigureAwait(false);
 
         return new SeedResult(teams.Count, venues.Count, matchesAdded);
     }

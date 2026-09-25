@@ -186,6 +186,114 @@ public class DatabaseSeederTests
         Assert.Null(role.AgeGroupId);
     }
 
+    // ---- Demodata (#267) -------------------------------------------------------------
+
+    private static IConfiguration DemoConfig(
+        bool enabled = true,
+        bool clear = false,
+        string admin = "Demo.Admin@Example.com",
+        string guardian = "Demo.Vh@Example.com") =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [DatabaseSeeder.DemoEnabledKey] = enabled ? "true" : "false",
+                [DatabaseSeeder.DemoClearKey] = clear ? "true" : "false",
+                [DatabaseSeeder.DemoAdminEmailKey] = admin,
+                [DatabaseSeeder.DemoGuardianEmailKey] = guardian,
+            })
+            .Build();
+
+    [Fact]
+    public async Task Seed_MedDemodata_SkaparAdminForalderMedSamtyckeOchBarn()
+    {
+        await using var context = NewContext(Guid.NewGuid().ToString());
+        await new DatabaseSeeder(context, DemoConfig()).SeedAsync(CancellationToken.None);
+
+        // Admin: eget konto (adress normaliserad) med Admin-roll på truppen.
+        var admin = await context.Accounts
+            .SingleAsync(a => a.Email == "demo.admin@example.com", CancellationToken.None);
+        var ageGroup = await context.AgeGroups.SingleAsync(CancellationToken.None);
+        var adminRole = await context.TeamRoles
+            .SingleAsync(r => r.AccountId == admin.Id, CancellationToken.None);
+        Assert.Equal(RoleKind.Admin, adminRole.Role);
+        Assert.Equal(ageGroup.Id, adminRole.AgeGroupId);
+
+        // Vårdnadshavare: eget konto med samtycke till aktuell version (§KM.6).
+        var guardian = await context.Accounts
+            .SingleAsync(a => a.Email == "demo.vh@example.com", CancellationToken.None);
+        var consent = await context.GuardianConsents
+            .SingleAsync(gc => gc.AccountId == guardian.Id, CancellationToken.None);
+        Assert.False(string.IsNullOrEmpty(consent.Version));
+
+        // Tre barn på Gul, alla kopplade till vårdnadshavaren; barnen är minimala (§KM.1).
+        var gul = await context.Teams.SingleAsync(t => t.Slug == "gul", CancellationToken.None);
+        var children = await context.Children
+            .Where(x => x.TeamId == gul.Id)
+            .ToListAsync(CancellationToken.None);
+        Assert.Equal(3, children.Count);
+        Assert.All(children, x => Assert.False(string.IsNullOrEmpty(x.LastInitial)));
+
+        var links = await context.Guardianships
+            .CountAsync(g => g.AccountId == guardian.Id, CancellationToken.None);
+        Assert.Equal(3, links);
+
+        // Kallelsen är påslagen på demolaget så den går att prova.
+        Assert.True(gul.AttendanceEnabled);
+    }
+
+    [Fact]
+    public async Task Seed_Demodata_ArIdempotent()
+    {
+        var name = Guid.NewGuid().ToString();
+
+        await using (var first = NewContext(name))
+        {
+            await new DatabaseSeeder(first, DemoConfig()).SeedAsync(CancellationToken.None);
+        }
+
+        await using var context = NewContext(name);
+        await new DatabaseSeeder(context, DemoConfig()).SeedAsync(CancellationToken.None);
+
+        Assert.Equal(2, await context.Accounts.CountAsync(CancellationToken.None));
+        Assert.Equal(3, await context.Children.CountAsync(CancellationToken.None));
+        Assert.Equal(3, await context.Guardianships.CountAsync(CancellationToken.None));
+        Assert.Equal(1, await context.GuardianConsents.CountAsync(CancellationToken.None));
+        Assert.Equal(1, await context.TeamRoles.CountAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Seed_DemoClear_TarBortAllDemodata_OchStangerAvKallelsen()
+    {
+        var name = Guid.NewGuid().ToString();
+
+        await using (var seeded = NewContext(name))
+        {
+            await new DatabaseSeeder(seeded, DemoConfig()).SeedAsync(CancellationToken.None);
+        }
+
+        await using var context = NewContext(name);
+        await new DatabaseSeeder(context, DemoConfig(clear: true)).SeedAsync(CancellationToken.None);
+
+        Assert.Equal(0, await context.Accounts.CountAsync(CancellationToken.None));
+        Assert.Equal(0, await context.Children.CountAsync(CancellationToken.None));
+        Assert.Equal(0, await context.Guardianships.CountAsync(CancellationToken.None));
+        Assert.Equal(0, await context.GuardianConsents.CountAsync(CancellationToken.None));
+        Assert.Equal(0, await context.TeamRoles.CountAsync(CancellationToken.None));
+
+        var gul = await context.Teams.SingleAsync(t => t.Slug == "gul", CancellationToken.None);
+        Assert.False(gul.AttendanceEnabled);
+    }
+
+    [Fact]
+    public async Task Seed_UtanDemoEnabled_SkaparIngenDemodata()
+    {
+        await using var context = NewContext(Guid.NewGuid().ToString());
+        await new DatabaseSeeder(context, DemoConfig(enabled: false)).SeedAsync(CancellationToken.None);
+
+        Assert.Equal(0, await context.Accounts.CountAsync(CancellationToken.None));
+        Assert.Equal(0, await context.Children.CountAsync(CancellationToken.None));
+    }
+
     [Fact]
     public async Task Seed_VarjeLag_HarSinaMatcher()
     {
