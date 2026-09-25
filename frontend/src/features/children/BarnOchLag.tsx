@@ -1,9 +1,13 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { useCreateLag } from '@/features/lag'
 import { ApiError } from '@/lib/api'
+import { slugify } from '@/lib/slugify'
 
 import type { Child, RosterTeam } from './childrenApi'
 import {
+  childrenKeys,
   useCreateChild,
   useDeleteChild,
   useLinkGuardian,
@@ -90,6 +94,7 @@ export function BarnOchLag({ truppId }: { truppId: string }) {
 
       {view.kind === 'lag' && (
         <LagList
+          truppId={truppId}
           teams={teams}
           children={children}
           onOpenTeam={(teamId) => setView({ kind: 'team', teamId })}
@@ -186,10 +191,12 @@ function TruppenList({
 }
 
 function LagList({
+  truppId,
   teams,
   children,
   onOpenTeam,
 }: {
+  truppId: string
   teams: RosterTeam[]
   children: Child[]
   onOpenTeam: (teamId: string) => void
@@ -198,22 +205,119 @@ function LagList({
   const unassigned = children.filter((c) => c.teamId === null).length
 
   return (
-    <ul className="drill-list">
-      {teams.map((team) => (
-        <li key={team.id}>
-          <button type="button" className="drill-list__item" onClick={() => onOpenTeam(team.id)}>
-            <TeamTag team={team} />
-            <span className="admin-muted">{countFor(team.id)} barn</span>
-            <span className="drill-list__chevron" aria-hidden="true">
-              ›
-            </span>
-          </button>
-        </li>
-      ))}
-      {unassigned > 0 && (
-        <li className="state">{unassigned} barn utan lag — koppla dem via Truppen.</li>
+    <div>
+      <ul className="drill-list">
+        {teams.length === 0 && (
+          <li className="state">Inga färg-lag än. Skapa truppens färger nedan.</li>
+        )}
+        {teams.map((team) => (
+          <li key={team.id}>
+            <button type="button" className="drill-list__item" onClick={() => onOpenTeam(team.id)}>
+              <TeamTag team={team} />
+              <span className="admin-muted">{countFor(team.id)} barn</span>
+              <span className="drill-list__chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          </li>
+        ))}
+        {unassigned > 0 && (
+          <li className="state">{unassigned} barn utan lag — koppla dem via Truppen.</li>
+        )}
+      </ul>
+
+      <AddLag truppId={truppId} />
+    </div>
+  )
+}
+
+function AddLag({ truppId }: { truppId: string }) {
+  const create = useCreateLag(truppId)
+  const client = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [colorHex, setColorHex] = useState('#1e3f8a')
+  const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  if (!open) {
+    return (
+      <button type="button" className="button" onClick={() => setOpen(true)}>
+        Skapa färg-lag
+      </button>
+    )
+  }
+
+  function save(): void {
+    setFailure(null)
+    setSuccess(null)
+    const added = name.trim()
+    void create
+      .mutateAsync({ name: added, colorHex, slug: slugify(added) })
+      .then(() => {
+        // Roster-frågan bär lagen som Lag-vyn visar — uppdatera den så det nya laget syns.
+        void client.invalidateQueries({ queryKey: childrenKeys.roster(truppId) })
+        setSuccess(`${added} skapades.`)
+        setName('')
+      })
+      .catch((error: unknown) => setFailure(messageOf(error)))
+  }
+
+  return (
+    <form
+      className="form"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (name.trim() !== '') {
+          save()
+        }
+      }}
+    >
+      <div className="form__field">
+        <label htmlFor="nytt-lag-namn">Färgens namn</label>
+        <input
+          id="nytt-lag-namn"
+          type="text"
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value)
+            setSuccess(null)
+          }}
+        />
+      </div>
+
+      <div className="form__field">
+        <label htmlFor="nytt-lag-farg">Färg</label>
+        <input
+          id="nytt-lag-farg"
+          type="color"
+          value={colorHex}
+          onChange={(event) => setColorHex(event.target.value)}
+        />
+      </div>
+
+      {success !== null && (
+        <p className="form__success" role="status">
+          {success}
+        </p>
       )}
-    </ul>
+
+      {failure !== null && (
+        <p className="state state--error" role="alert">
+          {failure}
+        </p>
+      )}
+
+      <div className="actions">
+        <button type="submit" className="button" disabled={name.trim() === '' || create.isPending}>
+          {create.isPending ? 'Skapar…' : 'Skapa färg-lag'}
+        </button>
+        <button type="button" className="button" onClick={() => setOpen(false)}>
+          Stäng
+        </button>
+      </div>
+    </form>
   )
 }
 

@@ -36,12 +36,12 @@ export function AdminStep({ truppId }: { truppId: string }) {
 
   return (
     <div className="admin-subsection">
-      <h4>Admins</h4>
+      <h4>Tränare</h4>
 
       {admins.isLoading && <p className="state">Hämtar…</p>}
       {admins.data && (
         <ul className="admin-list">
-          {admins.data.length === 0 && <li className="state">Inga admins än.</li>}
+          {admins.data.length === 0 && <li className="state">Inga tränare än.</li>}
           {admins.data.map((admin) => (
             <li key={admin.accountId} className="admin-list__row">
               <span>
@@ -76,7 +76,7 @@ export function AdminStep({ truppId }: { truppId: string }) {
               await grant.mutateAsync(email)
               reset()
               setFailure(null)
-              setSuccess(`${email} tillagd som admin.`)
+              setSuccess(`${email} tillagd som tränare.`)
               setFocus('email')
             } catch (error) {
               setSuccess(null)
@@ -114,7 +114,7 @@ export function AdminStep({ truppId }: { truppId: string }) {
 
         <div className="actions">
           <button type="submit" className="button" disabled={isSubmitting}>
-            {isSubmitting ? 'Sparar…' : 'Tilldela admin'}
+            {isSubmitting ? 'Sparar…' : 'Tilldela tränare'}
           </button>
         </div>
       </form>

@@ -40,7 +40,7 @@ export function SuperAdminPage() {
     <main className="page superadmin">
       <header className="app-header">
         <h1>Superadmin</h1>
-        <p>Skapa en sport, en klubb och en trupp — och tilldela en admin som sköter resten.</p>
+        <p>Skapa en sport, en klubb och en trupp — och tilldela en tränare som sköter resten.</p>
       </header>
 
       <SetupWizard />

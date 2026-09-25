@@ -184,7 +184,7 @@ export function AppNav() {
                   params={{ slug: coachTeam }}
                   aria-current={current === 'tranare' ? 'page' : undefined}
                 >
-                  Tränare
+                  Sköt laget
                 </Link>
               </li>
             )}
@@ -210,7 +210,7 @@ export function AppNav() {
                   to="/admin"
                   aria-current={current === 'admin' ? 'page' : undefined}
                 >
-                  Admin
+                  Tränare
                 </Link>
               </li>
             )}
