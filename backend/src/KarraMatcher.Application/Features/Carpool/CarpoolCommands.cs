@@ -11,7 +11,7 @@ namespace KarraMatcher.Application.Features.Carpool;
 public sealed record CreateCarpoolOfferCommand(
     Guid MatchId,
     CarpoolOfferDraft Draft,
-    Guid DriverAccountId) : ICommand<CarpoolOfferDto?>;
+    Guid DriverAccountId) : ICommand<(CreateCarpoolOfferOutcome Outcome, CarpoolOfferDto? Offer)>;
 
 /// <summary>Drar tillbaka ett erbjudande. Bara ägaren kan.</summary>
 public sealed record WithdrawCarpoolOfferCommand(Guid OfferId, Guid ActorAccountId)
@@ -22,9 +22,9 @@ public sealed record ListCarpoolOffersQuery(Guid MatchId, Guid? Reader)
     : IQuery<IReadOnlyList<CarpoolOfferDto>>;
 
 internal sealed class CreateCarpoolOfferCommandHandler(CarpoolOfferService service)
-    : ICommandHandler<CreateCarpoolOfferCommand, CarpoolOfferDto?>
+    : ICommandHandler<CreateCarpoolOfferCommand, (CreateCarpoolOfferOutcome Outcome, CarpoolOfferDto? Offer)>
 {
-    public Task<CarpoolOfferDto?> HandleAsync(
+    public Task<(CreateCarpoolOfferOutcome Outcome, CarpoolOfferDto? Offer)> HandleAsync(
         CreateCarpoolOfferCommand command,
         CancellationToken cancellationToken)
     {

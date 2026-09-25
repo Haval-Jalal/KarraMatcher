@@ -42,8 +42,8 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
 
     private sealed record Fixture(Guid MatchId, Guid DriverId, Guid OtherId);
 
-    /// <summary>En match och två konton — föraren och någon annan.</summary>
-    private async Task<Fixture> SeedAsync(string suffix)
+    /// <summary>En händelse (match som standard) och två konton — föraren och någon annan.</summary>
+    private async Task<Fixture> SeedAsync(string suffix, EventType eventType = EventType.Match)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
@@ -73,14 +73,17 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
+        var isMatch = eventType == EventType.Match;
         var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = team.Id,
+            Type = eventType,
             KickoffUtc = Kickoff,
-            OpponentName = "Torslanda",
+            OpponentName = isMatch ? "Torslanda" : null,
+            Title = isMatch ? null : "Lagträning",
             VenueId = venue.Id,
-            IsHome = false,
+            IsHome = isMatch ? false : null,
             Status = EventStatus.Scheduled,
             IcsSequence = 0,
             UpdatedUtc = Kickoff,
@@ -501,6 +504,30 @@ public sealed class CarpoolOfferTests(KarraMatcherApiFactory factory)
 
         Assert.DoesNotContain("s-maxage", cacheControl, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("public", cacheControl, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---- Samakning galler bara matcher (§KM.12, #291) --------------------------------
+
+    [Theory]
+    [InlineData(EventType.Training)]
+    [InlineData(EventType.Other)]
+    public async Task Erbjudande_PaEnIckeMatch_Ger409(EventType eventType)
+    {
+        /*
+         * FE doljer samakningssektionen for allt som inte ar en match. Det har ar den riktiga
+         * grinden: en direkt API-forfragan mot en traning eller ovrig handelse ska nekas, inte
+         * skapa ett erbjudande dar en inte hor hemma. Foraren ar medlem av lagets handelse, sa
+         * det ar typen -- inte behorigheten -- som stoppar anropet.
+         */
+        var fixture = await SeedAsync($"icke-match-{eventType}", eventType);
+
+        var response = await SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/matches/{fixture.MatchId}/carpool/offers",
+            fixture.DriverId,
+            Offer());
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     // ---- Matchen maste finnas ---------------------------------------------------------

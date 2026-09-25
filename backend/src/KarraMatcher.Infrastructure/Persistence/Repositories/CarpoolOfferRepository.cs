@@ -18,6 +18,15 @@ internal sealed class CarpoolOfferRepository(KarraMatcherDbContext context) : IC
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<CarpoolEventTarget?> FindEventTargetAsync(
+        Guid eventId, CancellationToken cancellationToken) =>
+        await context.Events
+            .AsNoTracking()
+            .Where(e => e.Id == eventId)
+            .Select(e => new CarpoolEventTarget(e.TeamId, e.Type))
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     /// <summary>Spårad — det här är skrivvägen.</summary>
     public Task<CarpoolOffer?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
         context.CarpoolOffers.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
