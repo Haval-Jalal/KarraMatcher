@@ -41,10 +41,27 @@ export function CoachEventsPage() {
     await queryClient.invalidateQueries({ queryKey: teamEventsQueryKey(slug) })
   }
 
-  if (!canManage(slug)) {
-    /*
-     * Servern avgor vad nagon far gora -- det har avgor bara vad som visas.
-     */
+  /*
+   * En trupp-tränare känns igen på lagets trupp-id, som kommer med schemat. Därför avgörs
+   * behörigheten forst nar datan finns -- annars vore en trupp-tränare nekad medan schemat
+   * ännu laddar (`#287`). Servern avgor vad nagon far gora; det har avgor bara vad som visas.
+   */
+  const mayManage = canManage(slug, data?.truppId)
+
+  if (isPending) {
+    return (
+      <main>
+        <header className="app-header">
+          <h1>Sköt laget</h1>
+        </header>
+        <p className="state" role="status">
+          Hämtar schemat…
+        </p>
+      </main>
+    )
+  }
+
+  if (!mayManage) {
     return (
       <main>
         <header className="app-header">
@@ -107,27 +124,21 @@ export function CoachEventsPage() {
       {/*
         Samåkningen står före säsongslistan: den är det som är färskvara.
       */}
-      <CarpoolOverview slug={slug} enabled={canManage(slug)} />
+      <CarpoolOverview slug={slug} enabled={mayManage} />
 
       <h2 className="match-list__title">Hela säsongen</h2>
 
-      {isPending ? (
-        <p className="state" role="status">
-          Hämtar schemat…
-        </p>
-      ) : (
-        <SeasonOverview
-          events={data?.events ?? []}
-          onEdit={setEditing}
-          onCancel={(event) => {
-            void (async () => {
-              await cancelEvent(slug, event.id)
-              await refresh()
-            })()
-          }}
-          onDelete={setConfirmDelete}
-        />
-      )}
+      <SeasonOverview
+        events={data?.events ?? []}
+        onEdit={setEditing}
+        onCancel={(event) => {
+          void (async () => {
+            await cancelEvent(slug, event.id)
+            await refresh()
+          })()
+        }}
+        onDelete={setConfirmDelete}
+      />
 
       {confirmDelete !== null && (
         <section className="danger-zone">

@@ -21,6 +21,7 @@ internal sealed class GetTeamEventsQueryHandler(ITeamRepository teams)
 
         var events = await teams.GetEventsAsync(team.Id, cancellationToken).ConfigureAwait(false);
 
-        return new TeamEventsDto(team.ToDto(), [.. events.Select(item => item.ToDto())]);
+        return new TeamEventsDto(
+            team.ToDto(), [.. events.Select(item => item.ToDto())], team.AgeGroupId);
     }
 }

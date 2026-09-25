@@ -29,10 +29,12 @@ interface TeamSummary {
   colorHex: string
 }
 
-/** Svaret från `GET /api/v1/teams/{slug}/events`: laget och dess händelser. */
+/** Svaret från `GET /api/v1/teams/{slug}/events`: laget, dess händelser och truppens id. */
 export interface TeamEventSchedule {
   team: TeamSummary
   events: TeamEvent[]
+  /** Åldersgruppens (truppens) id — låter en trupp-tränare känna igen sitt eget lag (§KM.7, `#287`). */
+  truppId: string
 }
 
 /** Svaret från `GET /api/v1/events/{id}`: händelsen, dess lag och truppens id. */

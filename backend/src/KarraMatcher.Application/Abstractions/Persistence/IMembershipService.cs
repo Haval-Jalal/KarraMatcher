@@ -67,6 +67,15 @@ public interface IMembershipService
         string teamSlug,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Truppens (åldersgruppens) id för ett lags slug, eller null om laget inte finns. Låter
+    /// behörigheten avgöra om den inloggade är tränare för lagets trupp — och därmed får sköta
+    /// alla dess färg-lags scheman (`#287`) — genom att jämföra mot <c>admin-trupp</c>-anspråket.
+    /// </summary>
+    public Task<Guid?> TruppIdForTeamBySlugAsync(
+        string teamSlug,
+        CancellationToken cancellationToken);
+
     /// <summary>Är kontot medlem av händelsens lag?</summary>
     public Task<bool> IsMemberOfEventAsync(
         Guid accountId,

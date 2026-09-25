@@ -112,7 +112,9 @@ export function stubApi(options: {
           return Promise.resolve(jsonResponse({ title: 'Laget finns inte' }, 404))
         }
         const schedule = options.matches ?? { team: testTeams[0], matches: [] }
-        return Promise.resolve(jsonResponse({ team: schedule.team, events: schedule.matches }))
+        return Promise.resolve(
+          jsonResponse({ team: schedule.team, events: schedule.matches, truppId: 'trupp-stub' }),
+        )
       }
 
       // Samåkning ligger kvar under /api/v1/matches/{id}/carpool (kvarhållet MatchId,

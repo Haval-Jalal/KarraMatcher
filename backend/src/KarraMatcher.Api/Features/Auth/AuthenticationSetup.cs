@@ -98,7 +98,8 @@ internal static class AuthenticationSetup
 
         // Kravet pa ratt lag laser routen, och behover darfor komma at anropet.
         services.AddHttpContextAccessor();
-        services.AddSingleton<IAuthorizationHandler, CoachOfTeamHandler>();
+        // Scoped: handlern slår upp lagets trupp via IMembershipService (som bär DbContext).
+        services.AddScoped<IAuthorizationHandler, CoachOfTeamHandler>();
         services.AddSingleton<IAuthorizationHandler, AdminOfTruppHandler>();
 
         // Medlemskaps-handlers är Scoped: de läser medlemskap mot databasen per request (v2).
