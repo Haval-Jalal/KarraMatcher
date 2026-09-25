@@ -18,10 +18,10 @@ export function StartPage() {
     <main>
       <header className="app-header">
         <h1>Truppen</h1>
-        <p className="app-header__subtitle">Välj lag för att se matcherna</p>
+        <p className="app-header__subtitle">Hej! Välj ditt lag så ser du helgens matcher.</p>
       </header>
 
-      <h2>Lag</h2>
+      <h2>Välj lag</h2>
 
       {isPending && <LoadingState label="Hämtar lagen…" />}
 

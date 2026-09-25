@@ -25,7 +25,9 @@ describe('routing', () => {
 
     renderRoute('/')
 
-    expect(await screen.findByText('Välj lag för att se matcherna')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Hej! Välj ditt lag så ser du helgens matcher.'),
+    ).toBeInTheDocument()
 
     // Länk och inte knapp: att välja lag byter adress, och en kontroll som byter adress
     // ska gå att öppna i ny flik och kopiera.

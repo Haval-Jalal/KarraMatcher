@@ -154,10 +154,17 @@ export function ChatChannel({
       )}
 
       {messages.data && (
-        <ul className="admin-list">
+        <ul className="admin-list chat-messages">
           {messages.data.length === 0 && <li className="state">Inga meddelanden än.</li>}
           {messages.data.map((message) => (
-            <li key={message.id} className="admin-list__row">
+            <li
+              key={message.id}
+              className={
+                myAccountId !== null && message.authorAccountId === myAccountId
+                  ? 'admin-list__row chat-msg chat-msg--own'
+                  : 'admin-list__row chat-msg'
+              }
+            >
               <span>
                 <strong>{message.authorName ?? 'Okänd'}</strong>{' '}
                 <span className="admin-muted">{whenText(message.publishedUtc)}</span>
