@@ -28,6 +28,31 @@ public sealed class ChatController(
     IQueryDispatcher queries,
     ICommandDispatcher commands) : ControllerBase
 {
+    /// <summary>
+    /// Kanalerna den inloggade får se i truppen: primärkanalen ("Truppen") först, sedan de
+    /// lag-kanaler kontot når (`#293`). Låter klienten rita en kanalväxlare utan att själv
+    /// härleda behörighet — servern avgör vad som kommer med.
+    /// </summary>
+    [HttpGet("channels")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<ChatChannelDto>>> Channels(
+        Guid truppId, CancellationToken cancellationToken)
+    {
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var channels = await queries
+            .SendAsync(new GetChatChannelsQuery(truppId, actor.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(channels);
+    }
+
     /// <summary>De senaste meddelandena, äldst först.</summary>
     [HttpGet("messages")]
     [ProducesResponseType(StatusCodes.Status200OK)]

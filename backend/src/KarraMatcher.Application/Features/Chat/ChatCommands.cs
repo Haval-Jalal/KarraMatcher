@@ -58,6 +58,10 @@ public sealed record GetScheduledChatMessagesQuery(Guid TruppId, Guid? TeamId, G
 public sealed record GetReportedChatMessagesQuery(Guid TruppId)
     : IQuery<IReadOnlyList<ReportedMessageDto>>;
 
+/// <summary>Kanalerna den inloggade får se i truppen: primärkanalen + nåbara lag-kanaler (`#293`).</summary>
+public sealed record GetChatChannelsQuery(Guid TruppId, Guid AccountId)
+    : IQuery<IReadOnlyList<ChatChannelDto>>;
+
 /// <summary>Löser upp ett lags slug till dess chatt-kanal (TeamId + TruppId). Null när laget saknas.</summary>
 public sealed record GetTeamChannelQuery(string Slug) : IQuery<TeamChannel?>;
 
@@ -244,6 +248,27 @@ internal sealed class GetReportedChatMessagesQueryHandler(ChatService service)
         ArgumentNullException.ThrowIfNull(query);
 
         return service.ListReportedAsync(query.TruppId, cancellationToken);
+    }
+}
+
+internal sealed class GetChatChannelsQueryHandler(IMembershipService membership)
+    : IQueryHandler<GetChatChannelsQuery, IReadOnlyList<ChatChannelDto>>
+{
+    public async Task<IReadOnlyList<ChatChannelDto>> HandleAsync(
+        GetChatChannelsQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var teams = await membership
+            .AccessibleTeamChannelsAsync(query.AccountId, query.TruppId, cancellationToken)
+            .ConfigureAwait(false);
+
+        // Primärkanalen först, sedan lag-kanalerna (redan namnordnade av tjänsten).
+        var channels = new List<ChatChannelDto>(teams.Count + 1) { ChatChannelDto.Trupp() };
+        channels.AddRange(teams.Select(
+            t => ChatChannelDto.Team(t.TeamId, t.Slug, t.Name, t.ColorHex)));
+
+        return channels;
     }
 }
 

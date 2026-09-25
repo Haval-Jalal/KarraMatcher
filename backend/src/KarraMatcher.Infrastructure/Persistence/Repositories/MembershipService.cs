@@ -357,6 +357,94 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
         return [.. ids];
     }
 
+    public async Task<IReadOnlyList<TeamChannelInfo>> AccessibleTeamChannelsAsync(
+        Guid accountId, Guid ageGroupId, CancellationToken cancellationToken)
+    {
+        var truppWide = await HasTruppWideAccessAsync(accountId, ageGroupId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var teams = context.Teams.AsNoTracking().Where(t => t.AgeGroupId == ageGroupId);
+
+        if (!truppWide)
+        {
+            // Utan trupp-bred åtkomst: bara de lag kontot är tränare för eller har ett barn i.
+            // Samma gräns som MemberOfTeam (IsMemberCoreAsync) drar per lag.
+            var coachTeamIds = await context.TeamRoles
+                .AsNoTracking()
+                .Where(r => r.AccountId == accountId
+                    && r.Role == RoleKind.Coach
+                    && r.TeamId != null
+                    && r.Team!.AgeGroupId == ageGroupId)
+                .Select(r => r.TeamId!.Value)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var guardianTeamIds = await context.Guardianships
+                .AsNoTracking()
+                .Where(g => g.AccountId == accountId
+                    && g.Child!.AgeGroupId == ageGroupId
+                    && g.Child!.TeamId != null)
+                .Select(g => g.Child!.TeamId!.Value)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var ids = coachTeamIds.Concat(guardianTeamIds).ToHashSet();
+            teams = teams.Where(t => ids.Contains(t.Id));
+        }
+
+        return await teams
+            .OrderBy(t => t.Name)
+            .Select(t => new TeamChannelInfo(t.Id, t.Slug, t.Name, t.ColorHex))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Når kontot <em>alla</em> lag i truppen? Sant för superadmin, admin för truppen, samt en
+    /// accepterad inbjudan eller godkänd ansökan till truppen — samma trupp-breda grenar som
+    /// <see cref="IsMemberCoreAsync"/> släpper igenom oavsett lag.
+    /// </summary>
+    private async Task<bool> HasTruppWideAccessAsync(
+        Guid accountId, Guid ageGroupId, CancellationToken cancellationToken)
+    {
+        var hasRole = await context.TeamRoles
+            .AsNoTracking()
+            .AnyAsync(
+                r => r.AccountId == accountId
+                    && (r.Role == RoleKind.SuperAdmin
+                        || (r.Role == RoleKind.Admin && r.AgeGroupId == ageGroupId)),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (hasRole)
+        {
+            return true;
+        }
+
+        var invited = await context.Invitations
+            .AsNoTracking()
+            .AnyAsync(
+                i => i.AcceptedByAccountId == accountId
+                    && i.AgeGroupId == ageGroupId
+                    && i.Status == InvitationStatus.Accepted,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (invited)
+        {
+            return true;
+        }
+
+        return await context.MembershipApplications
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.AccountId == accountId
+                    && a.AgeGroupId == ageGroupId
+                    && a.Status == ApplicationStatus.Approved,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private async Task<bool> IsMemberCoreAsync(
         Guid accountId, Guid teamId, Guid ageGroupId, CancellationToken cancellationToken)
     {
