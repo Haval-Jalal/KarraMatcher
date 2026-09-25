@@ -109,6 +109,12 @@ databasschema ska inte ske av bara farten för att någon startade appen mot fel
 spelplatser med koordinater och 25 matcher. Seeden är idempotent — den körs vid varje
 driftsättning utan att dubblera något.
 
+**Demodata för testning (`#267`):** slå på `DemoSeed__Enabled` (utöver `Database__SeedOnStartup`)
+och sätt `DemoSeed__AdminEmail` och `DemoSeed__GuardianEmail` för att seeda en trupp-admin, en
+vårdnadshavare med samtycke och tre barn på laget Gul — hela kedjan går då att prova. Adresserna
+sätts som miljövariabler (aldrig i repot); inloggningen är kodlös per mejl, så använd adresser du
+kan ta emot post på (plus-adresser till samma inkorg funkar). Rensa igen med `DemoSeed__Clear=true`.
+
 Två saker som är lätta att snäva på:
 
 - **`dotnet ef` läser inte user-secrets.** Ange anslutningen uttryckligen när du kör
