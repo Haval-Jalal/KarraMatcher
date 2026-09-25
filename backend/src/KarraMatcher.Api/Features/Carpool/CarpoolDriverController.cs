@@ -38,6 +38,7 @@ public sealed class CarpoolDriverController(
     [HttpPost("offers")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         Guid matchId,
         CarpoolOfferRequest request,
@@ -52,22 +53,31 @@ public sealed class CarpoolDriverController(
             return Unauthenticated();
         }
 
-        var offer = await commands
+        var (outcome, offer) = await commands
             .SendAsync(
                 new CreateCarpoolOfferCommand(matchId, request.ToDraft(), actor.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return offer is null
-            ? Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Matchen finns inte",
-                detail: "Kontrollera länken — matchen kan ha tagits bort.")
-            : CreatedAtAction(
+        return outcome switch
+        {
+            CreateCarpoolOfferOutcome.Created => CreatedAtAction(
                 actionName: nameof(CarpoolController.List),
                 controllerName: "Carpool",
                 routeValues: new { matchId },
-                value: offer);
+                value: offer),
+
+            CreateCarpoolOfferOutcome.NotAMatch => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Samåkning gäller bara matcher",
+                detail: "En träning eller övrig händelse har ingen samåkning (§KM.12)."),
+
+            // EventNotFound (och allt oväntat): samma svar som förr.
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Matchen finns inte",
+                detail: "Kontrollera länken — matchen kan ha tagits bort."),
+        };
     }
 
     /// <summary>

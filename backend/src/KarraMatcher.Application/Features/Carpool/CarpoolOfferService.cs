@@ -4,8 +4,22 @@ using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Carpool;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Features.Carpool;
+
+/// <summary>Vad ett försök att lägga upp ett erbjudande slutade med (`#291`).</summary>
+public enum CreateCarpoolOfferOutcome
+{
+    /// <summary>Erbjudandet lades upp.</summary>
+    Created = 0,
+
+    /// <summary>Händelsen finns inte.</summary>
+    EventNotFound = 1,
+
+    /// <summary>Händelsen är inte en match — samåkning gäller bara matcher (§KM.12).</summary>
+    NotAMatch = 2,
+}
 
 /// <summary>
 /// Erbjudandet: lägga upp, se, dra tillbaka.
@@ -34,9 +48,9 @@ public sealed class CarpoolOfferService(
     IPushOutbox push)
 {
     /// <summary>
-    /// Lägger upp ett erbjudande. Svarar null när matchen inte finns.
+    /// Lägger upp ett erbjudande. Avvisar en händelse som inte finns eller inte är en match.
     /// </summary>
-    public async Task<CarpoolOfferDto?> CreateAsync(
+    public async Task<(CreateCarpoolOfferOutcome Outcome, CarpoolOfferDto? Offer)> CreateAsync(
         Guid matchId,
         CarpoolOfferDraft draft,
         Guid driverAccountId,
@@ -44,12 +58,19 @@ public sealed class CarpoolOfferService(
     {
         ArgumentNullException.ThrowIfNull(draft);
 
-        var teamId = await offers.FindMatchTeamIdAsync(matchId, cancellationToken)
+        var target = await offers.FindEventTargetAsync(matchId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (teamId is null)
+        if (target is null)
         {
-            return null;
+            return (CreateCarpoolOfferOutcome.EventNotFound, null);
+        }
+
+        // Samåkning gäller bara matcher (§KM.12): en träning eller övrig händelse har ingen. FE
+        // döljer sektionen för allt som inte är en match; det här är den riktiga grinden (`#291`).
+        if (target.Type != EventType.Match)
+        {
+            return (CreateCarpoolOfferOutcome.NotAMatch, null);
         }
 
         var now = DateTime.UtcNow;
@@ -82,9 +103,9 @@ public sealed class CarpoolOfferService(
 
         // Till lagets prenumeranter (§KM.12). Köas, aldrig skickat i requesten (§KM.11).
         push.Enqueue(PushDispatch.ToTeam(
-            teamId.Value, PushCategory.Carpool, CarpoolNotification.NewOffer(matchId)));
+            target.TeamId, PushCategory.Carpool, CarpoolNotification.NewOffer(matchId)));
 
-        return CarpoolOfferDto.For(offer, driverAccountId);
+        return (CreateCarpoolOfferOutcome.Created, CarpoolOfferDto.For(offer, driverAccountId));
     }
 
     /// <summary>
