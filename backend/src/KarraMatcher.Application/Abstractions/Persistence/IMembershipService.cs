@@ -4,6 +4,9 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 /// <param name="IsLeader">Sant om kontot är admin för truppen eller tränare för något av dess lag (får schemalägga).</param>
 public sealed record MemberTruppDto(Guid Id, string ClubName, string Name, string Season, bool IsLeader);
 
+/// <summary>Ett lags chatt-kanal-info: id, slug, namn och färg (`#293`).</summary>
+public sealed record TeamChannelInfo(Guid TeamId, string Slug, string Name, string ColorHex);
+
 /// <summary>
 /// Avgör om ett konto är <b>medlem</b> och därmed får se en trupps eller ett lags innehåll
 /// (v2, `#191`). Appen är stängd (§KM.3): inloggning räcker inte, man måste höra till.
@@ -80,6 +83,18 @@ public interface IMembershipService
     public Task<bool> IsMemberOfEventAsync(
         Guid accountId,
         Guid eventId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lag-kanalerna i truppen den inloggade får se (`#293`). Trupp-bred åtkomst (superadmin,
+    /// admin för truppen, accepterad inbjudan eller godkänd ansökan) ger <b>alla</b> lag; annars
+    /// bara de lag kontot är tränare för eller har ett barn i. Kanalerna härleds ur truppens
+    /// <em>nuvarande</em> lag, så ett nyskapat lag ger en kanal direkt — även utan meddelanden.
+    /// Anroparen förutsätts redan vara medlem av truppen (endpointen vaktas av <c>MemberOfTrupp</c>).
+    /// </summary>
+    public Task<IReadOnlyList<TeamChannelInfo>> AccessibleTeamChannelsAsync(
+        Guid accountId,
+        Guid ageGroupId,
         CancellationToken cancellationToken);
 
     /// <summary>Lag-slugarna kontot är medlem av. Används för att lista bara det man får se.</summary>
