@@ -14,20 +14,47 @@ import CSS_SOURCE from '@/styles/index.css?raw'
  * paletten drev iväg.
  */
 
-/** Plockar ut ett tokenvärde ur ett block i stilmallen. */
-function token(name: string, scope: 'light' | 'dark'): string {
+/** Läser råvärdet för en token i ett läge, eller null om det inte deklareras där. */
+function rawValue(name: string, scope: 'light' | 'dark'): string | null {
   const source =
     scope === 'light'
       ? CSS_SOURCE.slice(0, CSS_SOURCE.indexOf('@media (prefers-color-scheme: dark)'))
       : CSS_SOURCE.slice(CSS_SOURCE.indexOf('@media (prefers-color-scheme: dark)'))
 
-  const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(source)
+  const match = new RegExp(`--${name}:\\s*([^;]+);`).exec(source)
 
-  if (!match?.[1]) {
+  return match?.[1]?.trim() ?? null
+}
+
+/**
+ * Plockar ut ett tokenvärde ur stilmallen och löser upp alias.
+ *
+ * Designsystemet (#271) har en indirektion: de äldre namnen (--surface/--text/--border …)
+ * pekar på de varma kanoniska tokensen via `var(--…)`. Kontrasten ska mätas på färgen som
+ * faktiskt hamnar på skärmen, så vi följer aliaset hela vägen till hex. I mörkt läge bor
+ * själva aliaset kvar i `:root` (bara bas-tokensen skrivs om), så en token som saknas i
+ * mörka blocket letas i det ljusa — och bas-tokenen den pekar på löses i rätt läge.
+ */
+function token(name: string, scope: 'light' | 'dark'): string {
+  const value = rawValue(name, scope) ?? (scope === 'dark' ? rawValue(name, 'light') : null)
+
+  if (value === null) {
     throw new Error(`Hittade inte --${name} i ${scope} läge`)
   }
 
-  return match[1]
+  const alias = /^var\(--([a-zA-Z0-9-]+)\)$/.exec(value)?.[1]
+
+  if (alias) {
+    return token(alias, scope)
+  }
+
+  const hex = /#[0-9a-fA-F]{6}/.exec(value)
+
+  if (!hex) {
+    throw new Error(`--${name} i ${scope} läge är inte en färg: ${value}`)
+  }
+
+  return hex[0]
 }
 
 const SCOPES = ['light', 'dark'] as const
