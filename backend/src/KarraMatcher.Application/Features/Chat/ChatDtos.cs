@@ -17,7 +17,7 @@ public enum ChatChannelKind
 /// </summary>
 /// <param name="TeamId">Lagets id, eller null för primärkanalen.</param>
 /// <param name="Slug">Lagets slug (adressen <c>/lag/{slug}/chatt</c>), eller null för primärkanalen.</param>
-/// <param name="Name">Visningsnamn: "Truppen" för primärkanalen, annars färgnamnet.</param>
+/// <param name="Name">Visningsnamn: "{trupp} chatt" för primärkanalen, "Lag {färg} chatt" för ett lag.</param>
 /// <param name="ColorHex">Lagets färg, eller null för primärkanalen.</param>
 public sealed record ChatChannelDto(
     ChatChannelKind Kind,
@@ -26,13 +26,13 @@ public sealed record ChatChannelDto(
     string Name,
     string? ColorHex)
 {
-    /// <summary>Truppens primärkanal ("Truppen").</summary>
-    public static ChatChannelDto Trupp() =>
-        new(ChatChannelKind.Trupp, null, null, "Truppen", null);
+    /// <summary>Truppens primärkanal, namngiven efter truppen: t.ex. "P2016 chatt" (`#298`).</summary>
+    public static ChatChannelDto Trupp(string truppName) =>
+        new(ChatChannelKind.Trupp, null, null, $"{truppName} chatt", null);
 
-    /// <summary>En lag-kanal.</summary>
-    public static ChatChannelDto Team(Guid teamId, string slug, string name, string colorHex) =>
-        new(ChatChannelKind.Team, teamId, slug, name, colorHex);
+    /// <summary>En lag-kanal, namngiven efter färgen: t.ex. "Lag Svart chatt" (`#298`).</summary>
+    public static ChatChannelDto Team(Guid teamId, string slug, string colorName, string colorHex) =>
+        new(ChatChannelKind.Team, teamId, slug, $"Lag {colorName} chatt", colorHex);
 }
 
 /// <summary>Ett publicerat meddelande så som chatten visar det (§KM.1/§KM.10, `#201`).</summary>

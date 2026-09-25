@@ -85,6 +85,9 @@ public interface IMembershipService
         Guid eventId,
         CancellationToken cancellationToken);
 
+    /// <summary>Truppens (åldersgruppens) namn, eller null om den inte finns — för kanaletiketten (`#298`).</summary>
+    public Task<string?> TruppNameAsync(Guid ageGroupId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Lag-kanalerna i truppen den inloggade får se (`#293`). Trupp-bred åtkomst (superadmin,
     /// admin för truppen, accepterad inbjudan eller godkänd ansökan) ger <b>alla</b> lag; annars
