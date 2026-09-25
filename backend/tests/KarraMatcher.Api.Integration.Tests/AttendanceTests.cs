@@ -46,7 +46,8 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
     private async Task<Fixture> SeedAsync(
         string suffix,
         bool enabled = true,
-        int kickoffDays = 3)
+        int kickoffDays = 3,
+        EventType eventType = EventType.Match)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
@@ -81,15 +82,17 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
             Longitude = 11.94,
             IsHome = true,
         };
+        var isMatch = eventType == EventType.Match;
         var match = new Event
         {
             Id = Guid.NewGuid(),
             TeamId = svart.Id,
-            Type = EventType.Match,
+            Type = eventType,
             KickoffUtc = now.AddDays(kickoffDays),
-            OpponentName = "Torslanda",
+            OpponentName = isMatch ? "Torslanda" : null,
+            Title = isMatch ? null : "Lagträning",
             VenueId = venue.Id,
-            IsHome = true,
+            IsHome = isMatch ? true : null,
             Status = EventStatus.Scheduled,
             UpdatedUtc = now,
         };
@@ -381,6 +384,32 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         var response = await SetKallelseAsync(f, f.SvartChild);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    // ---- Kallelsen galler bara match och traning (§KM.7, #289) -----------------------
+
+    [Fact]
+    public async Task Kalla_ForOvrigHandelse_Ger409()
+    {
+        // En ovrig handelse (cup, lagfest) har ingen kallelse. FE doljer knappen; servern ar
+        // den riktiga grinden -- en direkt API-forfragan ska nekas, inte slappa igenom.
+        var f = await SeedAsync("ovrig", eventType: EventType.Other);
+
+        var response = await SetKallelseAsync(f, f.SvartChild);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Kalla_ForTraning_Tillats()
+    {
+        // Gransen ar Other-only, inte match-only: en traning kallar hela truppen ihop och
+        // ska slappas igenom precis som en match.
+        var f = await SeedAsync("traning", eventType: EventType.Training);
+
+        var response = await SetKallelseAsync(f, f.SvartChild);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     private async Task AssertAuditedAsync(string action, Guid subjectId)

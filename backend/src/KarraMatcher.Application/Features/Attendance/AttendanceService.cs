@@ -4,6 +4,7 @@ using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
+using KarraMatcher.Domain.Events;
 
 namespace KarraMatcher.Application.Features.Attendance;
 
@@ -21,6 +22,9 @@ public enum SetKallelseOutcome
 
     /// <summary>Ett valt barn hör inte till truppen.</summary>
     InvalidChild = 3,
+
+    /// <summary>Händelsen är en övrig händelse — bara match och träning kan kallas (§KM.7).</summary>
+    EventNotInvitable = 4,
 }
 
 /// <summary>Vad ett försök att svara på en kallelse slutade med.</summary>
@@ -84,6 +88,14 @@ public sealed class AttendanceService(
         if (context is null || context.AgeGroupId != truppId)
         {
             return SetKallelseOutcome.EventNotInTrupp;
+        }
+
+        // Kallelsen gäller bara match och träning (§KM.7): en övrig händelse (cup, lagfest) kallar
+        // ingen. FE döljer knappen för Other; det här är den riktiga grinden, så en direkt
+        // API-förfrågan inte kan öppna en kallelse där en inte hör hemma (`#289`).
+        if (context.Type == EventType.Other)
+        {
+            return SetKallelseOutcome.EventNotInvitable;
         }
 
         if (!await gate.IsEnabledForMatchAsync(eventId, cancellationToken).ConfigureAwait(false))

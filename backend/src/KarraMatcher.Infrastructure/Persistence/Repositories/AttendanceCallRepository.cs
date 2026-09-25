@@ -13,7 +13,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
         await context.Events
             .AsNoTracking()
             .Where(e => e.Id == eventId)
-            .Select(e => new EventContext(e.Team!.AgeGroupId, e.TeamId, e.KickoffUtc))
+            .Select(e => new EventContext(e.Team!.AgeGroupId, e.TeamId, e.KickoffUtc, e.Type))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
