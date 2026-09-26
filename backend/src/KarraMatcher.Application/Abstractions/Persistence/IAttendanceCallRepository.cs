@@ -26,6 +26,9 @@ public sealed record MyInvitationRow(
     string LastInitial,
     AttendanceReply? Reply);
 
+/// <summary>Den inloggades eget barn i en cups trupp, och om det redan är anmält (`#296`).</summary>
+public sealed record MyCupChildRow(Guid ChildId, string FirstName, string LastInitial, bool SignedUp);
+
 /// <summary>
 /// Läser och skriver kallelsen (per barn) och dess svar (§KM.7, `#199`).
 ///
@@ -73,6 +76,14 @@ public interface IAttendanceCallRepository
     /// <summary>Den inloggades egna kallade barn för händelsen (vårdnadshavarens vy).</summary>
     public Task<IReadOnlyList<MyInvitationRow>> ListMineAsync(
         Guid eventId, Guid accountId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Den inloggades egna barn i truppen, och om vart och ett är anmält till kallelsen (`#296`).
+    /// För cupens öppna anmälan: vårdnadshavaren ser sina barn (även oanmälda) att anmäla. Ett
+    /// tomt <paramref name="callId"/> (<see cref="Guid.Empty"/>) betyder att ingen är anmäld än.
+    /// </summary>
+    public Task<IReadOnlyList<MyCupChildRow>> MyCupChildrenAsync(
+        Guid ageGroupId, Guid accountId, Guid callId, CancellationToken cancellationToken);
 
     /// <summary>Är kontot vårdnadshavare för barnet?</summary>
     public Task<bool> IsGuardianOfChildAsync(

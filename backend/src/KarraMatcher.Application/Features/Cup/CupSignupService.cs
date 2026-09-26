@@ -60,14 +60,21 @@ public enum CupWithdrawOutcome
 /// <summary>Ett anmält barn i sammanställningen (`#295`). Visas som "Liam J" (§KM.1).</summary>
 public sealed record CupSignupChildDto(Guid ChildId, string DisplayName, string? TeamName, string? ColorHex);
 
-/// <summary>Cupens anmälningsläge: platstak, antal tagna och de anmälda barnen (`#295`).</summary>
+/// <summary>Den inloggades eget barn i cupens trupp, och om det är anmält (`#296`).</summary>
+public sealed record MyCupChildDto(Guid ChildId, string DisplayName, bool SignedUp);
+
+/// <summary>
+/// Cupens anmälningsläge: platstak, antal tagna, de anmälda barnen och — för en vårdnadshavare
+/// — hens egna barn att anmäla (`#295`/`#296`).
+/// </summary>
 public sealed record CupSummaryDto(
     bool Open,
     int? Capacity,
     int SpotsTaken,
     int SpotsLeft,
     bool IsFull,
-    IReadOnlyList<CupSignupChildDto> SignedUp);
+    IReadOnlyList<CupSignupChildDto> SignedUp,
+    IReadOnlyList<MyCupChildDto> Mine);
 
 /// <summary>
 /// Cupens <b>öppna</b> anmälan (`#295`). Till skillnad från den riktade kallelsen (`#199`, där
@@ -278,9 +285,18 @@ public sealed class CupSignupService(
 
         var call = await calls.FindCallByEventAsync(eventId, cancellationToken).ConfigureAwait(false);
 
+        // Den inloggades egna barn i truppen (även oanmälda) — så en vårdnadshavare kan anmäla.
+        // Guid.Empty när anmälan inte öppnats: då är inget barn anmält än.
+        var mine = (await calls
+            .MyCupChildrenAsync(context.AgeGroupId, accountId, call?.Id ?? Guid.Empty, cancellationToken)
+            .ConfigureAwait(false))
+            .Select(row => new MyCupChildDto(
+                row.ChildId, $"{row.FirstName} {row.LastInitial}", row.SignedUp))
+            .ToArray();
+
         if (call is null || call.Capacity is null)
         {
-            return new CupSummaryDto(false, null, 0, 0, false, []);
+            return new CupSummaryDto(false, null, 0, 0, false, [], mine);
         }
 
         var rows = await calls.ListInvitationRowsAsync(call.Id, cancellationToken).ConfigureAwait(false);
@@ -294,6 +310,6 @@ public sealed class CupSignupService(
         var taken = signedUp.Length;
         var spotsLeft = Math.Max(0, capacity - taken);
 
-        return new CupSummaryDto(true, capacity, taken, spotsLeft, taken >= capacity, signedUp);
+        return new CupSummaryDto(true, capacity, taken, spotsLeft, taken >= capacity, signedUp, mine);
     }
 }

@@ -8,6 +8,7 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { AttendanceSection } from '@/features/attendance'
 import { CarpoolSection } from '@/features/carpool'
+import { CupSignupSection } from '@/features/cup'
 import { MatchReportCard, readCard } from '@/features/playercard'
 
 import { DirectionsLink } from './DirectionsLink'
@@ -176,6 +177,11 @@ export function EventDetailPage() {
           teamName={team.name}
           kickoffUtc={event.kickoffUtc}
         />
+      )}
+
+      {/* Cupen har öppen anmälan i stället för kallelse (§KM.12, `#295`/`#296`). */}
+      {event.type === 'Cup' && !isCancelled && (
+        <CupSignupSection eventId={event.id} truppId={truppId} teamSlug={team.slug} />
       )}
 
       {isMatch && <MatchReportCard match={event} children={childrenForMatch} />}
