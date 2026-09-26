@@ -5,6 +5,8 @@ using KarraMatcher.Api.Diagnostics;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KarraMatcher.Api.Integration.Tests;
 
@@ -105,5 +107,37 @@ public class RateLimitingTests(KarraMatcherApiFactory factory)
 
         Assert.NotNull(rejected);
         rejected.Dispose();
+    }
+
+    [Fact]
+    public async Task Avslag_LamnarEttSakerhetsspar_ForLarm()
+    {
+        // Detektionen intrånget saknade: ett avvisat anrop ska synas som en säkerhetshändelse,
+        // så ett loggbaserat larm kan slå på en spik av dem även när servern står upp (§KM.0 A1).
+        var sink = new RecordingSecurityEventSink();
+
+        using var app = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting(RateLimiting.PermitKey, "3");
+            builder.ConfigureTestServices(services =>
+                services.AddSingleton<ISecurityEventSink>(sink));
+        });
+        using var client = app.CreateClient();
+
+        for (var i = 0; i < 10 && sink.Rejections.Count == 0; i++)
+        {
+            using var response = await client.GetAsync("/health", CancellationToken.None);
+        }
+
+        Assert.NotEmpty(sink.Rejections);
+        Assert.All(sink.Rejections, rejection => Assert.Equal("GET", rejection.Method));
+        Assert.Contains(sink.Rejections, rejection => rejection.Path == "/health");
+    }
+
+    private sealed class RecordingSecurityEventSink : ISecurityEventSink
+    {
+        public List<(string Method, string Path)> Rejections { get; } = [];
+
+        public void RateLimitRejected(string method, string path) => Rejections.Add((method, path));
     }
 }

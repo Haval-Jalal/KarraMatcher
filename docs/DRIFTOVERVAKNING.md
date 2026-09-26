@@ -155,6 +155,39 @@ söndagen. Tjänsten hinner aldrig somna däremellan.
 
 ---
 
+## Säkerhetslarm: se en attack som håller servern uppe
+
+Pingarna ovan larmar bara när servern är **nere**. Det är precis den blinda fläck som lät det
+jämförbara intrånget pågå i två dygn — de upptäckte det först när servern till slut dog. En
+attack som håller sig under den tröskeln — någon som gissar inloggningskoder i strid ström,
+eller sveper endpoints efter en lucka — tar inte ner tjänsten och syns alltså inte i
+hälsokollen. Den syns i **loggen**.
+
+Backend lämnar därför ett strukturerat spår för de avvikelser som är värda att räkna:
+
+| Loggrad (Serilog, nivå Warning) | Vad den betyder | Källa |
+|---|---|---|
+| `Rate limit avvisade {Method} {Path}` | Ett anrop nekades av rate-limitern (§KM.0 A1). En **spik** mot `/api/v1/auth/*` är gissningar mot inloggningen; en spik brett över sökvägar är en scanner. | `ISecurityEventSink` |
+| `Aterandvand refresh-token upptackt` | En redan använd refresh-token dök upp igen — antingen en stulen token eller en kapplöpning. Familjens sessioner återkallas automatiskt. | `SessionIssuer` |
+
+Raderna bär **aldrig** e-post, barnnamn eller fritext (§KM.10) — bara metod och sökväg. Det
+räcker för att larma på *frekvens* utan att själva loggen blir en läcka.
+
+### Så gör du larmet skarpt
+
+Ett enstaka avslag är ofarligt och ska inte larma. Det som är en attack är **många på kort
+tid**. Realtidslarm på det kräver att loggen når något som kan räkna rader — på Renders fria
+nivå finns loggströmmen i dashboarden, men en tröskellarm behöver en **log drain** (Render →
+Logs → *Add log stream*) till en tjänst som kan larma på ett mönster (t.ex. "fler än N
+`Rate limit avvisade` på en minut"). Att koppla den drainen är ett **ops-steg** som görs när
+en sådan tjänst väljs; tills dess är raderna åtminstone sök- och läsbara i Render-loggen, och
+en manuell blick efter en misstänkt kväll räcker långt för en trupp av den här storleken.
+
+> Det här är detektionen §KM.0 A1 (rate limiting) inte ger av sig själv: limitern *stoppar*
+> attacken, men utan spåret ovan vet ingen att den skedde.
+
+---
+
 ## Verifiera att larmet fungerar
 
 Ett larm som aldrig prövats är en förhoppning, inte ett larm.
