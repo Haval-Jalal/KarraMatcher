@@ -115,7 +115,7 @@ describe('botten-navbaren når appens delar', () => {
     renderRoute('/spelarkort')
 
     const nav = await bottomNav()
-    expect(within(nav).getByRole('link', { name: /Schema/ })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: /Hem/ })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: /Spelarkort/ })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: /Mer/ })).toBeInTheDocument()
   })
@@ -236,7 +236,7 @@ describe('aktuell flik märks ut', () => {
       'aria-current',
       'page',
     )
-    expect(within(nav).getByRole('link', { name: /Schema/ })).not.toHaveAttribute('aria-current')
+    expect(within(nav).getByRole('link', { name: /Hem/ })).not.toHaveAttribute('aria-current')
   })
 
   it('märker ut schemat även på ett lags schema', async () => {
@@ -248,10 +248,7 @@ describe('aktuell flik märks ut', () => {
 
     const nav = await bottomNav()
     await waitFor(() => {
-      expect(within(nav).getByRole('link', { name: /Schema/ })).toHaveAttribute(
-        'aria-current',
-        'page',
-      )
+      expect(within(nav).getByRole('link', { name: /Hem/ })).toHaveAttribute('aria-current', 'page')
     })
   })
 

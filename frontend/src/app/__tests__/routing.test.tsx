@@ -20,29 +20,28 @@ afterEach(() => {
 })
 
 describe('routing', () => {
-  it('visar lagväljaren på rotadressen för en ny besökare', async () => {
+  it('visar hem-vyn på rotadressen, med lagen som väg in i schemat', async () => {
     stubApi({})
 
     renderRoute('/')
 
-    expect(
-      await screen.findByText('Hej! Välj ditt lag så ser du helgens matcher.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Hem' })).toBeInTheDocument()
 
-    // Länk och inte knapp: att välja lag byter adress, och en kontroll som byter adress
-    // ska gå att öppna i ny flik och kopiera.
+    // Lagen finns kvar längst ned. Länk och inte knapp: att välja lag byter adress, och en
+    // kontroll som byter adress ska gå att öppna i ny flik och kopiera.
     expect(await screen.findByRole('link', { name: /Gul/ })).toHaveAttribute('href', '/lag/gul')
   })
 
-  it('skickar en återvändande besökare vidare till sitt lag', async () => {
-    // Omdirigeringen sker i beforeLoad, så lagväljaren ska aldrig blinka förbi.
+  it('landar en återvändande besökare på hem-vyn, utan att skickas vidare', async () => {
+    // Hem-vyn ersatte den gamla omdirigeringen till senast valda lag: översikten är poängen,
+    // och man ska inte hamna förbi den.
     localStorage.setItem(SELECTED_TEAM_STORAGE_KEY, 'bla')
-    stubApi({ matches: { team: testTeams[1]!, matches: [] } })
+    stubApi({})
 
     const { router } = renderRoute('/')
 
-    expect(await screen.findByRole('heading', { name: 'Schema' })).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/lag/bla')
+    expect(await screen.findByRole('heading', { name: 'Hem' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/')
   })
 
   it('visar lagets schema på en delad länk', async () => {

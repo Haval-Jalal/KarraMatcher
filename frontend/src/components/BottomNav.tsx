@@ -32,7 +32,7 @@ export function BottomNav() {
   return (
     <nav className="bottom-nav" aria-label="Huvudmeny">
       <ul className="bottom-nav__list">
-        <BottomTab to="/" label="Schema" icon="📅" active={current === 'schema'} />
+        <BottomTab to="/" label="Hem" icon="🏠" active={current === 'schema'} />
 
         {loggedIn && <BottomTab to="/chatt" label="Chatt" icon="💬" active={current === 'chatt'} />}
 

@@ -84,6 +84,14 @@ export function stubApi(options: {
         return Promise.resolve(jsonResponse({ title: 'Ingen session' }, 401))
       }
 
+      // Hem-sammanställningen: tom som standard, så en vy som renderas i ett test som inte bryr
+      // sig om den visar sina tomlägen i stället för att krascha på fel form.
+      if (url.includes('/api/v1/hem')) {
+        return Promise.resolve(
+          jsonResponse({ nextEvent: null, pendingKallelser: [], latestChat: null }),
+        )
+      }
+
       // Kallelsen ligger under /api/v1/events/{id}/kallelse — fångas före händelse-detaljen.
       // Default: 404 (kallelsen inte påslagen), så en detaljsida som inte bryr sig om den
       // renderar ingen kallelse-sektion.

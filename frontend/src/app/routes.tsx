@@ -6,18 +6,16 @@ import { CoachEventsPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
 import { ChatPage, TeamChatPage } from '@/features/chat'
 import { CuperPage } from '@/features/cup'
+import { HomePage } from '@/features/home'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { EventDetailPage, TeamSchedulePage } from '@/features/events'
 import { ApplyLandingPage } from '@/features/applications'
 import { AdminPage, InvitationLandingPage } from '@/features/invitations'
 import { MorePage } from '@/features/more'
-import { StartPage } from '@/features/start/StartPage'
 import { SuperAdminPage } from '@/features/superadmin'
-import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
 import { renewSession } from '@/lib/api'
 import { getAccessToken } from '@/lib/session'
-import { readSetting } from '@/lib/storage'
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -61,30 +59,17 @@ async function requireSession(pathname: string): Promise<void> {
 }
 
 /**
- * Startsidan skickar vidare till senast valda lag.
+ * Hem — landningsvyn ("allt samlat", §KM.3).
  *
- * Omdirigeringen sker i `beforeLoad` och inte i en effekt, så att en återvändande förälder
- * aldrig ser lagväljaren blinka förbi på väg till sitt schema. Finns inget sparat val
- * visas väljaren — det är förstagångsbesökarens vy.
+ * Skickar inte längre vidare till ett lags schema: en återvändande förälder landar på sin
+ * översikt (nästa händelse, obesvarade kallelser, senaste chatt) och når hela schemat via lagen
+ * längst ned. Kräver inloggning; en gäst har inget att se här.
  */
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: async ({ location }) => {
-    // Startsidan listar lagen den inloggade hör till (§KM.3) — en gäst har inget att se här.
-    await requireSession(location.pathname)
-
-    const remembered = readSetting(SELECTED_TEAM_STORAGE_KEY)
-
-    if (remembered !== null && remembered !== '') {
-      // TanStack Router signalerar omdirigering genom att man kastar resultatet av
-      // redirect(). Det är ramverkets dokumenterade API och inte ett kastat undantag,
-      // så only-throw-error gäller inte här.
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/lag/$slug', params: { slug: remembered } })
-    }
-  },
-  component: StartPage,
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: HomePage,
 })
 
 /**
