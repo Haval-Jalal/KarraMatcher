@@ -29,7 +29,7 @@ import { searchVenues, type EventInput, type Venue } from './adminApi'
 
 const schema = z
   .object({
-    type: z.enum(['Match', 'Training', 'Other']),
+    type: z.enum(['Match', 'Training', 'Other', 'Cup']),
     kickoffLocal: z
       .string()
       .min(1, 'Fyll i datum och tid.')
@@ -55,6 +55,7 @@ type FormValues = z.infer<typeof schema>
 const TYPE_LABELS: Record<FormValues['type'], string> = {
   Match: 'Match',
   Training: 'Träning',
+  Cup: 'Cup',
   Other: 'Övrigt',
 }
 
@@ -140,7 +141,7 @@ export function EventForm({
             setValue('type', next, { shouldValidate: false })
           }}
         >
-          {(['Match', 'Training', 'Other'] as const).map((value) => (
+          {(['Match', 'Training', 'Cup', 'Other'] as const).map((value) => (
             <option key={value} value={value}>
               {TYPE_LABELS[value]}
             </option>

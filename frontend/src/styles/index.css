@@ -2539,6 +2539,65 @@ a.match-card:focus-visible .match-card__opponent {
   border-radius: 6px;
 }
 
+/* Cupens öppna anmälan på händelsesidan (`#296`). */
+.cup {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+
+.cup__open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.cup__open label {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.cup__open input {
+  width: 6rem;
+}
+
+.cup__mine {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cup__mine-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--sunk);
+  border-radius: var(--radius);
+}
+
+.cup__list {
+  margin-top: 12px;
+}
+
+.cup__list-title {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  margin: 0 0 4px;
+}
+
+.cup__list ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
 .admin-panel {
   padding-top: 8px;
 }

@@ -15,7 +15,7 @@ export interface Venue {
  * `opponent` och `isHome` gäller en match; `title` en träning eller övrig händelse.
  */
 export interface EventInput {
-  type: 'Match' | 'Training' | 'Other'
+  type: 'Match' | 'Training' | 'Other' | 'Cup'
   kickoffUtc: string
   title: string | null
   opponent: string | null

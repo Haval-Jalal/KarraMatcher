@@ -234,6 +234,12 @@ public sealed class CupSignupTests(KarraMatcherApiFactory factory)
         Assert.False(summary.GetProperty("isFull").GetBoolean());
         Assert.Single(summary.GetProperty("signedUp").EnumerateArray());
         Assert.Equal("Liam J", summary.GetProperty("signedUp")[0].GetProperty("displayName").GetString());
+
+        // Vårdnadshavaren ser sitt eget barn i "mine", nu markerat som anmält (`#296`).
+        var mine = summary.GetProperty("mine").EnumerateArray().ToArray();
+        Assert.Single(mine);
+        Assert.Equal(f.SvartChild, mine[0].GetProperty("childId").GetGuid());
+        Assert.True(mine[0].GetProperty("signedUp").GetBoolean());
     }
 
     // ---- Först till kvarn: full avvisas -----------------------------------------------

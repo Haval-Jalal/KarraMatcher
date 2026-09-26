@@ -100,6 +100,24 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<MyCupChildRow>> MyCupChildrenAsync(
+        Guid ageGroupId, Guid accountId, Guid callId, CancellationToken cancellationToken) =>
+        await (
+            from g in context.Guardianships.AsNoTracking()
+            join c in context.Children.AsNoTracking() on g.ChildId equals c.Id
+            where g.AccountId == accountId && c.AgeGroupId == ageGroupId
+            orderby c.FirstName
+            select new MyCupChildRow(
+                c.Id,
+                c.FirstName,
+                c.LastInitial,
+                context.AttendanceInvitations.Any(
+                    i => i.CallId == callId
+                        && i.ChildId == c.Id
+                        && i.Reply == AttendanceReply.Coming)))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public Task<bool> IsGuardianOfChildAsync(
         Guid accountId, Guid childId, CancellationToken cancellationToken) =>
         context.Guardianships

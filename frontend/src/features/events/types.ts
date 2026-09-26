@@ -2,7 +2,7 @@
 export interface TeamEvent {
   id: string
   /** Match, träning eller övrigt. */
-  type: 'Match' | 'Training' | 'Other'
+  type: 'Match' | 'Training' | 'Other' | 'Cup'
   /** Starttid i UTC. Konverteras till svensk tid i `@/lib/time`, aldrig här. */
   kickoffUtc: string
   /** Rubrik för träning/övrigt. Null för en match (härleds ur motståndaren). */
@@ -52,6 +52,8 @@ export function eventTypeLabel(type: TeamEvent['type']): string {
       return 'Match'
     case 'Training':
       return 'Träning'
+    case 'Cup':
+      return 'Cup'
     default:
       return 'Övrigt'
   }
