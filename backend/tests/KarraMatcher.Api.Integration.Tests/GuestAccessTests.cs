@@ -116,6 +116,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "/api/v1/events/{0}",
             "/api/v1/matches/{0}/carpool/offers",
             "/api/v1/push/key",
+            "/api/v1/hem",
         ];
 
     // ---- En gäst nekas ---------------------------------------------------------------

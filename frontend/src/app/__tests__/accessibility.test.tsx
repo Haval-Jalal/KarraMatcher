@@ -27,7 +27,7 @@ afterEach(() => {
 
 describe('sidtitel per vy', () => {
   it.each([
-    ['/', 'Välj lag'],
+    ['/', 'Hem'],
     ['/finns-inte', 'Sidan finns inte'],
   ])('sätter en beskrivande titel för %s', async (path, expected) => {
     // WCAG 2.4.2 är nivå A. I en ensidesapp byts titeln inte av sig själv, så alla vyer
