@@ -98,6 +98,7 @@ function tabOf(pathname: string): Tab {
     pathname === '/mer' ||
     pathname === '/logga-in' ||
     pathname === '/konto' ||
+    pathname === '/installningar' ||
     pathname === '/admin' ||
     pathname === '/superadmin' ||
     pathname.startsWith('/integritet') ||

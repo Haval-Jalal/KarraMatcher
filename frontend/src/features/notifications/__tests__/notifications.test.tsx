@@ -7,10 +7,10 @@ import { jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
- * Notisinställningarna på lagsidan (`#65`).
+ * Notisinställningarna på Inställningar-sidan (`#65`, flyttade från lag-schemat).
  *
- * Vaktar att en inloggad förälder ser sina val och kan ändra dem, att en avstängning sparas
- * med en gång, och att en gäst inte ser något att ställa in.
+ * Vaktar att en inloggad förälder ser sina val per lag och kan ändra dem, och att en
+ * avstängning sparas med en gång. Att en gäst inte når sidan sköter route-grinden (§KM.3).
  */
 
 const TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
@@ -65,24 +65,14 @@ afterEach(() => {
 })
 
 describe('notisinställningar', () => {
-  it('en gäst ser inga inställningar', async () => {
-    stubApi({ eventChanges: true, kallelser: true, carpool: true, chat: true })
-
-    renderRoute('/lag/gul')
-
-    // Lagsidan laddar, men notisrutan kräver konto.
-    await waitFor(() =>
-      expect(screen.queryByRole('heading', { name: 'Notiser' })).not.toBeInTheDocument(),
-    )
-  })
-
-  it('en inloggad ser sina val', async () => {
+  it('en inloggad ser sina val per lag', async () => {
     setAccessToken(TOKEN)
     stubApi({ eventChanges: true, kallelser: true, carpool: false, chat: true })
 
-    renderRoute('/lag/gul')
+    renderRoute('/installningar')
 
-    expect(await screen.findByRole('heading', { name: 'Notiser' })).toBeInTheDocument()
+    // Rutan är namngiven efter laget, inte generiskt "Notiser".
+    expect(await screen.findByRole('heading', { name: 'P2016 Gul' })).toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: /Händelser/ })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: /Samåkning/ })).not.toBeChecked()
   })
@@ -91,7 +81,7 @@ describe('notisinställningar', () => {
     setAccessToken(TOKEN)
     const sent = stubApi({ eventChanges: true, kallelser: true, carpool: true, chat: true })
 
-    renderRoute('/lag/gul')
+    renderRoute('/installningar')
 
     await userEvent.click(await screen.findByRole('checkbox', { name: /Samåkning/ }))
 

@@ -13,6 +13,7 @@ import { EventDetailPage, TeamSchedulePage } from '@/features/events'
 import { ApplyLandingPage } from '@/features/applications'
 import { AdminPage, InvitationLandingPage } from '@/features/invitations'
 import { MorePage } from '@/features/more'
+import { SettingsPage } from '@/features/settings'
 import { SuperAdminPage } from '@/features/superadmin'
 import { renewSession } from '@/lib/api'
 import { getAccessToken } from '@/lib/session'
@@ -289,6 +290,17 @@ const moreRoute = createRoute({
   component: MorePage,
 })
 
+/**
+ * Inställningar — appens samlade inställningar (notiser m.m.), nådd via "Mer". Kräver inloggning:
+ * en inställning hör till ett konto (§KM.3).
+ */
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/installningar',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: SettingsPage,
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
@@ -309,6 +321,7 @@ export const routeTree = rootRoute.addChildren([
   cuperTruppRoute,
   privacyRoute,
   moreRoute,
+  settingsRoute,
 ])
 
 export const router = createRouter({
