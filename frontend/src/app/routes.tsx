@@ -44,6 +44,7 @@ const PrivacyPage = lazyRouteComponent(
   () => import('@/features/privacy/PrivacyPage'),
   'PrivacyPage',
 )
+const AboutPage = lazyRouteComponent(() => import('@/features/about/AboutPage'), 'AboutPage')
 const ApplyLandingPage = lazyRouteComponent(
   () => import('@/features/applications/ApplyLandingPage'),
   'ApplyLandingPage',
@@ -325,6 +326,17 @@ const privacyRoute = createRoute({
 })
 
 /**
+ * "Om appen" — vad appen är och integritetspositioneringen. Ingen route-grind: den bär bara
+ * copy och inget innehåll, och ska nås av en gäst som väger appen innan hen loggar in — därför
+ * publik, som integritetstexten (§KM.3).
+ */
+const aboutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/om',
+  component: AboutPage,
+})
+
+/**
  * "Mer" — botten-navbarens overflow. Ingen route-grind: sidan är bara en meny och gör inga
  * API-anrop. Den visar konto/roll-länkar för en inloggad och "Logga in" för en gäst; vad var
  * och en faktiskt når avgör servern (§KM.3).
@@ -365,6 +377,7 @@ export const routeTree = rootRoute.addChildren([
   cuperIndexRoute,
   cuperTruppRoute,
   privacyRoute,
+  aboutRoute,
   moreRoute,
   settingsRoute,
 ])
