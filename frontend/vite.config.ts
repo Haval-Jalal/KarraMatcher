@@ -20,6 +20,15 @@ const apiTarget = process.env['KARRA_API_PROXY'] ?? 'http://localhost:5066'
 
 export default defineConfig({
   plugins: [react(), ...(useHttps ? [basicSsl()] : [])],
+  build: {
+    /*
+     * Töm dist/ före varje bygge. Det är Vites standard när outDir ligger i roten, men vi
+     * sätter det uttryckligen: prestandabudget-grinden (scripts/check-bundle-size.mjs) summerar
+     * varje fil i dist/assets, och en kvarlämnad chunk från ett tidigare bygge skulle blåsa upp
+     * summan och ge ett falskt rött.
+     */
+    emptyOutDir: true,
+  },
   resolve: {
     alias: {
       // Speglar "paths" i tsconfig.app.json. Bada maste andras tillsammans.

@@ -105,6 +105,12 @@ export default tseslint.config(
   },
 
   {
+    // Byggverktygs-skript (prestandabudget-grinden m.fl.) körs i Node, inte i webbläsaren.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: globals.node, ecmaVersion: 2023, sourceType: 'module' },
+  },
+
+  {
     files: ['**/*.test.{ts,tsx}', 'src/test/**'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },

@@ -1,5 +1,6 @@
 export { BackupSection } from './BackupSection'
-export { PlayerCardPage } from './season/PlayerCardPage'
+// PlayerCardPage/ChildrenPage exporteras inte via barreln — de laddas bara dynamiskt i
+// `routes.tsx`. En barrel-återexport hade dragit in dem i entry-chunken. Se chat/index.ts.
 export { possessive, seasonFor, summarise } from './season/season'
 export type { Season, SeasonRow, TeamRecord } from './season/season'
 export {
@@ -15,7 +16,6 @@ export { BadgeCelebration } from './badges/BadgeCelebration'
 export { BadgeList } from './badges/BadgeList'
 export { decodeBackup, encodeBackup } from './backup/backupCode'
 export { mergeCards } from './backup/mergeCards'
-export { ChildrenPage } from './ChildrenPage'
 export { SportQuiz } from './quiz/SportQuiz'
 export { MatchReportCard } from './MatchReportCard'
 export { useMatchReports } from './useMatchReports'
