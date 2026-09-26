@@ -65,7 +65,9 @@ public sealed class ChatTeamController(
         }
 
         var messages = await queries
-            .SendAsync(new GetChatMessagesQuery(channel.AgeGroupId, channel.TeamId), cancellationToken)
+            .SendAsync(
+                new GetChatMessagesQuery(channel.AgeGroupId, channel.TeamId, ActorId() ?? Guid.Empty),
+                cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(messages);
@@ -245,6 +247,50 @@ public sealed class ChatTeamController(
             .ConfigureAwait(false);
 
         return Respond(outcome);
+    }
+
+    /// <summary>Växlar min reaktion (emoji) på ett meddelande i lag-kanalen av och på (`#301`).</summary>
+    [HttpPost("messages/{id:guid}/reactions")]
+    [RequireCsrfToken]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> React(
+        string slug, Guid id, ReactRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var channel = await ResolveAsync(slug, cancellationToken).ConfigureAwait(false);
+
+        if (channel is null)
+        {
+            return NotFoundForTeam();
+        }
+
+        var outcome = await commands
+            .SendAsync(
+                new ToggleReactionCommand(
+                    channel.AgeGroupId, channel.TeamId, id, actor.Value, request.Emoji ?? string.Empty),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return outcome switch
+        {
+            ChatModerationOutcome.Ok => NoContent(),
+            ChatModerationOutcome.NotAllowed => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Reaktionen stöds inte",
+                detail: "Välj en av de tillgängliga reaktionerna."),
+            _ => NotFoundForTeam(),
+        };
     }
 
     private Task<TeamChannel?> ResolveAsync(string slug, CancellationToken cancellationToken) =>

@@ -35,17 +35,22 @@ public sealed record ChatChannelDto(
         new(ChatChannelKind.Team, teamId, slug, $"Lag {colorName} chatt", colorHex);
 }
 
+/// <summary>En reaktion på ett meddelande, aggregerad: emoji, antal och om jag själv reagerat (`#301`).</summary>
+public sealed record ChatReactionDto(string Emoji, int Count, bool Mine);
+
 /// <summary>Ett publicerat meddelande så som chatten visar det (§KM.1/§KM.10, `#201`).</summary>
 /// <param name="AuthorName">Den vuxnes visningsnamn, eller null. Aldrig ett barns namn.</param>
 /// <param name="Body">Texten, eller tom när meddelandet är borttaget.</param>
 /// <param name="Deleted">Sant när meddelandet tagits bort (visas som "[borttaget]").</param>
+/// <param name="Reactions">Reaktionerna per emoji (`#301`). Tom lista när inga finns.</param>
 public sealed record ChatMessageDto(
     Guid Id,
     Guid AuthorAccountId,
     string? AuthorName,
     string Body,
     DateTimeOffset PublishedUtc,
-    bool Deleted);
+    bool Deleted,
+    IReadOnlyList<ChatReactionDto> Reactions);
 
 /// <summary>Ett schemalagt (ännu opublicerat) meddelande — den som skapade det ser sina.</summary>
 public sealed record ScheduledMessageDto(Guid Id, string Body, DateTimeOffset PublishAtUtc);

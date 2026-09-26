@@ -36,6 +36,13 @@ export interface ChatChannelSummary {
   colorHex: string | null
 }
 
+/** En reaktion på ett meddelande, aggregerad: emoji, antal och om jag själv reagerat (`#301`). */
+export interface ChatReactionSummary {
+  emoji: string
+  count: number
+  mine: boolean
+}
+
 export interface ChatMessage {
   id: string
   authorAccountId: string
@@ -44,6 +51,21 @@ export interface ChatMessage {
   body: string
   publishedUtc: string
   deleted: boolean
+  /** Reaktionerna per emoji (`#301`). Tom lista när inga finns. */
+  reactions: ChatReactionSummary[]
+}
+
+/** De tillåtna reaktionerna — måste matcha serverns `ChatReaction.Allowed` (`#301`). */
+export const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '👏'] as const
+
+/** Svenskt namn för en reaktion, för skärmläsare (aria-label). */
+export const reactionLabel: Record<string, string> = {
+  '👍': 'Tumme upp',
+  '❤️': 'Hjärta',
+  '😂': 'Skratt',
+  '😮': 'Förvånad',
+  '😢': 'Ledsen',
+  '👏': 'Applåd',
 }
 
 export interface ScheduledMessage {
@@ -122,6 +144,10 @@ export const postMessage = (
 
 export const deleteMessage = (channel: ChatChannel, id: string): Promise<void> =>
   postJson<void>(`${base(channel)}/messages/${id}`, undefined, { method: 'DELETE' })
+
+/** Växlar min reaktion (emoji) på ett meddelande av och på (`#301`). */
+export const toggleReaction = (channel: ChatChannel, id: string, emoji: string): Promise<void> =>
+  postJson<void>(`${base(channel)}/messages/${id}/reactions`, { emoji })
 
 export const cancelScheduled = (channel: ChatChannel, id: string): Promise<void> =>
   postJson<void>(`${base(channel)}/scheduled/${id}`, undefined, { method: 'DELETE' })

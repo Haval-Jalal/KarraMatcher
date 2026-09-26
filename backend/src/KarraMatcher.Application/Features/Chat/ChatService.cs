@@ -105,9 +105,9 @@ public sealed class ChatService(
         return scheduled ? ChatPostOutcome.Scheduled : ChatPostOutcome.Posted;
     }
 
-    /// <summary>De senaste publicerade meddelandena i kanalen (äldst först).</summary>
+    /// <summary>De senaste publicerade meddelandena i kanalen (äldst först), med reaktioner (`#301`).</summary>
     public async Task<IReadOnlyList<ChatMessageDto>> ListAsync(
-        Guid truppId, Guid? teamId, CancellationToken cancellationToken)
+        Guid truppId, Guid? teamId, Guid readerAccountId, CancellationToken cancellationToken)
     {
         var messages = await chat.ListPublishedAsync(truppId, teamId, 100, cancellationToken)
             .ConfigureAwait(false);
@@ -116,7 +116,23 @@ public sealed class ChatService(
             .DisplayNamesAsync([.. messages.Select(m => m.AuthorAccountId).Distinct()], cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. messages.Select(m => ToDto(m, names))];
+        // Reaktionerna per meddelande, sedda av läsaren (`Mine`). En fråga för hela sidan.
+        var reactions = (await chat
+            .ListReactionsAsync([.. messages.Select(m => m.Id)], readerAccountId, cancellationToken)
+            .ConfigureAwait(false))
+            .GroupBy(r => r.MessageId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<ChatReactionDto>)
+                    [.. g.Select(r => new ChatReactionDto(r.Emoji, r.Count, r.Mine))]);
+
+        return
+        [
+            .. messages.Select(m => ToDto(
+                m,
+                names,
+                reactions.TryGetValue(m.Id, out var list) ? list : [])),
+        ];
     }
 
     /// <summary>Den inloggades egna schemalagda meddelanden i kanalen.</summary>
@@ -407,12 +423,72 @@ public sealed class ChatService(
                 $"/chatt/{truppId}")));
     }
 
-    private static ChatMessageDto ToDto(ChatMessage message, IReadOnlyDictionary<Guid, string> names) =>
+    /// <summary>
+    /// Växlar den inloggades reaktion på ett meddelande av och på (`#301`). Emojin måste vara
+    /// en av <see cref="ChatReaction.Allowed"/>, och meddelandet måste finnas i just den här
+    /// kanalen, vara publicerat och inte borttaget.
+    /// </summary>
+    public async Task<ChatModerationOutcome> ToggleReactionAsync(
+        Guid truppId,
+        Guid? teamId,
+        Guid messageId,
+        Guid accountId,
+        string emoji,
+        CancellationToken cancellationToken)
+    {
+        if (!ChatReaction.Allowed.Contains(emoji))
+        {
+            return ChatModerationOutcome.NotAllowed;
+        }
+
+        var message = await chat.FindMessageAsync(messageId, cancellationToken).ConfigureAwait(false);
+
+        if (message is null
+            || message.AgeGroupId != truppId
+            || message.TeamId != teamId
+            || message.PublishedUtc is null
+            || message.DeletedUtc is not null)
+        {
+            return ChatModerationOutcome.NotFound;
+        }
+
+        var existing = await chat
+            .FindReactionAsync(messageId, accountId, emoji, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (existing is not null)
+        {
+            chat.RemoveReaction(existing);
+        }
+        else
+        {
+            await chat.AddReactionAsync(
+                new ChatReaction
+                {
+                    Id = Guid.NewGuid(),
+                    MessageId = messageId,
+                    ReactedByAccountId = accountId,
+                    Emoji = emoji,
+                    CreatedUtc = DateTime.UtcNow,
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        await chat.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return ChatModerationOutcome.Ok;
+    }
+
+    private static ChatMessageDto ToDto(
+        ChatMessage message,
+        IReadOnlyDictionary<Guid, string> names,
+        IReadOnlyList<ChatReactionDto> reactions) =>
         new(
             message.Id,
             message.AuthorAccountId,
             names.TryGetValue(message.AuthorAccountId, out var name) ? name : null,
             message.DeletedUtc is null ? message.Body : string.Empty,
             new DateTimeOffset(message.PublishedUtc ?? message.PublishAtUtc, TimeSpan.Zero),
-            message.DeletedUtc is not null);
+            message.DeletedUtc is not null,
+            reactions);
 }

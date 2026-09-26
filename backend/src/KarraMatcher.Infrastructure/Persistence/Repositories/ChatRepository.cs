@@ -63,6 +63,41 @@ internal sealed class ChatRepository(KarraMatcherDbContext context) : IChatRepos
 
     public void RemoveMessage(ChatMessage message) => context.ChatMessages.Remove(message);
 
+    public async Task<IReadOnlyList<ReactionAggregate>> ListReactionsAsync(
+        IReadOnlyCollection<Guid> messageIds, Guid readerAccountId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(messageIds);
+
+        if (messageIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await context.ChatReactions
+            .AsNoTracking()
+            .Where(r => messageIds.Contains(r.MessageId))
+            .GroupBy(r => new { r.MessageId, r.Emoji })
+            .Select(g => new ReactionAggregate(
+                g.Key.MessageId,
+                g.Key.Emoji,
+                g.Count(),
+                g.Any(x => x.ReactedByAccountId == readerAccountId)))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public Task<ChatReaction?> FindReactionAsync(
+        Guid messageId, Guid accountId, string emoji, CancellationToken cancellationToken) =>
+        context.ChatReactions.FirstOrDefaultAsync(
+            r => r.MessageId == messageId && r.ReactedByAccountId == accountId && r.Emoji == emoji,
+            cancellationToken);
+
+    public async Task AddReactionAsync(ChatReaction reaction, CancellationToken cancellationToken) =>
+        await context.ChatReactions.AddAsync(reaction, cancellationToken).ConfigureAwait(false);
+
+    public void RemoveReaction(ChatReaction reaction) =>
+        context.ChatReactions.Remove(reaction);
+
     public Task<bool> ReportExistsAsync(
         Guid messageId, Guid accountId, CancellationToken cancellationToken) =>
         context.ChatReports

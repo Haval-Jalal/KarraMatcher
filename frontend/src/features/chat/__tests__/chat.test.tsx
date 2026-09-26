@@ -328,3 +328,42 @@ describe('kanalväxlare (#294)', () => {
     })
   })
 })
+
+describe('reaktioner (#301)', () => {
+  it('visar en reaktion med antal och låter en medlem reagera', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+    setAccessToken(token)
+    const sent = stub(token, false, (url) => {
+      if (url.includes('/chat/messages')) {
+        return [
+          {
+            id: 'm1',
+            authorAccountId: 'a1',
+            authorName: 'Tor T',
+            body: 'Hej alla',
+            publishedUtc: '2026-10-01T09:00:00Z',
+            deleted: false,
+            reactions: [{ emoji: '👍', count: 2, mine: false }],
+          },
+        ]
+      }
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    // Den befintliga reaktionen visas som en chip med antal.
+    expect(await screen.findByRole('button', { name: 'Tumme upp, 2' })).toBeInTheDocument()
+
+    // Öppna väljaren och reagera med hjärta → POST till reaktions-endpointen.
+    await user.click(screen.getByRole('button', { name: 'Lägg till en reaktion' }))
+    await user.click(screen.getByRole('button', { name: 'Hjärta' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some((r) => r.url.includes('/chat/messages/m1/reactions') && r.method === 'POST'),
+      ).toBe(true)
+    })
+  })
+})
