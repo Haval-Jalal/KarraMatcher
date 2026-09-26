@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -59,6 +59,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -97,6 +98,38 @@ describe('inloggningsvyn', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       /Om foralder@example\.com finns hos oss/,
     )
+  })
+
+  it('låter en skicka en ny kod utan att börja om', async () => {
+    // Kommer koden inte fram, eller går den ut, ska en ny kunna begäras — utan att skriva in
+    // adressen igen. Nedräkningen hindrar bara att man spammar backendens rate-limit.
+    // shouldAdvanceTime: realtid går (så findBy fungerar), men nedräkningen kan hoppas fram.
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup()
+    stubAuth()
+
+    renderRoute('/logga-in')
+
+    await user.type(await screen.findByLabelText('Mejladress'), 'foralder@example.com')
+    await user.click(screen.getByRole('button', { name: 'Skicka kod' }))
+
+    // Direkt efter att koden skickats vilar "skicka ny" bakom en nedräkning.
+    expect(await screen.findByRole('button', { name: /Skicka ny kod \(\d+ s\)/ })).toBeDisabled()
+
+    // När nedräkningen tagit slut går den att trycka på.
+    act(() => {
+      vi.advanceTimersByTime(30_000)
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Skicka ny kod' }))
+
+    expect(await screen.findByText('En ny kod är på väg till din inkorg.')).toBeInTheDocument()
+
+    // Koden begärdes två gånger: en i första steget, en när man tryckte "skicka ny".
+    const requestCalls = vi
+      .mocked(fetch)
+      .mock.calls.filter((call) => (call[0] as string).includes('/auth/request-code'))
+    expect(requestCalls).toHaveLength(2)
   })
 
   it('säger till på svenska när koden är fel', async () => {

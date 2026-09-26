@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -44,6 +44,12 @@ import { useAuth } from './useAuth'
 function safeDestination(next: unknown): string {
   return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/'
 }
+
+/**
+ * Vila innan en ny kod får begäras. Räcker för att en förälder inte ska trycka i frustration
+ * och slå i backendens rate-limit på `request-code`, men kort nog att inte kännas som ett straff.
+ */
+const RESEND_COOLDOWN_SECONDS = 30
 
 const emailSchema = z.object({
   email: z.string().min(1, 'Fyll i din mejladress.').email('Mejladressen ser inte riktig ut.'),
@@ -208,6 +214,42 @@ function CodeStep({
     formState: { errors, isSubmitting },
   } = useForm<CodeForm>({ resolver: zodResolver(codeSchema) })
 
+  // En kod skickades nyss (steget innan), så nedräkningen börjar direkt: "skicka ny" väntar.
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
+
+  // En enda intervall räknar ned till noll och stannar där (samma värde → ingen omrendering).
+  // Skapas när steget visas, städas när det lämnas.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setCooldown((seconds) => (seconds <= 0 ? 0 : seconds - 1))
+    }, 1000)
+
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [])
+
+  async function resend(): Promise<void> {
+    setResending(true)
+    setResent(false)
+
+    try {
+      await requestLoginCode(email)
+      setResent(true)
+      setCooldown(RESEND_COOLDOWN_SECONDS)
+    } catch (error) {
+      onFailure(
+        error instanceof ApiError && error.offline
+          ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+          : 'Kunde inte skicka en ny kod just nu. Försök igen om en stund.',
+      )
+    } finally {
+      setResending(false)
+    }
+  }
+
   return (
     <form
       className="form"
@@ -274,6 +316,27 @@ function CodeStep({
           Byt adress
         </button>
       </div>
+
+      {/*
+        Fick koden inte fram, eller gick den ut? Skicka en ny utan att börja om (`aria-live`
+        annonserar kvittot utan att bli ett andra `role="status"` vid sidan av rutan ovan).
+      */}
+      <p className="admin-muted" aria-live="polite">
+        {resent
+          ? 'En ny kod är på väg till din inkorg.'
+          : 'Fick du ingen kod? Kolla skräpposten — eller skicka en ny.'}
+      </p>
+
+      <button
+        type="button"
+        className="button button--action"
+        disabled={cooldown > 0 || resending}
+        onClick={() => {
+          void resend()
+        }}
+      >
+        {resending ? 'Skickar…' : cooldown > 0 ? `Skicka ny kod (${cooldown} s)` : 'Skicka ny kod'}
+      </button>
     </form>
   )
 }
