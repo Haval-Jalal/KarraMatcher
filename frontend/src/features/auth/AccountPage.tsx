@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
+import { CalendarSection } from '@/features/calendar'
 import { ConsentSection } from '@/features/consent'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -136,6 +137,8 @@ export function AccountPage() {
           <Link to="/integritet">Så hanteras dina uppgifter</Link>.
         </p>
       </section>
+
+      <CalendarSection />
 
       <ConsentSection />
 

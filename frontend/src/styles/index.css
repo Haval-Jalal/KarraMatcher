@@ -352,6 +352,21 @@ h2 {
   color: var(--danger);
 }
 
+/* ---- Kalender-länken ------------------------------------------------------ */
+
+/* Läsbart, markerbart fält — länken är lång, så den får krympa och rulla i sidled. */
+.calendar-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
 /* ---- Hem-vyn -------------------------------------------------------------- */
 
 /* En sektion (nästa händelse, kallelser, chatt, lag) med luft mellan varje. */

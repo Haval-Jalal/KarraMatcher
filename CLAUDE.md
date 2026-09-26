@@ -181,11 +181,22 @@ egna siffror och skoj* och delas med ingen.
   edge-cachningen som maskerade Renders kallstart. Kallstart-UX (tydligt svenskt besked,
   uppetidsping) blir viktigare, inte mindre.
 
-### §KM.4 ICS-feeden — utgår i v2
+### §KM.4 ICS-feeden — privat, bakom medlemskap (återinförd i v2)
 
 > **Utgått 2026-09-16 (v2, `#189`).** Den publika, oautentiserade kalenderfeeden var själva
 > kärnan i den öppna appen. I en stängd app (§KM.3) finns ingen publik feed. Om kalender-
 > integration återinförs sker den bakom medlemskap och får ett eget beslut här.
+>
+> **Återinförd 2026-09-26 (godkänt av ägaren).** Kalender är tillbaka som en **privat, per-medlem,
+> återkallningsbar** feed — **aldrig** en publik. Varje konto får en ogissbar 256-bitars nyckel;
+> `GET /api/v1/kalender/{token}.ics` är anonym eftersom en kalender-app inte kan logga in, men
+> nyckeln **är** behörigheten: den pekar på exakt ett konto och feeden bär bara det kontots lags
+> händelser — tid, motståndare/rubrik, plats — **aldrig barn-PII** (§KM.1). Nyckeln lagras i
+> klartext (den ger läsrätt till matchtider utan personuppgifter och kan återkallas), ägs av
+> kontot och **kaskaderar** med det (§KM.6). Att skapa/återkalla nyckeln kräver inloggning. Feeden
+> får `private, no-store` som allt annat (ingen edge-cache — §KM.11) och lyder rate-limitern
+> (§KM.0 A1). Rad A1 i §KM.0 ("Schema- och ICS-endpoints är publika") är därmed historisk: ICS är
+> privat igen.
 
 ### §KM.5 Tid och tidszon
 

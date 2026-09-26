@@ -174,6 +174,7 @@ public partial class PlayerStatisticsTests
         Assert.Equal(
             [
                 "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceInvitations", "AuditEntries",
+                "CalendarTokens",
                 "CarpoolOffers", "CarpoolRequests", "ChatMessages", "ChatReactions", "ChatReports", "Children", "Clubs",
                 "Events", "GuardianConsents",
                 "Guardianships",

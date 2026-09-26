@@ -120,6 +120,7 @@ public static class DependencyInjection
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConsentRepository, ConsentRepository>();
         services.AddScoped<IChildRepository, ChildRepository>();
+        services.AddScoped<ICalendarRepository, CalendarRepository>();
 
         /*
          * Kon ar en singleton -- den ar ett stalle, inte ett per request. Sandaren far en
