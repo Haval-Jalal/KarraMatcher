@@ -49,10 +49,12 @@ export function RootLayout() {
       </div>
 
       {/*
-        Foten upprepas på varje sida. Integritetstexten ska gå att nå även för en gäst som
-        inte loggat in (§KM.6), därför bor länken här och inte bara på Mitt konto.
+        Foten upprepas på varje sida. Integritetstexten och "Om appen" ska gå att nå även för en
+        gäst som inte loggat in (§KM.6) — den som väger appen innan hen lägger in sitt lag — därför
+        bor länkarna här och inte bara på Mitt konto.
       */}
       <footer className="app-footer">
+        <Link to="/om">Om appen</Link>
         <Link to="/integritet">Så hanteras dina uppgifter</Link>
       </footer>
 

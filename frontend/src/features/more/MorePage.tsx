@@ -85,6 +85,12 @@ export function MorePage() {
           )}
 
           <li>
+            <Link className="mer-link" to="/om">
+              Om appen
+            </Link>
+          </li>
+
+          <li>
             <Link className="mer-link" to="/integritet">
               Så hanteras dina uppgifter
             </Link>
