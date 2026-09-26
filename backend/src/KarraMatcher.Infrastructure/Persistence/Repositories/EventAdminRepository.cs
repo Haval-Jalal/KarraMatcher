@@ -15,11 +15,17 @@ internal sealed class EventAdminRepository(KarraMatcherDbContext context) : IEve
     public Task<Event?> FindForUpdateAsync(Guid id, CancellationToken cancellationToken) =>
         context.Events
             .Include(e => e.Team)
+                .ThenInclude(team => team!.AgeGroup)
+                    .ThenInclude(ageGroup => ageGroup!.Club)
             .Include(e => e.Venue)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
     public Task<Team?> FindTeamBySlugAsync(string slug, CancellationToken cancellationToken) =>
-        context.Teams.AsNoTracking().FirstOrDefaultAsync(t => t.Slug == slug, cancellationToken);
+        context.Teams
+            .AsNoTracking()
+            .Include(t => t.AgeGroup)
+                .ThenInclude(ageGroup => ageGroup!.Club)
+            .FirstOrDefaultAsync(t => t.Slug == slug, cancellationToken);
 
     public Task<bool> VenueExistsAsync(Guid venueId, CancellationToken cancellationToken) =>
         context.Venues.AsNoTracking().AnyAsync(v => v.Id == venueId, cancellationToken);

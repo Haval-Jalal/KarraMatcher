@@ -37,6 +37,11 @@ internal sealed class TeamRepository(KarraMatcherDbContext context) : ITeamRepos
         await context.Events
             .AsNoTracking()
             .Include(item => item.Venue)
+
+            // Klubben behövs för att lösa en hemma-händelses adress ur klubbens hemmaplan (`#307`).
+            .Include(item => item.Team)
+                .ThenInclude(team => team!.AgeGroup)
+                    .ThenInclude(ageGroup => ageGroup!.Club)
             .Where(item => item.TeamId == teamId)
 
             // Sorteringen sker i databasen och inte i minnet. Ordningen är en del av

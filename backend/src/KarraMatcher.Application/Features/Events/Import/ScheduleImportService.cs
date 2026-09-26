@@ -72,21 +72,21 @@ public sealed class ScheduleImportService(
              * audit-post och samma regler -- att skriva en genvag har hade varit att bygga
              * en andra vag in i databasen med hälften av kontrollerna.
              */
-            var created = await events.CreateAsync(
+            var result = await events.CreateAsync(
                 teamSlug,
                 new EventDraft(
                     EventType.Match,
                     match.KickoffUtc,
                     Title: null,
                     match.Opponent,
-                    match.VenueId,
                     IsHome: true,
-                    AddressOverride: null,
-                    Note: null),
+                    Address: null,
+                    Note: null,
+                    VenueId: match.VenueId),
                 actorAccountId,
                 cancellationToken).ConfigureAwait(false);
 
-            if (created is not null)
+            if (result.Outcome == EventSaveOutcome.Ok)
             {
                 imported++;
             }

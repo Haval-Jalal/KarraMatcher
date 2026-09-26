@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
+using KarraMatcher.Application.Abstractions.Geocoding;
 using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
@@ -51,6 +52,10 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         {
             services.RemoveAll<IPushOutbox>();
             services.AddSingleton<IPushOutbox>(outbox);
+
+            // Fejkad geokodare: borta-adresser loses deterministiskt, utan natet (`#307`).
+            services.RemoveAll<IGeocoder>();
+            services.AddSingleton<IGeocoder>(new StubGeocoder());
         }));
 
         return (app, outbox);
@@ -62,7 +67,16 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
         var now = DateTime.UtcNow;
 
-        var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = $"klubb-p-{suffix}" };
+        var club = new Club
+        {
+            Id = Guid.NewGuid(),
+            Name = "Karra KIF",
+            Slug = $"klubb-p-{suffix}",
+            HomeVenueName = "Karra IP",
+            HomeAddress = "Idrottsvagen 1, Goteborg",
+            HomeLatitude = 57.79,
+            HomeLongitude = 11.94,
+        };
         var ageGroup = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
         var team = new Team
         {
@@ -142,17 +156,26 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         request.Headers.Add("Cookie", cookie);
     }
 
-    private static object MatchBody(DateTime kickoffUtc, Guid venueId, bool isHome = true, string? note = null) =>
+    private static object MatchBody(
+        DateTime kickoffUtc, bool isHome = true, string? address = null, string? note = null) =>
         new
         {
             type = "Match",
             kickoffUtc,
             opponent = "Torslanda",
-            venueId,
             isHome,
-            addressOverride = (string?)null,
+            address,
             note,
         };
+
+    /// <summary>Ger alltid en och samma plats, sa en borta-adress loses utan natet (`#307`).</summary>
+    private sealed class StubGeocoder : IGeocoder
+    {
+        public Task<IReadOnlyList<GeocodedPlace>> LookupAsync(
+            string address, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<GeocodedPlace>>(
+                [new GeocodedPlace("Bortagatan 5, Kungalv", 57.9, 12.0)]);
+    }
 
     // ---- Skapa / ändra / ställa in köar en notis -------------------------------------
 
@@ -165,7 +188,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
 
         var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{fixture.Slug}/events")
         {
-            Content = JsonContent.Create(MatchBody(DateTime.UtcNow.AddDays(7), fixture.VenueId)),
+            Content = JsonContent.Create(MatchBody(DateTime.UtcNow.AddDays(7))),
         };
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 
@@ -188,7 +211,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
             HttpMethod.Put,
             $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}")
         {
-            Content = JsonContent.Create(MatchBody(DateTime.UtcNow.AddDays(9), fixture.VenueId)),
+            Content = JsonContent.Create(MatchBody(DateTime.UtcNow.AddDays(9))),
         };
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 
@@ -218,7 +241,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
             HttpMethod.Put,
             $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}")
         {
-            Content = JsonContent.Create(MatchBody(kickoff, fixture.OtherVenueId)),
+            Content = JsonContent.Create(MatchBody(kickoff, isHome: false, address: "Bortagatan 5")),
         };
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 
@@ -227,7 +250,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
 
         Assert.True(outbox.Dispatches.TryDequeue(out var dispatch));
         Assert.Contains("Ny plats", dispatch.Message.Title, StringComparison.Ordinal);
-        Assert.Contains("Skarpe Nord", dispatch.Message.Body, StringComparison.Ordinal);
+        Assert.Contains("Bortagatan", dispatch.Message.Body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -274,7 +297,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
             HttpMethod.Put,
             $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}")
         {
-            Content = JsonContent.Create(MatchBody(kickoff, fixture.VenueId, note: "Elias mamma kör kiosken")),
+            Content = JsonContent.Create(MatchBody(kickoff, note: "Elias mamma kör kiosken")),
         };
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 
@@ -316,7 +339,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/teams/{fixture.Slug}/events")
         {
             Content = JsonContent.Create(
-                MatchBody(DateTime.UtcNow.AddDays(7), fixture.VenueId, note: "Elias har feber, ring mamma 070")),
+                MatchBody(DateTime.UtcNow.AddDays(7), note: "Elias har feber, ring mamma 070")),
         };
         await SignAsync(client, request, CoachToken(fixture.CoachId, fixture.Slug));
 

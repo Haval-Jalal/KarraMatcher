@@ -1,30 +1,32 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { useClubVenue } from '@/features/clubs/useClubVenue'
 import type { TeamEvent } from '@/features/events'
 import { ApiError } from '@/lib/api'
 import { swedishLocalToUtc, utcToSwedishLocalInput } from '@/lib/time'
 
-import { searchVenues, type EventInput, type Venue } from './adminApi'
+import type { EventInput } from './adminApi'
 
 /**
- * Tränarens formulär för en händelse — match, träning eller övrigt (`#198`).
+ * Tränarens formulär för en händelse — match, träning, cup eller övrigt (`#198`, `#307`).
  *
  * <h3>Typen styr fälten</h3>
  *
- * En match har motståndare och hemma/borta; en träning eller övrig händelse har i stället
- * en rubrik. Väljaren högst upp bestämmer vilka fält som visas, och valideringen kräver rätt
- * fält för rätt typ.
+ * En match har motståndare; en träning/cup/övrig händelse en rubrik. Väljaren högst upp
+ * bestämmer vilka fält som visas.
+ *
+ * <h3>Plats: hemma eller annan plats</h3>
+ *
+ * <b>Hemma</b> använder klubbens hemmaplan (adressen fylls i automatiskt server-side). <b>Annan
+ * plats</b> — en bortamatch eller t.ex. en vinterträning inomhus — låter tränaren skriva
+ * adressen, som geokodas. Gäller alla typer (`#307`).
  *
  * <h3>Tiden skrivs i svensk tid och sparas i UTC</h3>
  *
  * Omräkningen sker i `lib/time.ts`, frontendens enda ställe där UTC möter svensk tid (§KM.5).
- *
- * <h3>Vad som är utelämnat med flit</h3>
- *
- * Inget fält för koordinater — de härleds ur spelplatsens adress (`#110`).
  */
 
 const schema = z
@@ -36,8 +38,8 @@ const schema = z
       .refine((value) => swedishLocalToUtc(value) !== null, 'Datum och tid ser inte riktiga ut.'),
     opponent: z.string().max(120, 'Namnet är för långt.'),
     isHome: z.boolean(),
+    address: z.string().max(200, 'Adressen är för lång.'),
     title: z.string().max(120, 'Rubriken är för lång.'),
-    venueId: z.string().min(1, 'Välj en spelplats.'),
     note: z.string().max(500, 'Notisen är för lång.'),
   })
   .superRefine((values, ctx) => {
@@ -47,6 +49,10 @@ const schema = z
       }
     } else if (values.title.trim() === '') {
       ctx.addIssue({ path: ['title'], code: 'custom', message: 'Fyll i en rubrik.' })
+    }
+
+    if (!values.isHome && values.address.trim() === '') {
+      ctx.addIssue({ path: ['address'], code: 'custom', message: 'Skriv adressen till platsen.' })
     }
   })
 
@@ -60,15 +66,18 @@ const TYPE_LABELS: Record<FormValues['type'], string> = {
 }
 
 export function EventForm({
+  truppId,
   existing,
   onSubmit,
   onCancel,
 }: {
+  truppId: string
   existing?: TeamEvent
   onSubmit: (input: EventInput) => Promise<void>
   onCancel: () => void
 }) {
   const [failure, setFailure] = useState<string | null>(null)
+  const club = useClubVenue(truppId)
 
   const {
     register,
@@ -82,15 +91,16 @@ export function EventForm({
       kickoffLocal: existing ? utcToSwedishLocalInput(existing.kickoffUtc) : '',
       opponent: existing?.opponent ?? '',
       isHome: existing?.isHome ?? true,
+      address: existing && existing.isHome === false ? existing.address : '',
       title: existing?.title ?? '',
-      venueId: '',
       note: '',
     },
   })
 
-  // Typen styr vilka fält som visas. Hålls i lokal state i stället för RHF:s watch(), som
-  // React Compiler inte kan memoisera säkert; setValue håller formulärvärdet i takt.
+  // Typen och hemma/borta styr vilka fält som visas. Hålls i lokal state (React Compiler kan
+  // inte memoisera RHF:s watch() säkert); setValue håller formulärvärdet i takt.
   const [type, setType] = useState<FormValues['type']>(existing?.type ?? 'Match')
+  const [isHome, setIsHome] = useState(existing?.isHome ?? true)
   const isMatch = type === 'Match'
 
   return (
@@ -115,16 +125,16 @@ export function EventForm({
               kickoffUtc,
               title: matchType ? null : values.title.trim(),
               opponent: matchType ? values.opponent.trim() : null,
-              venueId: values.venueId,
-              isHome: matchType ? values.isHome : null,
+              isHome: values.isHome,
+              address: values.isHome ? null : values.address.trim(),
               note: values.note.trim() === '' ? null : values.note.trim(),
             })
             setFailure(null)
           } catch (error) {
             setFailure(
-              error instanceof ApiError && error.offline
-                ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
-                : 'Händelsen gick inte att spara just nu. Försök igen om en stund.',
+              error instanceof ApiError && !error.offline
+                ? error.message
+                : 'Ingen anslutning. Kontrollera nätet och försök igen.',
             )
           }
         })(event)
@@ -166,30 +176,22 @@ export function EventForm({
       </div>
 
       {isMatch ? (
-        <>
-          <div className="form__field">
-            <label htmlFor="motstandare">Motståndare</label>
-            <input
-              id="motstandare"
-              type="text"
-              autoComplete="off"
-              aria-describedby={errors.opponent ? 'motstandare-fel' : undefined}
-              aria-invalid={errors.opponent ? true : undefined}
-              {...register('opponent')}
-            />
-            {errors.opponent && (
-              <p className="form__error" id="motstandare-fel">
-                {errors.opponent.message}
-              </p>
-            )}
-          </div>
-
-          <div className="form__field form__field--checkbox">
-            <label htmlFor="hemma">
-              <input id="hemma" type="checkbox" {...register('isHome')} /> Hemmamatch
-            </label>
-          </div>
-        </>
+        <div className="form__field">
+          <label htmlFor="motstandare">Motståndare</label>
+          <input
+            id="motstandare"
+            type="text"
+            autoComplete="off"
+            aria-describedby={errors.opponent ? 'motstandare-fel' : undefined}
+            aria-invalid={errors.opponent ? true : undefined}
+            {...register('opponent')}
+          />
+          {errors.opponent && (
+            <p className="form__error" id="motstandare-fel">
+              {errors.opponent.message}
+            </p>
+          )}
+        </div>
       ) : (
         <div className="form__field">
           <label htmlFor="rubrik">Rubrik</label>
@@ -209,13 +211,68 @@ export function EventForm({
         </div>
       )}
 
-      <VenuePicker
-        {...(errors.venueId?.message === undefined ? {} : { error: errors.venueId.message })}
-        onSelect={(venue) => {
-          setValue('venueId', venue.id, { shouldValidate: true })
-          setValue('isHome', venue.isHome)
-        }}
-      />
+      {/* Plats: hemma (klubbens plan) eller annan plats (skriven adress, geokodas) (`#307`). */}
+      <fieldset className="form__field">
+        <legend>Plats</legend>
+
+        <label className="form__radio">
+          <input
+            type="radio"
+            name="plats"
+            checked={isHome}
+            onChange={() => {
+              setIsHome(true)
+              setValue('isHome', true, { shouldValidate: true })
+            }}
+          />{' '}
+          {isMatch ? 'Hemmamatch' : 'Hemma'} (klubbens plan)
+        </label>
+
+        <label className="form__radio">
+          <input
+            type="radio"
+            name="plats"
+            checked={!isHome}
+            onChange={() => {
+              setIsHome(false)
+              setValue('isHome', false, { shouldValidate: true })
+            }}
+          />{' '}
+          {isMatch ? 'Bortamatch' : 'Annan plats'}
+        </label>
+
+        {isHome ? (
+          club.data?.configured ? (
+            <p className="state">
+              Klubbens plan: {club.data.name} — {club.data.address}
+            </p>
+          ) : (
+            <p className="state state--error" role="alert">
+              Klubben har ingen hemmaplan ännu. Sätt den under Inställningar innan du lägger upp en
+              hemma-aktivitet.
+            </p>
+          )
+        ) : (
+          <div className="form__field">
+            <label htmlFor="adress">Adress</label>
+            <input
+              id="adress"
+              type="text"
+              autoComplete="off"
+              placeholder="t.ex. Bortavägen 5, Kungälv"
+              aria-describedby={errors.address ? 'adress-fel' : undefined}
+              aria-invalid={errors.address ? true : undefined}
+              {...register('address')}
+            />
+            <p className="admin-muted">Skriv gatunamn och ort så hittas rätt plats.</p>
+            {errors.address && (
+              <p className="form__error" id="adress-fel">
+                {errors.address.message}
+              </p>
+            )}
+          </div>
+        )}
+      </fieldset>
 
       <div className="form__field">
         <label htmlFor="notis">Notis till föräldrarna (valfritt)</label>
@@ -237,95 +294,5 @@ export function EventForm({
         </button>
       </div>
     </form>
-  )
-}
-
-/**
- * Spelplats med förslag medan man skriver.
- *
- * Förslagen kommer ur registret och inte ur fritext. En felstavad plats bryter både
- * vägbeskrivningen och väderprognosen, så tränaren väljer alltid en befintlig plats —
- * nya läggs upp i spelplatsregistret, där adressen geokodas.
- */
-function VenuePicker({ error, onSelect }: { error?: string; onSelect: (venue: Venue) => void }) {
-  const [term, setTerm] = useState('')
-  const [options, setOptions] = useState<Venue[]>([])
-  const [chosen, setChosen] = useState<Venue | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-
-    const timer = setTimeout(() => {
-      void searchVenues(term)
-        .then((found) => {
-          if (!cancelled) {
-            setOptions(found)
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setOptions([])
-          }
-        })
-    }, 250)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [term])
-
-  return (
-    <div className="form__field">
-      <label htmlFor="spelplats">Spelplats</label>
-
-      <input
-        id="spelplats"
-        type="text"
-        autoComplete="off"
-        role="combobox"
-        aria-expanded={options.length > 0}
-        aria-controls="spelplats-forslag"
-        aria-describedby={error ? 'spelplats-fel' : undefined}
-        aria-invalid={error ? true : undefined}
-        value={chosen === null ? term : chosen.name}
-        onChange={(event) => {
-          setChosen(null)
-          setTerm(event.target.value)
-        }}
-      />
-
-      {chosen === null && options.length > 0 && (
-        <ul className="suggestions" id="spelplats-forslag">
-          {options.map((venue) => (
-            <li key={venue.id}>
-              <button
-                type="button"
-                className="suggestions__option"
-                onClick={() => {
-                  setChosen(venue)
-                  onSelect(venue)
-                }}
-              >
-                <span className="suggestions__name">{venue.name}</span>
-                <span className="suggestions__address">{venue.address}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {chosen !== null && (
-        <p className="state">
-          Vald: {chosen.name} — {chosen.address}
-        </p>
-      )}
-
-      {error !== undefined && (
-        <p className="form__error" id="spelplats-fel">
-          {error}
-        </p>
-      )}
-    </div>
   )
 }
