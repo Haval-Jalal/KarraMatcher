@@ -16,6 +16,10 @@ internal sealed class ClubConfiguration : IEntityTypeConfiguration<Club>
         builder.Property(c => c.Slug).HasMaxLength(50).IsRequired();
         builder.HasIndex(c => c.Slug).IsUnique();
 
+        // Klubbens hemmaplan (`#307`). Nullbara tills en tränare satt den.
+        builder.Property(c => c.HomeVenueName).HasMaxLength(100);
+        builder.Property(c => c.HomeAddress).HasMaxLength(200);
+
         builder.HasMany(c => c.AgeGroups)
             .WithOne(a => a.Club)
             .HasForeignKey(a => a.ClubId)

@@ -79,6 +79,7 @@ public static class AuditActions
     public const string SportUpdated = "sport.andrad";
     public const string ClubCreated = "klubb.skapad";
     public const string ClubUpdated = "klubb.andrad";
+    public const string ClubHomeVenueSet = "klubb.hemmaplan.andrad";
     public const string TruppCreated = "trupp.skapad";
     public const string TruppUpdated = "trupp.andrad";
     public const string LagCreated = "lag.skapat";
