@@ -13,6 +13,7 @@ import {
   getTeamChatMeta,
   postMessage,
   reportMessage,
+  toggleReaction,
   type ChatChannel,
 } from './chatApi'
 
@@ -115,6 +116,15 @@ export function useCancelScheduled(channel: ChatChannel) {
   return useMutation({
     mutationFn: (id: string) => cancelScheduled(channel, id),
     onSuccess: () => client.invalidateQueries({ queryKey: chatKeys.scheduled(channel) }),
+  })
+}
+
+export function useToggleReaction(channel: ChatChannel) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { messageId: string; emoji: string }) =>
+      toggleReaction(channel, input.messageId, input.emoji),
+    onSuccess: () => client.invalidateQueries({ queryKey: chatKeys.messages(channel) }),
   })
 }
 

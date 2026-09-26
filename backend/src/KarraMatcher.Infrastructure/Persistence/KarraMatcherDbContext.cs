@@ -54,6 +54,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<ChatReport> ChatReports => Set<ChatReport>();
 
+    public DbSet<ChatReaction> ChatReactions => Set<ChatReaction>();
+
     public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
         Set<Domain.Push.PushSubscription>();
 

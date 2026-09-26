@@ -4,6 +4,7 @@ import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate } from '@/lib/time'
 
 import type { ChatChannel as Channel, ChatMessage } from './chatApi'
+import { MessageReactions } from './MessageReactions'
 import {
   useCancelScheduled,
   useChatMessages,
@@ -235,6 +236,8 @@ export function ChatChannel({
                   Tack — meddelandet är anmält till truppens admin.
                 </p>
               )}
+
+              {!message.deleted && <MessageReactions message={message} channel={channel} />}
             </li>
           ))}
         </ul>

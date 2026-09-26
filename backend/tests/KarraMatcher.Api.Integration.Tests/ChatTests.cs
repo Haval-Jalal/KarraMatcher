@@ -287,6 +287,73 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
         Assert.DoesNotContain(f.Guardian2Id, dispatch.AccountIds!); // stängt av Chatt
     }
 
+    // ---- Reaktioner (#301) -----------------------------------------------------------
+
+    private Task<HttpResponseMessage> ReactAsync(Fixture f, string token, Guid messageId, string emoji) =>
+        SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/trupper/{f.TruppId}/chat/messages/{messageId}/reactions",
+            token,
+            new { emoji });
+
+    private static JsonElement ReactionsOf(IReadOnlyList<JsonElement> messages, Guid id) =>
+        messages.Single(m => m.GetProperty("id").GetGuid() == id).GetProperty("reactions");
+
+    [Fact]
+    public async Task Reaktion_SynsMedAntalOchMine()
+    {
+        var f = await SeedAsync("reagera");
+        var id = await PostAsync(f, GuardianToken(f), "Bra jobbat!");
+
+        var react = await ReactAsync(f, GuardianToken(f), id, "👍");
+        Assert.Equal(HttpStatusCode.NoContent, react.StatusCode);
+
+        var reactions = ReactionsOf(await MessagesAsync(f, GuardianToken(f)), id).EnumerateArray().ToArray();
+        Assert.Single(reactions);
+        Assert.Equal("👍", reactions[0].GetProperty("emoji").GetString());
+        Assert.Equal(1, reactions[0].GetProperty("count").GetInt32());
+        Assert.True(reactions[0].GetProperty("mine").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Reaktion_ArEnVaxel_AndraTryckningenTarBort()
+    {
+        var f = await SeedAsync("vaxel");
+        var id = await PostAsync(f, GuardianToken(f), "Hej");
+
+        await ReactAsync(f, GuardianToken(f), id, "❤️");
+        await ReactAsync(f, GuardianToken(f), id, "❤️");
+
+        Assert.Empty(ReactionsOf(await MessagesAsync(f, GuardianToken(f)), id).EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Reaktion_RaknarFleraMedlemmar()
+    {
+        var f = await SeedAsync("flera");
+        var id = await PostAsync(f, GuardianToken(f), "Grymt");
+
+        await ReactAsync(f, GuardianToken(f), id, "👍");
+        await ReactAsync(f, CoachToken(f), id, "👍");
+
+        // Sett av tränaren: två räknade, och "mine" sant eftersom tränaren också reagerat.
+        var reactions = ReactionsOf(await MessagesAsync(f, CoachToken(f)), id).EnumerateArray().ToArray();
+        Assert.Single(reactions);
+        Assert.Equal(2, reactions[0].GetProperty("count").GetInt32());
+        Assert.True(reactions[0].GetProperty("mine").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Reaktion_MedOtillatenEmoji_Ger400()
+    {
+        var f = await SeedAsync("otillaten");
+        var id = await PostAsync(f, GuardianToken(f), "Test");
+
+        var react = await ReactAsync(f, GuardianToken(f), id, "🚀");
+
+        Assert.Equal(HttpStatusCode.BadRequest, react.StatusCode);
+    }
+
     // ---- Släpp av schemalagt ---------------------------------------------------------
 
     [Fact]

@@ -46,9 +46,17 @@ public sealed record ReportChatMessageCommand(
 public sealed record AdminDeleteChatMessageCommand(Guid TruppId, Guid MessageId, Guid ActorAccountId)
     : ICommand<ChatModerationOutcome>;
 
-/// <summary>De senaste meddelandena i en kanal.</summary>
-public sealed record GetChatMessagesQuery(Guid TruppId, Guid? TeamId)
+/// <summary>De senaste meddelandena i en kanal, med reaktioner sedda av <c>AccountId</c> (`#301`).</summary>
+public sealed record GetChatMessagesQuery(Guid TruppId, Guid? TeamId, Guid AccountId)
     : IQuery<IReadOnlyList<ChatMessageDto>>;
+
+/// <summary>Växlar den inloggades reaktion (emoji) på ett meddelande av och på (`#301`).</summary>
+public sealed record ToggleReactionCommand(
+    Guid TruppId,
+    Guid? TeamId,
+    Guid MessageId,
+    Guid AccountId,
+    string Emoji) : ICommand<ChatModerationOutcome>;
 
 /// <summary>Den inloggades egna schemalagda meddelanden i en kanal.</summary>
 public sealed record GetScheduledChatMessagesQuery(Guid TruppId, Guid? TeamId, Guid AccountId)
@@ -222,7 +230,32 @@ internal sealed class GetChatMessagesQueryHandler(ChatService service)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return service.ListAsync(query.TruppId, query.TeamId, cancellationToken);
+        return service.ListAsync(query.TruppId, query.TeamId, query.AccountId, cancellationToken);
+    }
+}
+
+internal sealed class ToggleReactionCommandValidator : AbstractValidator<ToggleReactionCommand>
+{
+    public ToggleReactionCommandValidator()
+    {
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.MessageId).NotEmpty();
+        RuleFor(c => c.AccountId).NotEmpty();
+        RuleFor(c => c.Emoji).NotEmpty();
+    }
+}
+
+internal sealed class ToggleReactionCommandHandler(ChatService service)
+    : ICommandHandler<ToggleReactionCommand, ChatModerationOutcome>
+{
+    public Task<ChatModerationOutcome> HandleAsync(
+        ToggleReactionCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.ToggleReactionAsync(
+            command.TruppId, command.TeamId, command.MessageId, command.AccountId, command.Emoji,
+            cancellationToken);
     }
 }
 

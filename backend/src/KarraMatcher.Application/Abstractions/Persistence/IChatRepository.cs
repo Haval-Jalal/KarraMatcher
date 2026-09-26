@@ -22,6 +22,9 @@ public sealed record ReportedMessageRow(
 /// <summary>Ett lags chatt-kanal: laget och dess trupp, upplöst ur lagets slug (`#202`).</summary>
 public sealed record TeamChannel(Guid TeamId, Guid AgeGroupId);
 
+/// <summary>Ett meddelandes reaktioner per emoji: antal och om läsaren själv reagerat (`#301`).</summary>
+public sealed record ReactionAggregate(Guid MessageId, string Emoji, int Count, bool Mine);
+
 public interface IChatRepository
 {
     public Task<bool> TruppExistsAsync(Guid ageGroupId, CancellationToken cancellationToken);
@@ -47,6 +50,18 @@ public interface IChatRepository
         DateTime nowUtc, CancellationToken cancellationToken);
 
     public void RemoveMessage(ChatMessage message);
+
+    /// <summary>Reaktionerna på en uppsättning meddelanden, per emoji, sett av <paramref name="readerAccountId"/> (`#301`).</summary>
+    public Task<IReadOnlyList<ReactionAggregate>> ListReactionsAsync(
+        IReadOnlyCollection<Guid> messageIds, Guid readerAccountId, CancellationToken cancellationToken);
+
+    /// <summary>Kontots egen reaktion med en viss emoji, spårad — för att växla av. Null om ingen.</summary>
+    public Task<ChatReaction?> FindReactionAsync(
+        Guid messageId, Guid accountId, string emoji, CancellationToken cancellationToken);
+
+    public Task AddReactionAsync(ChatReaction reaction, CancellationToken cancellationToken);
+
+    public void RemoveReaction(ChatReaction reaction);
 
     public Task<bool> ReportExistsAsync(
         Guid messageId, Guid accountId, CancellationToken cancellationToken);
