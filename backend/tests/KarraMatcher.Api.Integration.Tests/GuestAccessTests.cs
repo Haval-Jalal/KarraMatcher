@@ -117,6 +117,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "/api/v1/matches/{0}/carpool/offers",
             "/api/v1/push/key",
             "/api/v1/hem",
+            "/api/v1/kalender/min",
         ];
 
     // ---- En gäst nekas ---------------------------------------------------------------
@@ -223,6 +224,14 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
              * stallet, kontrollerad i JobsController med konstant tid.
              */
             "api/v1/jobs/match-reminders",
+
+            /*
+             * Kalender-feeden (§KM.4, kalender bakom medlemskap). En kalender-app kan inte logga
+             * in -- den ogissbara nyckeln i URL:en ar behorigheten, pekar pa exakt ett konto och
+             * kan aterkallas. Feeden bar bara handelser, aldrig barn-PII. Att skapa/aterkalla
+             * nyckeln (kalender/min, kalender/aterkalla) kraver daremot inloggning.
+             */
+            "api/v1/kalender/{token}.ics",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

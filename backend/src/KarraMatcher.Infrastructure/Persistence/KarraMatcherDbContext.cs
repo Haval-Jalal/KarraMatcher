@@ -70,6 +70,9 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Domain.Consent.GuardianConsent> GuardianConsents =>
         Set<Domain.Consent.GuardianConsent>();
 
+    public DbSet<Domain.Calendar.CalendarToken> CalendarTokens =>
+        Set<Domain.Calendar.CalendarToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
