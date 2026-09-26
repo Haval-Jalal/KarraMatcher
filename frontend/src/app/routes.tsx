@@ -1,22 +1,67 @@
-import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  redirect,
+} from '@tanstack/react-router'
 
+import { LoadingState } from '@/components/LoadingState'
 import { NotFound } from '@/components/NotFound'
 import { RootLayout } from '@/app/RootLayout'
-import { CoachEventsPage } from '@/features/admin'
-import { AccountPage, LoginPage } from '@/features/auth'
-import { ChatPage, TeamChatPage } from '@/features/chat'
-import { CuperPage } from '@/features/cup'
+import { LoginPage } from '@/features/auth'
 import { HomePage } from '@/features/home'
-import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
-import { PrivacyPage } from '@/features/privacy'
 import { EventDetailPage, TeamSchedulePage } from '@/features/events'
-import { ApplyLandingPage } from '@/features/applications'
-import { AdminPage, InvitationLandingPage } from '@/features/invitations'
-import { MorePage } from '@/features/more'
-import { SettingsPage } from '@/features/settings'
-import { SuperAdminPage } from '@/features/superadmin'
 import { renewSession } from '@/lib/api'
 import { getAccessToken } from '@/lib/session'
+
+/*
+ * Kod-splitting på route-nivå: de tunga, mindre använda vyerna hämtas först när någon går dit,
+ * så förstasidladdningen på ett mobilnät vid planen (§KM.11) inte drar med sig hela appen. De
+ * mest trafikerade vyerna — Hem, ett lags schema, en händelse och inloggningen — laddas ivrigt
+ * så att kärnan aldrig väntar på en chunk. Varje `import()` blir en egen chunk i bygget.
+ */
+const CoachEventsPage = lazyRouteComponent(
+  () => import('@/features/admin/CoachEventsPage'),
+  'CoachEventsPage',
+)
+const AccountPage = lazyRouteComponent(() => import('@/features/auth/AccountPage'), 'AccountPage')
+const ChatPage = lazyRouteComponent(() => import('@/features/chat/ChatPage'), 'ChatPage')
+const TeamChatPage = lazyRouteComponent(
+  () => import('@/features/chat/TeamChatPage'),
+  'TeamChatPage',
+)
+const CuperPage = lazyRouteComponent(() => import('@/features/cup/CuperPage'), 'CuperPage')
+const ChildrenPage = lazyRouteComponent(
+  () => import('@/features/playercard/ChildrenPage'),
+  'ChildrenPage',
+)
+const PlayerCardPage = lazyRouteComponent(
+  () => import('@/features/playercard/season/PlayerCardPage'),
+  'PlayerCardPage',
+)
+const PrivacyPage = lazyRouteComponent(
+  () => import('@/features/privacy/PrivacyPage'),
+  'PrivacyPage',
+)
+const ApplyLandingPage = lazyRouteComponent(
+  () => import('@/features/applications/ApplyLandingPage'),
+  'ApplyLandingPage',
+)
+const AdminPage = lazyRouteComponent(() => import('@/features/invitations/AdminPage'), 'AdminPage')
+const InvitationLandingPage = lazyRouteComponent(
+  () => import('@/features/invitations/InvitationLandingPage'),
+  'InvitationLandingPage',
+)
+const MorePage = lazyRouteComponent(() => import('@/features/more/MorePage'), 'MorePage')
+const SettingsPage = lazyRouteComponent(
+  () => import('@/features/settings/SettingsPage'),
+  'SettingsPage',
+)
+const SuperAdminPage = lazyRouteComponent(
+  () => import('@/features/superadmin/SuperAdminPage'),
+  'SuperAdminPage',
+)
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -326,7 +371,14 @@ export const routeTree = rootRoute.addChildren([
 
 export const router = createRouter({
   routeTree,
+  // Förladda en routes chunk redan när muspekaren/fokus når länken, så bytet oftast känns direkt.
   defaultPreload: 'intent',
+  // Medan en lazy-laddad vy hämtas: ett lugnt laddningsbesked i stället för en tom sida.
+  defaultPendingComponent: () => (
+    <main>
+      <LoadingState label="Laddar…" />
+    </main>
+  ),
 })
 
 // Gör routerns typer kända för hela appen, så länkar och parametrar blir typsäkra.
