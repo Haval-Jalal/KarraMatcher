@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Attendance.AttendanceGate>();
         services.AddScoped<Features.Attendance.AttendanceService>();
         services.AddScoped<Features.Cup.CupSignupService>();
+        services.AddScoped<Features.Clubs.ClubVenueService>();
         services.AddScoped<Features.Jobs.EventReminderService>();
         services.AddScoped<Features.Chat.ChatService>();
         services.AddScoped<Features.Chat.ChatRetentionService>();

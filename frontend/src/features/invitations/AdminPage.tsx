@@ -3,12 +3,13 @@ import { useId, useRef, useState } from 'react'
 import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
 import { BarnOchLag } from '@/features/children'
+import { ClubVenueSettings } from '@/features/clubs'
 
 import { AdminOverview } from './AdminOverview'
 import { InvitationsPanel } from './InvitationsPanel'
 import { useMyTrupper } from './useInvitations'
 
-const SECTIONS = ['oversikt', 'barn', 'inbjudningar', 'ansokningar'] as const
+const SECTIONS = ['oversikt', 'barn', 'inbjudningar', 'ansokningar', 'installningar'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 const LABEL: Record<SectionKey, string> = {
@@ -16,6 +17,7 @@ const LABEL: Record<SectionKey, string> = {
   barn: 'Barn & lag',
   inbjudningar: 'Inbjudningar',
   ansokningar: 'Ansökningar',
+  installningar: 'Inställningar',
 }
 
 /**
@@ -176,6 +178,8 @@ function AdminSections({ truppId }: { truppId: string }) {
         {active === 'inbjudningar' && <InvitationsPanel truppId={truppId} />}
 
         {active === 'ansokningar' && <ApplicationsPanel truppId={truppId} />}
+
+        {active === 'installningar' && <ClubVenueSettings truppId={truppId} />}
       </div>
     </>
   )

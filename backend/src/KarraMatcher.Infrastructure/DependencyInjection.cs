@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLog, AuditLog>();
         services.AddScoped<IEventAdminRepository, EventAdminRepository>();
         services.AddScoped<IVenueRepository, VenueRepository>();
+        services.AddScoped<IClubVenueRepository, ClubVenueRepository>();
         services.AddScoped<IScheduleImportRepository, ScheduleImportRepository>();
         services.AddScoped<ICarpoolOfferRepository, CarpoolOfferRepository>();
         services.AddScoped<ICarpoolRequestRepository, CarpoolRequestRepository>();
