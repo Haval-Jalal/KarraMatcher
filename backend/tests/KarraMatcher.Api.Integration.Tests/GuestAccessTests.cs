@@ -232,6 +232,14 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
              * nyckeln (kalender/min, kalender/aterkalla) kraver daremot inloggning.
              */
             "api/v1/kalender/{token}.ics",
+
+            /*
+             * Passkey-inloggningen (WebAuthn). Själva inloggningen kan inte kräva en session —
+             * den skapar en. Skyddas av CSRF och samma rate-limit som e-postkoden. Att registrera
+             * och hantera passkeys kräver däremot inloggning ([Authorize]).
+             */
+            "api/v1/passkeys/logga-in/start",
+            "api/v1/passkeys/logga-in/klar",
         ];
 
         return allowed.Contains(endpoint.RoutePattern.RawText, StringComparer.Ordinal);

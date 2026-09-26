@@ -123,7 +123,7 @@ public class PersistenceModelTests
                 "GuardianConsent",
                 "Guardianship", "Invitation",
                 "LoginCode", "MembershipApplication", "NotificationPreference",
-                "PushSubscription", "RefreshToken", "Sport",
+                "Passkey", "PushSubscription", "RefreshToken", "Sport",
                 "Team", "TeamRole", "Venue",
             ],
             names.OrderBy(n => n, StringComparer.Ordinal).ToArray());

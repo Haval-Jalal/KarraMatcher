@@ -1,8 +1,11 @@
+using Fido2NetLib;
+
 using KarraMatcher.Api.Caching;
 using KarraMatcher.Api.Diagnostics;
 using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Api.Testing;
 using KarraMatcher.Application;
+using KarraMatcher.Application.Features.Passkeys;
 using KarraMatcher.Infrastructure;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -62,6 +65,19 @@ builder.Services.AddScoped<
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
 builder.Services.AddKarraAuthentication(builder.Environment);
+
+// Passkeys (WebAuthn). Relying-party-domänen och origins sätts per miljö och måste stämma med
+// var appen faktiskt körs — annars släpper webbläsaren inte fram nycklarna. Lokalt "localhost".
+var webAuthn =
+    builder.Configuration.GetSection(WebAuthnOptions.SectionName).Get<WebAuthnOptions>()
+    ?? new WebAuthnOptions();
+
+builder.Services.AddFido2(fido2 =>
+{
+    fido2.RPID = webAuthn.RelyingPartyId;
+    fido2.RPName = webAuthn.ServerName;
+    fido2.Origins = webAuthn.Origins.ToHashSet();
+});
 
 // Gallringen av samakning (§KM.12). Kors i processen och inte som cron -- se
 // CarpoolRetentionWorker for varfor, och for varfor det ar ofarligt att den kors ofta.
