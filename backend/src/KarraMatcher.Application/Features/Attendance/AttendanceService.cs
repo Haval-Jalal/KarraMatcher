@@ -90,10 +90,10 @@ public sealed class AttendanceService(
             return SetKallelseOutcome.EventNotInTrupp;
         }
 
-        // Kallelsen gäller bara match och träning (§KM.7): en övrig händelse (cup, lagfest) kallar
-        // ingen. FE döljer knappen för Other; det här är den riktiga grinden, så en direkt
-        // API-förfrågan inte kan öppna en kallelse där en inte hör hemma (`#289`).
-        if (context.Type == EventType.Other)
+        // Den riktade kallelsen gäller bara match och träning (§KM.7). En övrig händelse (lagfest)
+        // kallar ingen, och en cup använder öppen anmälan i stället (`#295`) — inte en riktad
+        // kallelse. FE döljer knappen; det här är den riktiga grinden (`#289`).
+        if (context.Type is EventType.Other or EventType.Cup)
         {
             return SetKallelseOutcome.EventNotInvitable;
         }

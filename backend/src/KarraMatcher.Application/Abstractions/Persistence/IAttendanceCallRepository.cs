@@ -59,6 +59,9 @@ public interface IAttendanceCallRepository
 
     public void RemoveInvitation(AttendanceInvitation invitation);
 
+    /// <summary>Antal barn med Ja i kallelsen — cupens platsräkning, "fullt" räknas fram (`#295`).</summary>
+    public Task<int> CountComingAsync(Guid callId, CancellationToken cancellationToken);
+
     /// <summary>En inbjudan (kallat barn), spårad — för att sätta ett svar. Null när barnet inte kallats.</summary>
     public Task<AttendanceInvitation?> FindInvitationAsync(
         Guid callId, Guid childId, CancellationToken cancellationToken);

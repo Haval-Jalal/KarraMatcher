@@ -38,4 +38,11 @@ public sealed class AttendanceCall
     public Guid OpenedByAccountId { get; set; }
 
     public DateTime OpenedUtc { get; set; }
+
+    /// <summary>
+    /// Antal platser för en cups öppna anmälan (`#295`), eller null för en vanlig kallelse
+    /// (match/träning, `#199`) som saknar tak. "Fullt" räknas alltid fram ur antalet Ja — det
+    /// lagras aldrig som en flagga, av samma skäl som samåkningens platsräkning (§KM.12).
+    /// </summary>
+    public int? Capacity { get; set; }
 }

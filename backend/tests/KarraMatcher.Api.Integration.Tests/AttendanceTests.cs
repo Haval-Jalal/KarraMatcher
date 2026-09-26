@@ -412,6 +412,18 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Kalla_ForCup_Ger409()
+    {
+        // En cup anvander oppen anmalan (#295), inte den riktade kallelsen -- sa SetKallelse
+        // avvisas pa samma satt som en ovrig handelse (#289).
+        var f = await SeedAsync("cup", eventType: EventType.Cup);
+
+        var response = await SetKallelseAsync(f, f.SvartChild);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
     private async Task AssertAuditedAsync(string action, Guid subjectId)
     {
         using var scope = factory.Services.CreateScope();
