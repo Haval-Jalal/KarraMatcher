@@ -63,6 +63,18 @@ public sealed record CupSignupChildDto(Guid ChildId, string DisplayName, string?
 /// <summary>Den inloggades eget barn i cupens trupp, och om det är anmält (`#296`).</summary>
 public sealed record MyCupChildDto(Guid ChildId, string DisplayName, bool SignedUp);
 
+/// <summary>En cup i trupp-listan med sitt anmälningsläge (`#304`).</summary>
+public sealed record CupListItemDto(
+    Guid EventId,
+    string Title,
+    DateTimeOffset KickoffUtc,
+    string TeamName,
+    string ColorHex,
+    bool Open,
+    int? Capacity,
+    int SpotsLeft,
+    bool IsFull);
+
 /// <summary>
 /// Cupens anmälningsläge: platstak, antal tagna, de anmälda barnen och — för en vårdnadshavare
 /// — hens egna barn att anmäla (`#295`/`#296`).
@@ -260,6 +272,34 @@ public sealed class CupSignupService(
         await calls.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return CupWithdrawOutcome.Withdrawn;
+    }
+
+    /// <summary>Truppens cuper med anmälningsläge (`#304`). Anroparen förutsätts vara medlem (endpointen vaktar).</summary>
+    public async Task<IReadOnlyList<CupListItemDto>> ListTruppCupsAsync(
+        Guid truppId, CancellationToken cancellationToken)
+    {
+        var rows = await calls.ListTruppCupsAsync(truppId, cancellationToken).ConfigureAwait(false);
+
+        return
+        [
+            .. rows.Select(row =>
+            {
+                var open = row.Capacity is not null;
+                var spotsLeft = row.Capacity is null ? 0 : Math.Max(0, row.Capacity.Value - row.ComingCount);
+                var isFull = row.Capacity is not null && row.ComingCount >= row.Capacity.Value;
+
+                return new CupListItemDto(
+                    row.EventId,
+                    string.IsNullOrWhiteSpace(row.Title) ? "Cup" : row.Title,
+                    new DateTimeOffset(row.KickoffUtc, TimeSpan.Zero),
+                    row.TeamName,
+                    row.ColorHex,
+                    open,
+                    row.Capacity,
+                    spotsLeft,
+                    isFull);
+            }),
+        ];
     }
 
     /// <summary>Cupens anmälningsläge för en truppmedlem, eller null när det inte är en cup / inte medlem.</summary>

@@ -5,6 +5,7 @@ import { RootLayout } from '@/app/RootLayout'
 import { CoachEventsPage } from '@/features/admin'
 import { AccountPage, LoginPage } from '@/features/auth'
 import { ChatPage, TeamChatPage } from '@/features/chat'
+import { CuperPage } from '@/features/cup'
 import { ChildrenPage, PlayerCardPage } from '@/features/playercard'
 import { PrivacyPage } from '@/features/privacy'
 import { EventDetailPage, TeamSchedulePage } from '@/features/events'
@@ -264,6 +265,24 @@ const teamChatRoute = createRoute({
 })
 
 /**
+ * Truppens cuper (`#304`). Trupp-vid lista (en cup drar barn tvärs över lagen). Kräver
+ * inloggning; medlemskapet prövas server-side. `/cuper/{truppId}` förväljer en trupp.
+ */
+const cuperIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/cuper',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: CuperPage,
+})
+
+const cuperTruppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/cuper/$truppId',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: CuperPage,
+})
+
+/**
  * Integritetstexten (§KM.6). Publik: en gäst ska kunna läsa vad appen sparar innan hen loggar
  * in, inte efter. Nås från fotens länk och från Mitt konto.
  */
@@ -289,6 +308,8 @@ export const routeTree = rootRoute.addChildren([
   chatIndexRoute,
   chatTruppRoute,
   teamChatRoute,
+  cuperIndexRoute,
+  cuperTruppRoute,
   privacyRoute,
 ])
 

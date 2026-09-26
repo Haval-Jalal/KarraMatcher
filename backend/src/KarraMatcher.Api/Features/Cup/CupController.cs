@@ -209,5 +209,31 @@ public sealed class CupController(
     }
 }
 
+/// <summary>
+/// Truppens cuper med anmälningsläge (`#304`): en trupp-vid lista, eftersom en cup drar barn
+/// tvärs över färg-lagen. Bara truppens medlemmar (<c>MemberOfTrupp</c>).
+/// </summary>
+[ApiController]
+[Route("api/v1/trupper/{truppId:guid}/cups")]
+[Produces("application/json")]
+[Authorize(Policy = AuthorizationPolicies.MemberOfTrupp)]
+public sealed class TruppCupsController(IQueryDispatcher queries) : ControllerBase
+{
+    /// <summary>Truppens cuper i avsparksordning, med platser kvar / fullt.</summary>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<CupListItemDto>>> List(
+        Guid truppId, CancellationToken cancellationToken)
+    {
+        var cups = await queries
+            .SendAsync(new GetTruppCupsQuery(truppId), cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(cups);
+    }
+}
+
 /// <summary>Det tränaren skickar för att öppna anmälan: antal platser.</summary>
 public sealed record OpenCupRequest(int Capacity);

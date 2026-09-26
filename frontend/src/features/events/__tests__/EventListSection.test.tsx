@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { EventListSection } from '@/features/events'
@@ -30,6 +31,33 @@ describe('EventListSection — kortet och listan tillsammans', () => {
     expect(await screen.findByRole('heading', { name: 'Nästa match' })).toBeInTheDocument()
     expect(screen.getAllByText(/Motstandare nasta/)).toHaveLength(1)
     expect(screen.getByText(/Motstandare darefter/)).toBeInTheDocument()
+  })
+
+  it('filtrerar schemat per händelsetyp (#304)', async () => {
+    const user = userEvent.setup()
+    stubApi({
+      matches: schedule([
+        testEvent('match1', '2099-09-20T12:00:00Z'),
+        testEvent('trana1', '2099-09-22T18:00:00Z', {
+          type: 'Training',
+          title: 'Lagträning',
+          opponent: null,
+          isHome: null,
+        }),
+      ]),
+    })
+
+    await renderWithProviders(<EventListSection slug="gul" />)
+
+    // Under "Alla" syns både matchen och träningen.
+    expect(await screen.findByText('Lagträning')).toBeInTheDocument()
+    expect(screen.getByText(/Motstandare match1/)).toBeInTheDocument()
+
+    // Filtrera till Träningar → matchen försvinner, träningen är kvar.
+    await user.click(screen.getByRole('button', { name: 'Träningar' }))
+
+    expect(screen.getByText('Lagträning')).toBeInTheDocument()
+    expect(screen.queryByText(/Motstandare match1/)).not.toBeInTheDocument()
   })
 
   it('döljer kortet när säsongen är slut och visar hela listan', async () => {

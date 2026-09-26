@@ -1,5 +1,6 @@
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Domain.Attendance;
+using KarraMatcher.Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -117,6 +118,65 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
                         && i.Reply == AttendanceReply.Coming)))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<TruppCupRow>> ListTruppCupsAsync(
+        Guid ageGroupId, CancellationToken cancellationToken)
+    {
+        var cups = await context.Events
+            .AsNoTracking()
+            .Where(e => e.Type == EventType.Cup && e.Team!.AgeGroupId == ageGroupId)
+            .OrderBy(e => e.KickoffUtc)
+            .Select(e => new
+            {
+                e.Id,
+                e.Title,
+                e.KickoffUtc,
+                TeamName = e.Team!.Name,
+                e.Team!.ColorHex,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (cups.Count == 0)
+        {
+            return [];
+        }
+
+        var eventIds = cups.Select(c => c.Id).ToList();
+
+        // Kallelsen (platstaket) per cup, och antal Ja per kallelse — två frågor, inga korrelerade
+        // underfrågor, så EF-översättningen förblir enkel.
+        var calls = await context.AttendanceCalls
+            .AsNoTracking()
+            .Where(c => eventIds.Contains(c.MatchId))
+            .Select(c => new { c.Id, c.MatchId, c.Capacity })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var callByEvent = calls.ToDictionary(c => c.MatchId);
+        var callIds = calls.Select(c => c.Id).ToList();
+
+        var comingByCall = (await context.AttendanceInvitations
+            .AsNoTracking()
+            .Where(i => callIds.Contains(i.CallId) && i.Reply == AttendanceReply.Coming)
+            .GroupBy(i => i.CallId)
+            .Select(g => new { CallId = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false))
+            .ToDictionary(x => x.CallId, x => x.Count);
+
+        return
+        [
+            .. cups.Select(cup =>
+            {
+                callByEvent.TryGetValue(cup.Id, out var call);
+                var coming = call is not null && comingByCall.TryGetValue(call.Id, out var n) ? n : 0;
+
+                return new TruppCupRow(
+                    cup.Id, cup.Title, cup.KickoffUtc, cup.TeamName, cup.ColorHex, call?.Capacity, coming);
+            }),
+        ];
+    }
 
     public Task<bool> IsGuardianOfChildAsync(
         Guid accountId, Guid childId, CancellationToken cancellationToken) =>

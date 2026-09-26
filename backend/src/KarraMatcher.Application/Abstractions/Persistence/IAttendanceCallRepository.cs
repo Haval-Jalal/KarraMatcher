@@ -29,6 +29,16 @@ public sealed record MyInvitationRow(
 /// <summary>Den inloggades eget barn i en cups trupp, och om det redan är anmält (`#296`).</summary>
 public sealed record MyCupChildRow(Guid ChildId, string FirstName, string LastInitial, bool SignedUp);
 
+/// <summary>En cup i truppen med sitt anmälningsläge — för trupp-vid cup-lista (`#304`).</summary>
+public sealed record TruppCupRow(
+    Guid EventId,
+    string? Title,
+    DateTime KickoffUtc,
+    string TeamName,
+    string ColorHex,
+    int? Capacity,
+    int ComingCount);
+
 /// <summary>
 /// Läser och skriver kallelsen (per barn) och dess svar (§KM.7, `#199`).
 ///
@@ -84,6 +94,10 @@ public interface IAttendanceCallRepository
     /// </summary>
     public Task<IReadOnlyList<MyCupChildRow>> MyCupChildrenAsync(
         Guid ageGroupId, Guid accountId, Guid callId, CancellationToken cancellationToken);
+
+    /// <summary>Truppens cuper med anmälningsläge, i avsparksordning — för cup-listan (`#304`).</summary>
+    public Task<IReadOnlyList<TruppCupRow>> ListTruppCupsAsync(
+        Guid ageGroupId, CancellationToken cancellationToken);
 
     /// <summary>Är kontot vårdnadshavare för barnet?</summary>
     public Task<bool> IsGuardianOfChildAsync(

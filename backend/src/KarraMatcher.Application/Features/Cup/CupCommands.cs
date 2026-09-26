@@ -24,6 +24,9 @@ public sealed record WithdrawCupSignupCommand(Guid EventId, Guid ChildId, Guid A
 /// <summary>Cupens anmälningsläge för en truppmedlem.</summary>
 public sealed record GetCupSummaryQuery(Guid EventId, Guid AccountId) : IQuery<CupSummaryDto?>;
 
+/// <summary>Truppens cuper med anmälningsläge — för cup-listan (`#304`).</summary>
+public sealed record GetTruppCupsQuery(Guid TruppId) : IQuery<IReadOnlyList<CupListItemDto>>;
+
 internal sealed class OpenCupCommandValidator : AbstractValidator<OpenCupCommand>
 {
     /// <summary>Övre gräns på platser — en rimlig cup-trupp, inte en oändlig siffra.</summary>
@@ -104,5 +107,17 @@ internal sealed class GetCupSummaryQueryHandler(CupSignupService service)
         ArgumentNullException.ThrowIfNull(query);
 
         return service.SummaryAsync(query.EventId, query.AccountId, cancellationToken);
+    }
+}
+
+internal sealed class GetTruppCupsQueryHandler(CupSignupService service)
+    : IQueryHandler<GetTruppCupsQuery, IReadOnlyList<CupListItemDto>>
+{
+    public Task<IReadOnlyList<CupListItemDto>> HandleAsync(
+        GetTruppCupsQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return service.ListTruppCupsAsync(query.TruppId, cancellationToken);
     }
 }

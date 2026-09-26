@@ -216,6 +216,41 @@ public sealed class CupSignupTests(KarraMatcherApiFactory factory)
         return (await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None)).Clone();
     }
 
+    // ---- Trupp-vid cup-lista (#304) ---------------------------------------------------
+
+    [Fact]
+    public async Task TruppCups_ListarCupenMedAnmalningslage()
+    {
+        var f = await SeedAsync("lista");
+        await OpenCupAsync(f, 3);
+        await SignUpAsync(f, f.SvartChild, f.SvartGuardian);
+
+        var response = await GetAsync($"/api/v1/trupper/{f.TruppId}/cups", GuardianToken(f.SvartGuardian));
+        response.EnsureSuccessStatusCode();
+        var cups = (await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .EnumerateArray().ToArray();
+
+        var cup = Assert.Single(cups);
+        Assert.Equal(f.CupId, cup.GetProperty("eventId").GetGuid());
+        Assert.Equal("Sommarcup", cup.GetProperty("title").GetString());
+        Assert.Equal("Svart", cup.GetProperty("teamName").GetString());
+        Assert.True(cup.GetProperty("open").GetBoolean());
+        Assert.Equal(3, cup.GetProperty("capacity").GetInt32());
+        Assert.Equal(2, cup.GetProperty("spotsLeft").GetInt32());
+        Assert.False(cup.GetProperty("isFull").GetBoolean());
+    }
+
+    [Fact]
+    public async Task TruppCups_ForIckeMedlem_Nekas()
+    {
+        var f = await SeedAsync("lista-nekas");
+        await OpenCupAsync(f, 2);
+
+        var response = await GetAsync($"/api/v1/trupper/{f.TruppId}/cups", GuardianToken(f.NonMemberId));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     // ---- Öppna + anmäla ---------------------------------------------------------------
 
     [Fact]
