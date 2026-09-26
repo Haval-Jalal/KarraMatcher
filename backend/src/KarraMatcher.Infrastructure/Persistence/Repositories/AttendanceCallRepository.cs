@@ -60,6 +60,13 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     public void RemoveInvitation(AttendanceInvitation invitation) =>
         context.AttendanceInvitations.Remove(invitation);
 
+    public Task<int> CountComingAsync(Guid callId, CancellationToken cancellationToken) =>
+        context.AttendanceInvitations
+            .AsNoTracking()
+            .CountAsync(
+                i => i.CallId == callId && i.Reply == AttendanceReply.Coming,
+                cancellationToken);
+
     public Task<AttendanceInvitation?> FindInvitationAsync(
         Guid callId, Guid childId, CancellationToken cancellationToken) =>
         context.AttendanceInvitations
