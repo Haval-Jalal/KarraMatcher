@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { loginWithPasskey, passkeysSupported } from '@/features/passkeys'
 import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -78,6 +79,22 @@ export function LoginPage() {
   const search = useSearch({ from: '/logga-in' })
   const { refresh } = useAuth()
 
+  // Passkey-inloggning visas bara där webbläsaren stöder den; e-postkoden finns alltid kvar.
+  const passkeySupported = passkeysSupported()
+
+  async function handlePasskeyLogin(): Promise<void> {
+    setFailure(null)
+
+    try {
+      await loginWithPasskey()
+      refresh()
+      await navigate({ to: safeDestination(search.next) })
+    } catch {
+      // Avbruten Face ID, ingen passkey på enheten, eller ett fel — koden är alltid vägen in.
+      setFailure('Passkey-inloggningen gick inte. Logga in med en kod via mejl i stället.')
+    }
+  }
+
   useDocumentTitle('Logga in')
 
   return (
@@ -91,13 +108,29 @@ export function LoginPage() {
       </header>
 
       {email === null ? (
-        <EmailStep
-          onSent={(sent) => {
-            setEmail(sent)
-            setFailure(null)
-          }}
-          onFailure={setFailure}
-        />
+        <>
+          {passkeySupported && (
+            <div className="actions">
+              <button
+                type="button"
+                className="button"
+                onClick={() => {
+                  void handlePasskeyLogin()
+                }}
+              >
+                Logga in med passkey
+              </button>
+            </div>
+          )}
+
+          <EmailStep
+            onSent={(sent) => {
+              setEmail(sent)
+              setFailure(null)
+            }}
+            onFailure={setFailure}
+          />
+        </>
       ) : askName !== null ? (
         <NameForm
           profile={askName}

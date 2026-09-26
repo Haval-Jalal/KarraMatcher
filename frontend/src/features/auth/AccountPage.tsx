@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 
 import { CalendarSection } from '@/features/calendar'
 import { ConsentSection } from '@/features/consent'
+import { PasskeysSection } from '@/features/passkeys'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { getProfile, type AccountProfile } from './authApi'
@@ -137,6 +138,8 @@ export function AccountPage() {
           <Link to="/integritet">Så hanteras dina uppgifter</Link>.
         </p>
       </section>
+
+      <PasskeysSection />
 
       <CalendarSection />
 
