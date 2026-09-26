@@ -28,4 +28,15 @@ public sealed class CarpoolNotificationTests
     {
         Assert.Equal($"/handelse/{MatchId}", message.Url);
     }
+
+    [Theory]
+    [MemberData(nameof(AllMessages))]
+    public void Notiserna_BarIngenFritext(PushMessage message)
+    {
+        // Förarens notis, hälsningen och nekandets meddelande är fritext (§KM.12) — de får aldrig
+        // nå en låsskärm (§KM.10). Byggarna tar bara ett matchId, så det enda som kan råka läcka
+        // är själva id:t; det ska heller inte stå i den synliga texten.
+        Assert.DoesNotContain(MatchId.ToString(), message.Title, StringComparison.Ordinal);
+        Assert.DoesNotContain(MatchId.ToString(), message.Body, StringComparison.Ordinal);
+    }
 }
