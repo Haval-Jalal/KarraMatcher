@@ -23,9 +23,6 @@ internal sealed class EventDraftValidator : AbstractValidator<EventDraft>
     {
         RuleFor(d => d.Type).IsInEnum().WithMessage("Välj en giltig typ.");
 
-        RuleFor(d => d.VenueId)
-            .NotEmpty().WithMessage("Välj en spelplats.");
-
         /*
          * Starttiden lagras i UTC (§KM.5). Kravet pa att den faktiskt ar UTC ar inte
          * formalia: en lokal tid som sparas rakt av blir tva timmar fel pa sommaren, och
@@ -38,18 +35,29 @@ internal sealed class EventDraftValidator : AbstractValidator<EventDraft>
         RuleFor(d => d.Note)
             .MaximumLength(500).WithMessage("Notisen är för lång.");
 
-        RuleFor(d => d.AddressOverride)
+        RuleFor(d => d.Address)
             .MaximumLength(200).WithMessage("Adressen är för lång.");
 
-        // En match: motståndare och hemma/borta krävs, rubriken ignoreras.
+        // Platsen (`#307`): utan en legacy-VenueId (import/seed) väljer tränaren hemma eller annan
+        // plats. Hemma fylls ur klubbens hemmaplan; annan plats kräver en adress att geokoda.
+        When(d => d.VenueId is null, () =>
+        {
+            RuleFor(d => d.IsHome)
+                .NotNull().WithMessage("Välj hemma eller annan plats.");
+
+            When(d => d.IsHome == false, () =>
+            {
+                RuleFor(d => d.Address)
+                    .NotEmpty().WithMessage("Skriv adressen till platsen.");
+            });
+        });
+
+        // En match: motståndare krävs, rubriken ignoreras.
         When(d => d.Type == EventType.Match, () =>
         {
             RuleFor(d => d.Opponent)
                 .NotEmpty().WithMessage("Fyll i motståndarlaget.")
                 .MaximumLength(120).WithMessage("Motståndarlagets namn är för långt.");
-
-            RuleFor(d => d.IsHome)
-                .NotNull().WithMessage("Ange om matchen är hemma eller borta.");
         });
 
         // Träning eller övrigt: en rubrik krävs, motståndare/hemma-borta gäller inte.

@@ -53,20 +53,17 @@ public sealed class EventAdminController(
             return Unauthenticated();
         }
 
-        var item = await dispatcher
+        var result = await dispatcher
             .SendAsync(new CreateEventCommand(slug, request.ToDraft(), actor.Value), cancellationToken)
             .ConfigureAwait(false);
 
-        return item is null
-            ? Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Händelsen gick inte att lägga upp",
-                detail: "Kontrollera att laget och spelplatsen finns.")
-            : CreatedAtAction(
+        return result.Outcome == EventSaveOutcome.Ok
+            ? CreatedAtAction(
                 actionName: nameof(EventsController.GetEvent),
                 controllerName: "Events",
-                routeValues: new { id = item.Id },
-                value: item);
+                routeValues: new { id = result.Event!.Id },
+                value: result.Event)
+            : ProblemFor(result.Outcome);
     }
 
     /// <summary>Ändrar en händelse.</summary>
@@ -88,13 +85,13 @@ public sealed class EventAdminController(
             return Unauthenticated();
         }
 
-        var item = await dispatcher
+        var result = await dispatcher
             .SendAsync(
                 new UpdateEventCommand(slug, id, request.ToDraft(), actor.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return item is null ? NotFoundForTeam() : Ok(item);
+        return result.Outcome == EventSaveOutcome.Ok ? Ok(result.Event) : ProblemFor(result.Outcome);
     }
 
     /// <summary>Ställer in en händelse — den blir kvar i kalendern, markerad som inställd.</summary>
@@ -189,6 +186,29 @@ public sealed class EventAdminController(
     /// genom att prova sig fram.
     /// </para>
     /// </summary>
+    /// <summary>Översätter ett skapa/ändra-utfall som inte lyckades till ett HTTP-svar (`#307`).</summary>
+    private ObjectResult ProblemFor(EventSaveOutcome outcome) => outcome switch
+    {
+        EventSaveOutcome.NoHomeVenue => Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Klubben har ingen hemmaplan",
+            detail: "Sätt klubbens hemmaplan under Inställningar innan du lägger upp en hemma-aktivitet."),
+
+        EventSaveOutcome.AddressNotFound => Problem(
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            title: "Adressen gick inte att hitta",
+            detail: "Kontrollera stavningen, eller skriv gatunamn och ort — "
+                + "till exempel \"Klarebergsvallen, Göteborg\"."),
+
+        EventSaveOutcome.AddressAmbiguous => Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Flera platser matchar adressen",
+            detail: "Skriv adressen mer exakt — gatunamn och ort."),
+
+        // TeamNotFound (och allt oväntat): händelsen/laget finns inte, eller hör till ett annat lag.
+        _ => NotFoundForTeam(),
+    };
+
     private ObjectResult NotFoundForTeam() => Problem(
         statusCode: StatusCodes.Status404NotFound,
         title: "Händelsen finns inte",
@@ -221,9 +241,8 @@ public sealed record EventRequest(
     DateTime KickoffUtc,
     string? Title,
     string? Opponent,
-    Guid VenueId,
     bool? IsHome,
-    string? AddressOverride,
+    string? Address,
     string? Note)
 {
     internal EventDraft ToDraft() =>
@@ -232,9 +251,8 @@ public sealed record EventRequest(
             KickoffUtc,
             Title,
             Opponent,
-            VenueId,
             IsHome,
-            AddressOverride,
+            Address,
             Note);
 }
 

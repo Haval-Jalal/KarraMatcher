@@ -43,7 +43,7 @@ internal static class EventNotification
 
         return new PushMessage(
             $"Ny {Kind(item.Type)} {Label(item)}",
-            $"{When(item.KickoffUtc)} · {item.Venue.Name}",
+            $"{When(item.KickoffUtc)} · {Place(item)}",
             Url(item.Id));
     }
 
@@ -63,7 +63,7 @@ internal static class EventNotification
     /// har ändrats — bytt tid eller plats ger en notis, en ändrad notistext gör det inte.
     /// </summary>
     public static PushMessage? Updated(
-        EventDto item, DateTime beforeKickoffUtc, Guid beforeVenueId, Guid afterVenueId)
+        EventDto item, DateTime beforeKickoffUtc, string beforeAddress, string afterAddress)
     {
         ArgumentNullException.ThrowIfNull(item);
 
@@ -75,11 +75,11 @@ internal static class EventNotification
                 Url(item.Id));
         }
 
-        if (afterVenueId != beforeVenueId)
+        if (!string.Equals(afterAddress, beforeAddress, StringComparison.Ordinal))
         {
             return new PushMessage(
                 $"Ny plats {Label(item)}",
-                item.Venue.Name,
+                Place(item),
                 Url(item.Id));
         }
 
@@ -100,6 +100,11 @@ internal static class EventNotification
 
     private static string Label(EventDto item) =>
         EventDisplay.Label(item.Type, item.IsHome, item.Opponent, item.Title);
+
+    // Platsens namn på låsskärmen: spelplatsens namn (hemma) om det finns, annars adressen
+    // (borta/annan plats har inget namn, bara en adress) (`#307`).
+    private static string Place(EventDto item) =>
+        string.IsNullOrWhiteSpace(item.Venue.Name) ? item.Address : item.Venue.Name;
 
     // Ordet för typen, gement, som glider in i en mening ("Ny match …", "Inställt: träning …").
     private static string Kind(string type) => type switch

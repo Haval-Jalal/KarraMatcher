@@ -1,10 +1,12 @@
 using KarraMatcher.Application.Abstractions.Audit;
+using KarraMatcher.Application.Abstractions.Geocoding;
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Application.Features.Teams;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Events;
+using KarraMatcher.Domain.Teams;
 
 namespace KarraMatcher.Application.Features.Events.Admin;
 
@@ -35,11 +37,15 @@ namespace KarraMatcher.Application.Features.Events.Admin;
 /// </summary>
 public sealed class EventAdminService(
     IEventAdminRepository events,
+    IGeocoder geocoder,
     IAuditLog audit,
     IPushOutbox push)
 {
-    /// <summary>Lägger upp en ny händelse i laget som adressen pekar ut.</summary>
-    public async Task<EventDto?> CreateAsync(
+    /// <summary>
+    /// Lägger upp en ny händelse i laget som adressen pekar ut (`#307`). Hemma → klubbens
+    /// hemmaplan; borta/annan plats → den skrivna adressen, geokodad till koordinater.
+    /// </summary>
+    public async Task<EventSaveResult> CreateAsync(
         string teamSlug,
         EventDraft draft,
         Guid actorAccountId,
@@ -50,10 +56,16 @@ public sealed class EventAdminService(
         var team = await events.FindTeamBySlugAsync(teamSlug, cancellationToken)
             .ConfigureAwait(false);
 
-        if (team is null || !await events.VenueExistsAsync(draft.VenueId, cancellationToken)
-            .ConfigureAwait(false))
+        if (team is null)
         {
-            return null;
+            return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
+        }
+
+        var location = await ResolveLocationAsync(team, draft, cancellationToken).ConfigureAwait(false);
+
+        if (location.Outcome != EventSaveOutcome.Ok)
+        {
+            return new EventSaveResult(location.Outcome, null);
         }
 
         var isMatch = draft.Type == EventType.Match;
@@ -66,9 +78,11 @@ public sealed class EventAdminService(
             KickoffUtc = draft.KickoffUtc,
             Title = isMatch ? null : Blank(draft.Title),
             OpponentName = isMatch ? draft.Opponent?.Trim() : null,
-            VenueId = draft.VenueId,
-            IsHome = isMatch ? draft.IsHome : null,
-            AddressOverride = Blank(draft.AddressOverride),
+            VenueId = location.VenueId,
+            IsHome = location.IsHome,
+            AddressOverride = location.Address,
+            Latitude = location.Latitude,
+            Longitude = location.Longitude,
             Note = Blank(draft.Note),
             Status = EventStatus.Scheduled,
             IcsSequence = 0,
@@ -96,11 +110,11 @@ public sealed class EventAdminService(
                 item.TeamId, PushCategory.EventChange, EventNotification.Created(created)));
         }
 
-        return created;
+        return new EventSaveResult(EventSaveOutcome.Ok, created);
     }
 
-    /// <summary>Ändrar en händelse. Svarar null när den inte finns eller inte hör till laget.</summary>
-    public async Task<EventDto?> UpdateAsync(
+    /// <summary>Ändrar en händelse (`#307`). Hemma/borta-adressen löses om precis som vid skapande.</summary>
+    public async Task<EventSaveResult> UpdateAsync(
         string teamSlug,
         Guid eventId,
         EventDraft draft,
@@ -111,18 +125,25 @@ public sealed class EventAdminService(
 
         var item = await FindInTeamAsync(teamSlug, eventId, cancellationToken).ConfigureAwait(false);
 
-        if (item is null || !await events.VenueExistsAsync(draft.VenueId, cancellationToken)
-            .ConfigureAwait(false))
+        if (item is null)
         {
-            return null;
+            return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
+        }
+
+        var location = await ResolveLocationAsync(item.Team!, draft, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (location.Outcome != EventSaveOutcome.Ok)
+        {
+            return new EventSaveResult(location.Outcome, null);
         }
 
         var before = EventSummary.Describe(item);
 
-        // Fångas före ändringen: notisen ska kunna säga *vad* som ändrats (§KM.7-texten),
-        // inte bara att något gjorde det.
+        // Fångas före ändringen: notisen ska kunna säga *vad* som ändrats (§KM.7-texten). Platsen
+        // jämförs på den upplösta adressen (inte längre ett spelplats-id, `#307`).
         var beforeKickoffUtc = item.KickoffUtc;
-        var beforeVenueId = item.VenueId;
+        var beforeAddress = item.ToDto().Address;
 
         // Typen ändras inte vid redigering — en match förblir en match.
         var isMatch = item.Type == EventType.Match;
@@ -130,9 +151,11 @@ public sealed class EventAdminService(
         item.KickoffUtc = draft.KickoffUtc;
         item.Title = isMatch ? null : Blank(draft.Title);
         item.OpponentName = isMatch ? draft.Opponent?.Trim() : null;
-        item.VenueId = draft.VenueId;
-        item.IsHome = isMatch ? draft.IsHome : null;
-        item.AddressOverride = Blank(draft.AddressOverride);
+        item.VenueId = location.VenueId;
+        item.IsHome = location.IsHome;
+        item.AddressOverride = location.Address;
+        item.Latitude = location.Latitude;
+        item.Longitude = location.Longitude;
         item.Note = Blank(draft.Note);
 
         Touch(item);
@@ -146,13 +169,13 @@ public sealed class EventAdminService(
 
         await events.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        // Läses om med spelplatsen inläst, så en "ny plats"-notis kan namnge den nya.
+        // Läses om med platsen upplöst, så en "ny plats"-notis kan namnge den nya.
         var reloaded = await ReloadAsync(item.Id, cancellationToken).ConfigureAwait(false);
 
         if (reloaded is not null)
         {
             var message = EventNotification.Updated(
-                reloaded, beforeKickoffUtc, beforeVenueId, item.VenueId);
+                reloaded, beforeKickoffUtc, beforeAddress, reloaded.Address);
 
             // Null när bara notistexten ändrats: en förälder behöver inte väckas för det.
             if (message is not null)
@@ -161,7 +184,7 @@ public sealed class EventAdminService(
             }
         }
 
-        return reloaded;
+        return new EventSaveResult(EventSaveOutcome.Ok, reloaded);
     }
 
     /// <summary>
@@ -289,10 +312,95 @@ public sealed class EventAdminService(
         item.UpdatedUtc = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Löser händelsens plats ur utkastet (`#307`). Tre vägar, som speglar mappningen:
+    /// <list type="bullet">
+    /// <item>utkastet bär ett <c>VenueId</c> (import/seed) → äldre registervägen behålls;</item>
+    /// <item>hemma → klubbens hemmaplan (måste vara satt); inget lagras på händelsen;</item>
+    /// <item>annars → den skrivna adressen geokodas till adress + koordinat på händelsen.</item>
+    /// </list>
+    /// </summary>
+    private async Task<Resolved> ResolveLocationAsync(
+        Team team, EventDraft draft, CancellationToken cancellationToken)
+    {
+        if (draft.VenueId is not null)
+        {
+            if (!await events.VenueExistsAsync(draft.VenueId.Value, cancellationToken).ConfigureAwait(false))
+            {
+                return new Resolved(EventSaveOutcome.TeamNotFound, null, null, null, null, null);
+            }
+
+            return new Resolved(
+                EventSaveOutcome.Ok, draft.VenueId, draft.IsHome, Blank(draft.Address), null, null);
+        }
+
+        if (draft.IsHome == true)
+        {
+            var club = team.AgeGroup?.Club;
+
+            if (club?.HomeLatitude is null || club.HomeLongitude is null)
+            {
+                return new Resolved(EventSaveOutcome.NoHomeVenue, null, null, null, null, null);
+            }
+
+            return new Resolved(EventSaveOutcome.Ok, null, true, null, null, null);
+        }
+
+        var hits = await geocoder.LookupAsync(draft.Address?.Trim() ?? string.Empty, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (hits.Count == 0)
+        {
+            return new Resolved(EventSaveOutcome.AddressNotFound, null, null, null, null, null);
+        }
+
+        if (hits.Count > 1)
+        {
+            // Aldrig gissa: tränaren får skriva adressen mer exakt (samma regel som hemmaplanen).
+            return new Resolved(EventSaveOutcome.AddressAmbiguous, null, null, null, null, null);
+        }
+
+        var place = hits[0];
+
+        return new Resolved(
+            EventSaveOutcome.Ok, null, false, place.Label, place.Latitude, place.Longitude);
+    }
+
+    /// <summary>Händelsens upplösta plats-fält (`#307`).</summary>
+    private sealed record Resolved(
+        EventSaveOutcome Outcome,
+        Guid? VenueId,
+        bool? IsHome,
+        string? Address,
+        double? Latitude,
+        double? Longitude);
+
     /// <summary>Tom text räknas som "inget värde" — inte som ett värde som är tomt.</summary>
     private static string? Blank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
+
+/// <summary>Vad ett försök att skapa/ändra en händelse slutade med (`#307`).</summary>
+public enum EventSaveOutcome
+{
+    /// <summary>Händelsen skapades eller ändrades.</summary>
+    Ok = 0,
+
+    /// <summary>Laget (eller händelsen) finns inte, eller hör inte till adressen.</summary>
+    TeamNotFound = 1,
+
+    /// <summary>Hemma valdes men klubben har ingen hemmaplan satt — sätt den i inställningarna först.</summary>
+    NoHomeVenue = 2,
+
+    /// <summary>Bortaadressen gick inte att hitta vid geokodningen.</summary>
+    AddressNotFound = 3,
+
+    /// <summary>Bortaadressen matchade flera platser — skriv den mer exakt.</summary>
+    AddressAmbiguous = 4,
+}
+
+/// <summary>Utfallet av att skapa/ändra en händelse, med DTO:n vid lyckat resultat (`#307`).</summary>
+public sealed record EventSaveResult(EventSaveOutcome Outcome, EventDto? Event);
 
 /// <summary>
 /// Det en tränare fyller i om en händelse.
@@ -303,8 +411,9 @@ public sealed class EventAdminService(
 /// </para>
 ///
 /// <para>
-/// <see cref="Opponent"/> och <see cref="IsHome"/> gäller en match; <see cref="Title"/> en
-/// träning eller övrig händelse. Vad som krävs för vilken typ bevakas i valideringen.
+/// <see cref="Opponent"/> gäller en match, <see cref="Title"/> en träning/övrig händelse.
+/// <see cref="IsHome"/> gäller alla typer (`#307`): hemma = klubbens plan, annars skriver
+/// tränaren <see cref="Address"/> som geokodas. Vad som krävs bevakas i valideringen.
 /// </para>
 /// </summary>
 public sealed record EventDraft(
@@ -312,7 +421,7 @@ public sealed record EventDraft(
     DateTime KickoffUtc,
     string? Title,
     string? Opponent,
-    Guid VenueId,
     bool? IsHome,
-    string? AddressOverride,
-    string? Note);
+    string? Address,
+    string? Note,
+    Guid? VenueId = null);

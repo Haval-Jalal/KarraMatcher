@@ -44,14 +44,31 @@ public sealed class Event
     /// <summary>Motståndare. Satt endast för en match.</summary>
     public string? OpponentName { get; set; }
 
-    public Guid VenueId { get; set; }
+    /// <summary>
+    /// Äldre spelplatsregister-koppling (`#110`). Nullbar sedan `#307`: nya händelser pekar inte
+    /// på registret utan löser platsen ur klubbens hemmaplan (hemma) eller ur händelsens egen
+    /// adress + koordinat (borta/annan plats). Behålls så seedade/gamla rader fortsätter fungera.
+    /// </summary>
+    public Guid? VenueId { get; set; }
 
     public Venue? Venue { get; set; }
 
-    /// <summary>Avvikande adress för just den här händelsen. Tom = spelplatsens adress.</summary>
+    /// <summary>
+    /// Platsens adress när det inte är hemmaplan (`#307`): en borta-match eller en aktivitet på
+    /// annan plats (t.ex. vinterträning inomhus). Tom för en hemma-händelse — då gäller klubbens.
+    /// </summary>
     public string? AddressOverride { get; set; }
 
-    /// <summary>Hemma eller borta. Satt endast för en match.</summary>
+    /// <summary>Latitud för händelsens egen adress (borta/annan plats), geokodad (`#307`).</summary>
+    public double? Latitude { get; set; }
+
+    /// <summary>Longitud för händelsens egen adress (borta/annan plats), geokodad (`#307`).</summary>
+    public double? Longitude { get; set; }
+
+    /// <summary>
+    /// Hemma på klubbens plan, eller på annan plats. Sedan `#307` meningsfull för <b>alla</b>
+    /// typer: sant = klubbens hemmaplan (adress autofylls), falskt = händelsens egen adress.
+    /// </summary>
     public bool? IsHome { get; set; }
 
     public EventStatus Status { get; set; }

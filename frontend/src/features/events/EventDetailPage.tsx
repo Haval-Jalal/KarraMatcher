@@ -133,8 +133,12 @@ export function EventDetailPage() {
         <div className="detail__row">
           <dt>Var</dt>
           <dd>
-            {event.venue.name}
-            <br />
+            {event.venue.name !== '' && (
+              <>
+                {event.venue.name}
+                <br />
+              </>
+            )}
             <span className="detail__hint">{event.address}</span>
           </dd>
         </div>

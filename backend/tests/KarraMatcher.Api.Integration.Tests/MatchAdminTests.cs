@@ -36,12 +36,21 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
     private sealed record Fixture(string Slug, Guid VenueId, Guid MatchId, Guid CoachAccountId);
 
     /// <summary>Två lag, en spelplats och en match i det första laget.</summary>
-    private async Task<Fixture> SeedAsync(string suffix)
+    private async Task<Fixture> SeedAsync(string suffix, bool withHomeVenue = true)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
-        var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = $"klubb-{suffix}" };
+        var club = new Club
+        {
+            Id = Guid.NewGuid(),
+            Name = "Karra KIF",
+            Slug = $"klubb-{suffix}",
+            HomeVenueName = withHomeVenue ? "Karra IP" : null,
+            HomeAddress = withHomeVenue ? "Idrottsvagen 1, Goteborg" : null,
+            HomeLatitude = withHomeVenue ? 57.79 : null,
+            HomeLongitude = withHomeVenue ? 11.94 : null,
+        };
         var ageGroup = new AgeGroup
         {
             Id = Guid.NewGuid(),
@@ -143,15 +152,15 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
         return await client.SendAsync(request, CancellationToken.None);
     }
 
-    private static object Draft(DateTime kickoff, Guid venueId, string opponent = "Torslanda") =>
+    // En hemma-match: platsen kommer ur klubbens hemmaplan (`#307`), ingen adress skickas.
+    private static object Draft(DateTime kickoff, string opponent = "Torslanda") =>
         new
         {
             type = "Match",
             kickoffUtc = kickoff,
             opponent,
-            venueId,
             isHome = true,
-            addressOverride = (string?)null,
+            address = (string?)null,
             note = (string?)null,
         };
 
@@ -172,7 +181,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             fixture.Slug,
             fixture.CoachAccountId,
-            Draft(Kickoff.AddHours(2), fixture.VenueId));
+            Draft(Kickoff.AddHours(2)));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(1, await SequenceOf(fixture.MatchId));
@@ -226,7 +235,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             "ett-helt-annat-lag",
             fixture.CoachAccountId,
-            Draft(Kickoff, fixture.VenueId));
+            Draft(Kickoff));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -250,7 +259,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             $"/api/v1/teams/{mine.Slug}/events/{theirs.MatchId}",
             mine.Slug,
             mine.CoachAccountId,
-            Draft(Kickoff, mine.VenueId));
+            Draft(Kickoff));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -280,24 +289,26 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             $"/api/v1/teams/{fixture.Slug}/events",
             fixture.Slug,
             fixture.CoachAccountId,
-            Draft(Kickoff, fixture.VenueId, opponent: "  "));
+            Draft(Kickoff, opponent: "  "));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task OkandSpelplats_Avvisas()
+    public async Task HemmaUtanKlubbensHemmaplan_Avvisas()
     {
-        var fixture = await SeedAsync("spelplats");
+        // Hemma kräver att klubben satt sin hemmaplan (`#307`). Utan den kan adressen inte lösas,
+        // så en hemma-händelse avvisas i stället för att skapas platslös. 409, inte en dold knapp.
+        var fixture = await SeedAsync("ingen-hemmaplan", withHomeVenue: false);
 
         var response = await SendAsync(
             HttpMethod.Post,
             $"/api/v1/teams/{fixture.Slug}/events",
             fixture.Slug,
             fixture.CoachAccountId,
-            Draft(Kickoff, Guid.NewGuid()));
+            Draft(Kickoff));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     // ---- Audit -----------------------------------------------------------------------
@@ -313,7 +324,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             $"/api/v1/teams/{fixture.Slug}/events/{fixture.MatchId}",
             fixture.Slug,
             fixture.CoachAccountId,
-            Draft(Kickoff.AddHours(3), fixture.VenueId, opponent: "Kareby IS"));
+            Draft(Kickoff.AddHours(3), opponent: "Kareby IS"));
 
         var entry = await AuditFor(fixture.MatchId, AuditActions.EventUpdated);
 

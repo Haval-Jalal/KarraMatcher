@@ -18,6 +18,7 @@ internal sealed class EventRepository(KarraMatcherDbContext context) : IEventRep
             // klienten på ett nät som ofta är dåligt.
             .Include(item => item.Team)
                 .ThenInclude(team => team!.AgeGroup)
+                    .ThenInclude(ageGroup => ageGroup!.Club)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken)
             .ConfigureAwait(false);
 }

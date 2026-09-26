@@ -1,31 +1,20 @@
-import { getJson, postJson } from '@/lib/api'
+import { postJson } from '@/lib/api'
 import type { TeamEvent } from '@/features/events'
 
-/** En spelplats i registret. */
-export interface Venue {
-  id: string
-  name: string
-  address: string
-  isHome: boolean
-}
-
 /**
- * Det tränaren fyller i om en händelse (`#198`). Tiden är redan omräknad till UTC.
+ * Det tränaren fyller i om en händelse (`#198`, `#307`). Tiden är redan omräknad till UTC.
  *
- * `opponent` och `isHome` gäller en match; `title` en träning eller övrig händelse.
+ * `opponent` gäller en match; `title` en träning/övrig händelse. `isHome` gäller alla typer:
+ * hemma = klubbens plan (adressen löses server-side), annars skrivs `address` in och geokodas.
  */
 export interface EventInput {
   type: 'Match' | 'Training' | 'Other' | 'Cup'
   kickoffUtc: string
   title: string | null
   opponent: string | null
-  venueId: string
-  isHome: boolean | null
+  isHome: boolean
+  address: string | null
   note: string | null
-}
-
-export function searchVenues(term: string): Promise<Venue[]> {
-  return getJson<Venue[]>(`/api/v1/venues?q=${encodeURIComponent(term)}`)
 }
 
 export function createEvent(slug: string, input: EventInput): Promise<TeamEvent> {

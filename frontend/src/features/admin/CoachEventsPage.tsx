@@ -61,7 +61,7 @@ export function CoachEventsPage() {
     )
   }
 
-  if (!mayManage) {
+  if (!mayManage || !data) {
     return (
       <main>
         <header className="app-header">
@@ -83,6 +83,7 @@ export function CoachEventsPage() {
 
       {adding || editing !== null ? (
         <EventForm
+          truppId={data.truppId}
           {...(editing !== null ? { existing: editing } : {})}
           onSubmit={async (input) => {
             if (editing !== null) {

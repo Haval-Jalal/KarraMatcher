@@ -27,13 +27,6 @@ function truppCoachToken(truppId: string): string {
   return `x.${btoa(JSON.stringify({ email: 'tranare@example.com', 'admin-trupp': truppId }))}.y`
 }
 
-const venue = {
-  id: 'venue-1',
-  name: 'Klarebergsvallen',
-  address: 'Klarebergsvallen, Göteborg',
-  isHome: true,
-}
-
 /** Fångar det som skickas, så testet kan läsa vad servern skulle ha fått. */
 function stubApi(token: string) {
   const sent: { url: string; method: string; body: unknown }[] = []
@@ -59,7 +52,17 @@ function stubApi(token: string) {
       if (url.includes('/auth/refresh')) {
         return Promise.resolve(jsonResponse({ accessToken: token }))
       }
-      if (url.includes('/api/v1/venues')) return Promise.resolve(jsonResponse([venue]))
+      if (url.includes('/club-venue')) {
+        return Promise.resolve(
+          jsonResponse({
+            name: 'Kareby IS',
+            address: 'Kareby Hed, Kungälv',
+            latitude: 57.9,
+            longitude: 12.0,
+            configured: true,
+          }),
+        )
+      }
 
       if (url.includes('/events')) {
         return Promise.resolve(
@@ -108,13 +111,17 @@ describe('tiden skrivs i svensk tid och skickas i UTC', () => {
     await user.type(await screen.findByLabelText(/Avspark/), '2026-09-20T14:00')
     await user.type(screen.getByLabelText('Motståndare'), 'Torslanda')
 
-    await user.click(await screen.findByRole('button', { name: /Klarebergsvallen/ }))
+    // Hemma är förvalt, så platsen kommer ur klubbens plan — ingen adress att fylla i.
     await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
 
     await waitFor(() => {
       const created = sent.find((call) => call.method === 'POST' && call.url.endsWith('/events'))
 
-      expect(created?.body).toMatchObject({ kickoffUtc: '2026-09-20T12:00:00.000Z' })
+      expect(created?.body).toMatchObject({
+        kickoffUtc: '2026-09-20T12:00:00.000Z',
+        isHome: true,
+        address: null,
+      })
     })
   })
 
@@ -134,10 +141,9 @@ describe('tiden skrivs i svensk tid och skickas i UTC', () => {
     await user.type(await screen.findByLabelText(/Start/), '2026-09-22T18:00')
     await user.type(screen.getByLabelText('Rubrik'), 'Lagträning')
 
-    // Motståndare och hemma/borta finns inte för en träning.
+    // En träning har ingen motståndare — men hemma/borta gäller den också (#307).
     expect(screen.queryByLabelText('Motståndare')).not.toBeInTheDocument()
 
-    await user.click(await screen.findByRole('button', { name: /Klarebergsvallen/ }))
     await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
 
     await waitFor(() => {
@@ -147,15 +153,15 @@ describe('tiden skrivs i svensk tid och skickas i UTC', () => {
         type: 'Training',
         title: 'Lagträning',
         opponent: null,
-        isHome: null,
+        isHome: true,
       })
     })
   })
 })
 
-describe('spelplatsen väljs ur registret', () => {
-  it('föreslår platser och visar adressen', async () => {
-    // Fritext här hade brutit både vägbeskrivningen och väderprognosen.
+describe('hemma eller annan plats', () => {
+  it('visar klubbens plan när hemma är valt', async () => {
+    // Hemma är förvalt — adressen fylls i från klubbens hemmaplan, tränaren skriver inget.
     const token = coachToken('gul')
     stubApi(token)
     setAccessToken(token)
@@ -164,12 +170,13 @@ describe('spelplatsen väljs ur registret', () => {
     renderRoute('/lag/gul/tranare')
 
     await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
-    await user.type(await screen.findByLabelText('Spelplats'), 'klare')
 
-    expect(await screen.findByText('Klarebergsvallen, Göteborg')).toBeInTheDocument()
+    expect(await screen.findByText(/Kareby Hed, Kungälv/)).toBeInTheDocument()
+    // Ingen adress att skriva när platsen kommer ur klubbens plan.
+    expect(screen.queryByLabelText('Adress')).not.toBeInTheDocument()
   })
 
-  it('kräver att en plats är vald', async () => {
+  it('kräver en adress när annan plats är vald', async () => {
     const token = coachToken('gul')
     stubApi(token)
     setAccessToken(token)
@@ -180,9 +187,32 @@ describe('spelplatsen väljs ur registret', () => {
     await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
     await user.type(await screen.findByLabelText(/Avspark/), '2026-09-20T14:00')
     await user.type(screen.getByLabelText('Motståndare'), 'Torslanda')
+    await user.click(screen.getByRole('radio', { name: /Bortamatch/ }))
     await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
 
-    expect(await screen.findByText('Välj en spelplats.')).toBeInTheDocument()
+    expect(await screen.findByText('Skriv adressen till platsen.')).toBeInTheDocument()
+  })
+
+  it('skickar den skrivna adressen för en bortamatch', async () => {
+    const token = coachToken('gul')
+    const sent = stubApi(token)
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
+    await user.type(await screen.findByLabelText(/Avspark/), '2026-09-20T14:00')
+    await user.type(screen.getByLabelText('Motståndare'), 'Torslanda')
+    await user.click(screen.getByRole('radio', { name: /Bortamatch/ }))
+    await user.type(await screen.findByLabelText('Adress'), 'Bortavägen 5, Kungälv')
+    await user.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
+
+    await waitFor(() => {
+      const created = sent.find((call) => call.method === 'POST' && call.url.endsWith('/events'))
+
+      expect(created?.body).toMatchObject({ isHome: false, address: 'Bortavägen 5, Kungälv' })
+    })
   })
 })
 
