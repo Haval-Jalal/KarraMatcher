@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 
 namespace KarraMatcher.Api.Diagnostics;
@@ -51,6 +52,10 @@ public static class RateLimiting
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        // Gör avvisade requests synliga i loggen — detektionen intrånget saknade (se
+        // ISecurityEventSink). Registreras här så rate-limitern och dess larm-spår hålls ihop.
+        services.AddSingleton<ISecurityEventSink, SecurityEventLog>();
 
         var permitPerMinute =
             int.TryParse(configuration[PermitKey], CultureInfo.InvariantCulture, out var configured)
@@ -127,6 +132,13 @@ public static class RateLimiting
 
                 context.HttpContext.Response.Headers.RetryAfter =
                     new StringValues(retryAfter.ToString(CultureInfo.InvariantCulture));
+
+                // Lämna ett spår så en attack som håller servern uppe ändå syns (§KM.0 A1).
+                // Aldrig e-post eller fritext här (§KM.10) — bara metod och sökväg.
+                var request = context.HttpContext.Request;
+                context.HttpContext.RequestServices
+                    .GetService<ISecurityEventSink>()
+                    ?.RateLimitRejected(request.Method, request.Path.Value ?? "/");
 
                 return ValueTask.CompletedTask;
             };
