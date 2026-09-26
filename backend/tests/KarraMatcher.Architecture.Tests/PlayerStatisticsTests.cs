@@ -179,7 +179,7 @@ public partial class PlayerStatisticsTests
                 "Events", "GuardianConsents",
                 "Guardianships",
                 "Invitations", "LoginCodes", "MembershipApplications",
-                "NotificationPreferences", "PushSubscriptions",
+                "NotificationPreferences", "Passkeys", "PushSubscriptions",
                 "RefreshTokens", "Sports", "TeamRoles", "Teams", "Venues",
             ],
             DbSetNames());

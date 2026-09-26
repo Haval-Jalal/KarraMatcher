@@ -73,6 +73,8 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Domain.Calendar.CalendarToken> CalendarTokens =>
         Set<Domain.Calendar.CalendarToken>();
 
+    public DbSet<Domain.Accounts.Passkey> Passkeys => Set<Domain.Accounts.Passkey>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

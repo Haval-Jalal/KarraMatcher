@@ -73,6 +73,15 @@ services:
       - key: Jobs__Secret
         sync: false
 
+      # Passkeys (WebAuthn). RelyingPartyId maste vara appens doman (utan protokoll, t.ex.
+      # "karramatcher.se") och Origins den publika https-adressen -- annars slapper webblasaren
+      # inte fram nycklarna. Satts nar domanen ar klar (#73); listad har tom sa den inte glomms.
+      - key: WebAuthn__RelyingPartyId
+        sync: false
+
+      - key: WebAuthn__Origins__0
+        sync: false
+
       # Migrationer appliceras vid varje driftsattning.
       - key: Database__ApplyMigrationsOnStartup
         value: "true"

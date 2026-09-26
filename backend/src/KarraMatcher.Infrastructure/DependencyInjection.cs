@@ -121,6 +121,12 @@ public static class DependencyInjection
         services.AddScoped<IConsentRepository, ConsentRepository>();
         services.AddScoped<IChildRepository, ChildRepository>();
         services.AddScoped<ICalendarRepository, CalendarRepository>();
+        services.AddScoped<IPasskeyRepository, PasskeyRepository>();
+
+        // Passkeys: WebAuthn-ceremonierna och den kortlivade utmanings-lagringen. Fido2 självt
+        // registreras i Api-lagret (AddFido2), där origins/domän läses ur konfigurationen.
+        services.AddScoped<Application.Features.Passkeys.IPasskeyCeremony, Security.PasskeyCeremony>();
+        services.AddMemoryCache();
 
         /*
          * Kon ar en singleton -- den ar ett stalle, inte ett per request. Sandaren far en
