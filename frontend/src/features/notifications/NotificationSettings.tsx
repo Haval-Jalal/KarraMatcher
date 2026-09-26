@@ -33,7 +33,7 @@ const ROWS: { key: keyof Settings; label: string; description: string }[] = [
   { key: 'chat', label: 'Chatt', description: 'Meddelanden i lagets och truppens chatt.' },
 ]
 
-export function NotificationSettings({ teamSlug }: { teamSlug: string }) {
+export function NotificationSettings({ teamSlug, title }: { teamSlug: string; title: string }) {
   const { status } = useAuth()
   const queryClient = useQueryClient()
   const [saving, setSaving] = useState(false)
@@ -70,8 +70,8 @@ export function NotificationSettings({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <section className="notif-settings" aria-labelledby="notiser">
-      <h2 id="notiser">Notiser</h2>
+    <section className="notif-settings" aria-labelledby={`notiser-${teamSlug}`}>
+      <h2 id={`notiser-${teamSlug}`}>{title}</h2>
 
       <DevicePushToggle teamSlug={teamSlug} />
 

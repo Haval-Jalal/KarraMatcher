@@ -70,6 +70,14 @@ export function MorePage() {
 
           {loggedIn && (
             <li>
+              <Link className="mer-link" to="/installningar">
+                Inställningar
+              </Link>
+            </li>
+          )}
+
+          {loggedIn && (
+            <li>
               <Link className="mer-link" to="/konto">
                 Mitt konto
               </Link>
