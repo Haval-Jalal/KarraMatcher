@@ -124,7 +124,8 @@ body {
 #root {
   max-width: 640px;
   margin: 0 auto;
-  padding: 16px;
+  /* Extra luft nedtill så den fasta botten-navbaren aldrig döljer sista innehållet/foten. */
+  padding: max(env(safe-area-inset-top), 16px) 16px calc(72px + env(safe-area-inset-bottom));
   min-height: 100svh;
 }
 
@@ -238,127 +239,84 @@ h2 {
  * en drawer -- pa 320 px ryms ingen lankrad, och en meny som skrollar i sidled har poster
  * som ingen hittar. Andrum-huden: nastan ingen chrome.
  */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 10px;
-  margin-bottom: 16px;
-}
+/* ---- Botten-navbar -------------------------------------------------------- */
 
-/* Hamburgaren: en bar glyf, ingen kortram. Full traffyta, mittstrecket kortare. */
-.burger {
-  flex: 0 0 auto;
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: var(--tap-target);
-  height: var(--tap-target);
-  padding: 0 0 0 10px;
-  background: transparent;
-  border: 0;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.burger span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-.burger span:nth-child(3) {
-  width: 13px;
-}
-
-.wordmark {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: var(--text-lg);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  line-height: 1;
-  color: var(--ink);
-}
-
-/* ---- Drawer --------------------------------------------------------------- */
-
-.drawer {
+/*
+ * Appens huvudnavigering: en fast rad längst ned, i tumzonen. De mest använda vyerna syns;
+ * resten bor bakom "Mer". Ersätter den gamla hamburgaren-som-öppnade-en-panel.
+ */
+.bottom-nav {
   position: fixed;
-  inset: 0;
-  z-index: 50;
-  visibility: hidden;
-}
-
-.drawer--open {
-  visibility: visible;
-}
-
-.drawer__overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: rgba(20, 18, 14, 0.36);
-  opacity: 0;
-  transition: opacity 200ms ease;
-  cursor: pointer;
-}
-
-.drawer--open .drawer__overlay {
-  opacity: 1;
-}
-
-.drawer__panel {
-  position: absolute;
-  top: 0;
+  left: 0;
   right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border-strong);
+  /* Håll flikarna fria från hemknappsområdet på iOS/Android i installerat läge. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav__list {
+  display: flex;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.bottom-nav__item {
+  flex: 1 1 0;
+}
+
+/* Ikon över etikett, hela cellen är träffyta (≥ 56 px hög). */
+.bottom-nav__tab {
   display: flex;
   flex-direction: column;
-  width: min(86vw, 340px);
-  height: 100%;
-  padding: 8px 0 24px;
-  background: var(--card);
-  box-shadow: var(--shadow-soft);
-  transform: translateX(100%);
-  transition: transform 220ms ease;
-  overflow-y: auto;
-}
-
-.drawer--open .drawer__panel {
-  transform: none;
-}
-
-.drawer__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px 10px 22px;
-}
-
-.drawer__close {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--tap-target);
-  height: var(--tap-target);
-  font-size: var(--text-lg);
-  background: transparent;
-  border: 0;
+  gap: 2px;
+  min-height: 56px;
+  padding: 6px 2px;
   color: var(--ink-soft);
-  cursor: pointer;
+  text-decoration: none;
+  /* Genomskinlig topplist blir accent på aktiv flik -- form, inte bara färg. */
+  border-top: 3px solid transparent;
 }
 
-.drawer__close:hover {
+.bottom-nav__tab:hover {
   color: var(--ink);
 }
 
-.drawer__list {
+.bottom-nav__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.bottom-nav__label {
+  font-size: var(--text-xs);
+  line-height: 1.1;
+  text-align: center;
+}
+
+/*
+ * Aktuell flik märks med tre saker samtidigt: `aria-current` för skärmläsaren, fetare text,
+ * och en topplist. Färg ensam duger inte (WCAG 1.4.1).
+ */
+.bottom-nav__tab[aria-current='page'] {
+  color: var(--text-strong);
+  font-weight: 600;
+  border-top-color: var(--team-accent);
+}
+
+.bottom-nav__tab:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+/* ---- "Mer"-sidan ---------------------------------------------------------- */
+
+.mer-list {
   display: flex;
   flex-direction: column;
   margin: 0;
@@ -366,13 +324,13 @@ h2 {
   list-style: none;
 }
 
-/* En rad per post, avgränsad med en hårlinje -- lugnt och överblickbart. */
-.drawer__link {
+/* En rad per post, avgränsad med en hårlinje -- samma lugna ton som den gamla menyn. */
+.mer-link {
   display: flex;
   align-items: center;
   width: 100%;
   min-height: var(--tap-target);
-  padding: 0 22px;
+  padding: 0 6px;
   font-family: var(--sans);
   font-size: var(--text-lg);
   text-align: left;
@@ -381,27 +339,17 @@ h2 {
   background: transparent;
   border: 0;
   border-top: 1px solid var(--hair);
-  border-left: 3px solid transparent;
   cursor: pointer;
 }
 
-.drawer__link:hover {
+.mer-link:hover {
   color: var(--ink);
 }
 
-/*
- * Aktuell sida markeras med tre saker samtidigt: `aria-current` for skarmlasaren, fetare
- * text, och en accent-list till vanster. Farg ensam duger inte (WCAG 1.4.1).
- */
-.drawer__link[aria-current='page'] {
-  color: var(--ink);
-  font-weight: 600;
-  border-left-color: var(--team-accent);
-}
-
-/* "Logga ut" skiljs från navigeringen med lite luft ovanför. */
-.drawer__link--action {
+/* "Logga ut" skiljs med luft ovanför och en varnande ton. */
+.mer-link--action {
   margin-top: 12px;
+  color: var(--danger);
 }
 
 /* ---- Lagväljaren ---------------------------------------------------------- */

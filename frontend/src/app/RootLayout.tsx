@@ -1,7 +1,7 @@
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 
-import { AppNav } from '@/components/AppNav'
+import { BottomNav } from '@/components/BottomNav'
 
 /**
  * Ramen runt varje sida.
@@ -40,12 +40,6 @@ export function RootLayout() {
       </a>
 
       {/*
-        Menyn star fore innehallet, alltsa efter hopplanken. Den som anvander tangentbord
-        kan da hoppa forbi den; den som vill navigera tabbar in i den direkt.
-      */}
-      <AppNav />
-
-      {/*
         tabIndex={-1} gör elementet fokuserbart från kod utan att lägga det i tabbordningen.
         Utan det går fokus inte att flytta hit, och hopplänken tar en dit utan att
         skärmläsaren följer med.
@@ -61,6 +55,13 @@ export function RootLayout() {
       <footer className="app-footer">
         <Link to="/integritet">Så hanteras dina uppgifter</Link>
       </footer>
+
+      {/*
+        Huvudnavigeringen ligger sist i dokumentet men fäst längst ned på skärmen. Den som
+        navigerar med tangentbord når innehållet före navbaren; hopplänken överst hoppar förbi
+        båda. Navbaren är bekvämlighet — servern avgör åtkomst (§KM.3).
+      */}
+      <BottomNav />
     </>
   )
 }

@@ -11,6 +11,7 @@ import { PrivacyPage } from '@/features/privacy'
 import { EventDetailPage, TeamSchedulePage } from '@/features/events'
 import { ApplyLandingPage } from '@/features/applications'
 import { AdminPage, InvitationLandingPage } from '@/features/invitations'
+import { MorePage } from '@/features/more'
 import { StartPage } from '@/features/start/StartPage'
 import { SuperAdminPage } from '@/features/superadmin'
 import { SELECTED_TEAM_STORAGE_KEY } from '@/features/teams/selectedTeamContext'
@@ -292,6 +293,17 @@ const privacyRoute = createRoute({
   component: PrivacyPage,
 })
 
+/**
+ * "Mer" — botten-navbarens overflow. Ingen route-grind: sidan är bara en meny och gör inga
+ * API-anrop. Den visar konto/roll-länkar för en inloggad och "Logga in" för en gäst; vad var
+ * och en faktiskt når avgör servern (§KM.3).
+ */
+const moreRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mer',
+  component: MorePage,
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   teamRoute,
@@ -311,6 +323,7 @@ export const routeTree = rootRoute.addChildren([
   cuperIndexRoute,
   cuperTruppRoute,
   privacyRoute,
+  moreRoute,
 ])
 
 export const router = createRouter({
