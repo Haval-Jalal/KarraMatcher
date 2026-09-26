@@ -352,6 +352,52 @@ h2 {
   color: var(--danger);
 }
 
+/* ---- Installations-banner ------------------------------------------------- */
+
+/* Diskret rad högst upp — scrollar bort med sidan, tjatar inte. */
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.install-banner__text {
+  flex: 1 1 auto;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.install-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.install-banner__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  background: transparent;
+  border: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+
+.install-banner__dismiss:hover {
+  color: var(--ink);
+}
+
 /* ---- Kalender-länken ------------------------------------------------------ */
 
 /* Läsbart, markerbart fält — länken är lång, så den får krympa och rulla i sidled. */
