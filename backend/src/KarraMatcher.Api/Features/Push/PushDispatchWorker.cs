@@ -64,55 +64,14 @@ internal sealed partial class PushDispatchWorker(
         {
             using var scope = scopes.CreateScope();
 
-            var repository = scope.ServiceProvider.GetRequiredService<IPushDeliveryRepository>();
-            var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
+            await SendPushAsync(scope, dispatch, cancellationToken).ConfigureAwait(false);
 
-            // Hela laget (AccountIds == null) eller en handfull konton -- och alltid filtrerat
-            // pa vad mottagaren valt for den har sortens notis och det har laget (#65). Ett
-            // tomt konto-set ar inte ett fel: ingen av de inblandade hade en enhet registrerad.
-            var targets = dispatch.AccountIds is null
-                ? await repository
-                    .ListForTeamAsync(dispatch.TeamId, dispatch.Category, cancellationToken)
-                    .ConfigureAwait(false)
-                : dispatch.AccountIds is { Count: > 0 } accounts
-                    ? await repository
-                        .ListForAccountsAsync(dispatch.TeamId, accounts, dispatch.Category, cancellationToken)
-                        .ConfigureAwait(false)
-                    : [];
+            // E-postfallback för kritiska notiser: når dem som vill ha den men saknar en
+            // fungerande push-prenumeration. Körs oavsett om push nådde någon — det tomma
+            // push-utfallet är just fallback-fallet (`#200`).
+            var emailFallback = scope.ServiceProvider.GetRequiredService<EmailFallbackNotifier>();
 
-            if (targets.Count == 0)
-            {
-                return;
-            }
-
-            var delivered = new List<Guid>();
-            var gone = new List<Guid>();
-
-            foreach (var target in targets)
-            {
-                var outcome = await SendWithRetryAsync(
-                    sender, target, dispatch.Message, cancellationToken).ConfigureAwait(false);
-
-                switch (outcome)
-                {
-                    case PushOutcome.Delivered:
-                        delivered.Add(target.Id);
-                        break;
-
-                    case PushOutcome.Gone:
-                        gone.Add(target.Id);
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-            await repository.MarkDeliveredAsync(delivered, cancellationToken).ConfigureAwait(false);
-            await repository.RemoveAsync(gone, cancellationToken).ConfigureAwait(false);
-
-            // Antal, aldrig adresser (§KM.10).
-            LogDispatched(logger, delivered.Count, targets.Count, gone.Count);
+            await emailFallback.SendAsync(dispatch, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -123,6 +82,62 @@ internal sealed partial class PushDispatchWorker(
              */
             LogDispatchFailed(logger, exception);
         }
+    }
+
+    private async Task SendPushAsync(
+        IServiceScope scope,
+        PushDispatch dispatch,
+        CancellationToken cancellationToken)
+    {
+        var repository = scope.ServiceProvider.GetRequiredService<IPushDeliveryRepository>();
+        var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
+
+        // Hela laget (AccountIds == null) eller en handfull konton -- och alltid filtrerat
+        // pa vad mottagaren valt for den har sortens notis och det har laget (#65). Ett
+        // tomt konto-set ar inte ett fel: ingen av de inblandade hade en enhet registrerad.
+        var targets = dispatch.AccountIds is null
+            ? await repository
+                .ListForTeamAsync(dispatch.TeamId, dispatch.Category, cancellationToken)
+                .ConfigureAwait(false)
+            : dispatch.AccountIds is { Count: > 0 } accounts
+                ? await repository
+                    .ListForAccountsAsync(dispatch.TeamId, accounts, dispatch.Category, cancellationToken)
+                    .ConfigureAwait(false)
+                : [];
+
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        var delivered = new List<Guid>();
+        var gone = new List<Guid>();
+
+        foreach (var target in targets)
+        {
+            var outcome = await SendWithRetryAsync(
+                sender, target, dispatch.Message, cancellationToken).ConfigureAwait(false);
+
+            switch (outcome)
+            {
+                case PushOutcome.Delivered:
+                    delivered.Add(target.Id);
+                    break;
+
+                case PushOutcome.Gone:
+                    gone.Add(target.Id);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        await repository.MarkDeliveredAsync(delivered, cancellationToken).ConfigureAwait(false);
+        await repository.RemoveAsync(gone, cancellationToken).ConfigureAwait(false);
+
+        // Antal, aldrig adresser (§KM.10).
+        LogDispatched(logger, delivered.Count, targets.Count, gone.Count);
     }
 
     private static async Task<PushOutcome> SendWithRetryAsync(

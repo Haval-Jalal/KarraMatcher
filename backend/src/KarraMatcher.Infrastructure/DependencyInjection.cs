@@ -106,6 +106,7 @@ public static class DependencyInjection
         services.AddScoped<IEventReminderRepository, EventReminderRepository>();
         services.AddScoped<IChatRepository, ChatRepository>();
         services.AddScoped<IHomeSummaryRepository, HomeSummaryRepository>();
+        services.AddScoped<IEmailFallbackRepository, EmailFallbackRepository>();
         services.AddScoped<IChatRetentionRepository, ChatRetentionRepository>();
         services.AddScoped<IAttendanceRetentionRepository, AttendanceRetentionRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();

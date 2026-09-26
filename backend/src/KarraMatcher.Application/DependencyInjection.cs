@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<Features.Events.Admin.EventAdminService>();
         services.AddScoped<Features.Venues.VenueRegistry>();
         services.AddScoped<Features.Events.Import.ScheduleImportService>();
+        services.AddScoped<Features.Push.EmailFallbackNotifier>();
         services.AddScoped<Features.Carpool.CarpoolOfferService>();
         services.AddScoped<Features.Carpool.CarpoolRequestService>();
         services.AddScoped<Features.Carpool.CarpoolResponseService>();
