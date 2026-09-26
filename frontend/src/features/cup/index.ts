@@ -1,2 +1,3 @@
 export { CupSignupSection } from './CupSignupSection'
-export type { CupSummary, CupSignupChild, MyCupChild } from './cupApi'
+export { CuperPage } from './CuperPage'
+export type { CupSummary, CupSignupChild, MyCupChild, CupListItem } from './cupApi'

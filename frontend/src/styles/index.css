@@ -2590,6 +2590,82 @@ a.match-card:focus-visible .match-card__opponent {
   border-radius: var(--radius);
 }
 
+/* Typfiltret på schemat (`#304`): en tyst knapprad. */
+.schedule-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.schedule-filter__tab {
+  min-height: 36px;
+  padding: 2px 12px;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  background: var(--sunk);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.schedule-filter__tab:hover {
+  color: var(--ink);
+}
+
+.schedule-filter__tab--active {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--card);
+  border-color: var(--hair-strong);
+}
+
+/* Truppens cup-lista (`#304`). */
+.cup-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.cup-card:hover {
+  border-color: var(--hair-strong);
+}
+
+.cup-card__title {
+  font-family: var(--display);
+  font-weight: 600;
+}
+
+.cup-card__meta {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.cup-card__state {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.cup-card__state--full {
+  font-weight: 600;
+  color: var(--ink);
+}
+
 /* Cupens öppna anmälan på händelsesidan (`#296`). */
 .cup {
   margin-top: 24px;

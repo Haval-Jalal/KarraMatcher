@@ -31,8 +31,25 @@ export interface CupSummary {
   mine: MyCupChild[]
 }
 
+/** En cup i trupp-listan med sitt anmälningsläge (`#304`). */
+export interface CupListItem {
+  eventId: string
+  title: string
+  kickoffUtc: string
+  teamName: string
+  colorHex: string
+  open: boolean
+  capacity: number | null
+  spotsLeft: number
+  isFull: boolean
+}
+
 export const getCupSummary = (eventId: string, signal?: AbortSignal): Promise<CupSummary> =>
   getAuthJson<CupSummary>(`/api/v1/events/${encodeURIComponent(eventId)}/cup`, signal)
+
+/** Truppens cuper med anmälningsläge — en trupp-vid lista (`#304`). */
+export const getTruppCups = (truppId: string, signal?: AbortSignal): Promise<CupListItem[]> =>
+  getAuthJson<CupListItem[]>(`/api/v1/trupper/${encodeURIComponent(truppId)}/cups`, signal)
 
 /** Tränaren öppnar (eller ändrar) platstaket. Kräver AdminOfTrupp server-side. */
 export const openCup = (truppId: string, eventId: string, capacity: number): Promise<void> =>

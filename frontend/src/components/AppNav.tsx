@@ -202,6 +202,19 @@ export function AppNav() {
               </li>
             )}
 
+            {loggedIn && (
+              <li>
+                <Link
+                  className="drawer__link"
+                  onClick={close}
+                  to="/cuper"
+                  aria-current={current === 'cuper' ? 'page' : undefined}
+                >
+                  Cuper
+                </Link>
+              </li>
+            )}
+
             {loggedIn && adminOf.length > 0 && (
               <li>
                 <Link
@@ -280,6 +293,7 @@ type Section =
   | 'matcher'
   | 'spelarkort'
   | 'chatt'
+  | 'cuper'
   | 'tranare'
   | 'logga-in'
   | 'konto'
@@ -304,6 +318,7 @@ function sectionOf(pathname: string): Section {
   if (pathname === '/superadmin') return 'superadmin'
   if (pathname === '/admin') return 'admin'
   if (pathname.startsWith('/chatt')) return 'chatt'
+  if (pathname.startsWith('/cuper')) return 'cuper'
 
   if (pathname === '/' || pathname.startsWith('/lag/') || pathname.startsWith('/handelse/')) {
     return 'matcher'
