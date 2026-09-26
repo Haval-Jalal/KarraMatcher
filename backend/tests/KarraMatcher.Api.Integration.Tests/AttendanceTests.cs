@@ -248,6 +248,65 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         Assert.Equal(3, summary.GetProperty("notAnswered").GetInt32());
     }
 
+    // ---- Ändra en redan skickad kallelse (mobil-självständighet, §KM.7 / #597) --------
+    //
+    // Poängen med den app-only PWA:n är att en tränare aldrig ska tvingas till en dator.
+    // Den svåraste operationen att göra i mobilen är att ändra en *redan skickad* kallelse
+    // — byta ut ett barn, ta in ett inlånat — och det är just det en jämförbar app inte
+    // klarar utan dator. Här bevisas att det går via samma API appen använder, och att det
+    // görs skonsamt: ett barn som är kvar behåller sitt svar, ett barn som avmarkeras
+    // försvinner med sitt (§KM.6).
+
+    [Fact]
+    public async Task Admin_AndrarSkickadKallelse_BytBarn_UppdaterarUppsattningen()
+    {
+        var f = await SeedAsync("edit-set");
+
+        // Först skickad: Svart + Svart2.
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await SetKallelseAsync(f, f.SvartChild, f.SvartChild2)).StatusCode);
+
+        // Tränaren ändrar den skickade kallelsen i mobilen: Svart2 ut, Gul (inlånad) in.
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await SetKallelseAsync(f, f.SvartChild, f.GulChild)).StatusCode);
+
+        var calledChildren = (await SummaryAsync(f))
+            .GetProperty("children")
+            .EnumerateArray()
+            .Select(child => child.GetProperty("childId").GetGuid())
+            .ToHashSet();
+
+        Assert.Equal(2, calledChildren.Count);
+        Assert.Contains(f.SvartChild, calledChildren); // kvar
+        Assert.Contains(f.GulChild, calledChildren); // tillagd
+        Assert.DoesNotContain(f.SvartChild2, calledChildren); // avmarkerad
+    }
+
+    [Fact]
+    public async Task Admin_AndrarSkickadKallelse_BevararKvarvarandeSvar_SlapperAvmarkeratsSvar()
+    {
+        var f = await SeedAsync("edit-answers");
+
+        // Skickad till Svart + Svart2; båda hinner svara innan tränaren ändrar sig.
+        await SetKallelseAsync(f, f.SvartChild, f.SvartChild2);
+        await RespondAsync(f.EventId, f.SvartChild, f.SvartGuardian, "Coming");
+        await RespondAsync(f.EventId, f.SvartChild2, f.SvartGuardian2, "NotComing");
+
+        // Tränaren ändrar den skickade kallelsen: Svart2 ut, Gul in. Svart står kvar.
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await SetKallelseAsync(f, f.SvartChild, f.GulChild)).StatusCode);
+
+        var summary = await SummaryAsync(f);
+
+        // Svarts Ja överlevde ändringen; Svart2:s Nej följde med barnet bort; Gul är ny, obesvarad.
+        Assert.Equal(1, summary.GetProperty("coming").GetInt32());
+        Assert.Equal(0, summary.GetProperty("notComing").GetInt32());
+        Assert.Equal(1, summary.GetProperty("notAnswered").GetInt32());
+    }
+
     [Fact]
     public async Task Kalla_MedBarnUtanforTruppen_Ger400()
     {
