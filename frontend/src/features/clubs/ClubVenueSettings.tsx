@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { ApiError } from '@/lib/api'
 
@@ -25,31 +25,28 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
   const venue = useClubVenue(truppId)
   const save = useSetClubVenue(truppId)
 
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  // Fälten härleds i stället för att speglas via en effect (undviker setState-i-effect): null
+  // = "orörd", då visas den sparade planen; så fort användaren skriver håller state deras text.
+  const [name, setName] = useState<string | null>(null)
+  const [address, setAddress] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
 
-  // Förfyll fälten med den sparade planen när den lästs in.
-  useEffect(() => {
-    if (venue.data) {
-      setName(venue.data.name ?? '')
-      setAddress(venue.data.address ?? '')
-    }
-  }, [venue.data])
+  const nameValue = name ?? venue.data?.name ?? ''
+  const addressValue = address ?? venue.data?.address ?? ''
 
   function submit(event: React.FormEvent): void {
     event.preventDefault()
     setFailure(null)
     setSaved(false)
 
-    if (name.trim() === '' || address.trim() === '') {
+    if (nameValue.trim() === '' || addressValue.trim() === '') {
       setFailure('Fyll i både namn och adress.')
       return
     }
 
     save.mutate(
-      { name: name.trim(), address: address.trim() },
+      { name: nameValue.trim(), address: addressValue.trim() },
       {
         onSuccess: () => setSaved(true),
         onError: (error) => setFailure(messageOf(error)),
@@ -85,7 +82,7 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
               id="club-venue-name"
               type="text"
               autoComplete="off"
-              value={name}
+              value={nameValue}
               onChange={(event) => {
                 setName(event.target.value)
                 setSaved(false)
@@ -100,7 +97,7 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
               type="text"
               autoComplete="off"
               placeholder="t.ex. Klarebergsvallen, Göteborg"
-              value={address}
+              value={addressValue}
               onChange={(event) => {
                 setAddress(event.target.value)
                 setSaved(false)
