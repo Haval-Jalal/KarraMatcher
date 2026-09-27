@@ -18,6 +18,13 @@ import { BottomNav } from '@/components/BottomNav'
  * läsa där den stod — ofta mitt i den gamla sidan. Fokus flyttas därför till den nya
  * sidans början vid varje adressbyte, men inte vid första inläsningen, då webbläsaren
  * redan gör rätt.
+ *
+ * <h3>Sidövergång (`#redesign`)</h3>
+ *
+ * Innehållet ligger i en wrapper med `key={pathname}`, så den remontas vid varje adressbyte
+ * och spelar en mjuk in-animation (fade + lyft). Det gör sidbyten kända i stället för att
+ * innehållet bara "poppar". Animationen tystas för den som valt lugnare rörelse
+ * (`prefers-reduced-motion`, se stilmallen).
  */
 export function RootLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -45,7 +52,9 @@ export function RootLayout() {
         skärmläsaren följer med.
       */}
       <div id="innehall" ref={target} tabIndex={-1}>
-        <Outlet />
+        <div className="page-enter" key={pathname}>
+          <Outlet />
+        </div>
       </div>
 
       {/*
