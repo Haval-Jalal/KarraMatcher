@@ -32,34 +32,27 @@ export function BackupSection({ onChanged }: { onChanged: () => void }) {
     <section className="backup">
       <h2>Säkerhetskopia</h2>
 
-      {neverBackedUp && (
+      {neverBackedUp ? (
         <p className="state state--error" role="status">
-          <strong>Du har inte sparat någon kod än.</strong> Byter du telefon, eller rensar
-          webbläsarens data, är statistiken borta — det finns ingen kopia någon annanstans.
+          <strong>Ingen kopia än.</strong> Byter du telefon eller rensar webbläsaren är statistiken
+          borta — det finns ingen kopia någon annanstans.
+        </p>
+      ) : (
+        <p className="state" role="status">
+          Säkerhetskopierad. Uppdatera kopian när du lagt in nya matcher.
         </p>
       )}
-
-      <p className="state">
-        Koden innehåller barnen och deras matchrapporter. Spara den där du hittar den igen — i en
-        anteckning, ett mejl till dig själv, eller en lapp i plånboken.
-      </p>
-
-      <label className="form__field" htmlFor="backupkod">
-        <span>Din kod</span>
-        <textarea id="backupkod" readOnly rows={3} value={code} />
-      </label>
 
       <div className="actions">
         <button
           type="button"
-          className="button"
+          className="button button--action"
           onClick={() => {
             void (async () => {
               try {
                 await navigator.clipboard.writeText(code)
               } catch {
-                // Urklipp kan vara blockerat. Koden står redan i fältet ovan, så den går
-                // att markera och kopiera för hand — knappen är genvägen, inte enda vägen.
+                // Urklipp kan vara blockerat. Koden går att markera för hand under "Visa koden".
               }
 
               const stamped = { ...card, lastBackupUtc: new Date().toISOString() }
@@ -77,69 +70,81 @@ export function BackupSection({ onChanged }: { onChanged: () => void }) {
 
       {copied && (
         <p className="state" role="status">
-          Koden är kopierad. Klistra in den någonstans du hittar den igen.
+          Koden är kopierad. Spara den någonstans du hittar den igen — en anteckning, ett mejl till
+          dig själv, eller en lapp i plånboken.
         </p>
       )}
 
-      <h3>Återställ från en kod</h3>
+      {/* Koden är lång och rörs sällan — göms tills man vill se eller kopiera den för hand. */}
+      <details className="backup__panel">
+        <summary>Visa koden</summary>
+        <label className="form__field" htmlFor="backupkod">
+          <span className="visually-hidden">Din säkerhetskopieringskod</span>
+          <textarea id="backupkod" readOnly rows={3} value={code} />
+        </label>
+      </details>
 
-      <p className="state">
-        Import <strong>lägger till</strong> — det som redan finns på den här telefonen rörs inte.
-      </p>
+      <details className="backup__panel">
+        <summary>Återställ från en kod</summary>
 
-      <label className="form__field" htmlFor="importkod">
-        <span>Klistra in en kod</span>
-        <textarea
-          id="importkod"
-          rows={3}
-          value={pasted}
-          onChange={(event) => {
-            setPasted(event.target.value)
-            setOutcome(null)
-          }}
-        />
-      </label>
-
-      <div className="actions">
-        <button
-          type="button"
-          className="button"
-          onClick={() => {
-            const result = decodeBackup(pasted)
-
-            if (!result.ok) {
-              setOutcome({ ok: false, message: result.reason })
-
-              return
-            }
-
-            const before = readCard()
-            const merged = mergeCards(before, result.card)
-
-            writeCard(merged)
-            setCard(merged)
-            setPasted('')
-            setOutcome({
-              ok: true,
-              message:
-                describeMerge(before, merged) +
-                (result.legacy ? ' Koden kom från den gamla appen.' : ''),
-            })
-            onChanged()
-          }}
-        >
-          Återställ
-        </button>
-      </div>
-
-      {outcome !== null && (
-        <p
-          className={outcome.ok ? 'state' : 'state state--error'}
-          role={outcome.ok ? 'status' : 'alert'}
-        >
-          {outcome.message}
+        <p className="admin-muted">
+          Import <strong>lägger till</strong> — det som redan finns på den här telefonen rörs inte.
         </p>
-      )}
+
+        <label className="form__field" htmlFor="importkod">
+          <span>Klistra in en kod</span>
+          <textarea
+            id="importkod"
+            rows={3}
+            value={pasted}
+            onChange={(event) => {
+              setPasted(event.target.value)
+              setOutcome(null)
+            }}
+          />
+        </label>
+
+        <div className="actions">
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              const result = decodeBackup(pasted)
+
+              if (!result.ok) {
+                setOutcome({ ok: false, message: result.reason })
+
+                return
+              }
+
+              const before = readCard()
+              const merged = mergeCards(before, result.card)
+
+              writeCard(merged)
+              setCard(merged)
+              setPasted('')
+              setOutcome({
+                ok: true,
+                message:
+                  describeMerge(before, merged) +
+                  (result.legacy ? ' Koden kom från den gamla appen.' : ''),
+              })
+              onChanged()
+            }}
+          >
+            Återställ
+          </button>
+        </div>
+
+        {outcome !== null && (
+          <p
+            className={outcome.ok ? 'state' : 'state state--error'}
+            role={outcome.ok ? 'status' : 'alert'}
+          >
+            {outcome.message}
+          </p>
+        )}
+      </details>
     </section>
   )
 }
