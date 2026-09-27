@@ -176,6 +176,7 @@ public partial class PlayerStatisticsTests
                 "Accounts", "AgeGroups", "AttendanceCalls", "AttendanceInvitations", "AuditEntries",
                 "CalendarTokens",
                 "CarpoolOffers", "CarpoolRequests", "ChatMessages", "ChatReactions", "ChatReports", "Children", "Clubs",
+                "CupTeamMembers", "CupTeams",
                 "Events", "GuardianConsents",
                 "Guardianships",
                 "Invitations", "LoginCodes", "MembershipApplications",

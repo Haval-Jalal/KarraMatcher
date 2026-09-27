@@ -50,7 +50,10 @@ function stub(summary: unknown): Sent[] {
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
       if (url.includes('/auth/refresh'))
         return Promise.resolve(jsonResponse({ accessToken: token }))
-      if (url.includes(`/events/${CUP_ID}/cup`)) return Promise.resolve(jsonResponse(summary))
+      if (url.includes(`/events/${CUP_ID}/cup`)) {
+        // teams (`#335`) fylls på som standard så äldre stubbar utan cup-lag fungerar.
+        return Promise.resolve(jsonResponse({ teams: [], ...(summary as Record<string, unknown>) }))
+      }
       if (url.includes(`/api/v1/events/${CUP_ID}`)) {
         return Promise.resolve(jsonResponse({ event: CUP_EVENT, team: TEAM, truppId: 'trupp-1' }))
       }

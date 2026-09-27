@@ -1,5 +1,7 @@
 using KarraMatcher.Application.Abstractions.Audit;
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Push;
+using KarraMatcher.Application.Features.Push;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
 using KarraMatcher.Domain.Events;
@@ -75,9 +77,15 @@ public sealed record CupListItemDto(
     int SpotsLeft,
     bool IsFull);
 
+/// <summary>Ett cup-lag i sammanställningen (`#335`): namnet och de placerade barnen.</summary>
+public sealed record CupTeamDto(Guid Id, string Name, IReadOnlyList<CupTeamMemberDto> Members);
+
+/// <summary>Ett placerat barn i ett cup-lag (`#335`). Visas som "Liam J" (§KM.1).</summary>
+public sealed record CupTeamMemberDto(Guid ChildId, string DisplayName);
+
 /// <summary>
 /// Cupens anmälningsläge: platstak, antal tagna, de anmälda barnen och — för en vårdnadshavare
-/// — hens egna barn att anmäla (`#295`/`#296`).
+/// — hens egna barn att anmäla (`#295`/`#296`), samt de cup-lag en admin byggt (`#335`).
 /// </summary>
 public sealed record CupSummaryDto(
     bool Open,
@@ -86,7 +94,8 @@ public sealed record CupSummaryDto(
     int SpotsLeft,
     bool IsFull,
     IReadOnlyList<CupSignupChildDto> SignedUp,
-    IReadOnlyList<MyCupChildDto> Mine);
+    IReadOnlyList<MyCupChildDto> Mine,
+    IReadOnlyList<CupTeamDto> Teams);
 
 /// <summary>
 /// Cupens <b>öppna</b> anmälan (`#295`). Till skillnad från den riktade kallelsen (`#199`, där
@@ -103,8 +112,10 @@ public sealed record CupSummaryDto(
 /// </summary>
 public sealed class CupSignupService(
     IAttendanceCallRepository calls,
+    ICupTeamRepository cupTeams,
     IMembershipService membership,
-    IAuditLog audit)
+    IAuditLog audit,
+    IPushOutbox push)
 {
     /// <summary>Tränaren öppnar (eller ändrar) cupens platstak. Kräver att händelsen är en cup.</summary>
     public async Task<OpenCupOutcome> OpenAsync(
@@ -127,6 +138,7 @@ public sealed class CupSignupService(
         }
 
         var call = await calls.FindCallByEventAsync(eventId, cancellationToken).ConfigureAwait(false);
+        var firstOpen = call is null;
 
         if (call is null)
         {
@@ -153,6 +165,16 @@ public sealed class CupSignupService(
         }
 
         await calls.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Först när anmälan öppnas (inte när taket justeras) får hela truppen veta det (`#335`).
+        // Neutralt: ingen barn-PII, bara en uppmaning att anmäla + länk till cupen (§KM.1/§KM.10).
+        if (firstOpen)
+        {
+            push.Enqueue(PushDispatch.ToTrupp(
+                context.AgeGroupId,
+                PushCategory.Kallelse,
+                new PushMessage("Anmälan öppen till cupen", "Anmäl ditt barn i appen.", $"/handelse/{eventId}")));
+        }
 
         return OpenCupOutcome.Opened;
     }
@@ -334,9 +356,11 @@ public sealed class CupSignupService(
                 row.ChildId, $"{row.FirstName} {row.LastInitial}", row.SignedUp))
             .ToArray();
 
+        var cupTeamDtos = await BuildCupTeamsAsync(eventId, cancellationToken).ConfigureAwait(false);
+
         if (call is null || call.Capacity is null)
         {
-            return new CupSummaryDto(false, null, 0, 0, false, [], mine);
+            return new CupSummaryDto(false, null, 0, 0, false, [], mine, cupTeamDtos);
         }
 
         var rows = await calls.ListInvitationRowsAsync(call.Id, cancellationToken).ConfigureAwait(false);
@@ -350,6 +374,34 @@ public sealed class CupSignupService(
         var taken = signedUp.Length;
         var spotsLeft = Math.Max(0, capacity - taken);
 
-        return new CupSummaryDto(true, capacity, taken, spotsLeft, taken >= capacity, signedUp, mine);
+        return new CupSummaryDto(
+            true, capacity, taken, spotsLeft, taken >= capacity, signedUp, mine, cupTeamDtos);
+    }
+
+    /// <summary>Cup-lagen med sina placerade barn (`#335`), i skapandeordning. Barn som "Liam J" (§KM.1).</summary>
+    private async Task<IReadOnlyList<CupTeamDto>> BuildCupTeamsAsync(
+        Guid eventId, CancellationToken cancellationToken)
+    {
+        var teams = await cupTeams.ListTeamsAsync(eventId, cancellationToken).ConfigureAwait(false);
+
+        if (teams.Count == 0)
+        {
+            return [];
+        }
+
+        var members = await cupTeams.ListMembersAsync(eventId, cancellationToken).ConfigureAwait(false);
+
+        return
+        [
+            .. teams.Select(team => new CupTeamDto(
+                team.Id,
+                team.Name,
+                [
+                    .. members
+                        .Where(member => member.CupTeamId == team.Id)
+                        .Select(member => new CupTeamMemberDto(
+                            member.ChildId, $"{member.FirstName} {member.LastInitial}")),
+                ])),
+        ];
     }
 }
