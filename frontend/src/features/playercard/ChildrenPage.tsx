@@ -82,54 +82,66 @@ export function ChildrenPage() {
       {card.children.length === 0 ? (
         <p className="state">Inga barn tillagda än. Lägg till det första nedan.</p>
       ) : (
-        <ul className="children">
-          {card.children.map((child) => (
-            <li key={child.id} className="children__row">
-              <span className="children__name">{child.name}</span>
-              {child.shirtNumber !== null && child.shirtNumber !== '' && (
-                <span className="children__number">{`Nr ${child.shirtNumber}`}</span>
-              )}
-              <span className="children__team">
-                {teams?.find((team) => team.slug === child.teamSlug)?.name ?? 'Inget lag valt'}
-              </span>
+        <ul className="child-cards">
+          {card.children.map((child) => {
+            const badges = earnedBadges(totalsFor(card, child.id)).length
+            const teamName = teams?.find((team) => team.slug === child.teamSlug)?.name
+            const meta = [
+              child.shirtNumber !== null && child.shirtNumber !== ''
+                ? `Nr ${child.shirtNumber}`
+                : null,
+              teamName ?? null,
+            ]
+              .filter((part): part is string => part !== null)
+              .join(' · ')
 
-              <button
-                type="button"
-                className="button"
-                onClick={() => {
-                  setEditing(child)
-                }}
-              >
-                <span aria-hidden="true">Ändra</span>
-                <span className="visually-hidden">{`Ändra ${child.name}`}</span>
-              </button>
+            return (
+              <li key={child.id} className="child-card">
+                <div className="child-card__head">
+                  <span className="child-card__name">{child.name}</span>
+                  {meta !== '' && <span className="child-card__meta">{meta}</span>}
+                </div>
 
-              <button
-                type="button"
-                className="button button--danger"
-                onClick={() => {
-                  setConfirmRemove(child)
-                }}
-              >
-                <span aria-hidden="true">Ta bort</span>
-                <span className="visually-hidden">{`Ta bort ${child.name}`}</span>
-              </button>
+                {/*
+                  Märkena visas på barnets egen sida (#46), bredvid siffrorna de räknas ur.
+                  Länken hit är kortets primära handling — att öppna spelarkortet.
+                */}
+                <Link
+                  className="button button--action child-card__open"
+                  to="/spelarkort/$childId"
+                  params={{ childId: child.id }}
+                  aria-label={`Öppna spelarkortet för ${child.name} — ${String(badges)} av ${String(BADGES.length)} märken upplåsta`}
+                >
+                  <span>Öppna spelarkortet</span>
+                  <span className="child-card__badges">{`${String(badges)}/${String(BADGES.length)} märken`}</span>
+                </Link>
 
-              {/*
-                Marken visas inte har langre utan pa barnets egen sida (#46), dar de star
-                bredvid siffrorna de raknas ur. Raden sager anda hur manga som ar upplasta,
-                sa man ser att det finns nagot att oppna.
-              */}
-              <Link
-                className="button children__card"
-                to="/spelarkort/$childId"
-                params={{ childId: child.id }}
-                aria-label={`Öppna spelarkortet för ${child.name} — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)} märken upplåsta`}
-              >
-                {`Spelarkort — ${String(earnedBadges(totalsFor(card, child.id)).length)} av ${String(BADGES.length)} märken`}
-              </Link>
-            </li>
-          ))}
+                <div className="child-card__secondary">
+                  <button
+                    type="button"
+                    className="button button--small"
+                    onClick={() => {
+                      setEditing(child)
+                    }}
+                  >
+                    <span aria-hidden="true">Ändra</span>
+                    <span className="visually-hidden">{`Ändra ${child.name}`}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button button--small button--danger"
+                    onClick={() => {
+                      setConfirmRemove(child)
+                    }}
+                  >
+                    <span aria-hidden="true">Ta bort</span>
+                    <span className="visually-hidden">{`Ta bort ${child.name}`}</span>
+                  </button>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
 
