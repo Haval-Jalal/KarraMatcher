@@ -107,6 +107,7 @@ public sealed class MatchPushTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = ageGroup.Id,
             TeamId = team.Id,
             KickoffUtc = now.AddDays(5),
             OpponentName = "Torslanda",

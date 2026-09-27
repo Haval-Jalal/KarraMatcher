@@ -18,6 +18,12 @@ public interface IEventAdminRepository
 
     public Task<Team?> FindTeamBySlugAsync(string slug, CancellationToken cancellationToken);
 
+    /// <summary>Truppen (åldersgruppen) med sin klubb — för att skapa en trupp-vid händelse (`#332`).</summary>
+    public Task<AgeGroup?> FindAgeGroupAsync(Guid ageGroupId, CancellationToken cancellationToken);
+
+    /// <summary>Sant om laget hör till truppen — vaktar att en admin bara riktar mot sina egna lag.</summary>
+    public Task<bool> TeamInTruppAsync(Guid teamId, Guid ageGroupId, CancellationToken cancellationToken);
+
     public Task<bool> VenueExistsAsync(Guid venueId, CancellationToken cancellationToken);
 
     public Task AddAsync(Event item, CancellationToken cancellationToken);

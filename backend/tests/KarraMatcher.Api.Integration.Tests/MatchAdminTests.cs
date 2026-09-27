@@ -78,6 +78,7 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = ageGroup.Id,
             TeamId = team.Id,
             KickoffUtc = Kickoff,
             OpponentName = "Torslanda",

@@ -61,7 +61,8 @@ public sealed class EventAdminService(
             return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
         }
 
-        var location = await ResolveLocationAsync(team, draft, cancellationToken).ConfigureAwait(false);
+        var location = await ResolveLocationAsync(team.AgeGroup?.Club, draft, cancellationToken)
+            .ConfigureAwait(false);
 
         if (location.Outcome != EventSaveOutcome.Ok)
         {
@@ -117,6 +118,88 @@ public sealed class EventAdminService(
         return new EventSaveResult(EventSaveOutcome.Ok, created);
     }
 
+    /// <summary>
+    /// Skapar en händelse i truppen som admin (`#332`). Till skillnad från <see cref="CreateAsync"/>
+    /// är laget valfritt: <paramref name="teamId"/> <c>null</c> = en trupp-vid händelse (hela
+    /// truppen), ett satt lag = en lag-riktad händelse. Laget måste höra till truppen.
+    /// </summary>
+    public async Task<EventSaveResult> CreateForTruppAsync(
+        Guid truppId,
+        Guid? teamId,
+        EventDraft draft,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var trupp = await events.FindAgeGroupAsync(truppId, cancellationToken).ConfigureAwait(false);
+
+        if (trupp is null)
+        {
+            return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
+        }
+
+        // Objektnivå-authz: en admin får bara rikta mot sina egna lag (checklistan 2.6).
+        if (teamId is Guid targetTeam
+            && !await events.TeamInTruppAsync(targetTeam, truppId, cancellationToken).ConfigureAwait(false))
+        {
+            return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
+        }
+
+        var location = await ResolveLocationAsync(trupp.Club, draft, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (location.Outcome != EventSaveOutcome.Ok)
+        {
+            return new EventSaveResult(location.Outcome, null);
+        }
+
+        var isMatch = draft.Type == EventType.Match;
+
+        var item = new Event
+        {
+            Id = Guid.NewGuid(),
+            AgeGroupId = truppId,
+            TeamId = teamId,
+            Type = draft.Type,
+            KickoffUtc = draft.KickoffUtc,
+            Title = isMatch ? null : Blank(draft.Title),
+            OpponentName = isMatch ? draft.Opponent?.Trim() : null,
+            VenueId = location.VenueId,
+            IsHome = location.IsHome,
+            AddressOverride = location.Address,
+            Latitude = location.Latitude,
+            Longitude = location.Longitude,
+            Note = Blank(draft.Note),
+            Status = EventStatus.Scheduled,
+            IcsSequence = 0,
+            UpdatedUtc = DateTime.UtcNow,
+        };
+
+        await events.AddAsync(item, cancellationToken).ConfigureAwait(false);
+
+        await audit.RecordAsync(
+            AuditActions.EventCreated,
+            actorAccountId,
+            cancellationToken,
+            item.Id,
+            EventSummary.Describe(item)).ConfigureAwait(false);
+
+        await events.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var created = await ReloadAsync(item.Id, cancellationToken).ConfigureAwait(false);
+
+        // Lag-riktad → notis till laget. Trupp-vid (utan lag) skjuts upp: push-till-truppen är
+        // en egen uppgift (den behöver ett beslut om per-lag-notisvalet, §KM.7/#65).
+        if (created is not null && teamId is Guid notifyTeam)
+        {
+            push.Enqueue(PushDispatch.ToTeam(
+                notifyTeam, PushCategory.EventChange, EventNotification.Created(created)));
+        }
+
+        return new EventSaveResult(EventSaveOutcome.Ok, created);
+    }
+
     /// <summary>Ändrar en händelse (`#307`). Hemma/borta-adressen löses om precis som vid skapande.</summary>
     public async Task<EventSaveResult> UpdateAsync(
         string teamSlug,
@@ -134,7 +217,9 @@ public sealed class EventAdminService(
             return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
         }
 
-        var location = await ResolveLocationAsync(item.Team!, draft, cancellationToken)
+        // Trupp-vid händelse (`#332`) har inget lag; klubben nås då via truppen direkt.
+        var location = await ResolveLocationAsync(
+            item.Team?.AgeGroup?.Club ?? item.AgeGroup?.Club, draft, cancellationToken)
             .ConfigureAwait(false);
 
         if (location.Outcome != EventSaveOutcome.Ok)
@@ -326,7 +411,7 @@ public sealed class EventAdminService(
     /// </list>
     /// </summary>
     private async Task<Resolved> ResolveLocationAsync(
-        Team team, EventDraft draft, CancellationToken cancellationToken)
+        Club? club, EventDraft draft, CancellationToken cancellationToken)
     {
         if (draft.VenueId is not null)
         {
@@ -341,8 +426,6 @@ public sealed class EventAdminService(
 
         if (draft.IsHome == true)
         {
-            var club = team.AgeGroup?.Club;
-
             if (club?.HomeLatitude is null || club.HomeLongitude is null)
             {
                 return new Resolved(EventSaveOutcome.NoHomeVenue, null, null, null, null, null);
