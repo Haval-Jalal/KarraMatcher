@@ -71,6 +71,7 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = ageGroup.Id,
             TeamId = team.Id,
             KickoffUtc = Kickoff,
             OpponentName = "Detaljmotstandaren",

@@ -59,6 +59,7 @@ public class GetEventQueryHandlerTests
 
         Assert.NotNull(result);
         Assert.Equal(match.Id, result.Event.Id);
+        Assert.NotNull(result.Team); // lag-riktad match → laget finns (trupp-vid = null, `#332`)
         Assert.Equal("gul", result.Team.Slug);
         Assert.Equal("P2016", result.Team.AgeGroup);
     }
@@ -107,18 +108,23 @@ public class GetEventQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MatchUtanLag_GerNull()
+    public async Task HandleAsync_TruppVidHandelse_GerDtoUtanLag()
     {
-        // Ska inte kunna hända -- främmande nyckeln är obligatorisk -- men ett null som
-        // slinker igenom hade blivit ett 500 hos anroparen i stället för ett 404.
+        // En trupp-vid händelse (`#332`) har inget lag men hör alltid till en trupp. Den ska
+        // visas — utan lagfärg — inte 404:a. Truppens id kommer direkt ur händelsen.
         var repository = new FakeEventRepository();
+        var truppId = Guid.NewGuid();
         var match = NewMatch();
         match.Team = null;
+        match.TeamId = null;
+        match.AgeGroupId = truppId;
         repository.Matches.Add(match);
         var handler = new GetEventQueryHandler(repository);
 
         var result = await handler.HandleAsync(new GetEventQuery(match.Id), CancellationToken.None);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.Null(result.Team);
+        Assert.Equal(truppId, result.TruppId);
     }
 }
