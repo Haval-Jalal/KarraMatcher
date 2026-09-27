@@ -10,4 +10,9 @@ internal sealed class FakeEventRepository : IEventRepository
 
     public Task<Event?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
         Task.FromResult(Matches.FirstOrDefault(match => match.Id == id));
+
+    public Task<IReadOnlyList<Event>> ListByTruppAsync(
+        Guid ageGroupId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Event>>(
+            [.. Matches.Where(match => match.AgeGroupId == ageGroupId).OrderBy(match => match.KickoffUtc)]);
 }
