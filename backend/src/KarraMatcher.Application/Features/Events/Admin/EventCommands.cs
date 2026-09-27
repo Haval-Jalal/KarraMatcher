@@ -30,6 +30,13 @@ public sealed record CancelEventCommand(string TeamSlug, Guid EventId, Guid Acto
 public sealed record DeleteEventCommand(string TeamSlug, Guid EventId, Guid ActorAccountId)
     : ICommand<bool>;
 
+/// <summary>Skapar en händelse i truppen som admin (`#332`). Laget är valfritt (null = trupp-vid).</summary>
+public sealed record CreateTruppEventCommand(
+    Guid TruppId,
+    Guid? TeamId,
+    EventDraft Draft,
+    Guid ActorAccountId) : ICommand<EventSaveResult>;
+
 internal sealed class CreateEventCommandHandler(EventAdminService service)
     : ICommandHandler<CreateEventCommand, EventSaveResult>
 {
@@ -39,6 +46,19 @@ internal sealed class CreateEventCommandHandler(EventAdminService service)
 
         return service.CreateAsync(
             command.TeamSlug, command.Draft, command.ActorAccountId, cancellationToken);
+    }
+}
+
+internal sealed class CreateTruppEventCommandHandler(EventAdminService service)
+    : ICommandHandler<CreateTruppEventCommand, EventSaveResult>
+{
+    public Task<EventSaveResult> HandleAsync(
+        CreateTruppEventCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.CreateForTruppAsync(
+            command.TruppId, command.TeamId, command.Draft, command.ActorAccountId, cancellationToken);
     }
 }
 

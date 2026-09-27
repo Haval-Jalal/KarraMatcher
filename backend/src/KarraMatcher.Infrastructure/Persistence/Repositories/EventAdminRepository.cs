@@ -17,6 +17,11 @@ internal sealed class EventAdminRepository(KarraMatcherDbContext context) : IEve
             .Include(e => e.Team)
                 .ThenInclude(team => team!.AgeGroup)
                     .ThenInclude(ageGroup => ageGroup!.Club)
+
+            // Trupp-vid händelse (`#332`) saknar lag; klubben (för en hemma-adress) nås via
+            // truppen direkt.
+            .Include(e => e.AgeGroup)
+                .ThenInclude(ageGroup => ageGroup!.Club)
             .Include(e => e.Venue)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
@@ -26,6 +31,16 @@ internal sealed class EventAdminRepository(KarraMatcherDbContext context) : IEve
             .Include(t => t.AgeGroup)
                 .ThenInclude(ageGroup => ageGroup!.Club)
             .FirstOrDefaultAsync(t => t.Slug == slug, cancellationToken);
+
+    public Task<AgeGroup?> FindAgeGroupAsync(Guid ageGroupId, CancellationToken cancellationToken) =>
+        context.AgeGroups
+            .AsNoTracking()
+            .Include(ageGroup => ageGroup.Club)
+            .FirstOrDefaultAsync(ageGroup => ageGroup.Id == ageGroupId, cancellationToken);
+
+    public Task<bool> TeamInTruppAsync(Guid teamId, Guid ageGroupId, CancellationToken cancellationToken) =>
+        context.Teams.AsNoTracking()
+            .AnyAsync(team => team.Id == teamId && team.AgeGroupId == ageGroupId, cancellationToken);
 
     public Task<bool> VenueExistsAsync(Guid venueId, CancellationToken cancellationToken) =>
         context.Venues.AsNoTracking().AnyAsync(v => v.Id == venueId, cancellationToken);
