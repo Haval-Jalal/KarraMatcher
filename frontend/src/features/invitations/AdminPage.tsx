@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react'
 
+import { CreateActivity } from '@/features/activities'
 import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
 import { BarnOchLag } from '@/features/children'
@@ -9,11 +10,19 @@ import { AdminOverview } from './AdminOverview'
 import { InvitationsPanel } from './InvitationsPanel'
 import { useMyTrupper } from './useInvitations'
 
-const SECTIONS = ['oversikt', 'barn', 'inbjudningar', 'ansokningar', 'installningar'] as const
+const SECTIONS = [
+  'oversikt',
+  'aktiviteter',
+  'barn',
+  'inbjudningar',
+  'ansokningar',
+  'installningar',
+] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 const LABEL: Record<SectionKey, string> = {
   oversikt: 'Översikt',
+  aktiviteter: 'Aktiviteter',
   barn: 'Barn & lag',
   inbjudningar: 'Inbjudningar',
   ansokningar: 'Ansökningar',
@@ -180,6 +189,8 @@ function AdminSections({ truppId }: { truppId: string }) {
         {active === 'oversikt' && (
           <AdminOverview truppId={truppId} onGotoApplications={() => setActive('ansokningar')} />
         )}
+
+        {active === 'aktiviteter' && <CreateActivity truppId={truppId} />}
 
         {active === 'barn' && <BarnOchLag truppId={truppId} />}
 

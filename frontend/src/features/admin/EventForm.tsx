@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -70,11 +70,20 @@ export function EventForm({
   existing,
   onSubmit,
   onCancel,
+  onTypeChange,
+  targetSlot,
 }: {
   truppId: string
   existing?: TeamEvent
   onSubmit: (input: EventInput) => Promise<void>
   onCancel: () => void
+  /**
+   * Meddelar föräldern när typen ändras (`#333`), så en admin-vy kan byta kallelsens förval per
+   * typ. Utelämnas i tränarens lag-väg — där finns ingen målgrupp.
+   */
+  onTypeChange?: (type: EventInput['type']) => void
+  /** Valfritt innehåll (t.ex. kallelse-målgruppen) som visas inuti formuläret, före knapparna. */
+  targetSlot?: ReactNode
 }) {
   const [failure, setFailure] = useState<string | null>(null)
   const club = useClubVenue(truppId)
@@ -149,6 +158,7 @@ export function EventForm({
             const next = event.target.value as FormValues['type']
             setType(next)
             setValue('type', next, { shouldValidate: false })
+            onTypeChange?.(next)
           }}
         >
           {(['Match', 'Training', 'Cup', 'Other'] as const).map((value) => (
@@ -278,6 +288,8 @@ export function EventForm({
         <label htmlFor="notis">Notis till föräldrarna (valfritt)</label>
         <input id="notis" type="text" autoComplete="off" {...register('note')} />
       </div>
+
+      {targetSlot}
 
       {failure !== null && (
         <p className="state state--error" role="alert">
