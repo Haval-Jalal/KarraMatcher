@@ -63,6 +63,12 @@ export function AdminPage() {
 
   const options = trupper.data ?? []
 
+  // Med bara en trupp finns inget att välja: den är förvald och väljaren visas inte. Väljaren
+  // dyker upp först för den som är admin/tränare i flera trupper (t.ex. P2014 och P2016). Härlett
+  // under render — inget eget tillstånd som kan hamna i otakt, och ingen blink från en effekt.
+  const onlyTruppId = options.length === 1 ? options[0]!.id : null
+  const selectedTruppId = truppId ?? onlyTruppId
+
   return (
     <main className="page admin">
       <header className="app-header">
@@ -81,12 +87,12 @@ export function AdminPage() {
         <p className="state">Du är inte admin för någon trupp än.</p>
       )}
 
-      {options.length > 0 && (
+      {options.length > 1 && (
         <div className="admin-trupp-picker form__field">
           <label htmlFor="admin-valj-trupp">Trupp</label>
           <select
             id="admin-valj-trupp"
-            value={truppId ?? ''}
+            value={selectedTruppId ?? ''}
             onChange={(event) => setTruppId(event.target.value === '' ? null : event.target.value)}
           >
             <option value="">Välj trupp…</option>
@@ -99,7 +105,9 @@ export function AdminPage() {
         </div>
       )}
 
-      {truppId !== null && <AdminSections key={truppId} truppId={truppId} />}
+      {selectedTruppId !== null && (
+        <AdminSections key={selectedTruppId} truppId={selectedTruppId} />
+      )}
     </main>
   )
 }

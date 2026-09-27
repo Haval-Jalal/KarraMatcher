@@ -119,8 +119,7 @@ describe('Ansökningskön', () => {
 
     renderRoute('/admin')
 
-    await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
-
+    // En enda trupp är förvald (#331) — ingen väljare att passera.
     // Ansökningar bor bakom sin flik sedan admin blev översikt + sektioner (#279).
     await user.click(await screen.findByRole('tab', { name: 'Ansökningar' }))
 

@@ -133,9 +133,8 @@ describe('Trupp-adminvyn', () => {
 
     renderRoute('/admin')
 
-    await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
-
-    // Efter val landar man på Översikt; Inbjudningar bor bakom sin flik (#279).
+    // Med en enda trupp är den förvald — ingen väljare. Efter start landar man på Översikt;
+    // Inbjudningar bor bakom sin flik (#279).
     await user.click(await screen.findByRole('tab', { name: 'Inbjudningar' }))
 
     const panel = await screen.findByRole('heading', { name: 'Inbjudningar' })
@@ -210,8 +209,7 @@ describe('Trupp-adminvyn', () => {
 
     renderRoute('/admin')
 
-    await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
-
+    // En enda trupp → förvald, ingen väljare.
     // Översikt är default: nyckeltal och en "Att göra"-rad som pekar på Ansökningar.
     expect(await screen.findByText('En förälder väntar på svar på sin ansökan')).toBeInTheDocument()
     expect(screen.getByText('barn')).toBeInTheDocument()
@@ -221,5 +219,49 @@ describe('Trupp-adminvyn', () => {
 
     expect(await screen.findByRole('button', { name: /Liam J/ })).toBeInTheDocument()
     expect(screen.queryByText('En förälder väntar på svar på sin ansökan')).not.toBeInTheDocument()
+  })
+
+  it('med en enda trupp är den förvald och väljaren visas inte (#331)', async () => {
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token, (url) => {
+      if (url.includes('/my-trupper')) {
+        return [
+          { id: 'trupp-1', clubName: 'Kärra', sportName: 'Fotboll', name: 'P2016', season: '2026' },
+        ]
+      }
+      return []
+    })
+    setAccessToken(token)
+
+    renderRoute('/admin')
+
+    // Sektionerna renderas direkt — ingen trupp-väljare att passera.
+    expect(await screen.findByRole('tablist')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Trupp')).not.toBeInTheDocument()
+  })
+
+  it('med flera trupper visas väljaren, och inget innehåll förrän man valt (#331)', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token, (url) => {
+      if (url.includes('/my-trupper')) {
+        return [
+          { id: 'trupp-1', clubName: 'Kärra', sportName: 'Fotboll', name: 'P2016', season: '2026' },
+          { id: 'trupp-2', clubName: 'Kärra', sportName: 'Fotboll', name: 'P2014', season: '2026' },
+        ]
+      }
+      return []
+    })
+    setAccessToken(token)
+
+    renderRoute('/admin')
+
+    // Väljaren finns, och sektionerna dyker upp först efter ett val.
+    expect(await screen.findByLabelText('Trupp')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Trupp'), 'trupp-2')
+
+    expect(await screen.findByRole('tablist')).toBeInTheDocument()
   })
 })

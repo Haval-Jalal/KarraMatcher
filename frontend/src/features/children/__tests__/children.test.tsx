@@ -93,7 +93,7 @@ const adminToken = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp
 async function openTrupp(): Promise<ReturnType<typeof userEvent.setup>> {
   const user = userEvent.setup()
   renderRoute('/admin')
-  await user.selectOptions(await screen.findByLabelText('Trupp'), 'trupp-1')
+  // En enda trupp är förvald (#331) — ingen väljare att passera.
   // Barn & lag bor bakom sin flik sedan admin blev översikt + sektioner (#279), och är sedan
   // #283 en borra-in-vy: Truppen (alla barn) och Lag (färgerna), inte en utfälld roster.
   await user.click(await screen.findByRole('tab', { name: 'Barn & lag' }))
