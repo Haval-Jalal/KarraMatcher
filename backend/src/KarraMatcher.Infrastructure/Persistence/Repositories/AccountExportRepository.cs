@@ -91,19 +91,10 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var preferences = await (
-            from p in context.NotificationPreferences.AsNoTracking()
-            where p.AccountId == accountId
-            join t in context.Teams on p.TeamId equals t.Id
-            orderby t.Name
-            select new NotificationPreferenceExportRow(
-                t.Name,
-                p.EventChanges,
-                p.Kallelser,
-                p.Carpool,
-                p.Chat,
-                p.UpdatedUtc))
-            .ToListAsync(cancellationToken)
+        var notificationsEnabled = await context.Accounts.AsNoTracking()
+            .Where(a => a.Id == accountId)
+            .Select(a => a.NotificationsEnabled)
+            .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
 
         // Aldrig s.Endpoint / s.P256dh / s.Auth i select:en. Secreten lamnar inte databasen.
@@ -121,7 +112,7 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             offers,
             requests,
             attendance,
-            preferences,
+            notificationsEnabled,
             subscriptions);
     }
 }

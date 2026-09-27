@@ -1,8 +1,5 @@
-using System.Linq.Expressions;
-
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Push;
-using KarraMatcher.Domain.Push;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -49,34 +46,20 @@ internal sealed class EmailFallbackRepository(
             return [];
         }
 
-        // Kontona som stängt av kategorin för laget (frånvaro av rad = allt på).
-        var disabled = context.NotificationPreferences
-            .Where(p => p.TeamId == teamId)
-            .Where(IsDisabled(category))
-            .Select(p => p.AccountId);
-
-        // Kontona som har minst en push-enhet — de nås av push och ska inte mejlas.
+        // Kontona som har minst en push-enhet — de kan nås av push.
         var withPush = context.PushSubscriptions
             .Where(s => s.AccountId != null)
             .Select(s => s.AccountId!.Value);
 
+        // Mejlet är säkerhetsnätet för kritiska besked (notifiern har redan sållat på "kritisk").
+        // Det går till alla i kretsen som *inte* nås av push: de utan enhet, och de som stängt
+        // av notiser globalt — så "man missar inget" även om man slår av push (`#332`-uppföljning).
         return await context.Accounts
             .AsNoTracking()
             .Where(a => candidates.Contains(a.Id)
-                && !disabled.Contains(a.Id)
-                && !withPush.Contains(a.Id))
+                && !(a.NotificationsEnabled && withPush.Contains(a.Id)))
             .Select(a => new EmailRecipient(a.Id, a.Email))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
-
-    private static Expression<Func<NotificationPreference, bool>> IsDisabled(PushCategory category) =>
-        category switch
-        {
-            PushCategory.EventChange => p => !p.EventChanges,
-            PushCategory.Kallelse => p => !p.Kallelser,
-            PushCategory.Carpool => p => !p.Carpool,
-            PushCategory.Chat => p => !p.Chat,
-            _ => p => false,
-        };
 }

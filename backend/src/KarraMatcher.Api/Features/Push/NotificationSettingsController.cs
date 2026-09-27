@@ -11,30 +11,28 @@ using Microsoft.IdentityModel.JsonWebTokens;
 namespace KarraMatcher.Api.Features.Push;
 
 /// <summary>
-/// En förälders notisinställningar för ett lag (`#65`).
-///
-/// <h3>Kontot är den inloggade, laget står i adressen</h3>
+/// Kontots globala notisinställning — en enda på/av (`#332`-uppföljning, ersätter per-lag/per-typ
+/// `#65`).
 ///
 /// <para>
-/// Vilket konto det gäller kommer ur token, aldrig ur kroppen — en förälder kan bara sätta
-/// sina egna val. Laget kommer ur adressen. Kräver inloggning: en inställning hör till ett
-/// konto, och en gäst har inget att spara på (§KM.3).
+/// Kontot kommer ur token, aldrig ur kroppen — en förälder sätter bara sitt eget val. Ingen slug:
+/// valet är globalt, inte per lag. Kräver inloggning (§KM.3). Av = ingen push; kritiska besked
+/// når ändå fram via mejl.
 /// </para>
 /// </summary>
 [ApiController]
-[Route("api/v1/teams/{slug}/notification-settings")]
+[Route("api/v1/notification-settings")]
 [Produces("application/json")]
-[Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
+[Authorize]
 public sealed class NotificationSettingsController(
     ICommandDispatcher commands,
     IQueryDispatcher queries) : ControllerBase
 {
-    /// <summary>Mina notisval för laget. Allt på om jag aldrig ändrat något.</summary>
+    /// <summary>Min globala notisinställning. På om jag aldrig ändrat något.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get(string slug, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var actor = ActorId();
 
@@ -44,20 +42,18 @@ public sealed class NotificationSettingsController(
         }
 
         var settings = await queries
-            .SendAsync(new GetNotificationSettingsQuery(slug, actor.Value), cancellationToken)
+            .SendAsync(new GetNotificationSettingsQuery(actor.Value), cancellationToken)
             .ConfigureAwait(false);
 
-        return settings is null ? TeamNotFound() : Ok(settings);
+        return settings is null ? Unauthenticated() : Ok(settings);
     }
 
-    /// <summary>Sätter mina notisval för laget. Avstängning gäller vid nästa utskick.</summary>
+    /// <summary>Slår på eller av mina notiser. Gäller vid nästa utskick.</summary>
     [HttpPut]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Set(
-        string slug,
         NotificationSettingsRequest request,
         CancellationToken cancellationToken)
     {
@@ -72,17 +68,12 @@ public sealed class NotificationSettingsController(
 
         var settings = await commands
             .SendAsync(
-                new SetNotificationSettingsCommand(slug, actor.Value, request.ToDraft()),
+                new SetNotificationSettingsCommand(actor.Value, request.Enabled),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return settings is null ? TeamNotFound() : Ok(settings);
+        return settings is null ? Unauthenticated() : Ok(settings);
     }
-
-    private ObjectResult TeamNotFound() => Problem(
-        statusCode: StatusCodes.Status404NotFound,
-        title: "Laget finns inte",
-        detail: "Kontrollera adressen.");
 
     private ObjectResult Unauthenticated() => Problem(
         statusCode: StatusCodes.Status401Unauthorized,
@@ -98,9 +89,5 @@ public sealed class NotificationSettingsController(
     }
 }
 
-/// <summary>Växlarna den inloggade skickar in: händelser, kallelser, samåkning, chatt.</summary>
-public sealed record NotificationSettingsRequest(
-    bool EventChanges, bool Kallelser, bool Carpool, bool Chat)
-{
-    internal NotificationSettingsDraft ToDraft() => new(EventChanges, Kallelser, Carpool, Chat);
-}
+/// <summary>Den globala på/av-växeln den inloggade skickar in.</summary>
+public sealed record NotificationSettingsRequest(bool Enabled);

@@ -158,7 +158,7 @@ public class PersistenceModelTests
                 "CarpoolOffer", "CarpoolRequest", "ChatMessage", "ChatReaction", "ChatReport", "Child", "Club", "Event",
                 "GuardianConsent",
                 "Guardianship", "Invitation",
-                "LoginCode", "MembershipApplication", "NotificationPreference",
+                "LoginCode", "MembershipApplication",
                 "Passkey", "PushSubscription", "RefreshToken", "Sport",
                 "Team", "TeamRole", "Venue",
             ],

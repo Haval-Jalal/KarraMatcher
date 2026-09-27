@@ -8,7 +8,7 @@ import { renderRoute } from '@/test/renderRoute'
 /**
  * Inställningar-sidan: samlar app-inställningar (i dag notiser), nådd via "Mer".
  *
- * Notiser är per lag, så sidan listar de lag du är med i — var och en med sin ruta.
+ * Notiser är numera en global på/av; sidan visar den och en enhets-sektion per lag.
  */
 
 const TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
@@ -24,9 +24,7 @@ function stub(teams: { slug: string; name: string; ageGroup: string; colorHex: s
         return Promise.resolve(jsonResponse({ accessToken: TOKEN }))
       }
       if (url.includes('/notification-settings')) {
-        return Promise.resolve(
-          jsonResponse({ eventChanges: true, kallelser: true, carpool: true, chat: true }),
-        )
+        return Promise.resolve(jsonResponse({ enabled: true }))
       }
       if (url.endsWith('/api/v1/teams')) return Promise.resolve(jsonResponse(teams))
 
@@ -46,7 +44,7 @@ afterEach(() => {
 })
 
 describe('inställningar', () => {
-  it('listar en ruta per lag man är med i', async () => {
+  it('visar den globala notis-på/av och en enhets-sektion', async () => {
     stub([
       { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
       { slug: 'bla', name: 'Blå', ageGroup: 'P2016', colorHex: '#1E3F8A' },
@@ -57,8 +55,8 @@ describe('inställningar', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Inställningar' }),
     ).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'P2016 Gul' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'P2016 Blå' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Notiser' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'På den här enheten' })).toBeInTheDocument()
   })
 
   it('säger till när man inte är med i något lag', async () => {

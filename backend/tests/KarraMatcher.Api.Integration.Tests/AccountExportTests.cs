@@ -106,17 +106,8 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
             Auth = "auth-hemlig",
             CreatedUtc = Kickoff.AddDays(-3),
         };
-        var preference = new NotificationPreference
-        {
-            Id = Guid.NewGuid(),
-            AccountId = account.Id,
-            TeamId = team.Id,
-            EventChanges = true,
-            Kallelser = true,
-            Carpool = false,
-            Chat = true,
-            UpdatedUtc = Kickoff.AddDays(-3),
-        };
+        // Global på/av (`#332`-uppföljning): kontot har stängt av notiser.
+        account.NotificationsEnabled = false;
 
         context.Accounts.Add(account);
         context.Clubs.Add(club);
@@ -126,7 +117,6 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
         context.Events.Add(match);
         context.CarpoolOffers.Add(offer);
         context.PushSubscriptions.Add(subscription);
-        context.NotificationPreferences.Add(preference);
 
         await context.SaveChangesAsync(CancellationToken.None);
 

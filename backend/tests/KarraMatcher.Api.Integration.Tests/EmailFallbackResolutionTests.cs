@@ -58,37 +58,37 @@ public sealed class EmailFallbackResolutionTests(KarraMatcherApiFactory factory)
             CreatedUtc = now,
         });
 
-        // B: ingen enhet, ingen preferens-rad (allt på) → mejlas.
+        // B: ingen enhet → nås inte av push → mejlas.
         var b = SeedMember(context, team, "b");
 
-        // C: ingen enhet, men har stängt av EventChange för laget → mejlas inte för den kategorin.
+        // C: har en enhet MEN har stängt av notiser globalt (`#332`-uppföljning) → nås inte av
+        // push → mejlas ändå, så man missar inget kritiskt.
         var c = SeedMember(context, team, "c");
-        context.NotificationPreferences.Add(new NotificationPreference
+        c.NotificationsEnabled = false;
+        context.PushSubscriptions.Add(new PushSubscription
         {
             Id = Guid.NewGuid(),
-            AccountId = c.Id,
             TeamId = team.Id,
-            EventChanges = false,
-            UpdatedUtc = now,
+            AccountId = c.Id,
+            Endpoint = "https://push.example/c",
+            P256dh = "key",
+            Auth = "auth",
+            CreatedUtc = now,
         });
 
         await context.SaveChangesAsync(CancellationToken.None);
 
         var repository = scope.ServiceProvider.GetRequiredService<IEmailFallbackRepository>();
 
-        // EventChange: bara B (A har push, C har stängt av just den kategorin).
-        var eventChange = await repository.ListForTeamAsync(
-            team.Id, PushCategory.EventChange, CancellationToken.None);
-
-        Assert.Equal(new[] { b.Email }, eventChange.Select(r => r.Email).ToArray());
-
-        // Kallelse: B och C — C stängde bara av EventChange, inte kallelser. A har fortfarande push.
-        var kallelse = await repository.ListForTeamAsync(
+        // Mejl-säkerhetsnätet når alla som inte nås av push: B (ingen enhet) och C (notiser av) —
+        // men inte A (enhet + notiser på). Kategorin styr inte längre vem; notifiern avgör
+        // separat om beskedet är kritiskt nog att mejla.
+        var recipients = await repository.ListForTeamAsync(
             team.Id, PushCategory.Kallelse, CancellationToken.None);
 
         Assert.Equal(
             new[] { b.Email, c.Email }.OrderBy(e => e, StringComparer.Ordinal).ToArray(),
-            kallelse.Select(r => r.Email).OrderBy(e => e, StringComparer.Ordinal).ToArray());
+            recipients.Select(r => r.Email).OrderBy(e => e, StringComparer.Ordinal).ToArray());
     }
 
     private static Account SeedMember(KarraMatcherDbContext context, Team team, string tag)
