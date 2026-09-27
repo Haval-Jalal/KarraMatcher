@@ -43,6 +43,15 @@
    */
   --border-strong: var(--hair-strong);
   --focus: #1e3f8a;
+
+  /*
+   * App-accent (`#redesign`): en sportig grön för aktiva val, primärknappar och den glidande
+   * nav-markören — skild från lagfärgerna, som får vara just lagfärger. Ljust tema får en djupare
+   * grön för kontrast mot papperet; mörkt tema en klarare (se dark-blocket).
+   */
+  --accent: #12905a;
+  --accent-strong: #0d7a4a;
+  --accent-ink: #ffffff;
   --danger: #a4262c;
 
   /*
@@ -108,6 +117,11 @@
     --text-strong: #faf8f2;
     --focus: #9db4ef;
     --danger: #ff9098;
+
+    /* Klarare grön i mörkt läge (`#redesign`). */
+    --accent: #37d98a;
+    --accent-strong: #21a869;
+    --accent-ink: #05130c;
   }
 }
 
@@ -258,15 +272,40 @@ h2 {
 }
 
 .bottom-nav__list {
+  position: relative;
   display: flex;
   max-width: 640px;
   margin: 0 auto;
-  padding: 0;
+  padding: 6px 6px 0;
   list-style: none;
 }
 
 .bottom-nav__item {
   flex: 1 1 0;
+  z-index: 1;
+}
+
+/*
+ * Den glidande accent-markören (`#redesign`). En mjukt rundad bricka bakom den aktiva flikens
+ * ikon som glider på plats med en liten fjäder-studs. Bredd = en flik av de synliga; position =
+ * aktiv-index. `translateX` räknas i egna bredder, så den sitter rätt oavsett antal flikar.
+ */
+.bottom-nav__blob {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 0;
+  width: calc((100% - 12px) / var(--nav-count, 6));
+  height: 34px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent);
+  transform: translateX(calc(var(--nav-index, 0) * 100%));
+  transition: transform 0.42s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+.bottom-nav__blob[data-hidden] {
+  opacity: 0;
 }
 
 /* Ikon över etikett, hela cellen är träffyta (≥ 56 px hög). */
@@ -275,13 +314,12 @@ h2 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   min-height: 56px;
-  padding: 6px 2px;
+  padding: 6px 2px 8px;
   color: var(--ink-soft);
   text-decoration: none;
-  /* Genomskinlig topplist blir accent på aktiv flik -- form, inte bara färg. */
-  border-top: 3px solid transparent;
+  border-radius: 12px;
 }
 
 .bottom-nav__tab:hover {
@@ -289,29 +327,40 @@ h2 {
 }
 
 .bottom-nav__icon {
-  font-size: 1.25rem;
-  line-height: 1;
+  width: 23px;
+  height: 23px;
+  transition: transform 0.34s cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 .bottom-nav__label {
   font-size: var(--text-xs);
   line-height: 1.1;
   text-align: center;
+  font-weight: 600;
 }
 
 /*
- * Aktuell flik märks med tre saker samtidigt: `aria-current` för skärmläsaren, fetare text,
- * och en topplist. Färg ensam duger inte (WCAG 1.4.1).
+ * Aktuell flik märks med tre saker samtidigt: `aria-current` för skärmläsaren, accentfärg, och
+ * den glidande markören bakom ikonen. Färg ensam duger inte (WCAG 1.4.1) — markören är formen.
  */
 .bottom-nav__tab[aria-current='page'] {
-  color: var(--text-strong);
-  font-weight: 600;
-  border-top-color: var(--team-accent);
+  color: var(--accent);
+}
+
+.bottom-nav__tab[aria-current='page'] .bottom-nav__icon {
+  transform: translateY(-1px) scale(1.06);
 }
 
 .bottom-nav__tab:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav__blob,
+  .bottom-nav__icon {
+    transition: none;
+  }
 }
 
 /* ---- "Mer"-sidan ---------------------------------------------------------- */
