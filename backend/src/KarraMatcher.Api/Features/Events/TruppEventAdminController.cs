@@ -62,6 +62,77 @@ public sealed class TruppEventAdminController(ICommandDispatcher dispatcher) : C
             : ProblemFor(result.Outcome);
     }
 
+    /// <summary>
+    /// Ändrar en händelse i truppen — trupp-vid eller lag-riktad. Laget flyttas inte här
+    /// (<c>TeamId</c> i kroppen ignoreras vid ändring); det bestäms när händelsen skapas.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(
+        Guid truppId,
+        Guid id,
+        AdminEventRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var result = await dispatcher
+            .SendAsync(
+                new UpdateTruppEventCommand(truppId, id, request.ToDraft(), actor.Value),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return result.Outcome == EventSaveOutcome.Ok ? Ok(result.Event) : ProblemFor(result.Outcome);
+    }
+
+    /// <summary>Ställer in en händelse — den blir kvar i kalendern, markerad som inställd.</summary>
+    [HttpPost("{id:guid}/cancel")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Cancel(Guid truppId, Guid id, CancellationToken cancellationToken)
+    {
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var item = await dispatcher
+            .SendAsync(new CancelTruppEventCommand(truppId, id, actor.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        return item is null ? NotFoundForTrupp() : Ok(item);
+    }
+
+    /// <summary>Tar bort en händelse som aldrig skulle ha lagts in.</summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid truppId, Guid id, CancellationToken cancellationToken)
+    {
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        var removed = await dispatcher
+            .SendAsync(new DeleteTruppEventCommand(truppId, id, actor.Value), cancellationToken)
+            .ConfigureAwait(false);
+
+        return removed ? NoContent() : NotFoundForTrupp();
+    }
+
     private ObjectResult ProblemFor(EventSaveOutcome outcome) => outcome switch
     {
         EventSaveOutcome.NoHomeVenue => Problem(
@@ -86,6 +157,15 @@ public sealed class TruppEventAdminController(ICommandDispatcher dispatcher) : C
             title: "Truppen eller laget finns inte",
             detail: "Kontrollera att laget hör till truppen."),
     };
+
+    /// <summary>
+    /// Samma svar för "finns inte" och "hör till en annan trupp" — annars kunde en admin prova
+    /// sig fram till vilka händelse-id som finns i andra truppar (jfr <c>EventAdminController</c>).
+    /// </summary>
+    private ObjectResult NotFoundForTrupp() => Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Händelsen finns inte",
+        detail: "Kontrollera länken — händelsen kan ha tagits bort.");
 
     private ObjectResult Unauthenticated() => Problem(
         statusCode: StatusCodes.Status401Unauthorized,

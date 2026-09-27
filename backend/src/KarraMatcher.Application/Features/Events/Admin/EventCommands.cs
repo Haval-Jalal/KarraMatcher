@@ -37,6 +37,21 @@ public sealed record CreateTruppEventCommand(
     EventDraft Draft,
     Guid ActorAccountId) : ICommand<EventSaveResult>;
 
+/// <summary>Ändrar en händelse i truppen som admin (`#332`) — trupp-vid eller lag-riktad.</summary>
+public sealed record UpdateTruppEventCommand(
+    Guid TruppId,
+    Guid EventId,
+    EventDraft Draft,
+    Guid ActorAccountId) : ICommand<EventSaveResult>;
+
+/// <summary>Ställer in en händelse i truppen som admin (`#332`).</summary>
+public sealed record CancelTruppEventCommand(Guid TruppId, Guid EventId, Guid ActorAccountId)
+    : ICommand<EventDto?>;
+
+/// <summary>Tar bort en händelse i truppen som admin (`#332`).</summary>
+public sealed record DeleteTruppEventCommand(Guid TruppId, Guid EventId, Guid ActorAccountId)
+    : ICommand<bool>;
+
 internal sealed class CreateEventCommandHandler(EventAdminService service)
     : ICommandHandler<CreateEventCommand, EventSaveResult>
 {
@@ -71,6 +86,45 @@ internal sealed class UpdateEventCommandHandler(EventAdminService service)
 
         return service.UpdateAsync(
             command.TeamSlug, command.EventId, command.Draft, command.ActorAccountId, cancellationToken);
+    }
+}
+
+internal sealed class UpdateTruppEventCommandHandler(EventAdminService service)
+    : ICommandHandler<UpdateTruppEventCommand, EventSaveResult>
+{
+    public Task<EventSaveResult> HandleAsync(
+        UpdateTruppEventCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.UpdateForTruppAsync(
+            command.TruppId, command.EventId, command.Draft, command.ActorAccountId, cancellationToken);
+    }
+}
+
+internal sealed class CancelTruppEventCommandHandler(EventAdminService service)
+    : ICommandHandler<CancelTruppEventCommand, EventDto?>
+{
+    public Task<EventDto?> HandleAsync(
+        CancelTruppEventCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.CancelForTruppAsync(
+            command.TruppId, command.EventId, command.ActorAccountId, cancellationToken);
+    }
+}
+
+internal sealed class DeleteTruppEventCommandHandler(EventAdminService service)
+    : ICommandHandler<DeleteTruppEventCommand, bool>
+{
+    public Task<bool> HandleAsync(
+        DeleteTruppEventCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return service.DeleteForTruppAsync(
+            command.TruppId, command.EventId, command.ActorAccountId, cancellationToken);
     }
 }
 

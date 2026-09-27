@@ -109,10 +109,8 @@ public sealed class EventAdminService(
         if (created is not null)
         {
             // Den här tjänsten nås bara via lag-slug-routen (CoachOfTeam), så händelsen har
-            // alltid ett lag här. Trupp-vida händelser skapas via admin-routen (`#332` 1b-ii)
-            // och notifieras där mot truppen — inte via ToTeam.
-            push.Enqueue(PushDispatch.ToTeam(
-                item.TeamId.Value, PushCategory.EventChange, EventNotification.Created(created)));
+            // alltid ett lag här → notisen går till laget.
+            push.Enqueue(EventChangeDispatch(item, EventNotification.Created(created)));
         }
 
         return new EventSaveResult(EventSaveOutcome.Ok, created);
@@ -189,15 +187,10 @@ public sealed class EventAdminService(
 
         var created = await ReloadAsync(item.Id, cancellationToken).ConfigureAwait(false);
 
-        // Lag-riktad → notis till laget. Trupp-vid (utan lag) skjuts upp: push-till-truppen är
-        // en egen uppgift (den behöver ett beslut om per-lag-notisvalet, §KM.7/#65).
-        // Lag-riktad → notis till laget; trupp-vid → till hela truppen (`#332`).
+        // Lag-riktad → notis till laget; trupp-vid (utan lag) → till hela truppen (`#332`).
         if (created is not null)
         {
-            var message = EventNotification.Created(created);
-            push.Enqueue(teamId is Guid notifyTeam
-                ? PushDispatch.ToTeam(notifyTeam, PushCategory.EventChange, message)
-                : PushDispatch.ToTrupp(truppId, PushCategory.EventChange, message));
+            push.Enqueue(EventChangeDispatch(item, EventNotification.Created(created)));
         }
 
         return new EventSaveResult(EventSaveOutcome.Ok, created);
@@ -215,11 +208,37 @@ public sealed class EventAdminService(
 
         var item = await FindInTeamAsync(teamSlug, eventId, cancellationToken).ConfigureAwait(false);
 
-        if (item is null)
-        {
-            return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
-        }
+        return item is null
+            ? new EventSaveResult(EventSaveOutcome.TeamNotFound, null)
+            : await UpdateCoreAsync(item, draft, actorAccountId, cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <summary>
+    /// Ändrar en händelse i truppen som admin (`#332`). Når både trupp-vida och lag-riktade
+    /// händelser i truppen; behörigheten prövas mot <paramref name="truppId"/> (objektnivå).
+    /// </summary>
+    public async Task<EventSaveResult> UpdateForTruppAsync(
+        Guid truppId,
+        Guid eventId,
+        EventDraft draft,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var item = await FindInTruppAsync(truppId, eventId, cancellationToken).ConfigureAwait(false);
+
+        return item is null
+            ? new EventSaveResult(EventSaveOutcome.TeamNotFound, null)
+            : await UpdateCoreAsync(item, draft, actorAccountId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<EventSaveResult> UpdateCoreAsync(
+        Event item,
+        EventDraft draft,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
         // Trupp-vid händelse (`#332`) har inget lag; klubben nås då via truppen direkt.
         var location = await ResolveLocationAsync(
             item.Team?.AgeGroup?.Club ?? item.AgeGroup?.Club, draft, cancellationToken)
@@ -272,8 +291,7 @@ public sealed class EventAdminService(
             // Null när bara notistexten ändrats: en förälder behöver inte väckas för det.
             if (message is not null)
             {
-                // Nås bara via lag-slug-routen → händelsen har alltid ett lag (se Created ovan).
-                push.Enqueue(PushDispatch.ToTeam(item.TeamId!.Value, PushCategory.EventChange, message));
+                push.Enqueue(EventChangeDispatch(item, message));
             }
         }
 
@@ -297,11 +315,30 @@ public sealed class EventAdminService(
     {
         var item = await FindInTeamAsync(teamSlug, eventId, cancellationToken).ConfigureAwait(false);
 
-        if (item is null)
-        {
-            return null;
-        }
+        return item is null
+            ? null
+            : await CancelCoreAsync(item, actorAccountId, cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <summary>Ställer in en händelse i truppen som admin (`#332`). Objektnivå-authz mot truppen.</summary>
+    public async Task<EventDto?> CancelForTruppAsync(
+        Guid truppId,
+        Guid eventId,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
+        var item = await FindInTruppAsync(truppId, eventId, cancellationToken).ConfigureAwait(false);
+
+        return item is null
+            ? null
+            : await CancelCoreAsync(item, actorAccountId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<EventDto?> CancelCoreAsync(
+        Event item,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
         var before = EventSummary.Describe(item);
 
         item.Status = EventStatus.Cancelled;
@@ -320,8 +357,7 @@ public sealed class EventAdminService(
 
         // "Åk inte till spelplatsen" är hela poängen med den här notisen — en inställd
         // händelse som ingen får veta om är den som får någon att stå ensam på en plan.
-        push.Enqueue(PushDispatch.ToTeam(
-            item.TeamId!.Value, PushCategory.EventChange, EventNotification.Cancelled(dto)));
+        push.Enqueue(EventChangeDispatch(item, EventNotification.Cancelled(dto)));
 
         return dto;
     }
@@ -342,11 +378,28 @@ public sealed class EventAdminService(
     {
         var item = await FindInTeamAsync(teamSlug, eventId, cancellationToken).ConfigureAwait(false);
 
-        if (item is null)
-        {
-            return false;
-        }
+        return item is not null
+            && await DeleteCoreAsync(item, actorAccountId, cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <summary>Tar bort en händelse i truppen som admin (`#332`). Objektnivå-authz mot truppen.</summary>
+    public async Task<bool> DeleteForTruppAsync(
+        Guid truppId,
+        Guid eventId,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
+        var item = await FindInTruppAsync(truppId, eventId, cancellationToken).ConfigureAwait(false);
+
+        return item is not null
+            && await DeleteCoreAsync(item, actorAccountId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<bool> DeleteCoreAsync(
+        Event item,
+        Guid actorAccountId,
+        CancellationToken cancellationToken)
+    {
         await audit.RecordAsync(
             AuditActions.EventDeleted,
             actorAccountId,
@@ -360,6 +413,15 @@ public sealed class EventAdminService(
 
         return true;
     }
+
+    /// <summary>
+    /// En händelseändrings-notis, riktad rätt: lag-riktad händelse → laget, trupp-vid → hela
+    /// truppen (`#332`). Samma val på alla ändringsvägar (skapa/ändra/ställa in).
+    /// </summary>
+    private static PushDispatch EventChangeDispatch(Event item, PushMessage message) =>
+        item.TeamId is Guid teamId
+            ? PushDispatch.ToTeam(teamId, PushCategory.EventChange, message)
+            : PushDispatch.ToTrupp(item.AgeGroupId, PushCategory.EventChange, message);
 
     /// <summary>
     /// Läser om händelsen med spelplatsen inläst, så svaret får med adress och koordinater.
@@ -389,6 +451,27 @@ public sealed class EventAdminService(
         var item = await events.FindForUpdateAsync(eventId, cancellationToken).ConfigureAwait(false);
 
         return item?.Team?.Slug == teamSlug ? item : null;
+    }
+
+    /// <summary>
+    /// Händelsen, men bara om den hör till truppen i adressen (`#332`).
+    ///
+    /// <para>
+    /// Motsvarigheten till <see cref="FindInTeamAsync"/> för admin-routen: policyn
+    /// <c>AdminOfTrupp</c> har slagit fast att anroparen är admin för <em>truppen</em>, och den
+    /// här kontrollen slår fast att <em>händelsen</em> hör dit (dess <c>AgeGroupId</c>). Utan den
+    /// kunde en admin för en trupp nå en annan trupps händelse genom att skicka dess id till sin
+    /// egen trupp-adress. Fungerar för både trupp-vida (utan lag) och lag-riktade händelser.
+    /// </para>
+    /// </summary>
+    private async Task<Event?> FindInTruppAsync(
+        Guid truppId,
+        Guid eventId,
+        CancellationToken cancellationToken)
+    {
+        var item = await events.FindForUpdateAsync(eventId, cancellationToken).ConfigureAwait(false);
+
+        return item?.AgeGroupId == truppId ? item : null;
     }
 
     /// <summary>
