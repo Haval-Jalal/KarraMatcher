@@ -100,19 +100,19 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /*
-     * Varm kol, inte blasvart. Bara de kanoniska tokensen (+ de fa literalerna) definieras
-     * om — aliasen ar var(--paper) osv. och foljer med av sig sjalva.
+     * Sval, modern kol (`#redesign`) — inte längre varm brun. Bara de kanoniska tokensen (+ de
+     * få literalerna) definieras om; aliasen är var(--paper) osv. och följer med av sig själva.
      */
-    --paper: #14120e;
-    --card: #1c1a15;
-    --sunk: #0e0c09;
-    --ink: #f3f1eb;
-    --ink-soft: #aaa599;
-    --ink-faint: #8d887c;
-    --hair: #2a2722;
-    --hair-strong: #767065;
-    --avatar-bg: #2a2620;
-    --shadow-soft: 0 12px 30px -16px rgba(0, 0, 0, 0.6);
+    --paper: #12151b;
+    --card: #1a1e27;
+    --sunk: #0d0f14;
+    --ink: #eef1f6;
+    --ink-soft: #9aa4b4;
+    --ink-faint: #6b7482;
+    --hair: #262c36;
+    --hair-strong: #78818f;
+    --avatar-bg: #232936;
+    --shadow-soft: 0 16px 38px -20px rgba(0, 0, 0, 0.9);
 
     --text-strong: #faf8f2;
     --focus: #9db4ef;
@@ -3249,4 +3249,152 @@ a.match-card:focus-visible .match-card__opponent {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================================================
+ * Design-system-modernisering (#redesign)
+ *
+ * Lyfter de delade primitiverna på *varenda* sida (in- och utloggad): egna
+ * radio/checkbox i stället för native, rena fieldsets utan daterad ram, snygg
+ * select, accent-fokus och en fylld primärknapp. Lagt sist så det vinner på
+ * källordning över de äldre reglerna utan att jaga varje selektor.
+ * ========================================================================== */
+
+/* ---- Egna radio- och checkboxkontroller ---------------------------------- */
+input[type='radio'],
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 21px;
+  height: 21px;
+  margin: 0;
+  flex: none;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  vertical-align: -5px;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+input[type='radio'] {
+  border-radius: 50%;
+}
+input[type='checkbox'] {
+  border-radius: 7px;
+}
+input[type='radio']::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0);
+  transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+input[type='radio']:checked {
+  border-color: var(--accent);
+}
+input[type='radio']:checked::after {
+  transform: scale(1);
+}
+input[type='checkbox']::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  margin-top: -2px;
+  border: solid var(--accent-ink);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input[type='checkbox']:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+input[type='radio']:focus-visible,
+input[type='checkbox']:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+input[type='radio']:disabled,
+input[type='checkbox']:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* En radio/checkbox som sitter i en label-rad: mellanrum, pekare, centrering. */
+.form__radio,
+.form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 3px 0;
+}
+
+/* ---- Rena fieldsets ------------------------------------------------------- */
+.form fieldset,
+fieldset.form__field {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.form fieldset > legend,
+fieldset.form__field > legend {
+  padding: 0 0 8px;
+  font-family: var(--display);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* ---- Select med egen pil -------------------------------------------------- */
+.form__field select,
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239aa4b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 38px;
+}
+
+/* ---- Accent-fokus på fält ------------------------------------------------- */
+.form__field input:focus-visible,
+.form__field select:focus-visible,
+.form__field textarea:focus-visible,
+.input:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- Knappar -------------------------------------------------------------- */
+.button {
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    border-color 0.15s ease;
+}
+.button:active {
+  transform: scale(0.97);
+}
+/* Primärknappen (accent) blir fylld i stället för bara ramad. */
+.button--action {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--accent) 90%, transparent);
+}
+.button--action:hover {
+  filter: brightness(1.06);
 }
