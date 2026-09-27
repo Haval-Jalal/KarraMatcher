@@ -41,8 +41,33 @@ internal sealed class PushDeliveryRepository(
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<PushTarget>> ListForTruppAsync(
+        Guid ageGroupId,
+        PushCategory category,
+        CancellationToken cancellationToken)
+    {
+        // Trupp-vid händelse (`#332`): notisen når hela truppens medlemmar.
+        var members = (await membership.MemberAccountIdsForTruppAsync(ageGroupId, cancellationToken)
+            .ConfigureAwait(false)).ToHashSet();
+
+        if (members.Count == 0)
+        {
+            return [];
+        }
+
+        var off = AccountsWithNotificationsOff();
+
+        return await context.PushSubscriptions
+            .AsNoTracking()
+            .Where(s => s.AccountId != null
+                && members.Contains(s.AccountId.Value)
+                && !off.Contains(s.AccountId.Value))
+            .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<PushTarget>> ListForAccountsAsync(
-        Guid teamId,
         IReadOnlyCollection<Guid> accountIds,
         PushCategory category,
         CancellationToken cancellationToken)

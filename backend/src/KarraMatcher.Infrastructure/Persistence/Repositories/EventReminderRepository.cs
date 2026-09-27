@@ -21,7 +21,7 @@ internal sealed class EventReminderRepository(KarraMatcherDbContext context)
                 && e.ReminderSentUtc == null)
             .OrderBy(e => e.KickoffUtc)
             .Select(e => new DueEvent(
-                e.Id, e.TeamId, e.Type.ToString(), e.KickoffUtc, e.Title, e.OpponentName, e.IsHome, e.Venue!.Name))
+                e.Id, e.TeamId, e.AgeGroupId, e.Type.ToString(), e.KickoffUtc, e.Title, e.OpponentName, e.IsHome, e.Venue!.Name))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

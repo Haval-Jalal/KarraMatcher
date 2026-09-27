@@ -155,13 +155,13 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         return [.. targets.Select(t => t.Id)];
     }
 
-    private async Task<IReadOnlyList<Guid>> DeliverToAccountAsync(Guid teamId, Guid accountId)
+    private async Task<IReadOnlyList<Guid>> DeliverToAccountAsync(Guid accountId)
     {
         using var scope = factory.Services.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IPushDeliveryRepository>();
 
         var targets = await repository.ListForAccountsAsync(
-            teamId, [accountId], PushCategory.Carpool, CancellationToken.None);
+            [accountId], PushCategory.Carpool, CancellationToken.None);
         return [.. targets.Select(t => t.Id)];
     }
 
@@ -282,7 +282,7 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         var mine = await AddSubscriberAsync(fixture.TeamId, fixture.AccountId);
         await DisableNotificationsAsync(fixture.AccountId);
 
-        var reached = await DeliverToAccountAsync(fixture.TeamId, fixture.AccountId);
+        var reached = await DeliverToAccountAsync(fixture.AccountId);
 
         Assert.DoesNotContain(mine, reached);
     }
@@ -296,7 +296,7 @@ public sealed class NotificationSettingsTests(KarraMatcherApiFactory factory)
         var outsider = await SeedOutsiderAsync("account-nonmember");
         var subscription = await AddSubscriberAsync(fixture.TeamId, outsider);
 
-        var reached = await DeliverToAccountAsync(fixture.TeamId, outsider);
+        var reached = await DeliverToAccountAsync(outsider);
 
         Assert.Contains(subscription, reached);
     }

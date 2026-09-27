@@ -403,18 +403,9 @@ public sealed class ChatService(
             return;
         }
 
-        // Ett lag-id att fästa notisen vid (leverans-lagrets per-lag-nyckel). För en lag-kanal
-        // är det laget självt; för trupp-kanalen räcker vilket lag som helst i truppen.
-        var pushTeamId = teamId ?? await chat.AnyTeamIdAsync(truppId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (pushTeamId is null)
-        {
-            return;
-        }
-
+        // Notisen går till de bestämda kontona; global på/av gäller per konto (`#332`), så
+        // inget lag behöver fästas vid den.
         push.Enqueue(PushDispatch.ToAccounts(
-            pushTeamId.Value,
             recipients,
             PushCategory.Chat,
             new PushMessage(

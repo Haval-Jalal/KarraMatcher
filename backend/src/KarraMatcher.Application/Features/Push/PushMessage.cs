@@ -37,43 +37,45 @@ public sealed record PushMessage(string Title, string Body, string Url);
 public sealed record PushDispatch
 {
     private PushDispatch(
-        Guid teamId,
+        Guid? teamId,
+        Guid? ageGroupId,
         IReadOnlyList<Guid>? accountIds,
         PushCategory category,
         PushMessage message)
     {
         TeamId = teamId;
+        AgeGroupId = ageGroupId;
         AccountIds = accountIds;
         Category = category;
         Message = message;
     }
 
-    /// <summary>
-    /// Laget notisen rör. Alltid satt — det är mot laget en förälder ställt in vad hen vill
-    /// ha, så filtreringen (`#65`) behöver det även för en kontoriktad notis.
-    /// </summary>
-    public Guid TeamId { get; }
+    /// <summary>Laget notisen når (<c>ToTeam</c>), annars null.</summary>
+    public Guid? TeamId { get; }
 
-    /// <summary>Bestämda konton (deras alla enheter), eller null för hela lagets prenumeranter.</summary>
+    /// <summary>Truppen notisen når (<c>ToTrupp</c>, en trupp-vid händelse `#332`), annars null.</summary>
+    public Guid? AgeGroupId { get; }
+
+    /// <summary>Bestämda konton (deras alla enheter) för <c>ToAccounts</c>, annars null.</summary>
     public IReadOnlyList<Guid>? AccountIds { get; }
 
-    /// <summary>Vilket slags notis — det en förälder kan välja bort per lag (`#65`).</summary>
+    /// <summary>Vilket slags notis. Styr inte längre vem (global på/av), men avgör "kritisk" för mejl.</summary>
     public PushCategory Category { get; }
 
     public PushMessage Message { get; }
 
-    /// <summary>Till alla som prenumererar på laget och vill ha den sortens notis.</summary>
+    /// <summary>Till lagets medlemmar (som har notiser på).</summary>
     public static PushDispatch ToTeam(Guid teamId, PushCategory category, PushMessage message) =>
-        new(teamId, null, category, message);
+        new(teamId, null, null, category, message);
 
-    /// <summary>
-    /// Till bestämda konton, för notiser om deras egen samåkning (§KM.12). Laget står med
-    /// så att den som stängt av samåkning för just det laget inte nås.
-    /// </summary>
+    /// <summary>Till hela truppens medlemmar — för en trupp-vid händelse (`#332`).</summary>
+    public static PushDispatch ToTrupp(Guid ageGroupId, PushCategory category, PushMessage message) =>
+        new(null, ageGroupId, null, category, message);
+
+    /// <summary>Till bestämda konton (deras alla enheter), oavsett lag eller trupp.</summary>
     public static PushDispatch ToAccounts(
-        Guid teamId,
         IReadOnlyList<Guid> accountIds,
         PushCategory category,
         PushMessage message) =>
-        new(teamId, accountIds, category, message);
+        new(null, null, accountIds, category, message);
 }

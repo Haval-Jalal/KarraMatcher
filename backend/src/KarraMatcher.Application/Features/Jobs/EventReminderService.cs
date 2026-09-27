@@ -55,13 +55,11 @@ public sealed class EventReminderService(
 
         foreach (var item in due)
         {
-            // Lag-riktade händelser når laget; en trupp-vid händelses kvällspåminnelse routas
-            // till truppen i 1b-ii (`#332`) — här skickas den ännu bara för lag-riktade.
-            if (item.TeamId is Guid teamId)
-            {
-                push.Enqueue(PushDispatch.ToTeam(
-                    teamId, PushCategory.EventChange, EventNotification.Reminder(item)));
-            }
+            // Lag-riktade händelser når laget; en trupp-vid händelses påminnelse hela truppen (`#332`).
+            var message = EventNotification.Reminder(item);
+            push.Enqueue(item.TeamId is Guid teamId
+                ? PushDispatch.ToTeam(teamId, PushCategory.EventChange, message)
+                : PushDispatch.ToTrupp(item.AgeGroupId, PushCategory.EventChange, message));
         }
 
         // Märks efter att notiserna köats -- en andra körning hittar dem inte längre.

@@ -48,15 +48,19 @@ public sealed class EmailFallbackNotifier(
             return;
         }
 
-        var targets = dispatch.AccountIds is null
+        var targets = dispatch.AccountIds is { Count: > 0 } accounts
             ? await recipients
-                .ListForTeamAsync(dispatch.TeamId, dispatch.Category, cancellationToken)
+                .ListForAccountsAsync(accounts, dispatch.Category, cancellationToken)
                 .ConfigureAwait(false)
-            : dispatch.AccountIds is { Count: > 0 } accounts
+            : dispatch.AgeGroupId is Guid ageGroupId
                 ? await recipients
-                    .ListForAccountsAsync(dispatch.TeamId, accounts, dispatch.Category, cancellationToken)
+                    .ListForTruppAsync(ageGroupId, dispatch.Category, cancellationToken)
                     .ConfigureAwait(false)
-                : [];
+                : dispatch.TeamId is Guid teamId
+                    ? await recipients
+                        .ListForTeamAsync(teamId, dispatch.Category, cancellationToken)
+                        .ConfigureAwait(false)
+                    : [];
 
         if (targets.Count == 0)
         {

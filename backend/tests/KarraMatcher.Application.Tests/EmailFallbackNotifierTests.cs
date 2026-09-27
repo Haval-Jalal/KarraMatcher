@@ -92,7 +92,6 @@ public sealed class EmailFallbackNotifierTests
         var email = new RecordingEmailSender();
 
         var dispatch = PushDispatch.ToAccounts(
-            Guid.NewGuid(),
             [Guid.NewGuid()],
             PushCategory.Kallelse,
             new PushMessage("Ny kallelse", "", "/handelse/abc"));
@@ -106,9 +105,30 @@ public sealed class EmailFallbackNotifierTests
         Assert.Equal("https://app.example/handelse/abc", email.Sent[0].Body);
     }
 
+    [Fact]
+    public async Task KritiskTruppnotis_MejlarViaTrupplistan()
+    {
+        // En trupp-vid kallelse (`#332`) faller tillbaka på truppens medlemmar, inte ett enskilt lag.
+        var repository = new FakeRepository(TwoRecipients);
+        var email = new RecordingEmailSender();
+
+        var dispatch = PushDispatch.ToTrupp(
+            Guid.NewGuid(),
+            PushCategory.Kallelse,
+            new PushMessage("Ny kallelse", "Svara i appen", "/handelse/abc"));
+
+        await Notifier(repository, email).SendAsync(dispatch, CancellationToken.None);
+
+        Assert.True(repository.TruppAsked);
+        Assert.False(repository.TeamAsked);
+        Assert.Equal(2, email.Sent.Count);
+    }
+
     private sealed class FakeRepository(IReadOnlyList<EmailRecipient> recipients) : IEmailFallbackRepository
     {
         public bool TeamAsked { get; private set; }
+
+        public bool TruppAsked { get; private set; }
 
         public bool AccountsAsked { get; private set; }
 
@@ -119,8 +139,14 @@ public sealed class EmailFallbackNotifierTests
             return Task.FromResult(recipients);
         }
 
+        public Task<IReadOnlyList<EmailRecipient>> ListForTruppAsync(
+            Guid ageGroupId, PushCategory category, CancellationToken cancellationToken)
+        {
+            TruppAsked = true;
+            return Task.FromResult(recipients);
+        }
+
         public Task<IReadOnlyList<EmailRecipient>> ListForAccountsAsync(
-            Guid teamId,
             IReadOnlyCollection<Guid> accountIds,
             PushCategory category,
             CancellationToken cancellationToken)
