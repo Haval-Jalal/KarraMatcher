@@ -188,6 +188,36 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task SkapadHandelse_ArverTruppensId_InteBaraLaget()
+    {
+        // Datan hör till truppen (`#332`): en händelse som skapas i ett lag får lagets trupp
+        // som ägare (AgeGroupId), inte bara lag-märket (TeamId). Utan det kan en trupp-vid
+        // händelse inte veta vilken trupp den hör till när laget blir valfritt (slice 1b).
+        var fixture = await SeedAsync("owner");
+
+        var response = await SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/teams/{fixture.Slug}/events",
+            fixture.Slug,
+            fixture.CoachAccountId,
+            Draft(Kickoff.AddDays(1), "Nya motstandare"));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+        var team = await context.Teams.AsNoTracking()
+            .SingleAsync(t => t.Slug == fixture.Slug, CancellationToken.None);
+        var created = await context.Events.AsNoTracking()
+            .SingleAsync(
+                e => e.TeamId == team.Id && e.OpponentName == "Nya motstandare",
+                CancellationToken.None);
+
+        Assert.Equal(team.AgeGroupId, created.AgeGroupId);
+        Assert.NotEqual(Guid.Empty, created.AgeGroupId);
+    }
+
+    [Fact]
     public async Task Instalining_OkarOcksaSekvensnumret()
     {
         // En inställd match som inte ökar sekvensen ligger kvar som "spelas" i kalendern.

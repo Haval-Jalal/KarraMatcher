@@ -228,11 +228,18 @@ public static class TestingSupport
             .Select(v => v.Id)
             .FirstOrDefaultAsync(ct).ConfigureAwait(false);
 
+        // Händelsen hör till truppen (`#332`) — laget är bara märket. Hämta lagets trupp.
+        var ageGroupId = await db.Teams.AsNoTracking()
+            .Where(t => t.Id == teamId)
+            .Select(t => t.AgeGroupId)
+            .FirstAsync(ct).ConfigureAwait(false);
+
         var kickoff = clock.GetUtcNow().UtcDateTime.AddDays(7);
 
         var match = new DomainEvent
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = ageGroupId,
             TeamId = teamId,
             Type = EventType.Match,
             KickoffUtc = kickoff,

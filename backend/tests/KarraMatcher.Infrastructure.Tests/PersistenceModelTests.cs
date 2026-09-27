@@ -97,6 +97,24 @@ public class PersistenceModelTests
     }
 
     [Fact]
+    public void Handelse_AgsAvTruppen_ObligatoriskOchKaskaderar()
+    {
+        // Datan hör till truppen, inte till laget (`#332`): händelsen har en obligatorisk
+        // AgeGroup-koppling som kaskaderar, precis som barnen (Child.AgeGroupId → Cascade).
+        // Laget (TeamId) är bara en uppdelning ovanpå.
+        var entity = Model().FindEntityType(typeof(Event));
+        Assert.NotNull(entity);
+
+        var toAgeGroup = entity.GetForeignKeys()
+            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(AgeGroup));
+
+        Assert.Equal(DeleteBehavior.Cascade, toAgeGroup.DeleteBehavior);
+        Assert.False(
+            toAgeGroup.Properties.Single().IsNullable,
+            "AgeGroupId ska vara obligatorisk — varje händelse hör till en trupp.");
+    }
+
+    [Fact]
     public void Spelplats_KanInteRaderasNarMatcherAnvanderDen()
     {
         var entity = Model().FindEntityType(typeof(Event));

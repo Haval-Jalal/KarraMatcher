@@ -237,6 +237,7 @@ public sealed partial class DatabaseSeeder(KarraMatcherDbContext context, IConfi
 
             context.Events.Add(new Event
             {
+                AgeGroupId = team.AgeGroupId,
                 TeamId = team.Id,
                 Type = EventType.Match,
                 KickoffUtc = kickoffUtc,

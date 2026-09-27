@@ -73,6 +73,7 @@ public sealed class EventAdminService(
         var item = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = team.AgeGroupId,
             TeamId = team.Id,
             Type = draft.Type,
             KickoffUtc = draft.KickoffUtc,
