@@ -60,9 +60,11 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
             .HasForeignKey(e => e.AgeGroupId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Laget är ett valfritt märke. Raderas laget nollställs det (händelsen blir trupp-nivå),
+        // aldrig kaskad — datan hör till truppen, inte till laget (jfr Child.TeamId → SetNull).
         builder.HasOne(e => e.Team)
             .WithMany(t => t.Events)
             .HasForeignKey(e => e.TeamId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

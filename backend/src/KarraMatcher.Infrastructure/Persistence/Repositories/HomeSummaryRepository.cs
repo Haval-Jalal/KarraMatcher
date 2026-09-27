@@ -22,7 +22,9 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
             .Include(e => e.Team!)
             .ThenInclude(team => team!.AgeGroup!)
             .ThenInclude(ageGroup => ageGroup!.Club)
-            .Where(e => teamIds.Contains(e.TeamId)
+            // Trupp-vida händelser (utan lag) tas in i lagens vyer i slice 1b-ii; här ännu bara
+            // lag-riktade (`#332`).
+            .Where(e => e.TeamId != null && teamIds.Contains(e.TeamId.Value)
                 && e.KickoffUtc >= nowUtc
                 && e.Status != EventStatus.Cancelled)
             .OrderBy(e => e.KickoffUtc)

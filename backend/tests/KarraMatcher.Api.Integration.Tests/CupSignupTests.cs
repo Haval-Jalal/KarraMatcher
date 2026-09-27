@@ -64,6 +64,7 @@ public sealed class CupSignupTests(KarraMatcherApiFactory factory)
         var cup = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = svart.Id,
             Type = EventType.Cup,
             KickoffUtc = now.AddDays(7),

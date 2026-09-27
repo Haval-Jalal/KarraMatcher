@@ -166,10 +166,13 @@ public sealed class AttendanceService(
                 .GuardianAccountIdsForChildrenAsync(added, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (guardians.Count > 0)
+            // Trupp-vid händelse (utan lag) → per-lag-notisfiltret (#65) har inget lag att
+            // filtrera på; trupp-push byggs i 1b-ii (`#332`). Här går kallelse-pushen bara ut
+            // för lag-riktade händelser.
+            if (guardians.Count > 0 && context.TeamId is Guid teamId)
             {
                 push.Enqueue(PushDispatch.ToAccounts(
-                    context.TeamId,
+                    teamId,
                     guardians,
                     PushCategory.Kallelse,
                     new PushMessage(
@@ -320,10 +323,11 @@ public sealed class AttendanceService(
                 .GuardianAccountIdsForChildrenAsync(notAnswered, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (guardians.Count > 0)
+            // Se noten vid "Ny kallelse": trupp-vid push kommer i 1b-ii (`#332`).
+            if (guardians.Count > 0 && context.TeamId is Guid teamId)
             {
                 push.Enqueue(PushDispatch.ToAccounts(
-                    context.TeamId,
+                    teamId,
                     guardians,
                     PushCategory.Kallelse,
                     new PushMessage(

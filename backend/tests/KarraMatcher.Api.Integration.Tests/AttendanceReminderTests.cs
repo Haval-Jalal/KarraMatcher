@@ -86,6 +86,7 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = team.Id,
             Type = EventType.Match,
             KickoffUtc = now.AddDays(3),
@@ -169,7 +170,7 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
         context.AttendanceCalls.Add(call);
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return (call.Id, teamId);
+        return (call.Id, teamId!.Value);
     }
 
     private string AdminToken(Guid truppId)

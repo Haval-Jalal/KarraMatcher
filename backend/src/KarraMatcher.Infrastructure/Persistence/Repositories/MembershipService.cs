@@ -63,7 +63,7 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
         var team = await context.Events
             .AsNoTracking()
             .Where(m => m.Id == eventId)
-            .Select(m => new { TeamId = m.TeamId, m.Team!.AgeGroupId })
+            .Select(m => new { TeamId = m.TeamId, m.AgeGroupId })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -452,8 +452,10 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             .ConfigureAwait(false);
     }
 
+    // teamId == null = en trupp-vid händelse: medlem är då den som hör till truppen alls
+    // (vilken tränare eller vårdnadshavare som helst i truppen), inte bara ett visst lag.
     private async Task<bool> IsMemberCoreAsync(
-        Guid accountId, Guid teamId, Guid ageGroupId, CancellationToken cancellationToken)
+        Guid accountId, Guid? teamId, Guid ageGroupId, CancellationToken cancellationToken)
     {
         var hasRole = await context.TeamRoles
             .AsNoTracking()
@@ -461,7 +463,8 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
                 r => r.AccountId == accountId
                     && (r.Role == RoleKind.SuperAdmin
                         || (r.Role == RoleKind.Admin && r.AgeGroupId == ageGroupId)
-                        || (r.Role == RoleKind.Coach && r.TeamId == teamId)),
+                        || (r.Role == RoleKind.Coach
+                            && (teamId == null ? r.Team!.AgeGroupId == ageGroupId : r.TeamId == teamId))),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -473,7 +476,8 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
         var isGuardian = await context.Guardianships
             .AsNoTracking()
             .AnyAsync(
-                g => g.AccountId == accountId && g.Child!.TeamId == teamId,
+                g => g.AccountId == accountId
+                    && (teamId == null ? g.Child!.AgeGroupId == ageGroupId : g.Child!.TeamId == teamId),
                 cancellationToken)
             .ConfigureAwait(false);
 

@@ -8,7 +8,7 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 /// för allt som inte är en match (§KM.12) — samma gräns som FE visar, men som den riktiga
 /// grinden (`#291`).
 /// </summary>
-public sealed record CarpoolEventTarget(Guid TeamId, EventType Type);
+public sealed record CarpoolEventTarget(Guid? TeamId, EventType Type);
 
 /// <summary>Läser och skriver samåkningserbjudanden.</summary>
 public interface ICarpoolOfferRepository

@@ -115,6 +115,24 @@ public class PersistenceModelTests
     }
 
     [Fact]
+    public void Handelse_LagArEttValfrittMarke_SomNollstallsNarLagetRaderas()
+    {
+        // Laget är bara en uppdelning (`#332` 1b): TeamId är valfritt, och raderas laget
+        // nollställs märket (SetNull) — händelsen blir trupp-nivå, den försvinner inte med laget.
+        // Samma regel som ett barns lag-märke (Child.TeamId → SetNull).
+        var entity = Model().FindEntityType(typeof(Event));
+        Assert.NotNull(entity);
+
+        var toTeam = entity.GetForeignKeys()
+            .Single(fk => fk.PrincipalEntityType.ClrType == typeof(Team));
+
+        Assert.Equal(DeleteBehavior.SetNull, toTeam.DeleteBehavior);
+        Assert.True(
+            toTeam.Properties.Single().IsNullable,
+            "TeamId ska vara valfritt — en trupp-vid händelse har inget lag.");
+    }
+
+    [Fact]
     public void Spelplats_KanInteRaderasNarMatcherAnvanderDen()
     {
         var entity = Model().FindEntityType(typeof(Event));

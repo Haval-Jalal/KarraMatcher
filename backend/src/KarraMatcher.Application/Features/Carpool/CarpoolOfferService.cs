@@ -102,8 +102,13 @@ public sealed class CarpoolOfferService(
         await offers.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Till lagets prenumeranter (§KM.12). Köas, aldrig skickat i requesten (§KM.11).
-        push.Enqueue(PushDispatch.ToTeam(
-            target.TeamId, PushCategory.Carpool, CarpoolNotification.NewOffer(matchId)));
+        // Samåkning finns bara på matcher, som alltid är lag-riktade — men guardas ändå:
+        // en trupp-vid händelse har inget lag att pusha till (trupp-push i 1b-ii, `#332`).
+        if (target.TeamId is Guid teamId)
+        {
+            push.Enqueue(PushDispatch.ToTeam(
+                teamId, PushCategory.Carpool, CarpoolNotification.NewOffer(matchId)));
+        }
 
         return (CreateCarpoolOfferOutcome.Created, CarpoolOfferDto.For(offer, driverAccountId));
     }

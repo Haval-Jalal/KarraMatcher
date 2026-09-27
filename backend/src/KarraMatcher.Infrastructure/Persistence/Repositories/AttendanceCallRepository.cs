@@ -14,7 +14,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
         await context.Events
             .AsNoTracking()
             .Where(e => e.Id == eventId)
-            .Select(e => new EventContext(e.Team!.AgeGroupId, e.TeamId, e.KickoffUtc, e.Type))
+            .Select(e => new EventContext(e.AgeGroupId, e.TeamId, e.KickoffUtc, e.Type))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -124,7 +124,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     {
         var cups = await context.Events
             .AsNoTracking()
-            .Where(e => e.Type == EventType.Cup && e.Team!.AgeGroupId == ageGroupId)
+            .Where(e => e.Type == EventType.Cup && e.AgeGroupId == ageGroupId)
             .OrderBy(e => e.KickoffUtc)
             .Select(e => new
             {
