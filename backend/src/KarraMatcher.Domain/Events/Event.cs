@@ -28,6 +28,17 @@ public sealed class Event
 {
     public Guid Id { get; set; }
 
+    /// <summary>
+    /// Truppen (åldersgruppen) händelsen hör till — händelsens verkliga ägare. Obligatorisk:
+    /// all data hör till truppen, laget är bara en uppdelning av barnen (jfr <c>Child</c>).
+    /// Lagras direkt på händelsen (inte bara härlett via laget) så att truppen är känd även när
+    /// laget blir ett valfritt märke i trupp-vid-slicen (`#332`).
+    /// </summary>
+    public Guid AgeGroupId { get; set; }
+
+    public AgeGroup? AgeGroup { get; set; }
+
+    /// <summary>Laget händelsen hör till. Ett lag-märke ovanpå trupp-tillhörigheten (jfr <c>Child.TeamId</c>).</summary>
     public Guid TeamId { get; set; }
 
     public Team? Team { get; set; }

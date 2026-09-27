@@ -50,6 +50,16 @@ internal sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         // Den vanligaste frågan i hela appen: ett lags händelser i tidsordning.
         builder.HasIndex(e => new { e.TeamId, e.KickoffUtc });
 
+        // Händelser per trupp (för trupp-vida händelser i `#332`) — samma mönster som barnen.
+        builder.HasIndex(e => e.AgeGroupId);
+
+        // Truppen äger händelsen (obligatorisk). Raderas truppen försvinner dess händelser
+        // med den, precis som barnen (Child.AgeGroupId → Cascade).
+        builder.HasOne(e => e.AgeGroup)
+            .WithMany()
+            .HasForeignKey(e => e.AgeGroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne(e => e.Team)
             .WithMany(t => t.Events)
             .HasForeignKey(e => e.TeamId)
