@@ -92,18 +92,24 @@ internal sealed partial class PushDispatchWorker(
         var repository = scope.ServiceProvider.GetRequiredService<IPushDeliveryRepository>();
         var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
 
-        // Hela laget (AccountIds == null) eller en handfull konton -- och alltid filtrerat
-        // pa vad mottagaren valt for den har sortens notis och det har laget (#65). Ett
+        // Tre riktningar: bestamda konton, hela truppen (en trupp-vid handelse `#332`), eller
+        // hela laget. Den som stangt av notiser globalt filtreras bort i leveranslagret. Ett
         // tomt konto-set ar inte ett fel: ingen av de inblandade hade en enhet registrerad.
-        var targets = dispatch.AccountIds is null
+        var targets = dispatch.AccountIds is { Count: > 0 } accounts
             ? await repository
-                .ListForTeamAsync(dispatch.TeamId, dispatch.Category, cancellationToken)
+                .ListForAccountsAsync(accounts, dispatch.Category, cancellationToken)
                 .ConfigureAwait(false)
-            : dispatch.AccountIds is { Count: > 0 } accounts
-                ? await repository
-                    .ListForAccountsAsync(dispatch.TeamId, accounts, dispatch.Category, cancellationToken)
-                    .ConfigureAwait(false)
-                : [];
+            : dispatch.AccountIds is not null
+                ? []
+                : dispatch.AgeGroupId is Guid ageGroupId
+                    ? await repository
+                        .ListForTruppAsync(ageGroupId, dispatch.Category, cancellationToken)
+                        .ConfigureAwait(false)
+                    : dispatch.TeamId is Guid teamId
+                        ? await repository
+                            .ListForTeamAsync(teamId, dispatch.Category, cancellationToken)
+                            .ConfigureAwait(false)
+                        : [];
 
         if (targets.Count == 0)
         {

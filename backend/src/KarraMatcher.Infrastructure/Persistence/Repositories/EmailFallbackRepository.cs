@@ -21,24 +21,32 @@ internal sealed class EmailFallbackRepository(
         var members = await membership.MemberAccountIdsAsync(teamId, cancellationToken)
             .ConfigureAwait(false);
 
-        return await ResolveAsync(teamId, members, category, cancellationToken).ConfigureAwait(false);
+        return await ResolveAsync(members, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<EmailRecipient>> ListForTruppAsync(
+        Guid ageGroupId,
+        PushCategory category,
+        CancellationToken cancellationToken)
+    {
+        var members = await membership.MemberAccountIdsForTruppAsync(ageGroupId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return await ResolveAsync(members, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<EmailRecipient>> ListForAccountsAsync(
-        Guid teamId,
         IReadOnlyCollection<Guid> accountIds,
         PushCategory category,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accountIds);
 
-        return await ResolveAsync(teamId, accountIds, category, cancellationToken).ConfigureAwait(false);
+        return await ResolveAsync(accountIds, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<EmailRecipient>> ResolveAsync(
-        Guid teamId,
         IReadOnlyCollection<Guid> candidates,
-        PushCategory category,
         CancellationToken cancellationToken)
     {
         if (candidates.Count == 0)

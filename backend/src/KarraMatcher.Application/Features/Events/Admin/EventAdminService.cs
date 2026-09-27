@@ -191,10 +191,13 @@ public sealed class EventAdminService(
 
         // Lag-riktad → notis till laget. Trupp-vid (utan lag) skjuts upp: push-till-truppen är
         // en egen uppgift (den behöver ett beslut om per-lag-notisvalet, §KM.7/#65).
-        if (created is not null && teamId is Guid notifyTeam)
+        // Lag-riktad → notis till laget; trupp-vid → till hela truppen (`#332`).
+        if (created is not null)
         {
-            push.Enqueue(PushDispatch.ToTeam(
-                notifyTeam, PushCategory.EventChange, EventNotification.Created(created)));
+            var message = EventNotification.Created(created);
+            push.Enqueue(teamId is Guid notifyTeam
+                ? PushDispatch.ToTeam(notifyTeam, PushCategory.EventChange, message)
+                : PushDispatch.ToTrupp(truppId, PushCategory.EventChange, message));
         }
 
         return new EventSaveResult(EventSaveOutcome.Ok, created);

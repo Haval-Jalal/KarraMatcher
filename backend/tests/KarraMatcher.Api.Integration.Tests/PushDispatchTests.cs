@@ -140,6 +140,80 @@ public sealed class PushDispatchTests
     }
 
     /// <summary>
+    /// Sår en trupp med två lag, var sitt tränarkonto och var sin prenumeration. Ger truppens id
+    /// och en endpoint per lag — så ett trupp-vitt utskick måste nå <b>båda</b> för att räknas rätt.
+    /// </summary>
+    private static async Task<(Guid AgeGroupId, string[] Endpoints)> SeedTruppAsync(
+        WebApplicationFactory<Program> factory,
+        string suffix)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = $"klubb-t-{suffix}" };
+        var ageGroup = new AgeGroup
+        {
+            Id = Guid.NewGuid(),
+            ClubId = club.Id,
+            Name = "P2016",
+            Season = "2026",
+        };
+
+        context.Clubs.Add(club);
+        context.AgeGroups.Add(ageGroup);
+
+        var endpoints = new List<string>();
+
+        // Två lag i samma trupp. En lag-notis når bara sitt lag; en trupp-notis ska nå bådas
+        // prenumeranter — det är just den skillnaden testet prövar.
+        foreach (var (name, color) in new[] { ("Gul", "#D9A21B"), ("Blaa", "#1B57D9") })
+        {
+            var team = new Team
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = ageGroup.Id,
+                Name = name,
+                ColorHex = color,
+                Slug = $"{name.ToLowerInvariant()}-t-{suffix}",
+            };
+            context.Teams.Add(team);
+
+            var endpoint = $"https://push.example/{suffix}/{name}";
+            endpoints.Add(endpoint);
+
+            var account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = $"{suffix}-{name}@example.com",
+                CreatedUtc = DateTime.UtcNow,
+            };
+            context.Accounts.Add(account);
+            context.TeamRoles.Add(new TeamRole
+            {
+                Id = Guid.NewGuid(),
+                AccountId = account.Id,
+                TeamId = team.Id,
+                Role = RoleKind.Coach,
+                GrantedUtc = DateTime.UtcNow,
+            });
+            context.PushSubscriptions.Add(new PushSubscription
+            {
+                Id = Guid.NewGuid(),
+                TeamId = team.Id,
+                AccountId = account.Id,
+                Endpoint = endpoint,
+                P256dh = "nyckel",
+                Auth = "hemlighet",
+                CreatedUtc = DateTime.UtcNow,
+            });
+        }
+
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return (ageGroup.Id, [.. endpoints]);
+    }
+
+    /// <summary>
     /// Väntar in bakgrundstjänsten.
     ///
     /// <para>
@@ -293,5 +367,25 @@ public sealed class PushDispatchTests
         await Task.Delay(300, CancellationToken.None);
 
         Assert.Empty(sender.Attempts);
+    }
+
+    [Fact]
+    public async Task TruppVidUtskick_NarBadaLagensPrenumeranter()
+    {
+        // En trupp-vid händelse (`#332`) — t.ex. gemensam träning för hela truppen — når varje lags
+        // prenumeranter, inte bara ett lags. En lag-notis hade missat det andra laget.
+        using var factory = new KarraMatcherApiFactory();
+        var sender = new FakeSender();
+        using var host = WithFakeSender(factory, sender);
+
+        var (ageGroupId, endpoints) = await SeedTruppAsync(host, "trupp");
+
+        using var client = host.CreateClient();
+
+        host.Services.GetRequiredService<IPushOutbox>()
+            .Enqueue(PushDispatch.ToTrupp(ageGroupId, PushCategory.EventChange, new PushMessage("Gemensam traning", "", "/handelse/1")));
+
+        Assert.True(await EventuallyAsync(() =>
+            Task.FromResult(endpoints.All(sender.Attempts.ContainsKey))));
     }
 }

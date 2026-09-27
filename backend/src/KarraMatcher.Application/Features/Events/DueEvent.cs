@@ -12,6 +12,7 @@ namespace KarraMatcher.Application.Features.Events;
 public sealed record DueEvent(
     Guid EventId,
     Guid? TeamId,
+    Guid AgeGroupId,
     string Type,
     DateTime KickoffUtc,
     string? Title,

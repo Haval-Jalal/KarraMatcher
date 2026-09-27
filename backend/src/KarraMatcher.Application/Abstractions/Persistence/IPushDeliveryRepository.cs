@@ -29,6 +29,12 @@ public interface IPushDeliveryRepository
         PushCategory category,
         CancellationToken cancellationToken);
 
+    /// <summary>Hela truppens medlemmars prenumeranter — för en trupp-vid händelse (`#332`).</summary>
+    public Task<IReadOnlyList<PushTarget>> ListForTruppAsync(
+        Guid ageGroupId,
+        PushCategory category,
+        CancellationToken cancellationToken);
+
     /// <summary>
     /// Prenumerationerna som hör till bestämda konton — deras alla enheter (`#63`).
     ///
@@ -39,7 +45,6 @@ public interface IPushDeliveryRepository
     /// </para>
     /// </summary>
     public Task<IReadOnlyList<PushTarget>> ListForAccountsAsync(
-        Guid teamId,
         IReadOnlyCollection<Guid> accountIds,
         PushCategory category,
         CancellationToken cancellationToken);

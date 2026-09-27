@@ -212,13 +212,10 @@ public sealed class CarpoolOfferService(
             .Distinct()
             .ToArray();
 
-        var teamId = await offers.FindMatchTeamIdAsync(offer.MatchId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (accepted.Length > 0 && teamId is not null)
+        if (accepted.Length > 0)
         {
             push.Enqueue(PushDispatch.ToAccounts(
-                teamId.Value, accepted, PushCategory.Carpool,
+                accepted, PushCategory.Carpool,
                 CarpoolNotification.OfferWithdrawn(offer.MatchId)));
         }
 

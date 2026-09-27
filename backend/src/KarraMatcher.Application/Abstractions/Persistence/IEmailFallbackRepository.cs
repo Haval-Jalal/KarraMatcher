@@ -16,15 +16,20 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 /// </summary>
 public interface IEmailFallbackRepository
 {
-    /// <summary>Lagets medlemmar som vill ha kategorin men saknar en push-prenumeration.</summary>
+    /// <summary>Lagets medlemmar som inte nås av push.</summary>
     public Task<IReadOnlyList<EmailRecipient>> ListForTeamAsync(
         Guid teamId,
         PushCategory category,
         CancellationToken cancellationToken);
 
-    /// <summary>Bestämda konton som vill ha kategorin men saknar en push-prenumeration.</summary>
+    /// <summary>Hela truppens medlemmar som inte nås av push — för en trupp-vid händelse (`#332`).</summary>
+    public Task<IReadOnlyList<EmailRecipient>> ListForTruppAsync(
+        Guid ageGroupId,
+        PushCategory category,
+        CancellationToken cancellationToken);
+
+    /// <summary>Bestämda konton som inte nås av push.</summary>
     public Task<IReadOnlyList<EmailRecipient>> ListForAccountsAsync(
-        Guid teamId,
         IReadOnlyCollection<Guid> accountIds,
         PushCategory category,
         CancellationToken cancellationToken);

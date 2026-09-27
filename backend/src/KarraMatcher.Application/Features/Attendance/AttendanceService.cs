@@ -166,13 +166,12 @@ public sealed class AttendanceService(
                 .GuardianAccountIdsForChildrenAsync(added, cancellationToken)
                 .ConfigureAwait(false);
 
-            // Trupp-vid händelse (utan lag) → per-lag-notisfiltret (#65) har inget lag att
-            // filtrera på; trupp-push byggs i 1b-ii (`#332`). Här går kallelse-pushen bara ut
-            // för lag-riktade händelser.
-            if (guardians.Count > 0 && context.TeamId is Guid teamId)
+            // Går till de kallade barnens vårdnadshavare — oavsett om händelsen är lag-riktad
+            // eller trupp-vid (`#332`). Global på/av gäller per konto, så inget lag behövs för
+            // filtreringen. Aldrig barnets namn i pushen (§KM.1).
+            if (guardians.Count > 0)
             {
                 push.Enqueue(PushDispatch.ToAccounts(
-                    teamId,
                     guardians,
                     PushCategory.Kallelse,
                     new PushMessage(
@@ -323,11 +322,10 @@ public sealed class AttendanceService(
                 .GuardianAccountIdsForChildrenAsync(notAnswered, cancellationToken)
                 .ConfigureAwait(false);
 
-            // Se noten vid "Ny kallelse": trupp-vid push kommer i 1b-ii (`#332`).
-            if (guardians.Count > 0 && context.TeamId is Guid teamId)
+            // Se noten vid "Ny kallelse": går till vårdnadshavarna oavsett lag/trupp (`#332`).
+            if (guardians.Count > 0)
             {
                 push.Enqueue(PushDispatch.ToAccounts(
-                    teamId,
                     guardians,
                     PushCategory.Kallelse,
                     new PushMessage(
