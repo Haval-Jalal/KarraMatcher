@@ -72,6 +72,10 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
 
     public DbSet<Domain.Accounts.Passkey> Passkeys => Set<Domain.Accounts.Passkey>();
 
+    public DbSet<Domain.Cup.CupTeam> CupTeams => Set<Domain.Cup.CupTeam>();
+
+    public DbSet<Domain.Cup.CupTeamMember> CupTeamMembers => Set<Domain.Cup.CupTeamMember>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

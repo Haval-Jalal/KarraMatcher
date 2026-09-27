@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
 
+import { CupTeamsBuilder } from './CupTeamsBuilder'
 import { useCupSummary, useOpenCup, useSignUpChild, useWithdrawChild } from './useCup'
 
 function messageOf(error: unknown): string {
@@ -154,6 +155,14 @@ export function CupSignupSection({
               </ul>
             </div>
           )}
+
+          {/* Cup-lagen (`#335`): admin bygger dem, alla ser dem i läsläge. */}
+          <CupTeamsBuilder
+            eventId={eventId}
+            truppId={truppId}
+            summary={summary.data}
+            isAdmin={isTrainer}
+          />
 
           {failure !== null && (
             <p className="state state--error" role="alert">
