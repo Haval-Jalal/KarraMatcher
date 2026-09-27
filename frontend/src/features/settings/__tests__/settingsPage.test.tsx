@@ -8,16 +8,20 @@ import { renderRoute } from '@/test/renderRoute'
 /**
  * Inställningar-sidan: samlar app-inställningar (i dag notiser), nådd via "Mer".
  *
- * Notiser är numera en global på/av; sidan visar den och en enhets-sektion per lag.
+ * Notiser är numera en global på/av plus <b>en enda</b> enhets-växel (`#332`-uppföljning) — inte
+ * längre en per lag, som gav samma enhet flera identiska notiser.
  */
 
 const TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
 
-function stub(teams: { slug: string; name: string; ageGroup: string; colorHex: string }[]) {
+function stub(): string[] {
+  const urls: string[] = []
+
   vi.stubGlobal(
     'fetch',
     vi.fn((input: unknown) => {
       const url = String(input)
+      urls.push(url)
 
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
       if (url.includes('/auth/refresh')) {
@@ -26,11 +30,12 @@ function stub(teams: { slug: string; name: string; ageGroup: string; colorHex: s
       if (url.includes('/notification-settings')) {
         return Promise.resolve(jsonResponse({ enabled: true }))
       }
-      if (url.endsWith('/api/v1/teams')) return Promise.resolve(jsonResponse(teams))
 
       return Promise.resolve(jsonResponse({}))
     }),
   )
+
+  return urls
 }
 
 beforeEach(() => {
@@ -44,11 +49,8 @@ afterEach(() => {
 })
 
 describe('inställningar', () => {
-  it('visar den globala notis-på/av och en enhets-sektion', async () => {
-    stub([
-      { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
-      { slug: 'bla', name: 'Blå', ageGroup: 'P2016', colorHex: '#1E3F8A' },
-    ])
+  it('visar den globala notis-på/av och en enda enhets-sektion', async () => {
+    stub()
 
     renderRoute('/installningar')
 
@@ -56,15 +58,19 @@ describe('inställningar', () => {
       await screen.findByRole('heading', { level: 1, name: 'Inställningar' }),
     ).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Notiser' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'På den här enheten' })).toBeInTheDocument()
+
+    // Exakt en enhets-sektion, inte en per lag (`#332`-uppföljning).
+    expect(screen.getAllByRole('heading', { name: 'På den här enheten' })).toHaveLength(1)
   })
 
-  it('säger till när man inte är med i något lag', async () => {
-    stub([])
+  it('hämtar inte längre lag-listan för enhets-sektionen', async () => {
+    const urls = stub()
 
     renderRoute('/installningar')
 
     await screen.findByRole('heading', { level: 1, name: 'Inställningar' })
-    expect(await screen.findByText('Du är inte med i något lag än.')).toBeInTheDocument()
+
+    // Den gamla per-lag-listan är borta: sidan kallar inte /api/v1/teams.
+    expect(urls.some((url) => url.endsWith('/api/v1/teams'))).toBe(false)
   })
 })

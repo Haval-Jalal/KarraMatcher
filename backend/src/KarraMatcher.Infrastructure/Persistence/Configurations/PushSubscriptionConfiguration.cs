@@ -26,18 +26,14 @@ internal sealed class PushSubscriptionConfiguration : IEntityTypeConfiguration<P
         builder.Property(s => s.LastUsedUtc).HasColumnType("timestamp with time zone");
 
         /*
-         * En prenumeration per lag och webblasare. Utan det unika indexet hade varje
-         * omladdning av sidan kunnat lagga till en till rad, och foraldern fatt sex notiser
-         * for samma flyttade match.
-         *
-         * Indexet ligger pa hela adressen. Postgres btree tar 2048 tecken utan att klaga
-         * har -- gransen gar vid ungefar 2700 byte per rad.
+         * En prenumeration per webblasare (`#332`-uppfoljning). Indexet ligger pa adressen ensam,
+         * inte pa (lag, adress) som forr: en webblasare har en enda push-adress, sa en rad per lag
+         * gav samma enhet flera identiska notiser. Nu upsertar prenumerationen pa adressen -> en rad
+         * per enhet -> en notis. Postgres btree tar 2048 tecken (gransen gar vid ~2700 byte/rad).
          */
-        builder.HasIndex(s => new { s.TeamId, s.Endpoint }).IsUnique();
+        builder.HasIndex(s => s.Endpoint).IsUnique();
 
-        // Utskicket fragar efter ett lags prenumerationer, och -- for samakning (#63) -- efter
-        // ett kontos. Bada listningarna behover sitt index.
-        builder.HasIndex(s => s.TeamId);
+        // Utskicket valjer mottagare pa konto (medlemskap), sa kontokolumnen behover sitt index.
         builder.HasIndex(s => s.AccountId);
 
         builder.HasOne<Domain.Teams.Team>()

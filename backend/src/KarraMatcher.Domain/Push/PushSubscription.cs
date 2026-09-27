@@ -41,8 +41,15 @@ public sealed class PushSubscription
 {
     public Guid Id { get; set; }
 
-    /// <summary>Laget prenumerationen gäller. En enhet kan prenumerera på flera lag.</summary>
-    public Guid TeamId { get; set; }
+    /// <summary>
+    /// <b>Historisk (`#332`-uppföljning): används inte längre.</b> En prenumeration hör till en
+    /// <em>enhet</em>, inte till ett lag — utskicket väljer mottagare på medlemskap (konto), inte
+    /// på den här kolumnen. Tidigare skapades en rad per lag och webbläsare, vilket gav <b>samma
+    /// enhet flera identiska notiser</b> (en per lag man slagit på). Nu finns högst en rad per
+    /// webbläsare (unikt index på <see cref="Endpoint"/>), och den här kolumnen är nullbar och
+    /// lämnas tom för nya prenumerationer. Behålls bara för äldre rader tills den kan tas bort.
+    /// </summary>
+    public Guid? TeamId { get; set; }
 
     /// <summary>
     /// Kontot som satt bakom webbläsaren när prenumerationen skapades — eller null (`#63`).

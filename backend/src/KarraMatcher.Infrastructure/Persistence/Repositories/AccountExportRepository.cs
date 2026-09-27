@@ -98,12 +98,16 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             .ConfigureAwait(false);
 
         // Aldrig s.Endpoint / s.P256dh / s.Auth i select:en. Secreten lamnar inte databasen.
+        // Prenumerationen ar per enhet (`#332`-uppfoljning): laget anvands inte langre, sa nya rader
+        // saknar det. Vansterjoin -> aldre rader visar sitt lag, en enhetsrad far en neutral etikett.
         var subscriptions = await (
             from s in context.PushSubscriptions.AsNoTracking()
             where s.AccountId == accountId
-            join t in context.Teams on s.TeamId equals t.Id
-            orderby t.Name
-            select new PushSubscriptionExportRow(t.Name, s.CreatedUtc, s.LastUsedUtc))
+            join t in context.Teams on s.TeamId equals t.Id into teams
+            from t in teams.DefaultIfEmpty()
+            orderby s.CreatedUtc
+            select new PushSubscriptionExportRow(
+                t != null ? t.Name : "Den här enheten", s.CreatedUtc, s.LastUsedUtc))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
