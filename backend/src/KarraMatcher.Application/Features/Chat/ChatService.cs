@@ -391,11 +391,8 @@ public sealed class ChatService(
             : await membership.MemberAccountIdsAsync(teamId.Value, cancellationToken)
                 .ConfigureAwait(false);
 
-        var disabled = (await chat.ChatDisabledAccountIdsAsync(truppId, cancellationToken)
-            .ConfigureAwait(false)).ToHashSet();
-
         var recipients = members
-            .Where(id => id != authorAccountId && !disabled.Contains(id))
+            .Where(id => id != authorAccountId)
             .ToArray();
 
         if (recipients.Length == 0)
@@ -403,8 +400,8 @@ public sealed class ChatService(
             return;
         }
 
-        // Notisen går till de bestämda kontona; global på/av gäller per konto (`#332`), så
-        // inget lag behöver fästas vid den.
+        // Notisen går till kanalens medlemmar; en enhet som slagit av notiser har ingen
+        // prenumeration och faller bort i leveransen (`#332`-uppföljning: en enda växel per enhet).
         push.Enqueue(PushDispatch.ToAccounts(
             recipients,
             PushCategory.Chat,

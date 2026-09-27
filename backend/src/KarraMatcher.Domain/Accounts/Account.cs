@@ -75,12 +75,5 @@ public sealed class Account
     /// <summary>Senaste lyckade inloggning. Används för gallring av vilande konton.</summary>
     public DateTime? LastSignedInUtc { get; set; }
 
-    /// <summary>
-    /// En enda global på/av för push-notiser. Av = kontot får ingen push; kritiska besked
-    /// (kallelse, inställd/flyttad match) når ändå fram via mejl. Ersätter den tidigare
-    /// per-lag/per-typ-modellen — enklare, och en trupp-vid notis behöver inget val per lag.
-    /// </summary>
-    public bool NotificationsEnabled { get; set; } = true;
-
     public ICollection<RefreshToken> RefreshTokens { get; } = [];
 }

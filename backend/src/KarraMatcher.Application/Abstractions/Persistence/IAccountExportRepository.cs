@@ -31,7 +31,6 @@ public sealed record AccountExportData(
     IReadOnlyList<CarpoolOfferExportRow> CarpoolOffers,
     IReadOnlyList<CarpoolRequestExportRow> CarpoolRequests,
     IReadOnlyList<AttendanceResponseExportRow> AttendanceResponses,
-    bool NotificationsEnabled,
     IReadOnlyList<PushSubscriptionExportRow> PushSubscriptions);
 
 /// <summary>Kontot självt. En vuxens egna uppgifter (§KM.1) — aldrig något om ett barn.</summary>

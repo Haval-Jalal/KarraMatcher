@@ -27,15 +27,12 @@ internal sealed class PushDeliveryRepository(
             return [];
         }
 
-        // En enda global på/av per konto: den som stängt av notiser får ingen push. Kategorin
-        // styr inte längre push — den avgör bara om mejl-fallbacken räknar beskedet som kritiskt.
-        var off = AccountsWithNotificationsOff();
-
+        // Notiser styrs per enhet: en avslagen enhet har ingen prenumeration (avregistrerad), så
+        // den faller bort av sig själv. Kategorin avgör bara om mejl-fallbacken räknar beskedet
+        // som kritiskt (`#332`-uppföljning: en enda växel, ingen separat global flagga).
         return await context.PushSubscriptions
             .AsNoTracking()
-            .Where(s => s.AccountId != null
-                && members.Contains(s.AccountId.Value)
-                && !off.Contains(s.AccountId.Value))
+            .Where(s => s.AccountId != null && members.Contains(s.AccountId.Value))
             .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -55,13 +52,9 @@ internal sealed class PushDeliveryRepository(
             return [];
         }
 
-        var off = AccountsWithNotificationsOff();
-
         return await context.PushSubscriptions
             .AsNoTracking()
-            .Where(s => s.AccountId != null
-                && members.Contains(s.AccountId.Value)
-                && !off.Contains(s.AccountId.Value))
+            .Where(s => s.AccountId != null && members.Contains(s.AccountId.Value))
             .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -79,22 +72,13 @@ internal sealed class PushDeliveryRepository(
             return [];
         }
 
-        // Global på/av per konto — se ListForTeamAsync. Kategorin styr inte längre.
-        var off = AccountsWithNotificationsOff();
-
         return await context.PushSubscriptions
             .AsNoTracking()
-            .Where(s => s.AccountId != null
-                && accountIds.Contains(s.AccountId.Value)
-                && !off.Contains(s.AccountId.Value))
+            .Where(s => s.AccountId != null && accountIds.Contains(s.AccountId.Value))
             .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
-
-    /// <summary>Kontona som stängt av notiser helt (global på/av). Push når dem inte.</summary>
-    private IQueryable<Guid> AccountsWithNotificationsOff() =>
-        context.Accounts.Where(a => !a.NotificationsEnabled).Select(a => a.Id);
 
     public async Task RemoveAsync(
         IReadOnlyCollection<Guid> subscriptionIds,

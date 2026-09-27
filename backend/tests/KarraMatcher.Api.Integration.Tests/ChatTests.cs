@@ -268,7 +268,7 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
     // ---- Notis -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Notis_NarMedlemmar_UtomForfattareOchAvstangda()
+    public async Task Notis_NarMedlemmar_UtomForfattaren()
     {
         var f = await SeedAsync("notis");
         var (app, outbox) = WithRecordingOutbox();
@@ -278,13 +278,16 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
             AdminToken(f), new { body = "Hej alla" });
         Assert.Equal(HttpStatusCode.NoContent, post.StatusCode);
 
+        // Notisen riktas till alla kanalens medlemmar utom författaren. Vem som faktiskt får push
+        // avgörs sedan i leveransen av vem som slagit på notiser på en enhet (`#332`-uppföljning) —
+        // det finns ingen separat avstängning i dispatchen längre.
         Assert.True(outbox.Dispatches.TryDequeue(out var dispatch));
         Assert.Equal(PushCategory.Chat, dispatch.Category);
         Assert.NotNull(dispatch.AccountIds);
         Assert.Contains(f.CoachId, dispatch.AccountIds!);
         Assert.Contains(f.GuardianId, dispatch.AccountIds!);
+        Assert.Contains(f.Guardian2Id, dispatch.AccountIds!);
         Assert.DoesNotContain(f.AdminId, dispatch.AccountIds!); // författaren
-        Assert.DoesNotContain(f.Guardian2Id, dispatch.AccountIds!); // stängt av Chatt
     }
 
     // ---- Reaktioner (#301) -----------------------------------------------------------
@@ -458,9 +461,6 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
             // Två vårdnadshavare, var sitt barn i laget.
             AddGuardianChild(context, truppId, teamId, guardianId, now, "Liam");
             AddGuardianChild(context, truppId, teamId, guardian2Id, now, "Nova");
-
-            // Guardian2 har stängt av notiser globalt (`#332`-uppföljning) → ingen chatt-push.
-            context.Accounts.Local.Single(a => a.Id == guardian2Id).NotificationsEnabled = false;
 
             await context.SaveChangesAsync(CancellationToken.None);
         });

@@ -150,17 +150,6 @@ internal sealed class ChatRepository(KarraMatcherDbContext context) : IChatRepos
         ];
     }
 
-    // Global på/av (`#332`-uppföljning): den som stängt av notiser helt får ingen chatt-push.
-    // ageGroupId spelar inte längre roll — valet är per konto, inte per lag.
-    public async Task<IReadOnlyList<Guid>> ChatDisabledAccountIdsAsync(
-        Guid ageGroupId, CancellationToken cancellationToken) =>
-        await context.Accounts
-            .AsNoTracking()
-            .Where(a => !a.NotificationsEnabled)
-            .Select(a => a.Id)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
     public async Task<Guid?> AnyTeamIdAsync(Guid ageGroupId, CancellationToken cancellationToken) =>
         await context.Teams
             .AsNoTracking()

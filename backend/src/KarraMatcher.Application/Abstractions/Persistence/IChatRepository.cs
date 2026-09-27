@@ -78,10 +78,6 @@ public interface IChatRepository
     public Task<IReadOnlyList<ReportedMessageRow>> ListReportedForTruppAsync(
         Guid ageGroupId, CancellationToken cancellationToken);
 
-    /// <summary>Konton som stängt av Chatt för något lag i truppen ("av någonstans = av").</summary>
-    public Task<IReadOnlyList<Guid>> ChatDisabledAccountIdsAsync(
-        Guid ageGroupId, CancellationToken cancellationToken);
-
     /// <summary>Ett lag-id i truppen, för notisens per-lag-filter. Null om truppen saknar lag.</summary>
     public Task<Guid?> AnyTeamIdAsync(Guid ageGroupId, CancellationToken cancellationToken);
 

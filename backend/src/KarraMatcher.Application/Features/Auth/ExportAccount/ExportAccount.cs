@@ -31,7 +31,6 @@ public sealed record AccountExportDto(
     IReadOnlyList<CarpoolOfferExportDto> CarpoolOffers,
     IReadOnlyList<CarpoolRequestExportDto> CarpoolRequests,
     IReadOnlyList<AttendanceResponseExportDto> AttendanceResponses,
-    bool NotificationsEnabled,
     IReadOnlyList<PushSubscriptionExportDto> PushSubscriptions,
     DeviceOnlyDataNoticeDto PlayerCard);
 
@@ -152,7 +151,6 @@ internal sealed class ExportAccountQueryHandler(
                 a.ChildName,
                 a.Reply.ToString(),
                 a.RespondedUtc))],
-            data.NotificationsEnabled,
             [.. data.PushSubscriptions.Select(s => new PushSubscriptionExportDto(
                 s.TeamName,
                 s.CreatedUtc,

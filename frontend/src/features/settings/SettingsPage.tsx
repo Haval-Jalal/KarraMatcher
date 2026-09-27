@@ -1,4 +1,4 @@
-import { DevicePushToggle, NotificationSettings } from '@/features/notifications'
+import { DevicePushToggle } from '@/features/notifications'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /**
@@ -8,9 +8,9 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle'
  *
  * <para>
  * Notisinställningarna låg förr inbäddade i lag-schemat. En inställning är ingen del av
- * helgens matcher — den hör hemma här. Notiser är numera en <b>enda global på/av</b> per
- * konto (`#332`-uppföljning, ersätter per-typ/per-lag `#65`); därunder styr man push per
- * enhet och lag.
+ * helgens matcher — den hör hemma här. Notiser är numera <b>en enda växel per enhet</b>
+ * (`#332`-uppföljning): på = notiser hit, av = inga — men kritiska besked når ändå fram via
+ * mejl. Ingen separat global flagga, inga per-lag-val.
  * </para>
  *
  * <h3>Bara för en inloggad</h3>
@@ -29,13 +29,12 @@ export function SettingsPage() {
         <p className="app-header__subtitle">Slå på eller av notiser, och välj enhet.</p>
       </header>
 
-      <NotificationSettings />
-
-      <section className="notif-settings" aria-labelledby="enheter">
-        <h2 id="enheter">På den här enheten</h2>
+      <section className="notif-settings" aria-labelledby="notiser">
+        <h2 id="notiser">Notiser</h2>
         <p className="notif-settings__lead">
-          Push når bara enheter du slagit på. Det gäller den här telefonen — varje enhet slås på för
-          sig.
+          Slå på för att få notiser på den här telefonen — händelser, kallelser, samåkning och
+          chatt. Varje enhet slås på för sig. Stänger du av når du ändå kritiska besked (kallelse,
+          inställd eller flyttad match) via mejl, så du inte missar något viktigt.
         </p>
 
         <DevicePushToggle />

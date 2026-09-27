@@ -91,12 +91,6 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var notificationsEnabled = await context.Accounts.AsNoTracking()
-            .Where(a => a.Id == accountId)
-            .Select(a => a.NotificationsEnabled)
-            .FirstAsync(cancellationToken)
-            .ConfigureAwait(false);
-
         // Aldrig s.Endpoint / s.P256dh / s.Auth i select:en. Secreten lamnar inte databasen.
         // Prenumerationen ar per enhet (`#332`-uppfoljning): laget anvands inte langre, sa nya rader
         // saknar det. Vansterjoin -> aldre rader visar sitt lag, en enhetsrad far en neutral etikett.
@@ -116,7 +110,6 @@ internal sealed class AccountExportRepository(KarraMatcherDbContext context)
             offers,
             requests,
             attendance,
-            notificationsEnabled,
             subscriptions);
     }
 }

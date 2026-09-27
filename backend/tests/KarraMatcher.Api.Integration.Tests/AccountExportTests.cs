@@ -106,8 +106,6 @@ public sealed class AccountExportTests(KarraMatcherApiFactory factory)
             Auth = "auth-hemlig",
             CreatedUtc = Kickoff.AddDays(-3),
         };
-        // Global på/av (`#332`-uppföljning): kontot har stängt av notiser.
-        account.NotificationsEnabled = false;
 
         context.Accounts.Add(account);
         context.Clubs.Add(club);
