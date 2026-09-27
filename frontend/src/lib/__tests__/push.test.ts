@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getAuthJson, postJson } from '@/lib/api'
 import {
-  disableTeamPush,
-  enableTeamPush,
+  disablePush,
+  enablePush,
+  isPushEnabled,
   isPushSupported,
-  isTeamPushEnabled,
   notificationPermission,
 } from '@/lib/push'
 
@@ -30,6 +30,7 @@ interface EnvOptions {
 const subscription = {
   endpoint: 'https://push.example/abc',
   toJSON: () => ({ endpoint: 'https://push.example/abc', keys: { p256dh: 'P256', auth: 'AUTH' } }),
+  unsubscribe: () => Promise.resolve(true),
 }
 
 function installPushEnv({
@@ -87,19 +88,19 @@ describe('stöd och tillstånd', () => {
   })
 })
 
-describe('på/av-läget per lag', () => {
-  it('är av tills enheten slagit på för laget', () => {
+describe('på/av-läget per enhet', () => {
+  it('är av tills enheten slagit på', () => {
     installPushEnv({ permission: 'granted' })
 
-    expect(isTeamPushEnabled('gul')).toBe(false)
+    expect(isPushEnabled()).toBe(false)
   })
 
   it('kräver både tillstånd och lokal flagga', () => {
     installPushEnv({ permission: 'default' })
-    localStorage.setItem('karra.push.gul', '1')
+    localStorage.setItem('karra.push', '1')
 
     // Flaggan finns men tillståndet är inte givet: räknas som av.
-    expect(isTeamPushEnabled('gul')).toBe(false)
+    expect(isPushEnabled()).toBe(false)
   })
 })
 
@@ -107,7 +108,7 @@ describe('slå på notiser', () => {
   it('svarar unsupported utan stöd, utan att röra servern', async () => {
     installPushEnv({ supported: false })
 
-    expect(await enableTeamPush('gul')).toBe('unsupported')
+    expect(await enablePush()).toBe('unsupported')
     expect(getAuthJsonMock).not.toHaveBeenCalled()
     expect(postJsonMock).not.toHaveBeenCalled()
   })
@@ -115,27 +116,27 @@ describe('slå på notiser', () => {
   it('svarar denied när tillståndet nekas', async () => {
     installPushEnv({ permission: 'default', requestResult: 'denied' })
 
-    expect(await enableTeamPush('gul')).toBe('denied')
+    expect(await enablePush()).toBe('denied')
     expect(postJsonMock).not.toHaveBeenCalled()
   })
 
-  it('prenumererar och skickar adressen till laget', async () => {
+  it('prenumererar och skickar adressen till enhets-endpointen', async () => {
     const { subscribe } = installPushEnv({ permission: 'granted' })
     getAuthJsonMock.mockResolvedValue({ publicKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-Skq' })
     postJsonMock.mockResolvedValue(undefined)
 
-    expect(await enableTeamPush('gul')).toBe('enabled')
+    expect(await enablePush()).toBe('enabled')
 
     // userVisibleOnly är ett krav i Chrome; nyckeln kommer som byte, inte som text.
     const options = subscribe.mock.calls[0]?.[0]
     expect(options?.userVisibleOnly).toBe(true)
     expect(options?.applicationServerKey).toBeInstanceOf(Uint8Array)
     expect(postJsonMock).toHaveBeenCalledWith(
-      '/api/v1/teams/gul/push',
+      '/api/v1/push',
       { endpoint: 'https://push.example/abc', p256dh: 'P256', auth: 'AUTH' },
       { method: 'POST' },
     )
-    expect(isTeamPushEnabled('gul')).toBe(true)
+    expect(isPushEnabled()).toBe(true)
   })
 
   it('återanvänder en befintlig prenumeration i stället för att skapa en ny', async () => {
@@ -146,7 +147,7 @@ describe('slå på notiser', () => {
     getAuthJsonMock.mockResolvedValue({ publicKey: 'BEl62iUYgUivxIkv' })
     postJsonMock.mockResolvedValue(undefined)
 
-    expect(await enableTeamPush('gul')).toBe('enabled')
+    expect(await enablePush()).toBe('enabled')
     expect(subscribe).not.toHaveBeenCalled()
   })
 
@@ -154,39 +155,39 @@ describe('slå på notiser', () => {
     installPushEnv({ permission: 'granted' })
     getAuthJsonMock.mockRejectedValue(new Error('push av på servern'))
 
-    expect(await enableTeamPush('gul')).toBe('error')
-    expect(isTeamPushEnabled('gul')).toBe(false)
+    expect(await enablePush()).toBe('error')
+    expect(isPushEnabled()).toBe(false)
   })
 })
 
 describe('slå av notiser', () => {
-  it('avregistrerar adressen mot laget och städar flaggan', async () => {
+  it('avregistrerar adressen mot enhets-endpointen och städar flaggan', async () => {
     installPushEnv({ permission: 'granted', existingSubscription: subscription })
     postJsonMock.mockResolvedValue(undefined)
-    localStorage.setItem('karra.push.gul', '1')
+    localStorage.setItem('karra.push', '1')
 
-    expect(await disableTeamPush('gul')).toBe(true)
+    expect(await disablePush()).toBe(true)
     expect(postJsonMock).toHaveBeenCalledWith(
-      '/api/v1/teams/gul/push',
+      '/api/v1/push',
       { endpoint: 'https://push.example/abc' },
       { method: 'DELETE' },
     )
-    expect(localStorage.getItem('karra.push.gul')).toBe('')
+    expect(localStorage.getItem('karra.push')).toBe('')
   })
 
   it('städar flaggan även när ingen prenumeration finns kvar', async () => {
     installPushEnv({ permission: 'granted', existingSubscription: null })
-    localStorage.setItem('karra.push.gul', '1')
+    localStorage.setItem('karra.push', '1')
 
-    expect(await disableTeamPush('gul')).toBe(true)
+    expect(await disablePush()).toBe(true)
     expect(postJsonMock).not.toHaveBeenCalled()
-    expect(localStorage.getItem('karra.push.gul')).toBe('')
+    expect(localStorage.getItem('karra.push')).toBe('')
   })
 
   it('svarar false när avregistreringen mot servern misslyckas', async () => {
     installPushEnv({ permission: 'granted', existingSubscription: subscription })
     postJsonMock.mockRejectedValue(new Error('nätet nere'))
 
-    expect(await disableTeamPush('gul')).toBe(false)
+    expect(await disablePush()).toBe(false)
   })
 })

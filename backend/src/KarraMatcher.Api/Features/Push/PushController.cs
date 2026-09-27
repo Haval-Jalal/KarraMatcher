@@ -1,6 +1,5 @@
 using System.Security.Claims;
 
-using KarraMatcher.Api.Features.Auth;
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Features.Push;
 
@@ -60,55 +59,59 @@ public sealed class PushController(
                 detail: "Kalendern och schemat fungerar som vanligt.");
     }
 
-    /// <summary>Börjar prenumerera på lagets notiser. Kräver medlemskap i laget.</summary>
-    [HttpPost("teams/{slug}/push")]
-    [Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
+    /// <summary>
+    /// Slår på notiser på den här enheten (`#332`-uppföljning). En rad per webbläsare, knuten till
+    /// kontot — inte per lag. Utskicket väljer mottagare på medlemskap, så en enhet får en notis.
+    /// </summary>
+    [HttpPost("push")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Subscribe(
-        string slug,
         PushSubscriptionRequest request,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Anroparen är en inloggad medlem av laget (v2). Prenumerationen knyts till kontot,
-        // så samåkningsnotiser (#63) kan nå just den föräldern.
-        var subscribed = await commands
-            .SendAsync(new SubscribeToPushCommand(slug, request.ToDraft(), ActorId()), cancellationToken)
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
+        await commands
+            .SendAsync(new SubscribeToPushCommand(request.ToDraft(), actor.Value), cancellationToken)
             .ConfigureAwait(false);
 
-        return subscribed ? NoContent() : TeamNotFound();
+        return NoContent();
     }
 
-    /// <summary>Slutar prenumerera.</summary>
+    /// <summary>Slutar prenumerera på den här enheten.</summary>
     /// <remarks>
     /// Svarar 204 även när ingen prenumeration fanns. Att avregistrera något som inte finns
     /// är inte ett fel — och ett annat svar hade avslöjat om en adress är känd hos oss.
     /// </remarks>
-    [HttpDelete("teams/{slug}/push")]
-    [Authorize(Policy = AuthorizationPolicies.MemberOfTeam)]
+    [HttpDelete("push")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Unsubscribe(
-        string slug,
         PushUnsubscribeRequest request,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         await commands
-            .SendAsync(new UnsubscribeFromPushCommand(slug, request.Endpoint), cancellationToken)
+            .SendAsync(new UnsubscribeFromPushCommand(request.Endpoint), cancellationToken)
             .ConfigureAwait(false);
 
         return NoContent();
     }
 
-    private ObjectResult TeamNotFound() => Problem(
-        statusCode: StatusCodes.Status404NotFound,
-        title: "Laget finns inte",
-        detail: "Kontrollera adressen.");
+    private ObjectResult Unauthenticated() => Problem(
+        statusCode: StatusCodes.Status401Unauthorized,
+        title: "Sessionen gäller inte längre",
+        detail: "Logga in igen.");
 
     private Guid? ActorId()
     {

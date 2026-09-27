@@ -24,15 +24,12 @@ namespace KarraMatcher.Application.Features.Push;
 /// inte ens till den som just skickade in den. Svaret är tomt med flit.
 /// </para>
 /// </summary>
-/// <param name="AccountId">
-/// Kontot bakom webbläsaren, om någon är inloggad — annars null. Bara till för att kunna
-/// rikta en samåkningsnotis (`#63`); en gäst prenumererar precis som förr.
-/// </param>
-public sealed record SubscribeToPushCommand(string Slug, PushSubscriptionDraft Draft, Guid? AccountId)
+/// <param name="AccountId">Kontot bakom webbläsaren (inloggad medlem i v2).</param>
+public sealed record SubscribeToPushCommand(PushSubscriptionDraft Draft, Guid AccountId)
     : ICommand<bool>;
 
 /// <summary>Slutar prenumerera. Adressen är den enda nyckel webbläsaren har.</summary>
-public sealed record UnsubscribeFromPushCommand(string Slug, string Endpoint) : ICommand<bool>;
+public sealed record UnsubscribeFromPushCommand(string Endpoint) : ICommand<bool>;
 
 /// <summary>Det webbläsaren lämnar ifrån sig när användaren tillåter notiser.</summary>
 public sealed record PushSubscriptionDraft(string Endpoint, string P256dh, string Auth);
@@ -72,7 +69,6 @@ internal sealed class SubscribeToPushCommandValidator : AbstractValidator<Subscr
 {
     public SubscribeToPushCommandValidator()
     {
-        RuleFor(c => c.Slug).NotEmpty();
         RuleFor(c => c.Draft).NotNull().SetValidator(new PushSubscriptionDraftValidator()!);
     }
 }
@@ -82,7 +78,6 @@ internal sealed class UnsubscribeFromPushCommandValidator
 {
     public UnsubscribeFromPushCommandValidator()
     {
-        RuleFor(c => c.Slug).NotEmpty();
         RuleFor(c => c.Endpoint)
             .NotEmpty()
             .MaximumLength(PushSubscriptionDraftValidator.MaxEndpointLength);
@@ -92,12 +87,15 @@ internal sealed class UnsubscribeFromPushCommandValidator
 internal sealed class SubscribeToPushCommandHandler(IPushSubscriptionRepository subscriptions)
     : ICommandHandler<SubscribeToPushCommand, bool>
 {
-    public Task<bool> HandleAsync(SubscribeToPushCommand command, CancellationToken cancellationToken)
+    public async Task<bool> HandleAsync(
+        SubscribeToPushCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return subscriptions.SubscribeAsync(
-            command.Slug, command.Draft, command.AccountId, cancellationToken);
+        await subscriptions.SubscribeAsync(command.Draft, command.AccountId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return true;
     }
 }
 
@@ -110,6 +108,6 @@ internal sealed class UnsubscribeFromPushCommandHandler(IPushSubscriptionReposit
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return subscriptions.UnsubscribeAsync(command.Slug, command.Endpoint, cancellationToken);
+        return subscriptions.UnsubscribeAsync(command.Endpoint, cancellationToken);
     }
 }

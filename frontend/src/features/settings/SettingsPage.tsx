@@ -1,7 +1,4 @@
-import { LoadingState } from '@/components/LoadingState'
 import { DevicePushToggle, NotificationSettings } from '@/features/notifications'
-import { useTeams } from '@/features/teams'
-import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /**
@@ -25,8 +22,6 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle'
 export function SettingsPage() {
   useDocumentTitle('Inställningar')
 
-  const teams = useTeams()
-
   return (
     <main>
       <header className="app-header">
@@ -39,26 +34,11 @@ export function SettingsPage() {
       <section className="notif-settings" aria-labelledby="enheter">
         <h2 id="enheter">På den här enheten</h2>
         <p className="notif-settings__lead">
-          Push når bara enheter du slagit på. Slå på för de lag du vill få notiser om här.
+          Push når bara enheter du slagit på. Det gäller den här telefonen — varje enhet slås på för
+          sig.
         </p>
 
-        {teams.isPending && <LoadingState label="Hämtar lagen…" />}
-
-        {teams.isError && (
-          <p className="state state--error" role="alert">
-            {teams.error instanceof ApiError && teams.error.offline
-              ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
-              : 'Kunde inte hämta lagen just nu.'}
-          </p>
-        )}
-
-        {teams.data && teams.data.length === 0 && (
-          <p className="state">Du är inte med i något lag än.</p>
-        )}
-
-        {teams.data?.map((team) => (
-          <DevicePushToggle key={team.slug} teamSlug={team.slug} />
-        ))}
+        <DevicePushToggle />
       </section>
     </main>
   )

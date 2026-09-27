@@ -1,23 +1,24 @@
 import { useState } from 'react'
 
 import {
-  disableTeamPush,
-  enableTeamPush,
+  disablePush,
+  enablePush,
+  isPushEnabled,
   isPushSupported,
-  isTeamPushEnabled,
   notificationPermission,
 } from '@/lib/push'
 
 import { NotificationInstallTip } from './NotificationInstallTip'
 
 /**
- * På/av för webbnotiser på den här enheten (`#244`).
+ * På/av för webbnotiser på den här enheten (`#244`, per enhet sedan `#332`-uppföljningen).
  *
- * <h3>Per enhet, inte per konto</h3>
+ * <h3>Per enhet, en enda växel</h3>
  *
  * En prenumeration hör till webbläsaren på just den här telefonen — samma förälder som loggar
- * in på en annan enhet slår på notiser där för sig. Kategorierna nedanför (`#65`) styr
- * <em>vad</em> som skickas; den här växeln styr <em>om</em> enheten tar emot något alls.
+ * in på en annan enhet slår på notiser där för sig. Det är <b>en</b> växel per enhet (inte en
+ * per lag): utskicket väljer mottagare på medlemskap, så enheten får en notis, inte flera.
+ * Den globala på/av-växeln ovanför styr om kontot vill ha notiser alls.
  *
  * <h3>Ärlig om tillståndet</h3>
  *
@@ -25,8 +26,8 @@ import { NotificationInstallTip } from './NotificationInstallTip'
  * på hemskärmen. Var och en av de sakerna får ett eget, begripligt besked i stället för en
  * växel som inte gör något.
  */
-export function DevicePushToggle({ teamSlug }: { teamSlug: string }) {
-  const [enabled, setEnabled] = useState(() => isTeamPushEnabled(teamSlug))
+export function DevicePushToggle() {
+  const [enabled, setEnabled] = useState(() => isPushEnabled())
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -48,7 +49,7 @@ export function DevicePushToggle({ teamSlug }: { teamSlug: string }) {
     setMessage(null)
 
     if (enabled) {
-      const stopped = await disableTeamPush(teamSlug)
+      const stopped = await disablePush()
 
       if (stopped) {
         setEnabled(false)
@@ -56,7 +57,7 @@ export function DevicePushToggle({ teamSlug }: { teamSlug: string }) {
         setMessage('Det gick inte att stänga av just nu. Försök igen om en stund.')
       }
     } else {
-      const result = await enableTeamPush(teamSlug)
+      const result = await enablePush()
 
       if (result === 'enabled') {
         setEnabled(true)
@@ -86,7 +87,7 @@ export function DevicePushToggle({ teamSlug }: { teamSlug: string }) {
         <span>
           <strong>Notiser på den här enheten</strong>
           <br />
-          Få lagets notiser direkt hit. Varje telefon slås på för sig.
+          Få notiser direkt hit. Varje telefon slås på för sig.
         </span>
       </label>
 
