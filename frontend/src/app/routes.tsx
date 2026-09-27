@@ -32,6 +32,10 @@ const TeamChatPage = lazyRouteComponent(
   'TeamChatPage',
 )
 const CuperPage = lazyRouteComponent(() => import('@/features/cup/CuperPage'), 'CuperPage')
+const ActivitiesPage = lazyRouteComponent(
+  () => import('@/features/activities/ActivitiesPage'),
+  'ActivitiesPage',
+)
 const ChildrenPage = lazyRouteComponent(
   () => import('@/features/playercard/ChildrenPage'),
   'ChildrenPage',
@@ -316,6 +320,25 @@ const cuperTruppRoute = createRoute({
 })
 
 /**
+ * Aktivitet-fliken (`#334`). Truppens alla aktiviteter — läslista för alla medlemmar, med en
+ * skapa-ingång för admin. Kräver inloggning; medlemskap och roll prövas server-side (§KM.3).
+ * `/aktivitet/{truppId}` förväljer en trupp.
+ */
+const activitiesIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/aktivitet',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: ActivitiesPage,
+})
+
+const activitiesTruppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/aktivitet/$truppId',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: ActivitiesPage,
+})
+
+/**
  * Integritetstexten (§KM.6). Publik: en gäst ska kunna läsa vad appen sparar innan hen loggar
  * in, inte efter. Nås från fotens länk och från Mitt konto.
  */
@@ -376,6 +399,8 @@ export const routeTree = rootRoute.addChildren([
   teamChatRoute,
   cuperIndexRoute,
   cuperTruppRoute,
+  activitiesIndexRoute,
+  activitiesTruppRoute,
   privacyRoute,
   aboutRoute,
   moreRoute,

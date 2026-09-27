@@ -34,6 +34,10 @@ export function BottomNav() {
       <ul className="bottom-nav__list">
         <BottomTab to="/" label="Hem" icon="🏠" active={current === 'schema'} />
 
+        {loggedIn && (
+          <BottomTab to="/aktivitet" label="Aktivitet" icon="📅" active={current === 'aktivitet'} />
+        )}
+
         {loggedIn && <BottomTab to="/chatt" label="Chatt" icon="💬" active={current === 'chatt'} />}
 
         {loggedIn && <BottomTab to="/cuper" label="Cuper" icon="🏆" active={current === 'cuper'} />}
@@ -52,7 +56,7 @@ export function BottomNav() {
 }
 
 /** De statiska adresser navbaren länkar till — håller `to` typsäker mot routern. */
-type NavTo = '/' | '/chatt' | '/cuper' | '/spelarkort' | '/mer'
+type NavTo = '/' | '/aktivitet' | '/chatt' | '/cuper' | '/spelarkort' | '/mer'
 
 function BottomTab({
   to,
@@ -77,7 +81,7 @@ function BottomTab({
   )
 }
 
-type Tab = 'schema' | 'chatt' | 'cuper' | 'spelarkort' | 'mer' | null
+type Tab = 'schema' | 'aktivitet' | 'chatt' | 'cuper' | 'spelarkort' | 'mer' | null
 
 /**
  * Vilken flik en adress hör till.
@@ -91,6 +95,7 @@ type Tab = 'schema' | 'chatt' | 'cuper' | 'spelarkort' | 'mer' | null
  */
 function tabOf(pathname: string): Tab {
   if (pathname.startsWith('/spelarkort')) return 'spelarkort'
+  if (pathname.startsWith('/aktivitet')) return 'aktivitet'
   if (pathname.startsWith('/chatt') || /^\/lag\/[^/]+\/chatt/.test(pathname)) return 'chatt'
   if (pathname.startsWith('/cuper')) return 'cuper'
 
