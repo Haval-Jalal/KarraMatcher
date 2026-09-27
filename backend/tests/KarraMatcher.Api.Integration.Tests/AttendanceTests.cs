@@ -86,6 +86,7 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = svart.Id,
             Type = eventType,
             KickoffUtc = now.AddDays(kickoffDays),

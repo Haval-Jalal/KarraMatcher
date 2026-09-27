@@ -8,7 +8,7 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 /// Typen låter servern avvisa en kallelse för en övrig händelse (§KM.7) — samma gräns som FE
 /// visar, men här som den riktiga grinden.
 /// </summary>
-public sealed record EventContext(Guid AgeGroupId, Guid TeamId, DateTime KickoffUtc, EventType Type);
+public sealed record EventContext(Guid AgeGroupId, Guid? TeamId, DateTime KickoffUtc, EventType Type);
 
 /// <summary>Ett kallat barn med namn, lag och svar — för tränarens summering (`#199`).</summary>
 public sealed record InvitationRow(

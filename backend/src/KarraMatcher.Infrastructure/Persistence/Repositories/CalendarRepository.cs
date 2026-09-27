@@ -55,7 +55,7 @@ internal sealed class CalendarRepository(
             .Include(e => e.Team!)
             .ThenInclude(team => team!.AgeGroup!)
             .ThenInclude(ageGroup => ageGroup!.Club)
-            .Where(e => teamIds.Contains(e.TeamId) && e.KickoffUtc >= fromUtc)
+            .Where(e => e.TeamId != null && teamIds.Contains(e.TeamId.Value) && e.KickoffUtc >= fromUtc)
             .OrderBy(e => e.KickoffUtc)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

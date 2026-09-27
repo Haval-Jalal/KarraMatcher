@@ -38,8 +38,12 @@ public sealed class Event
 
     public AgeGroup? AgeGroup { get; set; }
 
-    /// <summary>Laget händelsen hör till. Ett lag-märke ovanpå trupp-tillhörigheten (jfr <c>Child.TeamId</c>).</summary>
-    public Guid TeamId { get; set; }
+    /// <summary>
+    /// Laget händelsen är riktad mot, eller <c>null</c> för en trupp-vid händelse. Ett valfritt
+    /// lag-märke ovanpå trupp-tillhörigheten: raderas laget nollställs märket (<c>SetNull</c>)
+    /// och händelsen blir trupp-nivå — precis som ett barns lag-märke (<c>Child.TeamId</c>).
+    /// </summary>
+    public Guid? TeamId { get; set; }
 
     public Team? Team { get; set; }
 

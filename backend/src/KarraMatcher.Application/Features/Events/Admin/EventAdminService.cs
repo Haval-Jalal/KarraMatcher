@@ -107,8 +107,11 @@ public sealed class EventAdminService(
         // får sitt svar direkt, utskicket sköts av bakgrundstjänsten.
         if (created is not null)
         {
+            // Den här tjänsten nås bara via lag-slug-routen (CoachOfTeam), så händelsen har
+            // alltid ett lag här. Trupp-vida händelser skapas via admin-routen (`#332` 1b-ii)
+            // och notifieras där mot truppen — inte via ToTeam.
             push.Enqueue(PushDispatch.ToTeam(
-                item.TeamId, PushCategory.EventChange, EventNotification.Created(created)));
+                item.TeamId.Value, PushCategory.EventChange, EventNotification.Created(created)));
         }
 
         return new EventSaveResult(EventSaveOutcome.Ok, created);
@@ -181,7 +184,8 @@ public sealed class EventAdminService(
             // Null när bara notistexten ändrats: en förälder behöver inte väckas för det.
             if (message is not null)
             {
-                push.Enqueue(PushDispatch.ToTeam(item.TeamId, PushCategory.EventChange, message));
+                // Nås bara via lag-slug-routen → händelsen har alltid ett lag (se Created ovan).
+                push.Enqueue(PushDispatch.ToTeam(item.TeamId!.Value, PushCategory.EventChange, message));
             }
         }
 
@@ -229,7 +233,7 @@ public sealed class EventAdminService(
         // "Åk inte till spelplatsen" är hela poängen med den här notisen — en inställd
         // händelse som ingen får veta om är den som får någon att stå ensam på en plan.
         push.Enqueue(PushDispatch.ToTeam(
-            item.TeamId, PushCategory.EventChange, EventNotification.Cancelled(dto)));
+            item.TeamId!.Value, PushCategory.EventChange, EventNotification.Cancelled(dto)));
 
         return dto;
     }
