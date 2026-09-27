@@ -1,4 +1,11 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+
 using KarraMatcher.Application.Abstractions.Persistence;
+using KarraMatcher.Application.Abstractions.Security;
+using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
@@ -18,7 +25,7 @@ namespace KarraMatcher.Api.Integration.Tests;
 public sealed class TruppWideEventTests(KarraMatcherApiFactory factory)
     : IClassFixture<KarraMatcherApiFactory>
 {
-    private sealed record Seeded(Guid EventId, Guid GuardianId, Guid StrangerId);
+    private sealed record Seeded(Guid EventId, Guid TruppId, Guid GuardianId, Guid StrangerId);
 
     private async Task<Seeded> SeedTruppWideEventAsync(string suffix)
     {
@@ -77,7 +84,14 @@ public sealed class TruppWideEventTests(KarraMatcherApiFactory factory)
         });
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return new Seeded(truppWide.Id, guardian.Id, stranger.Id);
+        return new Seeded(truppWide.Id, trupp.Id, guardian.Id, stranger.Id);
+    }
+
+    private string TokenFor(Guid accountId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
+        return issuer.Issue(accountId, "konto@example.com", AccountRoles.None).Token;
     }
 
     [Fact]
@@ -104,5 +118,24 @@ public sealed class TruppWideEventTests(KarraMatcherApiFactory factory)
         Assert.False(
             await membership.IsMemberOfEventAsync(seeded.StrangerId, seeded.EventId, CancellationToken.None),
             "Någon utanför truppen ska inte vara medlem i en trupp-vid händelse.");
+    }
+
+    [Fact]
+    public async Task Detalj_ForEnTruppVidHandelse_HarIngetLag_MenBaraTruppensId()
+    {
+        var seeded = await SeedTruppWideEventAsync("detail");
+
+        using var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/events/{seeded.EventId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenFor(seeded.GuardianId));
+
+        var response = await client.SendAsync(request, CancellationToken.None);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+
+        // Trupp-vid händelse → inget lag (ingen lagfärg), men truppens id finns för kallelsen.
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("team").ValueKind);
+        Assert.Equal(seeded.TruppId, body.GetProperty("truppId").GetGuid());
     }
 }

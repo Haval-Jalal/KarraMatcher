@@ -19,6 +19,11 @@ internal sealed class EventRepository(KarraMatcherDbContext context) : IEventRep
             .Include(item => item.Team)
                 .ThenInclude(team => team!.AgeGroup)
                     .ThenInclude(ageGroup => ageGroup!.Club)
+
+            // En trupp-vid händelse (`#332`) saknar lag; truppen (och klubben, för en
+            // hemma-händelses adress) nås då direkt via AgeGroup.
+            .Include(item => item.AgeGroup)
+                .ThenInclude(ageGroup => ageGroup!.Club)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken)
             .ConfigureAwait(false);
 }

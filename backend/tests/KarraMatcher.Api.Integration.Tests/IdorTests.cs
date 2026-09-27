@@ -117,6 +117,7 @@ public sealed class IdorTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = team.Id,
             Type = EventType.Match,
             KickoffUtc = now.AddDays(3),

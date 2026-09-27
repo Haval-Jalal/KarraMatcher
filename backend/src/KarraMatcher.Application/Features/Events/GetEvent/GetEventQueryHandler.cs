@@ -15,14 +15,14 @@ internal sealed class GetEventQueryHandler(IEventRepository events)
 
         var item = await events.FindByIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
 
-        if (item?.Team is null)
+        if (item is null)
         {
-            // Utan lag går händelsen inte att visa: sidan behöver lagfärgen och vägen
-            // tillbaka till schemat. Det ska inte kunna hända -- främmande nyckeln är
-            // obligatorisk -- men ett null här vore ett 500 hos anroparen.
             return null;
         }
 
-        return new EventDetailDto(item.ToDto(), item.Team.ToDto(), item.Team.AgeGroupId);
+        // Laget är valfritt (`#332`): en trupp-vid händelse har inget lag (och ingen lagfärg),
+        // men hör alltid till en trupp. Truppens id tas från händelsen direkt (AgeGroupId),
+        // inte via laget, så det finns även utan lag.
+        return new EventDetailDto(item.ToDto(), item.Team?.ToDto(), item.AgeGroupId);
     }
 }

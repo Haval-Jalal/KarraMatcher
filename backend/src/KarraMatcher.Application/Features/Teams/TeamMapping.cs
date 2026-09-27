@@ -60,7 +60,8 @@ internal static class TeamMapping
 
         if (item.IsHome == true)
         {
-            var club = item.Team?.AgeGroup?.Club;
+            // En trupp-vid händelse (`#332`) har inget lag; klubben nås då via truppen direkt.
+            var club = item.Team?.AgeGroup?.Club ?? item.AgeGroup?.Club;
 
             return (
                 club?.HomeVenueName ?? string.Empty,
