@@ -12,6 +12,7 @@ import { CupSignupSection } from '@/features/cup'
 import { MatchReportCard, readCard } from '@/features/playercard'
 
 import { DirectionsLink } from './DirectionsLink'
+import { shortAddress } from './shortAddress'
 import { EventWeather } from './EventWeather'
 import { eventLabel, eventTypeLabel } from './types'
 import { useEvent } from './useEvent'
@@ -139,7 +140,7 @@ export function EventDetailPage() {
                 <br />
               </>
             )}
-            <span className="detail__hint">{event.address}</span>
+            <span className="detail__hint">{shortAddress(event.address)}</span>
           </dd>
         </div>
 

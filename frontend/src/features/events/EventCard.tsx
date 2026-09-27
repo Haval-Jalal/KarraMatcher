@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 
 import { formatKickoffTime, formatMatchDate } from '@/lib/time'
 
+import { venueLine } from './shortAddress'
 import { eventTypeLabel, type TeamEvent } from './types'
 
 /**
@@ -57,10 +58,7 @@ export function EventCard({ event }: { event: TeamEvent }) {
           )}
         </p>
 
-        <p className="match-card__venue">
-          {event.venue.name}
-          {event.address ? `, ${event.address}` : ''}
-        </p>
+        <p className="match-card__venue">{venueLine(event.venue.name, event.address)}</p>
       </Link>
     </li>
   )

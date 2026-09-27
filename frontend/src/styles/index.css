@@ -974,9 +974,16 @@ a.match-card:focus-visible .match-card__opponent {
  */
 .totals {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  /* 2×2 på en telefon — fyra i bredd blir för trångt och etiketterna radbryts. */
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin: 12px 0 20px;
+}
+
+@media (min-width: 30rem) {
+  .totals {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .totals__item {
@@ -1120,7 +1127,7 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .badge--earned {
-  border-color: var(--team-accent);
+  border-color: var(--accent);
   border-width: 2px;
 
   /* Kompenserar den tjockare ramen sa att raderna inte hoppar. */
