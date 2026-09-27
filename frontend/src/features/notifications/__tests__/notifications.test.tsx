@@ -7,22 +7,17 @@ import { jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
- * Notisinställningarna på Inställningar-sidan (`#65`, flyttade från lag-schemat).
+ * Notisinställningen på Inställningar-sidan — en enda global på/av (`#332`-uppföljning).
  *
- * Vaktar att en inloggad förälder ser sina val per lag och kan ändra dem, och att en
- * avstängning sparas med en gång. Att en gäst inte når sidan sköter route-grinden (§KM.3).
+ * Vaktar att en inloggad förälder ser sin på/av och kan ändra den, och att en avstängning
+ * sparas med en gång. Att en gäst inte når sidan sköter route-grinden (§KM.3).
  */
 
 const TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
 
 const team = { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' }
 
-function stubApi(settings: {
-  eventChanges: boolean
-  kallelser: boolean
-  carpool: boolean
-  chat: boolean
-}) {
+function stubApi(settings: { enabled: boolean }) {
   const sent: { url: string; method: string; body: unknown }[] = []
 
   vi.stubGlobal(
@@ -65,34 +60,27 @@ afterEach(() => {
 })
 
 describe('notisinställningar', () => {
-  it('en inloggad ser sina val per lag', async () => {
+  it('en inloggad ser sin globala notis-på/av', async () => {
     setAccessToken(TOKEN)
-    stubApi({ eventChanges: true, kallelser: true, carpool: false, chat: true })
+    stubApi({ enabled: true })
 
     renderRoute('/installningar')
 
-    // Rutan är namngiven efter laget, inte generiskt "Notiser".
-    expect(await screen.findByRole('heading', { name: 'P2016 Gul' })).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: /Händelser/ })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: /Samåkning/ })).not.toBeChecked()
+    expect(await screen.findByRole('heading', { name: 'Notiser' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: /Push-notiser/ })).toBeChecked()
   })
 
   it('sparar en avstängning med en gång', async () => {
     setAccessToken(TOKEN)
-    const sent = stubApi({ eventChanges: true, kallelser: true, carpool: true, chat: true })
+    const sent = stubApi({ enabled: true })
 
     renderRoute('/installningar')
 
-    await userEvent.click(await screen.findByRole('checkbox', { name: /Samåkning/ }))
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Push-notiser/ }))
 
     await waitFor(() => {
       const put = sent.find((r) => r.method === 'PUT' && r.url.includes('/notification-settings'))
-      expect(put?.body).toEqual({
-        eventChanges: true,
-        kallelser: true,
-        carpool: false,
-        chat: true,
-      })
+      expect(put?.body).toEqual({ enabled: false })
     })
   })
 })

@@ -43,16 +43,7 @@ const EXPORT: AccountExport = {
   ],
   carpoolRequests: [],
   attendanceResponses: [],
-  notificationSettings: [
-    {
-      teamName: 'Gul',
-      eventChanges: true,
-      kallelser: true,
-      carpool: false,
-      chat: true,
-      updatedUtc: '2026-10-01T09:00:00Z',
-    },
-  ],
+  notificationsEnabled: false,
   pushSubscriptions: [{ teamName: 'Gul', createdUtc: '2026-10-01T09:00:00Z', lastUsedUtc: null }],
   playerCard: {
     message:

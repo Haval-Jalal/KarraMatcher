@@ -59,9 +59,6 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
     public DbSet<Domain.Push.PushSubscription> PushSubscriptions =>
         Set<Domain.Push.PushSubscription>();
 
-    public DbSet<Domain.Push.NotificationPreference> NotificationPreferences =>
-        Set<Domain.Push.NotificationPreference>();
-
     public DbSet<Domain.Invitations.Invitation> Invitations => Set<Domain.Invitations.Invitation>();
 
     public DbSet<Domain.Applications.MembershipApplication> MembershipApplications =>

@@ -1,9 +1,6 @@
-using System.Linq.Expressions;
-
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Abstractions.Push;
 using KarraMatcher.Application.Features.Push;
-using KarraMatcher.Domain.Push;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -30,14 +27,15 @@ internal sealed class PushDeliveryRepository(
             return [];
         }
 
-        // Medlemmar som stangt av kategorin for laget. Franvaro av rad = allt pa.
-        var disabled = DisabledAccountIds(teamId, category);
+        // En enda global på/av per konto: den som stängt av notiser får ingen push. Kategorin
+        // styr inte längre push — den avgör bara om mejl-fallbacken räknar beskedet som kritiskt.
+        var off = AccountsWithNotificationsOff();
 
         return await context.PushSubscriptions
             .AsNoTracking()
             .Where(s => s.AccountId != null
                 && members.Contains(s.AccountId.Value)
-                && !disabled.Contains(s.AccountId.Value))
+                && !off.Contains(s.AccountId.Value))
             .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -56,39 +54,22 @@ internal sealed class PushDeliveryRepository(
             return [];
         }
 
-        // Aven en kontoriktad notis gar mot ett lag: den som stangt av kategorin for det
-        // laget ska inte nas, ens for sin egen samakning.
-        var disabled = DisabledAccountIds(teamId, category);
+        // Global på/av per konto — se ListForTeamAsync. Kategorin styr inte längre.
+        var off = AccountsWithNotificationsOff();
 
         return await context.PushSubscriptions
             .AsNoTracking()
             .Where(s => s.AccountId != null
                 && accountIds.Contains(s.AccountId.Value)
-                && !disabled.Contains(s.AccountId.Value))
+                && !off.Contains(s.AccountId.Value))
             .Select(s => new PushTarget(s.Id, s.Endpoint, s.P256dh, s.Auth))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Kontona som stängt av kategorin för laget. Frånvaro av en rad = allt på, så bara den
-    /// som uttryckligen satt kolumnen till falskt hamnar här.
-    /// </summary>
-    private IQueryable<Guid> DisabledAccountIds(Guid teamId, PushCategory category) =>
-        context.NotificationPreferences
-            .Where(p => p.TeamId == teamId)
-            .Where(IsDisabled(category))
-            .Select(p => p.AccountId);
-
-    private static Expression<Func<NotificationPreference, bool>> IsDisabled(PushCategory category) =>
-        category switch
-        {
-            PushCategory.EventChange => p => !p.EventChanges,
-            PushCategory.Kallelse => p => !p.Kallelser,
-            PushCategory.Carpool => p => !p.Carpool,
-            PushCategory.Chat => p => !p.Chat,
-            _ => p => false,
-        };
+    /// <summary>Kontona som stängt av notiser helt (global på/av). Push når dem inte.</summary>
+    private IQueryable<Guid> AccountsWithNotificationsOff() =>
+        context.Accounts.Where(a => !a.NotificationsEnabled).Select(a => a.Id);
 
     public async Task RemoveAsync(
         IReadOnlyCollection<Guid> subscriptionIds,

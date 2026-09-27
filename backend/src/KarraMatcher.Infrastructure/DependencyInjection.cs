@@ -111,7 +111,6 @@ public static class DependencyInjection
         services.AddScoped<IAttendanceRetentionRepository, AttendanceRetentionRepository>();
         services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
         services.AddScoped<IPushDeliveryRepository, PushDeliveryRepository>();
-        services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();
         services.AddScoped<IAccountExportRepository, AccountExportRepository>();
         services.AddScoped<IPushRetentionRepository, PushRetentionRepository>();
         services.AddScoped<IMembershipService, MembershipService>();

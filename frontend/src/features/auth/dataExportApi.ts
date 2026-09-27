@@ -54,15 +54,6 @@ export interface AttendanceResponseExport {
   respondedUtc: string
 }
 
-export interface NotificationPreferenceExport {
-  teamName: string
-  eventChanges: boolean
-  kallelser: boolean
-  carpool: boolean
-  chat: boolean
-  updatedUtc: string
-}
-
 export interface PushSubscriptionExport {
   teamName: string
   createdUtc: string
@@ -79,7 +70,7 @@ export interface AccountExport {
   carpoolOffers: CarpoolOfferExport[]
   carpoolRequests: CarpoolRequestExport[]
   attendanceResponses: AttendanceResponseExport[]
-  notificationSettings: NotificationPreferenceExport[]
+  notificationsEnabled: boolean
   pushSubscriptions: PushSubscriptionExport[]
   playerCard: DeviceOnlyDataNotice
 }

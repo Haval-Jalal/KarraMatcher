@@ -31,7 +31,7 @@ public sealed record AccountExportDto(
     IReadOnlyList<CarpoolOfferExportDto> CarpoolOffers,
     IReadOnlyList<CarpoolRequestExportDto> CarpoolRequests,
     IReadOnlyList<AttendanceResponseExportDto> AttendanceResponses,
-    IReadOnlyList<NotificationPreferenceExportDto> NotificationSettings,
+    bool NotificationsEnabled,
     IReadOnlyList<PushSubscriptionExportDto> PushSubscriptions,
     DeviceOnlyDataNoticeDto PlayerCard);
 
@@ -72,15 +72,6 @@ public sealed record AttendanceResponseExportDto(
     string ChildName,
     string Reply,
     DateTime RespondedUtc);
-
-/// <summary>Notisinställningen för ett lag.</summary>
-public sealed record NotificationPreferenceExportDto(
-    string TeamName,
-    bool EventChanges,
-    bool Kallelser,
-    bool Carpool,
-    bool Chat,
-    DateTime UpdatedUtc);
 
 /// <summary>Att en notisprenumeration finns — utan den tekniska adressen (§KM.10).</summary>
 public sealed record PushSubscriptionExportDto(
@@ -161,13 +152,7 @@ internal sealed class ExportAccountQueryHandler(
                 a.ChildName,
                 a.Reply.ToString(),
                 a.RespondedUtc))],
-            [.. data.NotificationPreferences.Select(p => new NotificationPreferenceExportDto(
-                p.TeamName,
-                p.EventChanges,
-                p.Kallelser,
-                p.Carpool,
-                p.Chat,
-                p.UpdatedUtc))],
+            data.NotificationsEnabled,
             [.. data.PushSubscriptions.Select(s => new PushSubscriptionExportDto(
                 s.TeamName,
                 s.CreatedUtc,

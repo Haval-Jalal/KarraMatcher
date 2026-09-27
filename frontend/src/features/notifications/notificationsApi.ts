@@ -1,40 +1,28 @@
 import { getAuthJson, postJson } from '@/lib/api'
 
 /**
- * En förälders notisinställningar för ett lag (`#65`).
+ * Kontots globala notisinställning — en enda på/av (`#332`-uppföljning, ersätter per-typ `#65`).
  *
- * <h3>Per lag, en växel per notistyp</h3>
+ * <h3>En växel per konto</h3>
  *
- * En förälder med barn i två lag ska kunna ha olika inställningar för dem. Allt på är
- * förvalet — servern svarar med alla <c>true</c> för den som aldrig ändrat något. Chatt
- * finns med redan nu (`#200`) fast utskicket byggs i `#201`/`#202`.
+ * Av = ingen push; kritiska besked (kallelse, inställd/flyttad match) når ändå fram via mejl.
+ * På är förvalet — servern svarar med `enabled: true` för den som aldrig ändrat något.
  */
 export interface NotificationSettings {
-  /** Händelse skapad, flyttad, ändrad eller inställd, samt kvällspåminnelsen. */
-  eventChanges: boolean
-  /** Kallelser: ny kallelse och påminnelse att svara. */
-  kallelser: boolean
-  /** Samåkning: erbjudande, förfrågan, svar. */
-  carpool: boolean
-  /** Chatt (byggs senare). */
-  chat: boolean
+  /** Om kontot vill ha push-notiser alls. */
+  enabled: boolean
 }
 
-const base = (teamSlug: string) =>
-  `/api/v1/teams/${encodeURIComponent(teamSlug)}/notification-settings`
+const url = '/api/v1/notification-settings'
 
-/** Mina inställningar för laget. Kräver konto. */
-export function getNotificationSettings(
-  teamSlug: string,
-  signal?: AbortSignal,
-): Promise<NotificationSettings> {
-  return getAuthJson<NotificationSettings>(base(teamSlug), signal)
+/** Min globala notisinställning. Kräver konto. */
+export function getNotificationSettings(signal?: AbortSignal): Promise<NotificationSettings> {
+  return getAuthJson<NotificationSettings>(url, signal)
 }
 
-/** Sätter mina inställningar för laget. Gäller vid nästa utskick. */
+/** Slår på eller av mina notiser. Gäller vid nästa utskick. */
 export function saveNotificationSettings(
-  teamSlug: string,
   settings: NotificationSettings,
 ): Promise<NotificationSettings> {
-  return postJson<NotificationSettings>(base(teamSlug), settings, { method: 'PUT' })
+  return postJson<NotificationSettings>(url, settings, { method: 'PUT' })
 }

@@ -459,18 +459,8 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
             AddGuardianChild(context, truppId, teamId, guardianId, now, "Liam");
             AddGuardianChild(context, truppId, teamId, guardian2Id, now, "Nova");
 
-            // Guardian2 har stängt av Chatt för laget.
-            context.NotificationPreferences.Add(new NotificationPreference
-            {
-                Id = Guid.NewGuid(),
-                AccountId = guardian2Id,
-                TeamId = teamId,
-                EventChanges = true,
-                Kallelser = true,
-                Carpool = true,
-                Chat = false,
-                UpdatedUtc = now,
-            });
+            // Guardian2 har stängt av notiser globalt (`#332`-uppföljning) → ingen chatt-push.
+            context.Accounts.Local.Single(a => a.Id == guardian2Id).NotificationsEnabled = false;
 
             await context.SaveChangesAsync(CancellationToken.None);
         });

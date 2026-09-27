@@ -179,19 +179,7 @@ function ExportView({ data }: { data: AccountExport }) {
       )}
 
       <h3>Dina notisinställningar</h3>
-      {data.notificationSettings.length === 0 ? (
-        <p className="state">Du har inte ändrat några notisinställningar.</p>
-      ) : (
-        <ul>
-          {data.notificationSettings.map((setting, index) => (
-            <li key={index}>
-              {setting.teamName}: händelser {onOff(setting.eventChanges)}, kallelser{' '}
-              {onOff(setting.kallelser)}, samåkning {onOff(setting.carpool)}, chatt{' '}
-              {onOff(setting.chat)}.
-            </li>
-          ))}
-        </ul>
-      )}
+      <p className="state">Push-notiser: {onOff(data.notificationsEnabled)}.</p>
 
       <h3>Dina notisprenumerationer</h3>
       {data.pushSubscriptions.length === 0 ? (

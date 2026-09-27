@@ -31,7 +31,7 @@ public sealed record AccountExportData(
     IReadOnlyList<CarpoolOfferExportRow> CarpoolOffers,
     IReadOnlyList<CarpoolRequestExportRow> CarpoolRequests,
     IReadOnlyList<AttendanceResponseExportRow> AttendanceResponses,
-    IReadOnlyList<NotificationPreferenceExportRow> NotificationPreferences,
+    bool NotificationsEnabled,
     IReadOnlyList<PushSubscriptionExportRow> PushSubscriptions);
 
 /// <summary>Kontot självt. En vuxens egna uppgifter (§KM.1) — aldrig något om ett barn.</summary>
@@ -71,15 +71,6 @@ public sealed record AttendanceResponseExportRow(
     string ChildName,
     AttendanceReply Reply,
     DateTime RespondedUtc);
-
-/// <summary>Notisinställningen för ett lag.</summary>
-public sealed record NotificationPreferenceExportRow(
-    string TeamName,
-    bool EventChanges,
-    bool Kallelser,
-    bool Carpool,
-    bool Chat,
-    DateTime UpdatedUtc);
 
 /// <summary>
 /// Att en prenumeration finns för ett lag — <b>utan</b> den tekniska adressen och nycklarna.
