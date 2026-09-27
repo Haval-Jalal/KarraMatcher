@@ -60,12 +60,12 @@ internal sealed class EmailFallbackRepository(
             .Select(s => s.AccountId!.Value);
 
         // Mejlet är säkerhetsnätet för kritiska besked (notifiern har redan sållat på "kritisk").
-        // Det går till alla i kretsen som *inte* nås av push: de utan enhet, och de som stängt
-        // av notiser globalt — så "man missar inget" även om man slår av push (`#332`-uppföljning).
+        // Det går till alla i kretsen som *inte* nås av push, dvs. saknar en påslagen enhet — så
+        // "man missar inget" även om man slår av notiser (`#332`-uppföljning: en enda växel, det
+        // finns ingen separat global flagga längre).
         return await context.Accounts
             .AsNoTracking()
-            .Where(a => candidates.Contains(a.Id)
-                && !(a.NotificationsEnabled && withPush.Contains(a.Id)))
+            .Where(a => candidates.Contains(a.Id) && !withPush.Contains(a.Id))
             .Select(a => new EmailRecipient(a.Id, a.Email))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

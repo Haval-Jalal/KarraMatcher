@@ -70,7 +70,6 @@ export interface AccountExport {
   carpoolOffers: CarpoolOfferExport[]
   carpoolRequests: CarpoolRequestExport[]
   attendanceResponses: AttendanceResponseExport[]
-  notificationsEnabled: boolean
   pushSubscriptions: PushSubscriptionExport[]
   playerCard: DeviceOnlyDataNotice
 }

@@ -57,7 +57,6 @@ public static class DependencyInjection
         services.AddScoped<Features.Chat.ChatService>();
         services.AddScoped<Features.Chat.ChatRetentionService>();
         services.AddScoped<Features.Attendance.AttendanceRetentionService>();
-        services.AddScoped<Features.Push.NotificationSettingsService>();
         services.AddScoped<Features.Push.PushRetentionService>();
 
         // Superadmins plattformshantering (§KM.3, #192).

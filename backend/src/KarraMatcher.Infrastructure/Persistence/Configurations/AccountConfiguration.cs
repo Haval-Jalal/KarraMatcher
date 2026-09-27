@@ -33,9 +33,6 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(a => a.CreatedUtc).IsRequired();
 
-        // Notiser är på som standard — befintliga konton och nya får true.
-        builder.Property(a => a.NotificationsEnabled).HasDefaultValue(true).IsRequired();
-
         // Kaskad: raderas kontot ska dess tokens följa med i samma svep (checklistan 1.6).
         builder.HasMany(a => a.RefreshTokens)
             .WithOne(t => t.Account!)

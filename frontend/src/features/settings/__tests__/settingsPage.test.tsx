@@ -8,8 +8,8 @@ import { renderRoute } from '@/test/renderRoute'
 /**
  * Inställningar-sidan: samlar app-inställningar (i dag notiser), nådd via "Mer".
  *
- * Notiser är numera en global på/av plus <b>en enda</b> enhets-växel (`#332`-uppföljning) — inte
- * längre en per lag, som gav samma enhet flera identiska notiser.
+ * Notiser är numera <b>en enda växel per enhet</b> (`#332`-uppföljning) — ingen separat global
+ * flagga, ingen per-lag-lista.
  */
 
 const TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
@@ -26,9 +26,6 @@ function stub(): string[] {
       if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
       if (url.includes('/auth/refresh')) {
         return Promise.resolve(jsonResponse({ accessToken: TOKEN }))
-      }
-      if (url.includes('/notification-settings')) {
-        return Promise.resolve(jsonResponse({ enabled: true }))
       }
 
       return Promise.resolve(jsonResponse({}))
@@ -49,7 +46,7 @@ afterEach(() => {
 })
 
 describe('inställningar', () => {
-  it('visar den globala notis-på/av och en enda enhets-sektion', async () => {
+  it('visar en enda notis-sektion', async () => {
     stub()
 
     renderRoute('/installningar')
@@ -57,20 +54,20 @@ describe('inställningar', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Inställningar' }),
     ).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Notiser' })).toBeInTheDocument()
 
-    // Exakt en enhets-sektion, inte en per lag (`#332`-uppföljning).
-    expect(screen.getAllByRole('heading', { name: 'På den här enheten' })).toHaveLength(1)
+    // Exakt en notis-sektion — ingen separat global växel, ingen per-lag-lista.
+    expect(await screen.findAllByRole('heading', { name: 'Notiser' })).toHaveLength(1)
+    expect(screen.queryByRole('heading', { name: 'På den här enheten' })).not.toBeInTheDocument()
   })
 
-  it('hämtar inte längre lag-listan för enhets-sektionen', async () => {
+  it('kallar varken lag-listan eller den gamla notis-endpointen', async () => {
     const urls = stub()
 
     renderRoute('/installningar')
 
     await screen.findByRole('heading', { level: 1, name: 'Inställningar' })
 
-    // Den gamla per-lag-listan är borta: sidan kallar inte /api/v1/teams.
     expect(urls.some((url) => url.endsWith('/api/v1/teams'))).toBe(false)
+    expect(urls.some((url) => url.includes('/notification-settings'))).toBe(false)
   })
 })

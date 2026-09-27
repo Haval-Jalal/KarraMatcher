@@ -32,14 +32,12 @@ public class ExportAccountQueryHandlerTests
         IReadOnlyList<CarpoolOfferExportRow>? offers = null,
         IReadOnlyList<CarpoolRequestExportRow>? requests = null,
         IReadOnlyList<AttendanceResponseExportRow>? attendance = null,
-        bool notificationsEnabled = true,
         IReadOnlyList<PushSubscriptionExportRow>? subscriptions = null) =>
         new(
             new AccountExportRow("foralder@example.com", "Anna", "Berg", Kickoff.AddYears(-1), Kickoff),
             offers ?? [],
             requests ?? [],
             attendance ?? [],
-            notificationsEnabled,
             subscriptions ?? []);
 
     [Fact]
@@ -140,7 +138,6 @@ public class ExportAccountQueryHandlerTests
         Assert.Empty(result.CarpoolOffers);
         Assert.Empty(result.CarpoolRequests);
         Assert.Empty(result.AttendanceResponses);
-        Assert.True(result.NotificationsEnabled);
         Assert.Empty(result.PushSubscriptions);
     }
 

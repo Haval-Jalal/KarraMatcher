@@ -178,9 +178,6 @@ function ExportView({ data }: { data: AccountExport }) {
         </ul>
       )}
 
-      <h3>Dina notisinställningar</h3>
-      <p className="state">Push-notiser: {onOff(data.notificationsEnabled)}.</p>
-
       <h3>Dina notisprenumerationer</h3>
       {data.pushSubscriptions.length === 0 ? (
         <p className="state">Du har inga notisprenumerationer.</p>
@@ -245,8 +242,4 @@ function attendanceReply(code: AttendanceReplyCode): string {
     case 'NotComing':
       return 'Nej'
   }
-}
-
-function onOff(value: boolean): string {
-  return value ? 'på' : 'av'
 }
