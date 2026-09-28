@@ -1099,7 +1099,9 @@ a.match-card:focus-visible .match-card__opponent {
 
 /* ---- Ärligheten om lagringen --------------------------------------------------- */
 
-.notice {
+/* Spelarkortets lagrings-notis. Egen klass — .notice utan suffix är status-notisen (ovan),
+   och de två krockade förr så den inställda matchens notis fick fel utseende. */
+.storage-notice {
   margin: 12px 0 16px;
   padding: 12px 14px;
   border: 1px solid var(--border-strong);
@@ -1107,20 +1109,20 @@ a.match-card:focus-visible .match-card__opponent {
   background: var(--surface-raised);
 }
 
-.notice__lead {
+.storage-notice__lead {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--text);
   max-width: 60ch;
 }
 
-.notice__more {
+.storage-notice__more {
   margin-top: 8px;
   font-size: var(--text-sm);
   color: var(--text);
 }
 
-.notice__more summary {
+.storage-notice__more summary {
   cursor: pointer;
   min-height: var(--tap-target);
   display: flex;
@@ -1128,13 +1130,13 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text);
 }
 
-.notice__more p,
-.notice__more ul {
+.storage-notice__more p,
+.storage-notice__more ul {
   max-width: 60ch;
   margin: 0 0 8px;
 }
 
-.notice__more ul {
+.storage-notice__more ul {
   padding-left: 20px;
 }
 
@@ -2741,7 +2743,9 @@ a.match-card:focus-visible .match-card__opponent {
  * Statusmärkningen är text i en ram, inte en färgad prick. En förälder som inte skiljer
  * färger ska förstå att matchen är inställd (WCAG 1.4.1).
  */
-.badge {
+/* Status-pill för en händelse (inställd/framflyttad). Egen klass — krockade förr med
+   spelarkortets .badge (märken), där den senare regeln vann och sabbade märkeskortet. */
+.event-badge {
   font-family: var(--display);
   display: inline-block;
   border: 1px solid currentcolor;
@@ -2754,7 +2758,7 @@ a.match-card:focus-visible .match-card__opponent {
   letter-spacing: 0.04em;
 }
 
-.badge--cancelled {
+.event-badge--cancelled {
   color: var(--danger);
 }
 

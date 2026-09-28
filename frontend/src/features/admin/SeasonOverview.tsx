@@ -68,9 +68,11 @@ export function SeasonOverview({
                       <span className="season__time">{formatKickoffTime(event.kickoffUtc)}</span>{' '}
                       <span className="season__date">{formatMatchDate(event.kickoffUtc)}</span>
                       {clashing.has(event.id) && (
-                        <span className="badge badge--cancelled"> Krock</span>
+                        <span className="event-badge event-badge--cancelled"> Krock</span>
                       )}
-                      {event.status === 'Cancelled' && <span className="badge"> Inställd</span>}
+                      {event.status === 'Cancelled' && (
+                        <span className="event-badge"> Inställd</span>
+                      )}
                     </td>
                     <td>{eventLabel(event)}</td>
                     <td className="season__venue">{event.venue.name}</td>
