@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api'
 import { swedishLocalToUtc, utcToSwedishLocalInput } from '@/lib/time'
 
 import type { EventInput } from './adminApi'
+import { useAddressSuggestions } from './useAddressSuggestions'
 
 /**
  * Tränarens formulär för en händelse — match, träning, cup eller övrigt (`#198`, `#307`).
@@ -111,6 +112,14 @@ export function EventForm({
   const [type, setType] = useState<FormValues['type']>(existing?.type ?? 'Match')
   const [isHome, setIsHome] = useState(existing?.isHome ?? true)
   const isMatch = type === 'Match'
+
+  // Adress-förslag för "annan plats" (`#307`). Speglar fältets text; tystas när platsen är hemma
+  // (tom term → inget anrop). Servern geokodar ändå det valda vid spar, aldrig klienten.
+  const [addressText, setAddressText] = useState(
+    existing && existing.isHome === false ? existing.address : '',
+  )
+  const addressField = register('address')
+  const addressSuggestions = useAddressSuggestions(isHome ? '' : addressText)
 
   return (
     <form
@@ -269,12 +278,26 @@ export function EventForm({
               id="adress"
               type="text"
               autoComplete="off"
+              list="adress-forslag"
               placeholder="t.ex. Bortavägen 5, Kungälv"
               aria-describedby={errors.address ? 'adress-fel' : undefined}
               aria-invalid={errors.address ? true : undefined}
-              {...register('address')}
+              {...addressField}
+              onChange={(event) => {
+                void addressField.onChange(event)
+                setAddressText(event.target.value)
+              }}
             />
-            <p className="admin-muted">Skriv gatunamn och ort så hittas rätt plats.</p>
+            {/* Förslagen medan man skriver (`#307`). Native datalist: tangentbord och skärmläsare
+                får den gratis, och den som är offline ser bara inga förslag — fältet är fritext. */}
+            <datalist id="adress-forslag">
+              {addressSuggestions.map((suggestion) => (
+                <option key={suggestion} value={suggestion} />
+              ))}
+            </datalist>
+            <p className="admin-muted">
+              Börja skriva så föreslås adresser. Rätt plats hittas när du sparar.
+            </p>
             {errors.address && (
               <p className="form__error" id="adress-fel">
                 {errors.address.message}
