@@ -1,175 +1,39 @@
 import { useState } from 'react'
 
-import { useAuth } from '@/features/auth'
-import { useRoster } from '@/features/children'
 import { ApiError } from '@/lib/api'
-import { hasKickedOff } from '@/lib/time'
 
-import type { AttendanceReply, MyChildInvitation } from './attendanceApi'
-import { CoachKallelse } from './CoachKallelse'
+import type { AttendanceReply } from './attendanceApi'
 import {
-  useKallelseSummary,
-  useMyKallelse,
-  useRemind,
-  useRespond,
-  useSetKallelse,
+  useCoachKallelseRoster,
+  useRemindTeam,
+  useSetTeamKallelse,
+  useTeamKallelseSummary,
 } from './useAttendance'
 
 /**
- * Den riktade kallelsen på händelsesidan (§KM.7, `#199`).
+ * Färg-lag-tränarens kallelse-panel (§KM.7, `#redesign`).
  *
- * <h3>Två vyer</h3>
- *
- * En vårdnadshavare ser sina egna kallade barn och svarar Ja/Nej per barn. En admin för
- * truppen ser i stället en väljare — barn ur alla lag, så ett lag kan fyllas på — och en
- * sammanställning över vilka som svarat vad.
- *
- * <h3>Osynlig tills klubben slår på den</h3>
- *
- * Servern svarar `404` på vårdnadshavarens vy för ett lag där kallelsen är avslagen (§KM.7).
- * Då renderar den här sektionen ingenting för en vanlig medlem.
+ * <para>
+ * Samma vy som adminens, men lag-scopad: tränaren skickar för <b>sitt eget lags</b> händelse
+ * och väljer barn ur <b>hela truppen</b> (fyll-på av individer ur andra färg-lag). Servern är
+ * grinden — <c>CoachOfTeam</c> + att händelsen hör till laget; det här speglar bara det.
+ * </para>
  */
-export function AttendanceSection({
-  eventId,
-  truppId,
-  teamName,
-  teamSlug,
-  kickoffUtc,
-}: {
-  eventId: string
-  truppId: string
-  teamName: string
-  teamSlug: string
-  kickoffUtc: string
-}) {
-  const { status, isSuperAdmin, adminOf, canManage } = useAuth()
-  const isSignedIn = status === 'inloggad'
-  const isAdmin = isSuperAdmin || adminOf.includes(truppId)
-  // En färg-lag-tränare (inte admin) för just den här händelsens lag får också kalla (`#redesign`).
-  // Servern är grinden (CoachOfTeam); det här styr bara vilken panel som visas.
-  const isCoach = !isAdmin && canManage(teamSlug, truppId)
-
-  const my = useMyKallelse(eventId, isSignedIn)
-
-  if (!isSignedIn) {
-    return null
-  }
-
-  const gateOff = my.error instanceof ApiError && my.error.status === 404
-  const myChildren = gateOff ? [] : (my.data?.children ?? [])
-  const guardianVisible = !gateOff && (my.data?.callOpen ?? false) && myChildren.length > 0
-
-  // Gäst, inga egna kallade barn — och varken admin eller tränare: ingenting.
-  if (!isAdmin && !isCoach && !guardianVisible) {
-    return null
-  }
-
-  const closed = hasKickedOff(kickoffUtc)
-
-  return (
-    <section className="attendance" aria-labelledby="kallelse">
-      <h2 id="kallelse" className="attendance__heading">
-        Kallelse
-      </h2>
-
-      {guardianVisible && (
-        <GuardianReplies eventId={eventId} childInvitations={myChildren} closed={closed} />
-      )}
-
-      {isAdmin && <AdminKallelse truppId={truppId} eventId={eventId} teamName={teamName} />}
-
-      {isCoach && <CoachKallelse slug={teamSlug} eventId={eventId} teamName={teamName} />}
-    </section>
-  )
-}
-
-function GuardianReplies({
-  eventId,
-  childInvitations,
-  closed,
-}: {
-  eventId: string
-  childInvitations: MyChildInvitation[]
-  closed: boolean
-}) {
-  const respond = useRespond(eventId)
-  const [failed, setFailed] = useState(false)
-
-  function answer(childId: string, reply: AttendanceReply): void {
-    setFailed(false)
-    respond.mutate({ childId, reply }, { onError: () => setFailed(true) })
-  }
-
-  return (
-    <div className="attendance__guardian">
-      <p className="attendance__note">
-        {closed
-          ? 'Händelsen har börjat — svaren går inte längre att ändra.'
-          : 'Svara för varje barn. Du kan ändra ända fram till start.'}
-      </p>
-
-      <ul className="attendance__children">
-        {childInvitations.map((child) => (
-          <li key={child.childId} className="attendance__child">
-            <span className="attendance__child-name">{child.displayName}</span>
-            <span
-              className="attendance__reply"
-              role="group"
-              aria-label={`Svar för ${child.displayName}`}
-            >
-              <button
-                type="button"
-                className="button button--small"
-                aria-pressed={child.reply === 'Coming'}
-                disabled={closed || respond.isPending}
-                onClick={() => {
-                  answer(child.childId, 'Coming')
-                }}
-              >
-                Ja
-              </button>
-              <button
-                type="button"
-                className="button button--small"
-                aria-pressed={child.reply === 'NotComing'}
-                disabled={closed || respond.isPending}
-                onClick={() => {
-                  answer(child.childId, 'NotComing')
-                }}
-              >
-                Nej
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      {failed && (
-        <p className="state state--error" role="alert">
-          Svaret gick inte att spara just nu. Försök igen om en stund.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function AdminKallelse({
-  truppId,
+export function CoachKallelse({
+  slug,
   eventId,
   teamName,
 }: {
-  truppId: string
+  slug: string
   eventId: string
   teamName: string
 }) {
-  const roster = useRoster(truppId)
-  const summary = useKallelseSummary(truppId, eventId, true)
-  const send = useSetKallelse(truppId, eventId)
-  const remind = useRemind(truppId, eventId)
+  const roster = useCoachKallelseRoster(slug, true)
+  const summary = useTeamKallelseSummary(slug, eventId, true)
+  const send = useSetTeamKallelse(slug, eventId)
+  const remind = useRemindTeam(slug, eventId)
 
-  // null tills adminen rört urvalet: då speglar vyn de barn som redan är kallade (ur
-  // sammanställningen). Ett urval härleds alltså utan en seedande effekt — first-render och
-  // en sen laddad sammanställning ger båda rätt förkryssning.
+  // null tills tränaren rört urvalet: då speglar vyn de barn som redan är kallade (ur summeringen).
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [remindMsg, setRemindMsg] = useState<string | null>(null)
@@ -177,6 +41,7 @@ function AdminKallelse({
   const rosterChildren = roster.data?.children ?? []
   const rosterTeams = roster.data?.teams ?? []
   const current = selected ?? new Set(summary.data?.children.map((child) => child.childId) ?? [])
+  const ownTeamId = rosterTeams.find((team) => team.name === teamName)?.id ?? null
 
   function toggle(childId: string): void {
     const next = new Set(current)
@@ -190,7 +55,7 @@ function AdminKallelse({
 
   function selectTeam(): void {
     setSelected(
-      new Set(rosterChildren.filter((child) => child.teamName === teamName).map((c) => c.id)),
+      new Set(rosterChildren.filter((child) => child.teamId === ownTeamId).map((c) => c.id)),
     )
   }
 
@@ -240,10 +105,16 @@ function AdminKallelse({
     <div className="attendance__admin">
       <h3 className="attendance__subheading">Skicka kallelse</h3>
 
-      {roster.isLoading && <p className="state">Hämtar truppen…</p>}
+      {roster.isPending && (
+        <p className="state" role="status">
+          Hämtar truppen…
+        </p>
+      )}
       {roster.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta truppens barn.
+          {roster.error instanceof ApiError && roster.error.offline
+            ? 'Ingen anslutning. Försök igen.'
+            : 'Kunde inte hämta truppens barn.'}
         </p>
       )}
 
@@ -365,6 +236,6 @@ function replyLabel(reply: AttendanceReply | null): string {
     case 'NotComing':
       return 'Nej'
     default:
-      return '–'
+      return 'Inget svar'
   }
 }

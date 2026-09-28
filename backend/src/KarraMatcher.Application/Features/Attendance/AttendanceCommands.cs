@@ -13,7 +13,8 @@ public sealed record SetKallelseCommand(
     Guid TruppId,
     Guid EventId,
     IReadOnlyList<Guid> ChildIds,
-    Guid ActorAccountId) : ICommand<SetKallelseOutcome>;
+    Guid ActorAccountId,
+    Guid? RequireEventTeamId = null) : ICommand<SetKallelseOutcome>;
 
 /// <summary>En vårdnadshavare svarar Ja/Nej för ett av sina barn.</summary>
 public sealed record RespondToKallelseCommand(
@@ -25,11 +26,16 @@ public sealed record RespondToKallelseCommand(
 /// <summary>Den inloggades egna kallade barn för en händelse.</summary>
 public sealed record GetMyKallelseQuery(Guid EventId, Guid AccountId) : IQuery<MyKallelseDto?>;
 
-/// <summary>Adminens sammanställning för en händelse. Truppen står i adressen (AdminOfTrupp).</summary>
-public sealed record GetKallelseSummaryQuery(Guid TruppId, Guid EventId) : IQuery<KallelseSummaryDto?>;
+/// <summary>
+/// Sammanställningen för en händelse. <c>RequireEventTeamId</c> sätts för en färg-lag-tränare —
+/// då krävs att händelsen hör till just det laget (annars null/404). Null för admin (hela truppen).
+/// </summary>
+public sealed record GetKallelseSummaryQuery(
+    Guid TruppId, Guid EventId, Guid? RequireEventTeamId = null) : IQuery<KallelseSummaryDto?>;
 
 /// <summary>Påminner dem som inte svarat. Antalet, eller null när händelsen inte hör till truppen.</summary>
-public sealed record RemindNonRespondersCommand(Guid TruppId, Guid EventId) : ICommand<int?>;
+public sealed record RemindNonRespondersCommand(
+    Guid TruppId, Guid EventId, Guid? RequireEventTeamId = null) : ICommand<int?>;
 
 internal sealed class SetKallelseCommandValidator : AbstractValidator<SetKallelseCommand>
 {
@@ -83,7 +89,7 @@ internal sealed class SetKallelseCommandHandler(AttendanceService service)
 
         return service.SetKallelseAsync(
             command.TruppId, command.EventId, command.ChildIds, command.ActorAccountId,
-            cancellationToken);
+            cancellationToken, command.RequireEventTeamId);
     }
 }
 
@@ -120,7 +126,8 @@ internal sealed class GetKallelseSummaryQueryHandler(AttendanceService service)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return service.GetSummaryAsync(query.TruppId, query.EventId, cancellationToken);
+        return service.GetSummaryAsync(
+            query.TruppId, query.EventId, cancellationToken, query.RequireEventTeamId);
     }
 }
 
@@ -132,6 +139,7 @@ internal sealed class RemindNonRespondersCommandHandler(AttendanceService servic
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return service.RemindNonRespondersAsync(command.TruppId, command.EventId, cancellationToken);
+        return service.RemindNonRespondersAsync(
+            command.TruppId, command.EventId, cancellationToken, command.RequireEventTeamId);
     }
 }

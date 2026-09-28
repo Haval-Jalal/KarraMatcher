@@ -41,7 +41,9 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         Guid SvartChild2,
         Guid SvartGuardian2,
         Guid GulChild,
-        Guid GulGuardian);
+        Guid GulGuardian,
+        string SvartSlug,
+        string GulSlug);
 
     private async Task<Fixture> SeedAsync(
         string suffix,
@@ -110,7 +112,8 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
 
         return new Fixture(
             trupp.Id, match.Id, admin.Id,
-            svartChild, svartGuardian, svartChild2, svartGuardian2, gulChild, gulGuardian);
+            svartChild, svartGuardian, svartChild2, svartGuardian2, gulChild, gulGuardian,
+            svart.Slug, gul.Slug);
     }
 
     private async Task<(Guid ChildId, Guid GuardianId)> SeedChildAsync(
@@ -152,6 +155,10 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
 
     private string AdminToken(Guid truppId) =>
         Token(Guid.NewGuid(), new AccountRoles(false, [truppId.ToString()], []));
+
+    /// <summary>En färg-lag-tränare (coach-anspråk för lagets slug), inte admin.</summary>
+    private string CoachToken(string slug) =>
+        Token(Guid.NewGuid(), new AccountRoles(false, [], [slug]));
 
     private string PlainToken(Guid accountId) =>
         Token(accountId, AccountRoles.None);
@@ -448,6 +455,79 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
     }
 
     // ---- Grinden ---------------------------------------------------------------------
+
+    // ---- Färg-lag-tränarens kallelse (`#redesign`, §KM.7) ----------------------------
+
+    [Fact]
+    public async Task Tranare_KallarSittLagPlusFillIn_Ger204_OchSynsISummeringen()
+    {
+        var f = await SeedAsync("coach-set");
+        var coach = CoachToken(f.SvartSlug);
+
+        // Tränaren för Svart kallar sitt lag + fyller på en individ ur Gul.
+        var set = await SendAsync(
+            HttpMethod.Put,
+            $"/api/v1/teams/{f.SvartSlug}/events/{f.EventId}/kallelse",
+            coach,
+            new { childIds = new[] { f.SvartChild, f.GulChild } });
+        Assert.Equal(HttpStatusCode.NoContent, set.StatusCode);
+
+        var summary = await GetAsync(
+            $"/api/v1/teams/{f.SvartSlug}/events/{f.EventId}/kallelse", coach);
+        summary.EnsureSuccessStatusCode();
+        var body = await summary.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+        Assert.Equal(2, body.GetProperty("children").EnumerateArray().Count());
+    }
+
+    [Fact]
+    public async Task Tranare_KanInteKallaForAnnatLagsHandelse_Ger404()
+    {
+        // Händelsen ägs av Svart. En tränare för Gul når den inte via sitt lags adress.
+        var f = await SeedAsync("coach-fel-lag");
+
+        var set = await SendAsync(
+            HttpMethod.Put,
+            $"/api/v1/teams/{f.GulSlug}/events/{f.EventId}/kallelse",
+            CoachToken(f.GulSlug),
+            new { childIds = new[] { f.GulChild } });
+
+        Assert.Equal(HttpStatusCode.NotFound, set.StatusCode);
+    }
+
+    [Fact]
+    public async Task Tranare_Roster_VisarHelaTruppen_UtanVardnadshavare()
+    {
+        var f = await SeedAsync("coach-roster");
+
+        var response = await GetAsync(
+            $"/api/v1/teams/{f.SvartSlug}/kallelse-roster", CoachToken(f.SvartSlug));
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+
+        var childIds = body.GetProperty("children").EnumerateArray()
+            .Select(c => c.GetProperty("id").GetGuid()).ToArray();
+        Assert.Contains(f.SvartChild, childIds);
+        Assert.Contains(f.GulChild, childIds); // hela truppen, inte bara egna laget
+
+        // Inga vårdnadshavare/mejl i väljar-rostern (§KM.1).
+        var raw = body.GetRawText();
+        Assert.DoesNotContain("guardian", raw, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("@", raw, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task KallelseTranarEndpoint_SomVanligMedlem_Nekas()
+    {
+        var f = await SeedAsync("coach-medlem");
+
+        var response = await SendAsync(
+            HttpMethod.Put,
+            $"/api/v1/teams/{f.SvartSlug}/events/{f.EventId}/kallelse",
+            PlainToken(f.SvartGuardian),
+            new { childIds = new[] { f.SvartChild } });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
 
     // ---- Kallelsen galler bara match och traning (§KM.7, #289) -----------------------
 

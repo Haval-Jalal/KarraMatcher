@@ -74,14 +74,20 @@ public sealed class AttendanceService(
         Guid eventId,
         IReadOnlyCollection<Guid> childIds,
         Guid actorAccountId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? requireEventTeamId = null)
     {
         ArgumentNullException.ThrowIfNull(childIds);
 
         var context = await calls.FindEventContextAsync(eventId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (context is null || context.AgeGroupId != truppId)
+        // En färg-lag-tränare får bara agera på sitt eget lags händelser (requireEventTeamId satt).
+        // En admin äger alla händelser i truppen (requireEventTeamId == null). Mottagarna prövas
+        // ändå mot hela truppen nedan — en tränare får fylla på individer ur andra lag.
+        if (context is null
+            || context.AgeGroupId != truppId
+            || (requireEventTeamId is not null && context.TeamId != requireEventTeamId))
         {
             return SetKallelseOutcome.EventNotInTrupp;
         }
@@ -250,12 +256,15 @@ public sealed class AttendanceService(
     public async Task<KallelseSummaryDto?> GetSummaryAsync(
         Guid truppId,
         Guid eventId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? requireEventTeamId = null)
     {
         var context = await calls.FindEventContextAsync(eventId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (context is null || context.AgeGroupId != truppId)
+        if (context is null
+            || context.AgeGroupId != truppId
+            || (requireEventTeamId is not null && context.TeamId != requireEventTeamId))
         {
             return null;
         }
@@ -286,12 +295,15 @@ public sealed class AttendanceService(
     public async Task<int?> RemindNonRespondersAsync(
         Guid truppId,
         Guid eventId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? requireEventTeamId = null)
     {
         var context = await calls.FindEventContextAsync(eventId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (context is null || context.AgeGroupId != truppId)
+        if (context is null
+            || context.AgeGroupId != truppId
+            || (requireEventTeamId is not null && context.TeamId != requireEventTeamId))
         {
             return null;
         }

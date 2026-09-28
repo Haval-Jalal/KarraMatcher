@@ -186,6 +186,7 @@ export function EventDetailPage() {
           eventId={event.id}
           truppId={truppId}
           teamName={team.name}
+          teamSlug={team.slug}
           kickoffUtc={event.kickoffUtc}
         />
       )}
