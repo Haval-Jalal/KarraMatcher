@@ -1,6 +1,7 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { TrophyIcon } from '@/components/NavIcons'
 import { useMyTrupper } from '@/features/chat'
 import { formatKickoffTime, formatMatchDate } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -19,6 +20,15 @@ function stateText(cup: CupListItem): string {
   }
 
   return `${cup.spotsLeft} av ${cup.capacity} platser kvar`
+}
+
+/** Pillrets ton: grön när det finns platser, dämpad när stängt, varnande när fullt. */
+function stateVariant(cup: CupListItem): string {
+  if (!cup.open) {
+    return 'cup-card__state--closed'
+  }
+
+  return cup.isFull ? 'cup-card__state--full' : 'cup-card__state--open'
 }
 
 /**
@@ -43,6 +53,7 @@ export function CuperPage() {
     <main className="page">
       <header className="app-header">
         <h1>Cuper</h1>
+        <p className="app-header__subtitle">Truppens cuper — anmälan och platser kvar.</p>
       </header>
 
       {trupper.isLoading && <p className="state">Hämtar…</p>}
@@ -81,7 +92,12 @@ export function CuperPage() {
             </p>
           )}
 
-          {cups.data && cups.data.length === 0 && <p className="state">Inga cuper än.</p>}
+          {cups.data && cups.data.length === 0 && (
+            <div className="empty-state">
+              <TrophyIcon aria-hidden="true" />
+              <p className="state">Inga cuper än.</p>
+            </div>
+          )}
 
           {cups.data && cups.data.length > 0 && (
             <ul className="cup-list">
@@ -93,13 +109,7 @@ export function CuperPage() {
                       {formatMatchDate(cup.kickoffUtc)} {formatKickoffTime(cup.kickoffUtc)} ·{' '}
                       {cup.teamName}
                     </span>
-                    <span
-                      className={
-                        cup.isFull ? 'cup-card__state cup-card__state--full' : 'cup-card__state'
-                      }
-                    >
-                      {stateText(cup)}
-                    </span>
+                    <span className={`cup-card__state ${stateVariant(cup)}`}>{stateText(cup)}</span>
                   </Link>
                 </li>
               ))}
