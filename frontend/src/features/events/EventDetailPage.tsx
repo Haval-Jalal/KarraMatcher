@@ -147,7 +147,13 @@ export function EventDetailPage() {
         <div className="detail__row">
           <dt>Typ</dt>
           <dd>
-            {isMatch ? (event.isHome ? 'Hemmamatch' : 'Bortamatch') : eventTypeLabel(event.type)}
+            {isMatch ? (
+              <span className={event.isHome ? 'pill pill--home' : 'pill pill--away'}>
+                {event.isHome ? 'Hemmamatch' : 'Bortamatch'}
+              </span>
+            ) : (
+              eventTypeLabel(event.type)
+            )}
           </dd>
         </div>
 
