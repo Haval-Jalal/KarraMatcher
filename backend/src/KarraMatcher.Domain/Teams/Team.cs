@@ -16,11 +16,5 @@ public sealed class Team
 
     public required string Slug { get; set; }
 
-    /// <summary>
-    /// Kallelsen är byggd men avstängd (§KM.7). Flaggan kontrolleras server-side
-    /// i varje handler — att dölja knappar i gränssnittet är inte säkerhet.
-    /// </summary>
-    public bool AttendanceEnabled { get; set; }
-
     public ICollection<Events.Event> Events { get; } = [];
 }

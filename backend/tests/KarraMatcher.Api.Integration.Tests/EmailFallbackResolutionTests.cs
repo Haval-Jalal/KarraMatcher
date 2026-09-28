@@ -38,7 +38,6 @@ public sealed class EmailFallbackResolutionTests(KarraMatcherApiFactory factory)
             Name = "Svart",
             ColorHex = "#161616",
             Slug = $"svart-e-{Guid.NewGuid():N}",
-            AttendanceEnabled = true,
         };
 
         context.Clubs.Add(club);

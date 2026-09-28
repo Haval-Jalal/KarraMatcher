@@ -111,8 +111,6 @@ public static class AuditActions
     public const string GuardianLinked = "vardnadshavare.kopplad";
     public const string GuardianUnlinked = "vardnadshavare.bortkopplad";
 
-    public const string AttendanceEnabled = "narvaro.paslagen";
-    public const string AttendanceDisabled = "narvaro.avslagen";
     public const string AttendanceCallOpened = "narvaro.kallelse.oppnad";
 
     // Chatt (§KM.1/§KM.10, `#201`) — aldrig meddelandetexten, bara id och åtgärd.

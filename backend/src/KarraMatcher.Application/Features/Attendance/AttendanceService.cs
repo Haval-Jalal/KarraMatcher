@@ -17,9 +17,6 @@ public enum SetKallelseOutcome
     /// <summary>Händelsen finns inte eller hör till en annan trupp.</summary>
     EventNotInTrupp = 1,
 
-    /// <summary>Kallelser är inte påslagna för händelsens lag (§KM.7-grinden).</summary>
-    Disabled = 2,
-
     /// <summary>Ett valt barn hör inte till truppen.</summary>
     InvalidChild = 3,
 
@@ -68,7 +65,6 @@ public enum RespondOutcome
 /// </summary>
 public sealed class AttendanceService(
     IAttendanceCallRepository calls,
-    AttendanceGate gate,
     IAuditLog audit,
     IPushOutbox push)
 {
@@ -96,11 +92,6 @@ public sealed class AttendanceService(
         if (context.Type is EventType.Other or EventType.Cup)
         {
             return SetKallelseOutcome.EventNotInvitable;
-        }
-
-        if (!await gate.IsEnabledForMatchAsync(eventId, cancellationToken).ConfigureAwait(false))
-        {
-            return SetKallelseOutcome.Disabled;
         }
 
         var truppChildren = await calls.ChildIdsInTruppAsync(context.AgeGroupId, cancellationToken)
@@ -236,9 +227,9 @@ public sealed class AttendanceService(
     {
         var kickoff = await calls.FindKickoffUtcAsync(eventId, cancellationToken).ConfigureAwait(false);
 
-        // Osynlig tills klubben slår på kallelsen för laget (§KM.7): saknad grind → null → 404.
-        if (kickoff is null
-            || !await gate.IsEnabledForMatchAsync(eventId, cancellationToken).ConfigureAwait(false))
+        // Bara okänd händelse ger null → 404. Finns händelsen men ingen kallelse öppnats svarar vi
+        // med callOpen=false och inga barn; FE visar då ingen kallelse-sektion för föräldern.
+        if (kickoff is null)
         {
             return null;
         }

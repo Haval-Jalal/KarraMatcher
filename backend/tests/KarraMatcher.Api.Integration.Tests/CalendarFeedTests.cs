@@ -46,7 +46,6 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
             Name = "Gul",
             ColorHex = "#D9A21B",
             Slug = $"gul-k-{suffix}",
-            AttendanceEnabled = true,
         };
         var venue = new Venue
         {

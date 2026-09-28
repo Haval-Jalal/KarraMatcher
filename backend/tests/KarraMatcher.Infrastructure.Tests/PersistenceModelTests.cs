@@ -47,17 +47,6 @@ public class PersistenceModelTests
     }
 
     [Fact]
-    public void AttendanceEnabled_HarStandardvardeFalseIDatabasen()
-    {
-        // Kallelsen levereras avstängd (§KM.7). Standardvärdet ligger i databasen så
-        // att en rad som skapas utanför appen inte råkar slå på funktionen.
-        var property = Property<Team>(nameof(Team.AttendanceEnabled));
-
-        Assert.Equal(false, property.GetDefaultValue());
-        Assert.False(property.IsNullable);
-    }
-
-    [Fact]
     public void EventStatus_LagrasSomTextInteSiffra()
     {
         // En siffra i databasen säger ingenting den dag någon felsöker med psql.

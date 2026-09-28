@@ -45,7 +45,6 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
 
     private async Task<Fixture> SeedAsync(
         string suffix,
-        bool enabled = true,
         int kickoffDays = 3,
         EventType eventType = EventType.Match)
     {
@@ -62,7 +61,6 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
             Name = "Svart",
             ColorHex = "#161616",
             Slug = $"svart-n-{suffix}",
-            AttendanceEnabled = enabled,
         };
         var gul = new Team
         {
@@ -71,7 +69,6 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
             Name = "Gul",
             ColorHex = "#D9A21B",
             Slug = $"gul-n-{suffix}",
-            AttendanceEnabled = enabled,
         };
         var venue = new Venue
         {
@@ -451,26 +448,6 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
     }
 
     // ---- Grinden ---------------------------------------------------------------------
-
-    [Fact]
-    public async Task AvslagenFlagga_VardnadshavareGet_Ger404()
-    {
-        var f = await SeedAsync("gate-mine", enabled: false);
-
-        var response = await GetAsync($"/api/v1/events/{f.EventId}/kallelse", PlainToken(f.SvartGuardian));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AvslagenFlagga_AdminSet_Ger409()
-    {
-        var f = await SeedAsync("gate-set", enabled: false);
-
-        var response = await SetKallelseAsync(f, f.SvartChild);
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
 
     // ---- Kallelsen galler bara match och traning (§KM.7, #289) -----------------------
 

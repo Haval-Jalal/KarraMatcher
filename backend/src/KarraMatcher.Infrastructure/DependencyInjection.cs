@@ -116,7 +116,6 @@ public static class DependencyInjection
         services.AddScoped<ICarpoolOfferRepository, CarpoolOfferRepository>();
         services.AddScoped<ICarpoolRequestRepository, CarpoolRequestRepository>();
         services.AddScoped<ICarpoolRetentionRepository, CarpoolRetentionRepository>();
-        services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IAttendanceCallRepository, AttendanceCallRepository>();
         services.AddScoped<ICupTeamRepository, CupTeamRepository>();
         services.AddScoped<IEventReminderRepository, EventReminderRepository>();

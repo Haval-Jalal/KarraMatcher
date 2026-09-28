@@ -166,8 +166,6 @@ public sealed partial class DatabaseSeeder(KarraMatcherDbContext context, IConfi
                 Name = row.Name,
                 Slug = row.Slug,
                 ColorHex = row.ColorHex,
-                // Kallelsen levereras avstängd (§KM.7).
-                AttendanceEnabled = false,
             };
 
             context.Teams.Add(team);

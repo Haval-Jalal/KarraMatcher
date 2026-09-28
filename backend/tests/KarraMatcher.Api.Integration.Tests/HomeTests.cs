@@ -47,7 +47,6 @@ public sealed class HomeTests(KarraMatcherApiFactory factory)
             Name = "Svart",
             ColorHex = "#161616",
             Slug = $"svart-h-{suffix}",
-            AttendanceEnabled = true,
         };
         var venue = new Venue
         {

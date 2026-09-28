@@ -81,12 +81,6 @@ public sealed partial class DatabaseSeeder
             await EnsureGuardianshipAsync(guardian, child, cancellationToken).ConfigureAwait(false);
         }
 
-        // Gör kallelsen testbar på demolaget (den levereras annars avstängd, §KM.7).
-        if (!team.AttendanceEnabled)
-        {
-            team.AttendanceEnabled = true;
-        }
-
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -257,11 +251,6 @@ public sealed partial class DatabaseSeeder
                 context.TeamRoles.RemoveRange(roles);
                 context.Accounts.Remove(admin);
             }
-        }
-
-        if (team.AttendanceEnabled)
-        {
-            team.AttendanceEnabled = false;
         }
 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

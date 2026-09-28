@@ -128,7 +128,6 @@ public class DatabaseSeederTests
         var teams = await context.Teams.ToListAsync(CancellationToken.None);
 
         Assert.Equal(4, teams.Count);
-        Assert.All(teams, t => Assert.False(t.AttendanceEnabled));
     }
 
     [Fact]
@@ -237,9 +236,6 @@ public class DatabaseSeederTests
         var links = await context.Guardianships
             .CountAsync(g => g.AccountId == guardian.Id, CancellationToken.None);
         Assert.Equal(3, links);
-
-        // Kallelsen är påslagen på demolaget så den går att prova.
-        Assert.True(gul.AttendanceEnabled);
     }
 
     [Fact]
@@ -263,7 +259,7 @@ public class DatabaseSeederTests
     }
 
     [Fact]
-    public async Task Seed_DemoClear_TarBortAllDemodata_OchStangerAvKallelsen()
+    public async Task Seed_DemoClear_TarBortAllDemodata()
     {
         var name = Guid.NewGuid().ToString();
 
@@ -280,9 +276,6 @@ public class DatabaseSeederTests
         Assert.Equal(0, await context.Guardianships.CountAsync(CancellationToken.None));
         Assert.Equal(0, await context.GuardianConsents.CountAsync(CancellationToken.None));
         Assert.Equal(0, await context.TeamRoles.CountAsync(CancellationToken.None));
-
-        var gul = await context.Teams.SingleAsync(t => t.Slug == "gul", CancellationToken.None);
-        Assert.False(gul.AttendanceEnabled);
     }
 
     [Fact]

@@ -4,7 +4,7 @@ import { useState } from 'react'
 // Djupimport (inte via feature-barreln): invitations/index re-exporterar AdminPage som i sin tur
 // importerar BarnOchLag härifrån — en barrel-import hade blivit en cirkel mellan featurarna.
 import { useCreateInvitation } from '@/features/invitations/useInvitations'
-import { useCreateLag, useSetLagAttendance, useUpdateLag } from '@/features/lag'
+import { useCreateLag, useUpdateLag } from '@/features/lag'
 import { ApiError } from '@/lib/api'
 import { slugify } from '@/lib/slugify'
 
@@ -406,25 +406,11 @@ function EditLag({
   onDone: () => void
 }) {
   const update = useUpdateLag(truppId)
-  const attendance = useSetLagAttendance(truppId)
   const client = useQueryClient()
   const [name, setName] = useState(team.name)
   const [colorHex, setColorHex] = useState(team.colorHex)
   const [failure, setFailure] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-
-  function toggleAttendance(enabled: boolean): void {
-    setFailure(null)
-    setSuccess(null)
-    void attendance
-      .mutateAsync({ id: team.id, enabled })
-      .then(() => {
-        // Rostern bär lagets flagga — uppdatera den så växeln speglar det sparade läget.
-        void client.invalidateQueries({ queryKey: childrenKeys.roster(truppId) })
-        setSuccess(enabled ? 'Kallelse påslagen för laget.' : 'Kallelse avstängd för laget.')
-      })
-      .catch((error: unknown) => setFailure(messageOf(error)))
-  }
 
   function save(): void {
     setFailure(null)
@@ -475,26 +461,6 @@ function EditLag({
             setSuccess(null)
           }}
         />
-      </div>
-
-      {/*
-        Kallelse på/av (§KM.7). Egen omedelbar åtgärd, inte del av spara-knappen — att slå på den
-        är att börja behandla barns förnamn på servern och kräver samtyckesrutinen (§KM.6).
-      */}
-      <div className="form__field form__field--checkbox">
-        <label htmlFor={`lag-kallelse-${team.id}`}>
-          <input
-            id={`lag-kallelse-${team.id}`}
-            type="checkbox"
-            checked={team.attendanceEnabled}
-            disabled={attendance.isPending}
-            onChange={(event) => toggleAttendance(event.target.checked)}
-          />
-          Kallelse påslagen för laget
-        </label>
-        <p className="admin-muted">
-          Slå på för att kunna kalla barn till lagets matcher och träningar.
-        </p>
       </div>
 
       {success !== null && (

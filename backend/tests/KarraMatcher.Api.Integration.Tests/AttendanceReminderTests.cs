@@ -72,7 +72,6 @@ public sealed class AttendanceReminderTests(KarraMatcherApiFactory factory)
             Name = "Svart",
             ColorHex = "#161616",
             Slug = $"svart-r-{suffix}",
-            AttendanceEnabled = true,
         };
         var venue = new Venue
         {

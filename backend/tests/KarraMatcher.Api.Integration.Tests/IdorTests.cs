@@ -103,7 +103,6 @@ public sealed class IdorTests(KarraMatcherApiFactory factory)
             Name = "Svart",
             ColorHex = "#161616",
             Slug = $"svart-i-{suffix}",
-            AttendanceEnabled = true,
         };
         var venue = new Venue
         {
