@@ -40,6 +40,7 @@ export function MorePage() {
     <main>
       <header className="app-header">
         <h1>Mer</h1>
+        <p className="app-header__subtitle">Konto, roller och appen.</p>
       </header>
 
       <nav aria-label="Mer i menyn">
