@@ -407,50 +407,25 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
     }
 
     /// <summary>
-    /// Når kontot <em>alla</em> lag i truppen? Sant för superadmin, admin för truppen, samt en
-    /// accepterad inbjudan eller godkänd ansökan till truppen — samma trupp-breda grenar som
-    /// <see cref="IsMemberCoreAsync"/> släpper igenom oavsett lag.
+    /// Når kontot <em>alla</em> lag i truppen? Sant bara för superadmin och admin för truppen.
+    ///
+    /// <para>
+    /// En inbjuden eller ansökande förälder är visserligen trupp-medlem — hen ser truppchatten
+    /// via <see cref="IsMemberCoreAsync"/> — men ska <b>inte</b> se alla färg-lags kanaler eller
+    /// händelser, bara sitt eget barns lag (§KM.3). Därför räknas varken inbjudan eller ansökan
+    /// som trupp-bred här; det är den avsiktliga skillnaden mot <c>IsMemberCoreAsync</c>. En
+    /// tränare når sina egna lag via coach-grenen i <see cref="AccessibleTeamChannelsAsync"/>.
+    /// </para>
     /// </summary>
-    private async Task<bool> HasTruppWideAccessAsync(
-        Guid accountId, Guid ageGroupId, CancellationToken cancellationToken)
-    {
-        var hasRole = await context.TeamRoles
+    private Task<bool> HasTruppWideAccessAsync(
+        Guid accountId, Guid ageGroupId, CancellationToken cancellationToken) =>
+        context.TeamRoles
             .AsNoTracking()
             .AnyAsync(
                 r => r.AccountId == accountId
                     && (r.Role == RoleKind.SuperAdmin
                         || (r.Role == RoleKind.Admin && r.AgeGroupId == ageGroupId)),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        if (hasRole)
-        {
-            return true;
-        }
-
-        var invited = await context.Invitations
-            .AsNoTracking()
-            .AnyAsync(
-                i => i.AcceptedByAccountId == accountId
-                    && i.AgeGroupId == ageGroupId
-                    && i.Status == InvitationStatus.Accepted,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        if (invited)
-        {
-            return true;
-        }
-
-        return await context.MembershipApplications
-            .AsNoTracking()
-            .AnyAsync(
-                a => a.AccountId == accountId
-                    && a.AgeGroupId == ageGroupId
-                    && a.Status == ApplicationStatus.Approved,
-                cancellationToken)
-            .ConfigureAwait(false);
-    }
+                cancellationToken);
 
     // teamId == null = en trupp-vid händelse: medlem är då den som hör till truppen alls
     // (vilken tränare eller vårdnadshavare som helst i truppen), inte bara ett visst lag.

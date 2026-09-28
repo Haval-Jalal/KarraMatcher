@@ -7,6 +7,7 @@ using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Children;
+using KarraMatcher.Domain.Invitations;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
@@ -202,6 +203,43 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         Assert.Equal($"svart-ch-vh", svart.GetProperty("slug").GetString());
         Assert.Equal("#161616", svart.GetProperty("colorHex").GetString());
         Assert.Equal(f.SvartId, svart.GetProperty("teamId").GetGuid());
+    }
+
+    // ---- Inbjuden förälder scopas ändå till sitt lag --------------------------------
+
+    [Fact]
+    public async Task InbjudenVardnadshavare_SerAndaBaraSittBarnsLag()
+    {
+        // En förälder som gått med via inbjudan är trupp-medlem (ser truppchatten), men ska
+        // inte se alla lags kanaler — bara sitt barns (§KM.3). Tidigare gav en accepterad
+        // inbjudan "trupp-bred" åtkomst, vilket läckte de andra lagens chattar.
+        var f = await SeedAsync("inbjuden");
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            db.Invitations.Add(new Invitation
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = f.TruppId,
+                Email = "vh-svart-inbjuden@example.com",
+                TokenHash = "hash",
+                CreatedByAccountId = f.AdminId,
+                CreatedUtc = DateTime.UtcNow,
+                ExpiresUtc = DateTime.UtcNow.AddDays(14),
+                Status = InvitationStatus.Accepted,
+                AcceptedByAccountId = f.SvartGuardianId,
+                AcceptedUtc = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+
+        var channels = await ChannelsAsync(f.TruppId, f.SvartGuardianId);
+
+        Assert.Equal("Trupp", Kind(channels[0]));
+        Assert.True(HasTeam(channels, "Lag Svart chatt"));
+        Assert.False(HasTeam(channels, "Lag Gul chatt"));
+        Assert.Equal(2, channels.Count);
     }
 
     // ---- Trupp-medlem utan tilldelat lag ---------------------------------------------
