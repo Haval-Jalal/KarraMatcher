@@ -54,9 +54,10 @@ describe('AboutPage', () => {
     expect(links.length).toBeGreaterThan(0)
   })
 
-  it('länkas från foten på varje sida', async () => {
+  it('nås via Mer-menyn, även som gäst', async () => {
+    // "Om appen" flyttades från foten till Mer (`#redesign`). Mer är publik, så en gäst når den.
     stubNoSession()
-    renderRoute('/')
+    renderRoute('/mer')
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'Om appen' })).toBeInTheDocument()
