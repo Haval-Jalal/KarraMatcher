@@ -1,5 +1,6 @@
 import { Link, useParams } from '@tanstack/react-router'
 
+import { useTeams } from '@/features/teams'
 import { formatMatchDate } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -28,6 +29,10 @@ export function PlayerCardPage() {
   const card = readCard()
   const child = card.children.find((candidate) => candidate.id === childId)
 
+  // Bäst-möjligt lag (för färg + namn på kortet). Undefined offline eller för en gäst — då faller
+  // kortet tillbaka på app-accenten, och sidan fungerar ändå (§KM.2: den lämnar aldrig enheten).
+  const { data: teams } = useTeams()
+
   useDocumentTitle(child?.name ?? 'Spelarkortet')
 
   if (child === undefined) {
@@ -52,37 +57,58 @@ export function PlayerCardPage() {
   const season = seasonFor(card, child.id)
   const sentences = summarise(season, child.name)
 
+  const team = teams?.find((candidate) => candidate.slug === child.teamSlug)
+  const hasNumber = child.shirtNumber !== null && child.shirtNumber !== ''
+  const played = season.totals.matches
+
   return (
     <main>
-      <header className="app-header">
-        <h1>{child.name}</h1>
+      {/*
+        Samlarkortet (`#redesign`): barnets namn och tröjnummer stort, siffrorna i rutor under —
+        något kul att öppna, inte ett kalkylark. Lagfärgen tonar kortet om laget är känt (annars
+        app-accenten). Rubriken (`h1`) bor i kortet.
+      */}
+      <section
+        className="pcard"
+        style={team ? { ['--pc-accent' as string]: team.colorHex } : undefined}
+      >
+        <div className="pcard__top">
+          {hasNumber && (
+            <span className="pcard__num" aria-hidden="true">
+              {child.shirtNumber}
+            </span>
+          )}
+          <p className="pcard__eyebrow">{team ? team.name : 'Spelarkort'}</p>
+          <h1 className="pcard__name">{child.name}</h1>
+          <p className="pcard__meta">
+            {played > 0
+              ? `${String(played)} ${played === 1 ? 'match' : 'matcher'} spelade`
+              : 'Säsongen har inte börjat än'}
+          </p>
+        </div>
 
-        {child.shirtNumber !== null && child.shirtNumber !== '' && (
-          <p className="app-header__subtitle">{`Nummer ${child.shirtNumber}`}</p>
+        {played > 0 && (
+          <div className="pcard__stats">
+            <Stat label="Matcher" value={season.totals.matches} />
+            <Stat label="Mål" value={season.totals.goals} />
+            <Stat label="Assist" value={season.totals.assists} />
+            <Stat label="Poäng" value={season.points} />
+          </div>
         )}
-      </header>
+      </section>
 
-      {season.totals.matches === 0 ? (
+      {played === 0 ? (
         <EmptySeason name={child.name} />
       ) : (
-        <>
-          <dl className="totals">
-            <Total label="Matcher" value={season.totals.matches} />
-            <Total label="Mål" value={season.totals.goals} />
-            <Total label="Assist" value={season.totals.assists} />
-            <Total label="Poäng" value={season.points} />
-          </dl>
+        <section>
+          <h2>Säsongen</h2>
 
-          <section>
-            <h2>Säsongen</h2>
-
-            {sentences.map((sentence) => (
-              <p key={sentence} className="season__sentence">
-                {sentence}
-              </p>
-            ))}
-          </section>
-        </>
+          {sentences.map((sentence) => (
+            <p key={sentence} className="season__sentence">
+              {sentence}
+            </p>
+          ))}
+        </section>
       )}
 
       <section>
@@ -136,11 +162,12 @@ function EmptySeason({ name }: { name: string }) {
   )
 }
 
-function Total({ label, value }: { label: string; value: number }) {
+/** En stat-ruta i samlarkortet: siffran stor, etiketten under. */
+function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="totals__item">
-      <dt>{label}</dt>
-      <dd>{value}</dd>
+    <div className="pcard__stat">
+      <b>{value}</b>
+      <span>{label}</span>
     </div>
   )
 }
