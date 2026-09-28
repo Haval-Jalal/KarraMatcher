@@ -4,7 +4,7 @@ import { LoadingState } from '@/components/LoadingState'
 import { eventTypeLabel } from '@/features/events'
 import { TeamPicker, useTeams } from '@/features/teams'
 import { ApiError } from '@/lib/api'
-import { formatKickoffTime, formatMatchDate } from '@/lib/time'
+import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import type { HomeEvent, HomePendingKallelse } from './homeApi'
@@ -66,23 +66,22 @@ export function HomePage() {
 
       {summary.data && (
         <>
-          <section aria-labelledby="hem-nasta">
-            <h2 id="hem-nasta">Nästa händelse</h2>
+          <section className="hem-section" aria-labelledby="hem-nasta">
+            <h2 id="hem-nasta" className="hem-section__label">
+              Nästa händelse
+            </h2>
             {nextEvent ? (
-              <Link
-                to="/handelse/$id"
-                params={{ id: nextEvent.id }}
-                className="hem-card hem-card--link"
-              >
-                <p className="hem-card__when">
-                  <span className="hem-card__time">{formatKickoffTime(nextEvent.kickoffUtc)}</span>
-                  <span className="hem-card__date">{formatMatchDate(nextEvent.kickoffUtc)}</span>
-                </p>
-                <p className="hem-card__title">{headline(nextEvent)}</p>
-                <p className="hem-card__meta">
-                  {nextEvent.teamName}
+              <Link to="/handelse/$id" params={{ id: nextEvent.id }} className="hem-hero">
+                <span className="hem-hero__eyebrow">
+                  {relativeDayLabel(nextEvent.kickoffUtc)} ·{' '}
+                  {formatKickoffTime(nextEvent.kickoffUtc)}
+                </span>
+                <span className="hem-hero__title">{headline(nextEvent)}</span>
+                <span className="hem-hero__meta">
+                  {formatMatchDate(nextEvent.kickoffUtc)}
                   {nextEvent.place ? ` · ${nextEvent.place}` : ''}
-                </p>
+                </span>
+                <span className="hem-hero__team">{nextEvent.teamName}</span>
               </Link>
             ) : (
               <p className="state">Inga kommande händelser just nu.</p>
@@ -90,15 +89,17 @@ export function HomePage() {
           </section>
 
           {pending.length > 0 && (
-            <section aria-labelledby="hem-kallelser">
-              <h2 id="hem-kallelser">Väntar på ditt svar</h2>
+            <section className="hem-section" aria-labelledby="hem-kallelser">
+              <h2 id="hem-kallelser" className="hem-section__label">
+                Väntar på ditt svar
+              </h2>
               <ul className="hem-list">
                 {pending.map((item) => (
                   <li key={item.eventId}>
                     <Link
                       to="/handelse/$id"
                       params={{ id: item.eventId }}
-                      className="hem-card hem-card--link"
+                      className="hem-card hem-card--link hem-card--pending"
                     >
                       <p className="hem-card__when">
                         <span className="hem-card__time">{formatKickoffTime(item.kickoffUtc)}</span>
@@ -116,8 +117,10 @@ export function HomePage() {
           )}
 
           {latestChat !== null && (
-            <section aria-labelledby="hem-chatt">
-              <h2 id="hem-chatt">Senaste i chatten</h2>
+            <section className="hem-section" aria-labelledby="hem-chatt">
+              <h2 id="hem-chatt" className="hem-section__label">
+                Senaste i chatten
+              </h2>
               {latestChat.teamSlug !== null ? (
                 <Link
                   to="/lag/$slug/chatt"
@@ -148,8 +151,10 @@ export function HomePage() {
         </>
       )}
 
-      <section aria-labelledby="hem-lag">
-        <h2 id="hem-lag">Dina lag</h2>
+      <section className="hem-section" aria-labelledby="hem-lag">
+        <h2 id="hem-lag" className="hem-section__label">
+          Dina lag
+        </h2>
 
         {teams.isPending && <LoadingState label="Hämtar lagen…" />}
 
