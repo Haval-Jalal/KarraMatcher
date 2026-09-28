@@ -37,6 +37,14 @@
   --border: var(--hair);
 
   /*
+   * Kort-kant (`#redesign`): passiva kort (matchkort, Hem-kort, laddnings-skelett) bärs av sin
+   * mjuka skugga, som i artefakten — ingen synlig ram i ljust läge. I mörkt läge syns skuggan
+   * knappt, så där får korten en svag hårlinje i stället (se dark-blocken). Interaktiva
+   * kontroller (knappar, fält) behåller --border så de går att urskilja (WCAG 1.4.11).
+   */
+  --card-border: transparent;
+
+  /*
    * Ramar som *identifierar* en komponent maste na 3:1 (WCAG 1.4.11). --border (--hair) ar
    * en harlinje och duger darfor bara till dekorativa avskiljare, dar texten bar innehallet
    * sjalv. Knappar, lankkort och lagvaljarens alternativ anvander --border-strong.
@@ -133,6 +141,9 @@
   --avatar-bg: #232936;
   --shadow-soft: 0 12px 34px -20px rgba(0, 0, 0, 0.95);
 
+  /* Skuggan syns knappt mot det mörka pappret — korten får en svag hårlinje så de inte flyter ihop. */
+  --card-border: var(--hair);
+
   --text-strong: #faf8f2;
   --focus: #9db4ef;
   --danger: #ff9098;
@@ -158,6 +169,7 @@
     --hair-strong: #78818f;
     --avatar-bg: #232936;
     --shadow-soft: 0 12px 34px -20px rgba(0, 0, 0, 0.95);
+    --card-border: var(--hair);
 
     --text-strong: #faf8f2;
     --focus: #9db4ef;
@@ -596,7 +608,7 @@ h2 {
 .hem-tile {
   padding: 13px 14px;
   background: var(--surface-raised);
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
 }
@@ -629,7 +641,7 @@ h2 {
   color: inherit;
   text-decoration: none;
   padding: 18px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   background:
     radial-gradient(
@@ -696,7 +708,7 @@ h2 {
   display: block;
   padding: 12px 14px;
   background: var(--surface-raised);
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
 }
@@ -2326,10 +2338,13 @@ a.match-card:focus-visible .match-card__opponent {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid var(--border);
-  border-left: 5px solid var(--border);
+  /* Samma kant och skugga som matchkortet, så laddningen inte blinkar till med en hård ram som
+     sedan försvinner när kortet landar (`#redesign`). */
+  border: 1px solid var(--card-border);
+  border-left: 3px solid transparent;
   border-radius: var(--radius);
   background: var(--surface-raised);
+  box-shadow: var(--shadow-soft);
   padding: 14px 16px;
   min-height: var(--tap-target);
 }
@@ -2571,7 +2586,7 @@ a.match-card:focus-visible .match-card__opponent {
   align-items: start;
   padding: 13px 14px;
   background: var(--surface-raised);
-  border: 1px solid var(--border);
+  border: 1px solid var(--card-border);
 
   /* Kanten till vänster kodar hemma/borta (fylld/streckad); den skrivs efter helramen. */
   border-left: 3px solid transparent;
