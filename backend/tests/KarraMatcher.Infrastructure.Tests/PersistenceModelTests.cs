@@ -1,6 +1,7 @@
 using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
+using KarraMatcher.Infrastructure.Security;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -19,7 +20,7 @@ public class PersistenceModelTests
             .UseNpgsql("Host=modell;Database=modell;Username=x;Password=y")
             .Options;
 
-        using var context = new KarraMatcherDbContext(options);
+        using var context = new KarraMatcherDbContext(options, new AesGcmChatCipher(new byte[32]));
         return context.Model;
     }
 

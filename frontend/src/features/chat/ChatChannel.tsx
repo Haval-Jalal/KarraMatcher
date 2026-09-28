@@ -174,6 +174,17 @@ export function ChatChannel({
         Meddelanden
       </h2>
 
+      {/*
+        Krypterings-notisen. Ärlig: meddelanden lagras krypterade (at-rest) och skickas över TLS —
+        inte end-to-end, för truppens admin måste kunna läsa ett anmält meddelande (§KM.7).
+      */}
+      <p className="chat-encryption-note">
+        <span className="chat-encryption-note__lock" aria-hidden="true">
+          🔒
+        </span>{' '}
+        Krypterad chatt — meddelandena lagras krypterade
+      </p>
+
       {messages.isLoading && <p className="state">Hämtar meddelanden…</p>}
       {messages.isError && (
         <p className="state state--error" role="alert">

@@ -13,7 +13,9 @@ internal sealed class ChatReportConfiguration : IEntityTypeConfiguration<ChatRep
 
         builder.HasKey(r => r.Id);
 
-        builder.Property(r => r.Reason).HasMaxLength(ChatReport.MaxReason).IsRequired();
+        // Krypteras i vila (se DbContext.OnModelCreating), så kolumnen är `text` (obegränsad):
+        // chiffret är längre än de MaxReason klartext-tecken som validatorn vaktar.
+        builder.Property(r => r.Reason).IsRequired();
 
         builder.Property(r => r.CreatedUtc).HasColumnType("timestamp with time zone").IsRequired();
 
