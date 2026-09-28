@@ -48,7 +48,7 @@ export function EventDetailPage() {
       <main>
         <div className="state state--error" role="alert">
           <p>{errorMessage(apiError)}</p>
-          {apiError?.status !== 404 && (
+          {apiError?.status !== 404 && apiError?.status !== 403 && (
             <button
               type="button"
               className="button"
@@ -203,6 +203,10 @@ export function EventDetailPage() {
 function errorMessage(error: ApiError | null): string {
   if (error?.status === 404) {
     return 'Händelsen finns inte. Länken kan vara gammal, eller så har den tagits bort.'
+  }
+
+  if (error?.status === 403) {
+    return 'Du har inte behörighet att se den här händelsen. Är du kallad ska du öppna den via kallelsen — kontakta annars laget.'
   }
 
   if (error?.offline) {

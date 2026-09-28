@@ -69,7 +69,7 @@ export function emptyResponse(status: number): Response {
 export function stubApi(options: {
   teams?: Team[] | 'error'
   matches?: { team: Team; matches: TeamEvent[] } | 'error' | 'notFound'
-  match?: { team: Team; match: TeamEvent } | 'error' | 'notFound'
+  match?: { team: Team; match: TeamEvent } | 'error' | 'notFound' | 'forbidden'
 }) {
   vi.stubGlobal(
     'fetch',
@@ -104,6 +104,9 @@ export function stubApi(options: {
         if (options.match === 'error') return Promise.reject(new TypeError('Failed to fetch'))
         if (options.match === 'notFound') {
           return Promise.resolve(jsonResponse({ title: 'Händelsen finns inte' }, 404))
+        }
+        if (options.match === 'forbidden') {
+          return Promise.resolve(jsonResponse({ title: 'Du saknar behörighet' }, 403))
         }
         const detail = options.match ?? {
           team: testTeams[0],

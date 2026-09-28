@@ -67,10 +67,38 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return team is not null
-            && await IsMemberCoreAsync(accountId, team.TeamId, team.AgeGroupId, cancellationToken)
-                .ConfigureAwait(false);
+        if (team is null)
+        {
+            return false;
+        }
+
+        if (await IsMemberCoreAsync(accountId, team.TeamId, team.AgeGroupId, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return true;
+        }
+
+        // En vårdnadshavare vars barn faktiskt är *kallat* till händelsen får öppna den — även om
+        // barnet tillhör ett annat färg-lag eller ännu inget lag (§KM.7 tillåter kallelse tvärs
+        // över lagen). Utan detta fick föräldern 403 på just den sida push-notisen och Hem-kortet
+        // ledde till (#378). Gäller alla MemberOfEvent-ytor: matchdetaljen och samåkningen.
+        return await IsGuardianOfInvitedChildAsync(accountId, eventId, cancellationToken)
+            .ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Sant om kontot är vårdnadshavare för ett barn som har en kallelse-inbjudan till händelsen.
+    /// Kallelsen (<see cref="AttendanceInvitation"/>) pekar på ett barn, inte på ett lag, så den
+    /// bär rätten att se just den händelsen oavsett lagtillhörighet.
+    /// </summary>
+    private Task<bool> IsGuardianOfInvitedChildAsync(
+        Guid accountId, Guid eventId, CancellationToken cancellationToken) =>
+        (from invitation in context.AttendanceInvitations.AsNoTracking()
+         join call in context.AttendanceCalls on invitation.CallId equals call.Id
+         join guardianship in context.Guardianships on invitation.ChildId equals guardianship.ChildId
+         where call.MatchId == eventId && guardianship.AccountId == accountId
+         select invitation.Id)
+        .AnyAsync(cancellationToken);
 
     public async Task<IReadOnlyList<string>> MemberTeamSlugsAsync(
         Guid accountId, CancellationToken cancellationToken)

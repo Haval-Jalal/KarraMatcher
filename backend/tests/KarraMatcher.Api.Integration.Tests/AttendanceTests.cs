@@ -358,6 +358,32 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task GulFillIn_Vardnadshavare_KanOppnaHandelsen()
+    {
+        // #378: en förälder vars barn kallats in från ett ANNAT lag måste kunna ÖPPNA själva
+        // matchsidan (GET /events/{id}, policy MemberOfEvent) — inte bara kallelse-endpointen.
+        // Annars leder push-notisen och Hem-kortet "Väntar på ditt svar" till ett 403.
+        var f = await SeedAsync("fillin-event");
+        await SetKallelseAsync(f, f.SvartChild, f.GulChild);
+
+        var response = await GetAsync($"/api/v1/events/{f.EventId}", PlainToken(f.GulGuardian));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Handelse_Vardnadshavare_UtanKallatBarn_Ger403()
+    {
+        // Motsatsen: en förälder vars barn INTE är kallat till händelsens lag når den inte.
+        var f = await SeedAsync("fillin-none");
+        await SetKallelseAsync(f, f.SvartChild); // GulChild kallas inte
+
+        var response = await GetAsync($"/api/v1/events/{f.EventId}", PlainToken(f.GulGuardian));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public async Task IckeVardnadshavare_KanInteSvara_Ger404()
     {
         var f = await SeedAsync("not-guardian");
