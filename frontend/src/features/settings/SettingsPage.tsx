@@ -1,6 +1,8 @@
 import { DevicePushToggle } from '@/features/notifications'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
+import { ThemeToggle } from './ThemeToggle'
+
 /**
  * Inställningar — appens samlade inställningar, nådd via "Mer".
  *
@@ -38,6 +40,16 @@ export function SettingsPage() {
         </p>
 
         <DevicePushToggle />
+      </section>
+
+      <section className="notif-settings" aria-labelledby="utseende">
+        <h2 id="utseende">Utseende</h2>
+        <p className="notif-settings__lead">
+          Välj hur appen ser ut på den här enheten. <strong>System</strong> följer telefonens läge;
+          välj <strong>Ljust</strong> eller <strong>Mörkt</strong> för att bestämma själv.
+        </p>
+
+        <ThemeToggle />
       </section>
     </main>
   )
