@@ -89,6 +89,9 @@ export function ChatChannel({
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const pressTimer = useRef<number | null>(null)
 
+  // Meddelandet man håller på att svara på (tråd-svar), eller null.
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
+
   function clearPress(): void {
     if (pressTimer.current !== null) {
       window.clearTimeout(pressTimer.current)
@@ -152,14 +155,22 @@ export function ChatChannel({
     const publishAt = scheduling && when !== '' ? new Date(when).toISOString() : undefined
 
     setFailure(null)
-    post.mutate(publishAt === undefined ? { body: text } : { body: text, publishAt }, {
-      onSuccess: () => {
-        setBody('')
-        setWhen('')
-        setScheduling(false)
+    post.mutate(
+      {
+        body: text,
+        ...(publishAt === undefined ? {} : { publishAt }),
+        ...(replyingTo === null ? {} : { replyToMessageId: replyingTo.id }),
       },
-      onError: (error: unknown) => setFailure(messageOf(error)),
-    })
+      {
+        onSuccess: () => {
+          setBody('')
+          setWhen('')
+          setScheduling(false)
+          setReplyingTo(null)
+        },
+        onError: (error: unknown) => setFailure(messageOf(error)),
+      },
+    )
   }
 
   // Bara den egna raden går att ta bort här. Admin raderar andras enbart ur anmälningskön,
@@ -217,6 +228,16 @@ export function ChatChannel({
                   onPointerLeave={clearPress}
                   onPointerCancel={clearPress}
                 >
+                  {message.replyTo && (
+                    <span className="chat-msg__quote">
+                      <span className="chat-msg__quote-author">
+                        {message.replyTo.authorName ?? 'Okänd'}
+                      </span>
+                      <span className="chat-msg__quote-text">
+                        {message.replyTo.deleted ? '[borttaget]' : message.replyTo.snippet}
+                      </span>
+                    </span>
+                  )}
                   <span className="chat-msg__who">{message.authorName ?? 'Okänd'}</span>
                   {message.deleted ? (
                     <em className="chat-msg__text admin-muted">[borttaget]</em>
@@ -248,6 +269,7 @@ export function ChatChannel({
                     channel={channel}
                     canDelete={canDelete(message)}
                     deleting={remove.isPending}
+                    onReply={() => setReplyingTo(message)}
                     onReport={() => openReport(message.id)}
                     onDelete={() => run(remove.mutateAsync(message.id))}
                     onClose={() => setMenuFor(null)}
@@ -303,6 +325,27 @@ export function ChatChannel({
       )}
 
       <form className="form" noValidate onSubmit={submit}>
+        {replyingTo !== null && (
+          <div className="chat-reply-bar">
+            <span className="chat-reply-bar__quote">
+              <span className="chat-reply-bar__label">
+                Svar till {replyingTo.authorName ?? 'Okänd'}
+              </span>
+              <span className="chat-reply-bar__text">
+                {replyingTo.deleted ? '[borttaget]' : replyingTo.body}
+              </span>
+            </span>
+            <button
+              type="button"
+              className="chat-reply-bar__cancel"
+              aria-label="Avbryt svaret"
+              onClick={() => setReplyingTo(null)}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+        )}
+
         <div className="form__field">
           <label htmlFor="chatt-meddelande">Skriv ett meddelande</label>
           <textarea

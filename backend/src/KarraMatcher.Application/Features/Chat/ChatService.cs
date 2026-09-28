@@ -66,6 +66,7 @@ public sealed class ChatService(
         Guid accountId,
         string body,
         DateTimeOffset? publishAt,
+        Guid? replyToMessageId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(body);
@@ -82,6 +83,11 @@ public sealed class ChatService(
 
         var publishAtUtc = scheduled ? publishAt!.Value.UtcDateTime : now;
 
+        // Svar-i-tråd: bara ett meddelande i SAMMA kanal får citeras. Pekar det någon annanstans
+        // (eller finns inte) släpps länken tyst — meddelandet postas ändå, bara utan citat.
+        var replyTo = await ResolveReplyTargetAsync(replyToMessageId, truppId, teamId, cancellationToken)
+            .ConfigureAwait(false);
+
         var message = new ChatMessage
         {
             Id = Guid.NewGuid(),
@@ -92,6 +98,7 @@ public sealed class ChatService(
             CreatedUtc = now,
             PublishAtUtc = publishAtUtc,
             PublishedUtc = scheduled ? null : now,
+            ReplyToMessageId = replyTo,
         };
 
         await chat.AddMessageAsync(message, cancellationToken).ConfigureAwait(false);
@@ -112,8 +119,24 @@ public sealed class ChatService(
         var messages = await chat.ListPublishedAsync(truppId, teamId, 100, cancellationToken)
             .ConfigureAwait(false);
 
+        // De citerade ursprungsmeddelandena (för tråd-svar). Kan ligga utanför sidan, så de hämtas
+        // för sig; ett svar vars ursprung gallrats (SetNull) har inget id kvar och tas inte med.
+        var parentIds = messages
+            .Where(m => m.ReplyToMessageId is not null)
+            .Select(m => m.ReplyToMessageId!.Value)
+            .Distinct()
+            .ToArray();
+        var parents = parentIds.Length == 0
+            ? []
+            : await chat.ListByIdsAsync(parentIds, cancellationToken).ConfigureAwait(false);
+
+        // Namnen för både sidans författare och de citerade ursprungens författare, i en fråga.
         var names = await accounts
-            .DisplayNamesAsync([.. messages.Select(m => m.AuthorAccountId).Distinct()], cancellationToken)
+            .DisplayNamesAsync(
+                [.. messages.Select(m => m.AuthorAccountId)
+                    .Concat(parents.Select(p => p.AuthorAccountId))
+                    .Distinct()],
+                cancellationToken)
             .ConfigureAwait(false);
 
         // Reaktionerna per meddelande, sedda av läsaren (`Mine`). En fråga för hela sidan.
@@ -126,14 +149,26 @@ public sealed class ChatService(
                 g => (IReadOnlyList<ChatReactionDto>)
                     [.. g.Select(r => new ChatReactionDto(r.Emoji, r.Count, r.Mine))]);
 
+        var previews = parents.ToDictionary(
+            p => p.Id,
+            p => new ChatReplyPreviewDto(
+                p.Id,
+                names.TryGetValue(p.AuthorAccountId, out var pn) ? pn : null,
+                p.DeletedUtc is null ? Snippet(p.Body) : string.Empty,
+                p.DeletedUtc is not null));
+
         return
         [
             .. messages.Select(m => ToDto(
                 m,
                 names,
-                reactions.TryGetValue(m.Id, out var list) ? list : [])),
+                reactions.TryGetValue(m.Id, out var list) ? list : [],
+                m.ReplyToMessageId is { } rid && previews.TryGetValue(rid, out var pv) ? pv : null)),
         ];
     }
+
+    /// <summary>Kort citat-snutt av ett ursprungsmeddelande. Nog för att känna igen, inte hela.</summary>
+    private static string Snippet(string body) => body.Length <= 80 ? body : $"{body[..80]}…";
 
     /// <summary>Den inloggades egna schemalagda meddelanden i kanalen.</summary>
     public async Task<IReadOnlyList<ScheduledMessageDto>> ListScheduledAsync(
@@ -470,7 +505,8 @@ public sealed class ChatService(
     private static ChatMessageDto ToDto(
         ChatMessage message,
         IReadOnlyDictionary<Guid, string> names,
-        IReadOnlyList<ChatReactionDto> reactions) =>
+        IReadOnlyList<ChatReactionDto> reactions,
+        ChatReplyPreviewDto? replyTo) =>
         new(
             message.Id,
             message.AuthorAccountId,
@@ -478,5 +514,22 @@ public sealed class ChatService(
             message.DeletedUtc is null ? message.Body : string.Empty,
             new DateTimeOffset(message.PublishedUtc ?? message.PublishAtUtc, TimeSpan.Zero),
             message.DeletedUtc is not null,
-            reactions);
+            reactions,
+            replyTo);
+
+    /// <summary>Ursprunget för ett svar — bara om det finns och ligger i samma kanal.</summary>
+    private async Task<Guid?> ResolveReplyTargetAsync(
+        Guid? replyToMessageId, Guid truppId, Guid? teamId, CancellationToken cancellationToken)
+    {
+        if (replyToMessageId is not { } id)
+        {
+            return null;
+        }
+
+        var parent = await chat.FindMessageAsync(id, cancellationToken).ConfigureAwait(false);
+
+        return parent is not null && parent.AgeGroupId == truppId && parent.TeamId == teamId
+            ? id
+            : null;
+    }
 }

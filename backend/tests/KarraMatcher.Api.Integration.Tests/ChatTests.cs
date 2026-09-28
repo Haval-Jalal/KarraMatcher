@@ -82,6 +82,42 @@ public sealed class ChatTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Svar_BarCitatFranUrsprunget()
+    {
+        var f = await SeedAsync("svar");
+        var parentId = await PostAsync(f, CoachToken(f), "Vem kör till Öckerö?");
+
+        var reply = await SendAsync(
+            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages",
+            GuardianToken(f), new { body = "Jag kör!", replyToMessageId = parentId });
+        Assert.Equal(HttpStatusCode.NoContent, reply.StatusCode);
+
+        var messages = await MessagesAsync(f, GuardianToken(f));
+        var mine = messages.Single(m => m.GetProperty("body").GetString() == "Jag kör!");
+        var replyTo = mine.GetProperty("replyTo");
+
+        Assert.Equal(parentId, replyTo.GetProperty("id").GetGuid());
+        Assert.Equal("Vem kör till Öckerö?", replyTo.GetProperty("snippet").GetString());
+        Assert.False(replyTo.GetProperty("deleted").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Svar_PaOkantMeddelande_SlappsTyst_MenPostas()
+    {
+        var f = await SeedAsync("svar-okant");
+
+        var reply = await SendAsync(
+            HttpMethod.Post, $"/api/v1/trupper/{f.TruppId}/chat/messages",
+            GuardianToken(f), new { body = "svar", replyToMessageId = Guid.NewGuid() });
+        Assert.Equal(HttpStatusCode.NoContent, reply.StatusCode);
+
+        var mine = (await MessagesAsync(f, GuardianToken(f)))
+            .Single(m => m.GetProperty("body").GetString() == "svar");
+
+        Assert.Equal(JsonValueKind.Null, mine.GetProperty("replyTo").ValueKind);
+    }
+
+    [Fact]
     public async Task IckeMedlem_Nekas()
     {
         var f = await SeedAsync("icke-medlem");

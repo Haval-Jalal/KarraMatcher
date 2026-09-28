@@ -77,8 +77,8 @@ export function useReports(truppId: string | null, enabled: boolean) {
 export function usePost(channel: ChatChannel) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (input: { body: string; publishAt?: string }) =>
-      postMessage(channel, input.body, input.publishAt),
+    mutationFn: (input: { body: string; publishAt?: string; replyToMessageId?: string }) =>
+      postMessage(channel, input.body, input.publishAt, input.replyToMessageId),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: chatKeys.messages(channel) })
       void client.invalidateQueries({ queryKey: chatKeys.scheduled(channel) })

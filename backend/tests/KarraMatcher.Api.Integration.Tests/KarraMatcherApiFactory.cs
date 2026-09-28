@@ -54,6 +54,11 @@ public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
         // 32 nollbyte — aldrig ett riktigt.
         builder.UseSetting("Chat:EncryptionKey", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
 
+        // Höjd allmän rate-limit: en testklass delar en fabrik (samma IP) och gör många anrop på
+        // under en minut. Utan detta strypte den 121:a requesten en granne-test med 429. Ingen
+        // integrationstest prövar rate-limitern; den prövas i egna enhetstester.
+        builder.UseSetting("RateLimiting:PermitPerMinute", "100000");
+
         builder.UseSetting(DatabaseInitializer.MigrateKey, "false");
         builder.UseSetting(DatabaseInitializer.SeedKey, "false");
 

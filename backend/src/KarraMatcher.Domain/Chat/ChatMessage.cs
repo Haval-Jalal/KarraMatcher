@@ -60,4 +60,11 @@ public sealed class ChatMessage
     /// överlever tombstonen att kontot raderas.
     /// </summary>
     public Guid? DeletedByAccountId { get; set; }
+
+    /// <summary>
+    /// Meddelandet detta är ett svar på (`#redesign`), eller null. Pekar på ett annat meddelande i
+    /// <em>samma</em> kanal. FK:n är <c>SetNull</c>: gallras eller raderas ursprunget blir svaret
+    /// kvar utan citat, inte föräldralöst.
+    /// </summary>
+    public Guid? ReplyToMessageId { get; set; }
 }
