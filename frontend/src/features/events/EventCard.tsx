@@ -58,7 +58,14 @@ export function EventCard({ event }: { event: TeamEvent }) {
           )}
         </p>
 
-        <p className="match-card__venue">{venueLine(event.venue.name, event.address)}</p>
+        <p className="match-card__meta">
+          {isMatch && (
+            <span className={event.isHome ? 'pill pill--home' : 'pill pill--away'}>
+              {event.isHome ? 'Hemma' : 'Borta'}
+            </span>
+          )}
+          <span className="match-card__venue">{venueLine(event.venue.name, event.address)}</span>
+        </p>
       </Link>
     </li>
   )
