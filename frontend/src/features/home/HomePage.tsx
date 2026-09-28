@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 
 import { LoadingState } from '@/components/LoadingState'
+import { useAuth } from '@/features/auth'
 import { eventTypeLabel } from '@/features/events'
 import { TeamPicker, useTeams } from '@/features/teams'
 import { ApiError } from '@/lib/api'
@@ -16,24 +17,24 @@ import { useHomeSummary } from './useHomeSummary'
  * <h3>En översikt, inte en lagväljare</h3>
  *
  * Startsidan var förr bara en väljare som skickade vidare till ett lags schema. Här ser man i
- * stället direkt vad som är på gång: nästa händelse, kallelser som väntar på svar, och det
- * senaste i chatten — allt tvärs över ens lag, hämtat i ett anrop. Lagen finns kvar längst ned
- * som väg in i hela schemat.
+ * stället direkt vad som är på gång: nästa händelse och kallelser som väntar på svar — allt
+ * tvärs över ens lag, hämtat i ett anrop. Lagen finns kvar längst ned som väg in i schemat, och
+ * en admin får en ingång till hela truppen (`#redesign`).
  *
  * <h3>Bara det man ändå får se</h3>
  *
- * Sammanställningen bär ingen ny data: servern scopar den till kontots egna medlemskap, och
- * fritext (chatt) visas bara för den som redan är med i kanalen (§KM.1/§KM.3).
+ * Sammanställningen bär ingen ny data: servern scopar den till kontots egna medlemskap. Truppen-
+ * ingången är rollstyrd i UI:t men servern (AdminOfTrupp) är den riktiga grinden (§KM.3).
  */
 export function HomePage() {
   useDocumentTitle('Hem')
 
   const summary = useHomeSummary()
   const teams = useTeams()
+  const { adminOf } = useAuth()
 
   const nextEvent = summary.data?.nextEvent ?? null
   const pending = summary.data?.pendingKallelser ?? []
-  const latestChat = summary.data?.latestChat ?? null
 
   return (
     <main>
@@ -131,40 +132,29 @@ export function HomePage() {
               </ul>
             </section>
           )}
-
-          {latestChat !== null && (
-            <section className="hem-section" aria-labelledby="hem-chatt">
-              <h2 id="hem-chatt" className="hem-section__label">
-                Senaste i chatten
-              </h2>
-              {latestChat.teamSlug !== null ? (
-                <Link
-                  to="/lag/$slug/chatt"
-                  params={{ slug: latestChat.teamSlug }}
-                  className="hem-card hem-card--link"
-                >
-                  <p className="hem-card__meta">
-                    {latestChat.channelName} · {formatKickoffTime(latestChat.sentAtUtc)}
-                  </p>
-                  <p className="hem-card__title">{latestChat.snippet}</p>
-                  <p className="hem-card__meta">{latestChat.authorName}</p>
-                </Link>
-              ) : (
-                <Link
-                  to="/chatt/$truppId"
-                  params={{ truppId: latestChat.truppId }}
-                  className="hem-card hem-card--link"
-                >
-                  <p className="hem-card__meta">
-                    {latestChat.channelName} · {formatKickoffTime(latestChat.sentAtUtc)}
-                  </p>
-                  <p className="hem-card__title">{latestChat.snippet}</p>
-                  <p className="hem-card__meta">{latestChat.authorName}</p>
-                </Link>
-              )}
-            </section>
-          )}
         </>
+      )}
+
+      {/*
+        Truppen — adminens ingång till hela truppen (barn, färg-lag, vårdnadshavare). Rollstyrd:
+        syns bara för den som är admin för minst en trupp. Synlighet, inte säkerhet — servern
+        (AdminOfTrupp) är grinden (§KM.3). Länkar till den första truppen; TruppPage har en
+        väljare för den som är admin i flera.
+      */}
+      {adminOf.length > 0 && (
+        <section className="hem-section" aria-labelledby="hem-trupp">
+          <h2 id="hem-trupp" className="hem-section__label">
+            Truppen
+          </h2>
+          <Link
+            to="/trupp/$truppId"
+            params={{ truppId: adminOf[0]! }}
+            className="hem-card hem-card--link"
+          >
+            <p className="hem-card__title">Hela truppen</p>
+            <p className="hem-card__meta">Barn, färg-lag och vårdnadshavare</p>
+          </Link>
+        </section>
       )}
 
       <section className="hem-section" aria-labelledby="hem-lag">

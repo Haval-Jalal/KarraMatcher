@@ -54,6 +54,7 @@ const ApplyLandingPage = lazyRouteComponent(
   'ApplyLandingPage',
 )
 const AdminPage = lazyRouteComponent(() => import('@/features/invitations/AdminPage'), 'AdminPage')
+const TruppPage = lazyRouteComponent(() => import('@/features/children/TruppPage'), 'TruppPage')
 const InvitationLandingPage = lazyRouteComponent(
   () => import('@/features/invitations/InvitationLandingPage'),
   'InvitationLandingPage',
@@ -224,6 +225,19 @@ const adminRoute = createRoute({
 })
 
 /**
+ * Truppen — adminens egen sida för hela truppen (`#redesign`): barn, färg-lag och
+ * vårdnadshavare. En riktig route i stället för en flik inne i `/admin`, så bakåtknapp och
+ * delbara länkar fungerar. Kräver inloggning; att man är admin för just den här truppen avgör
+ * servern (policyn <c>AdminOfTrupp</c>) och vyn (den göms för andra).
+ */
+const truppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/trupp/$truppId',
+  beforeLoad: ({ location }) => requireSession(location.pathname),
+  component: TruppPage,
+})
+
+/**
  * Inbjudningens landningssida (§KM.3, `#193`). Anonym — en inbjuden förälder ska kunna se
  * vart länken leder innan hen loggar in. Accepten kräver inloggning, det sköter sidan själv.
  */
@@ -390,6 +404,7 @@ export const routeTree = rootRoute.addChildren([
   coachRoute,
   superadminRoute,
   adminRoute,
+  truppRoute,
   invitationRoute,
   applyRoute,
   playerCardRoute,
