@@ -223,7 +223,7 @@ function EmailStep({
         )}
       </div>
 
-      <button type="submit" className="button" disabled={isSubmitting}>
+      <button type="submit" className="button button--action" disabled={isSubmitting}>
         {isSubmitting ? 'Skickar…' : 'Skicka kod'}
       </button>
     </form>
@@ -342,7 +342,7 @@ function CodeStep({
       </div>
 
       <div className="actions">
-        <button type="submit" className="button" disabled={isSubmitting}>
+        <button type="submit" className="button button--action" disabled={isSubmitting}>
           {isSubmitting ? 'Kontrollerar…' : 'Logga in'}
         </button>
         <button type="button" className="button" onClick={onStartOver}>
@@ -362,7 +362,7 @@ function CodeStep({
 
       <button
         type="button"
-        className="button button--action"
+        className="button"
         disabled={cooldown > 0 || resending}
         onClick={() => {
           void resend()
