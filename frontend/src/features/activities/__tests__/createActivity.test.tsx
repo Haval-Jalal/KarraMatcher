@@ -126,7 +126,7 @@ describe('skapa aktivitet med kallelse-målgrupp', () => {
     const sent = stub()
     await renderWithProviders(<CreateActivity truppId={TRUPP} />)
 
-    await userEvent.selectOptions(await screen.findByLabelText('Typ'), 'Training')
+    await userEvent.click(await screen.findByLabelText('Träning'))
 
     // Träning → förval "Hela truppen".
     expect(await screen.findByLabelText('Hela truppen')).toBeChecked()
@@ -184,7 +184,7 @@ describe('skapa aktivitet med kallelse-målgrupp', () => {
     const sent = stub()
     await renderWithProviders(<CreateActivity truppId={TRUPP} />)
 
-    await userEvent.selectOptions(await screen.findByLabelText('Typ'), 'Cup')
+    await userEvent.click(await screen.findByLabelText('Cup'))
     expect(screen.queryByLabelText('Hela truppen')).not.toBeInTheDocument()
 
     setTime()

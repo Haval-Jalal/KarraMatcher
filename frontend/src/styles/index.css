@@ -55,6 +55,13 @@
   --danger: #a4262c;
 
   /*
+   * Bortamatchens blå (`#redesign`, artefakten). Skild från lagfärgen Blå — det här är en
+   * status-blå för pillret "Borta", som accenten är statusgrön för "Hemma". Ljust läge får en
+   * mörkare ton för kontrast mot papperet; mörkt en klarare (se dark-blocket).
+   */
+  --away: #2f5bd0;
+
+  /*
    * Sätts av appen när ett lag valts (`lib/teamTheme.ts`). Gråtonen gäller innan dess.
    *
    * `--team-ink` är textfärgen som får ligga *på* lagfärgen. Den räknas fram ur färgen
@@ -100,19 +107,20 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /*
-     * Sval, modern kol (`#redesign`) — inte längre varm brun. Bara de kanoniska tokensen (+ de
-     * få literalerna) definieras om; aliasen är var(--paper) osv. och följer med av sig själva.
+     * Sval, modern kol — exakt artefaktens mörka hud (`#redesign`, designriktningen). Bara de
+     * kanoniska tokensen (+ de få literalerna) definieras om; aliasen är var(--paper) osv. och
+     * följer med av sig själva.
      */
-    --paper: #12151b;
-    --card: #1a1e27;
-    --sunk: #0d0f14;
+    --paper: #0d0f14;
+    --card: #171b23;
+    --sunk: #1e232d;
     --ink: #eef1f6;
     --ink-soft: #9aa4b4;
     --ink-faint: #6b7482;
-    --hair: #262c36;
+    --hair: #29303b;
     --hair-strong: #78818f;
     --avatar-bg: #232936;
-    --shadow-soft: 0 16px 38px -20px rgba(0, 0, 0, 0.9);
+    --shadow-soft: 0 12px 34px -20px rgba(0, 0, 0, 0.95);
 
     --text-strong: #faf8f2;
     --focus: #9db4ef;
@@ -122,6 +130,9 @@
     --accent: #37d98a;
     --accent-strong: #21a869;
     --accent-ink: #05130c;
+
+    /* Klarare bortablå i mörkt läge (artefakten). */
+    --away: #6f9bff;
   }
 }
 
@@ -2107,6 +2118,48 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-muted);
 }
 
+/*
+ * Primär "lägg till"-knapp överst på en flik (`#redesign`, artefaktens ＋-knapp): fylld accent,
+ * full bredd, stor träffyta. Namnet är "Skapa aktivitet" — plustecknet är dekor (aria-hidden).
+ */
+.add-fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap-target);
+  margin: 4px 0 16px;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: var(--text-base);
+  cursor: pointer;
+  box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--accent) 90%, transparent);
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
+}
+
+.add-fab__plus {
+  font-size: 1.3em;
+  line-height: 0;
+}
+
+.add-fab:active {
+  transform: scale(0.98);
+  filter: brightness(1.06);
+}
+
+.add-fab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
 /* ---- Nasta match ---------------------------------------------------------- */
 
 /*
@@ -2210,8 +2263,8 @@ a.match-card:focus-visible .match-card__opponent {
   display: flex;
   flex-direction: column;
 
-  /* Ingen lucka: raderna sitter flush och hårlinjen mellan dem bär rytmen (agenda). */
-  gap: 0;
+  /* Boxade kort med luft emellan (`#redesign`, artefakten) i stället för flush agenda-rader. */
+  gap: 10px;
 }
 
 /*
@@ -2226,14 +2279,28 @@ a.match-card:focus-visible .match-card__opponent {
 .match-card {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: 16px;
+  column-gap: 14px;
   align-items: start;
-  padding: 14px 8px 14px 13px;
-  border-top: 1px solid var(--hair);
+  padding: 13px 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+
+  /* Kanten till vänster kodar hemma/borta (fylld/streckad); den skrivs efter helramen. */
   border-left: 3px solid transparent;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.12s ease,
+    border-color 0.15s ease;
 
   /* Träffytan ska hålla även om innehållet en dag blir kortare än i dag. */
   min-height: var(--tap-target);
+}
+
+.match-card:active {
+  transform: scale(0.99);
 }
 
 .match-card--home {
@@ -2311,6 +2378,60 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 3px 0 0;
   color: var(--ink-soft);
   font-size: var(--text-sm);
+}
+
+/* Metaraden under rubriken: pillret Hemma/Borta plus platsen (`#redesign`, artefakten). */
+.match-card__meta {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 0;
+}
+
+.match-card__meta .match-card__venue {
+  margin: 0;
+}
+
+/*
+ * Statuspiller (`#redesign`, artefakten): "Hemma" grön, "Borta" blå. Färgen är ett tillägg —
+ * ordet står i pillret och "Hemma mot/Borta mot" står kvar i rubriken (WCAG 1.4.1).
+ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.pill--home {
+  color: var(--accent-strong);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.pill--away {
+  color: var(--away);
+  border-color: color-mix(in srgb, var(--away) 45%, transparent);
+  background: color-mix(in srgb, var(--away) 12%, transparent);
 }
 
 /*
@@ -3534,13 +3655,142 @@ input[type='checkbox']:disabled {
 
 /* Kontrollen ritas med appens accent, i en lagom storlek — inte som ett textfält. */
 .form__radio input[type='radio'],
-.form__checkbox input[type='checkbox'] {
+.form__checkbox input[type='checkbox'],
+.opt input[type='radio'] {
   flex: none;
   width: 20px;
   height: 20px;
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/*
+ * Redesign-kontroller (`#redesign`, artefakten): segmenterad typväljare, val-kort och lag-piller.
+ * Alla är `label`-element inuti ett `.form__field`, så de scopas med `.form__field` för att slå
+ * fältrubrikens VERSAL-stil — annars skulle "Match", "Hemmamatch", "Gul" skrika.
+ */
+.form__field .seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--sunk);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.form__field .seg__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 4px;
+  border-radius: 9px;
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: center;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.form__field .seg__option:has(input:checked) {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.form__field .seg__option:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.form__field .opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap-target);
+  margin-bottom: 8px;
+  padding: 12px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.form__field .opt:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-raised));
+}
+
+.form__field .opt:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.opt__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 600;
+}
+
+.opt__txt small {
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form__field .tpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.form__field .tpill:has(input:checked) {
+  color: var(--text-strong);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
+}
+
+.form__field .tpill:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.tpill__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border-strong);
 }
 
 /* ---- Rena fieldsets ------------------------------------------------------- */

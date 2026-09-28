@@ -47,6 +47,7 @@ export function ActivitiesPage() {
     <main className="page">
       <header className="app-header">
         <h1>Aktivitet</h1>
+        <p className="app-header__subtitle">Truppens matcher, träningar och cuper.</p>
       </header>
 
       {trupper.isLoading && (
@@ -81,16 +82,23 @@ export function ActivitiesPage() {
       {truppId !== null && (
         <>
           {canCreate && (
-            <div className="actions">
-              <button
-                type="button"
-                className="button"
-                aria-expanded={creating}
-                onClick={() => setCreating((open) => !open)}
-              >
-                {creating ? 'Stäng' : 'Skapa aktivitet'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="add-fab"
+              aria-expanded={creating}
+              onClick={() => setCreating((open) => !open)}
+            >
+              {creating ? (
+                'Stäng'
+              ) : (
+                <>
+                  <span className="add-fab__plus" aria-hidden="true">
+                    ＋
+                  </span>{' '}
+                  Skapa aktivitet
+                </>
+              )}
+            </button>
           )}
 
           {creating && canCreate && <CreateActivity truppId={truppId} />}
