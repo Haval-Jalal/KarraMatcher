@@ -80,7 +80,7 @@
   --team-accent: #8a8a92;
   --team-ink: #000000;
 
-  --radius: 14px;
+  --radius: 16px;
   --tap-target: 48px;
 
   /*
@@ -770,7 +770,7 @@ h2 {
   gap: 10px;
   min-height: var(--tap-target);
   padding: 10px 12px;
-  border: 2px solid var(--border-strong);
+  border: 1px solid var(--border);
   text-decoration: none;
   border-radius: var(--radius);
   background: var(--surface-raised);
@@ -781,13 +781,13 @@ h2 {
 }
 
 /*
- * Aktuellt lag. Ramen anvander --border-strong och inte lagfargen: Gul ligger pa 2,15:1 och
- * Vit pa 1,32:1 mot underlaget, sa for tva av fyra lag hade markeringen varit osynlig.
- * Lagets identitet bars av brickan; tillstandet bars av ram, bock och aria-current.
+ * Aktuellt lag. Tillståndet bärs av accent-ram, bock och aria-current — inte av lagfärgen (Gul
+ * och Vit ligger för nära underlaget) och inte av färg ensam (WCAG 1.4.1): bocken finns kvar.
  */
 .team-picker__option[aria-current='page'] {
-  border-width: 4px;
-  padding: 8px 10px; /* Kompenserar den tjockare ramen så alternativet inte hoppar. */
+  border-color: var(--accent);
+  border-width: 2px;
+  padding: 9px 11px; /* Kompenserar den 1px tjockare ramen så alternativet inte hoppar. */
   background: var(--surface);
 }
 
@@ -1764,7 +1764,7 @@ a.match-card:focus-visible .match-card__opponent {
   font-size: var(--text-base);
   color: var(--text-strong);
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   min-height: var(--tap-target);
   padding: 8px 12px;
@@ -1955,7 +1955,7 @@ a.match-card:focus-visible .match-card__opponent {
   font: inherit;
   color: var(--text-strong);
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 
   /* Minst 16px, annars zoomar iOS in vid fokus och sidan hoppar. */
@@ -2205,7 +2205,9 @@ a.match-card:focus-visible .match-card__opponent {
 .button {
   min-height: var(--tap-target);
   padding: 10px 16px;
-  border: 2px solid var(--border-strong);
+  /* Mjuk 1px-ram som artefakten (`#redesign`). Knappen urskiljs av sin höjda yta + fokusring;
+     WCAG 1.4.11-avsteget för ramade kontroller är dokumenterat i handoff (2026-09-28). */
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-raised);
   color: var(--text-strong);
@@ -2603,7 +2605,7 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .carpool-card {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-left: 5px solid var(--team-accent);
   border-radius: var(--radius);
   background: var(--surface-raised);
@@ -3875,7 +3877,7 @@ input[type='checkbox']:disabled {
   min-height: var(--tap-target);
   margin-bottom: 8px;
   padding: 12px 13px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-raised);
   font-family: var(--sans);
@@ -3923,7 +3925,7 @@ input[type='checkbox']:disabled {
   gap: 7px;
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface-raised);
   font-family: var(--sans);
