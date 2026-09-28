@@ -271,5 +271,67 @@ describe('Barn & lag', () => {
     await user.click(screen.getByRole('button', { name: 'Koppla vårdnadshavare' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Samtycke saknas')
+
+    // 409 hjälps inte av en inbjudan → inget inbjudningserbjudande.
+    expect(screen.queryByRole('button', { name: /Bjud in/ })).not.toBeInTheDocument()
+  })
+
+  it('erbjuder en inbjudan när föräldern inte gått med, och skickar den (Fas 4)', async () => {
+    const sent = stub(adminToken, (url, method) => {
+      if (url.includes('/guardians') && method === 'POST') {
+        return jsonResponse(
+          {
+            title: 'Inte medlem i truppen',
+            detail: 'Vårdnadshavaren har inte gått med i truppen än.',
+          },
+          400,
+        )
+      }
+      if (url.includes('/invitations') && method === 'POST') {
+        return {
+          invitation: {
+            id: 'i1',
+            email: 'nyforalder@example.com',
+            status: 'Pending',
+            teamId: null,
+            teamName: null,
+            createdUtc: '2026-09-28T10:00:00Z',
+            expiresUtc: '2026-10-12T10:00:00Z',
+          },
+          acceptUrl: 'https://app/inbjudan/xyz',
+        }
+      }
+      if (url.includes('/children')) return { teams: TEAMS, children: CHILDREN }
+      return []
+    })
+    setAccessToken(adminToken)
+
+    const user = await openTrupp()
+
+    await user.click(await screen.findByRole('button', { name: /Liam J/ }))
+    await user.type(
+      screen.getByLabelText('Koppla en vårdnadshavare (adress)'),
+      'nyforalder@example.com',
+    )
+    await user.click(screen.getByRole('button', { name: 'Koppla vårdnadshavare' }))
+
+    // Kopplingen faller på 400 → erbjud en inbjudan.
+    const inviteButton = await screen.findByRole('button', {
+      name: /Bjud in nyforalder@example.com/,
+    })
+    await user.click(inviteButton)
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.url.includes('/api/v1/admin/trupper/trupp-1/invitations') &&
+            r.method === 'POST' &&
+            (r.body as { email: string }).email === 'nyforalder@example.com',
+        ),
+      ).toBe(true)
+    })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Inbjudan skapad')
   })
 })

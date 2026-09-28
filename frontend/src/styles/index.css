@@ -3808,6 +3808,19 @@ a.match-card:focus-visible .match-card__opponent {
   max-width: 240px;
 }
 
+/* Erbjudandet att bjuda in en förälder som inte gått med i truppen än (`#redesign`, Fas 4). */
+.child-detail__invite {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.child-detail__invite > .admin-muted {
+  margin: 0 0 8px;
+}
+
 /* Lagtränarens läsvy av laget (`#redesign`): barn med vårdnadshavarnas kontakt. */
 .roster-list {
   list-style: none;

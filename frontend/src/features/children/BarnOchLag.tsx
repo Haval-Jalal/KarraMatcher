@@ -1,6 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+// Djupimport (inte via feature-barreln): invitations/index re-exporterar AdminPage som i sin tur
+// importerar BarnOchLag härifrån — en barrel-import hade blivit en cirkel mellan featurarna.
+import { useCreateInvitation } from '@/features/invitations/useInvitations'
 import { useCreateLag, useUpdateLag } from '@/features/lag'
 import { ApiError } from '@/lib/api'
 import { slugify } from '@/lib/slugify'
@@ -505,14 +508,62 @@ function ChildDetail({
   const remove = useDeleteChild(truppId)
   const link = useLinkGuardian(truppId)
   const unlink = useUnlinkGuardian(truppId)
+  const invite = useCreateInvitation(truppId)
 
   const [guardianEmail, setGuardianEmail] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  // Adressen vi kan erbjuda en inbjudan för, satt när en koppling faller på att föräldern inte
+  // finns eller inte gått med i truppen än (`#redesign`, Fas 4).
+  const [inviteOffer, setInviteOffer] = useState<string | null>(null)
 
   const run = (action: Promise<unknown>) => {
     setFailure(null)
     void action.catch((error: unknown) => setFailure(messageOf(error)))
+  }
+
+  const clearNotices = () => {
+    setFailure(null)
+    setSuccess(null)
+    setInviteOffer(null)
+  }
+
+  function handleLink(): void {
+    if (child === null) {
+      return
+    }
+
+    clearNotices()
+    const email = guardianEmail.trim()
+    void link
+      .mutateAsync({ childId: child.id, email })
+      .then(() => {
+        setGuardianEmail('')
+        setSuccess('Vårdnadshavaren kopplades.')
+      })
+      .catch((error: unknown) => {
+        setFailure(messageOf(error))
+        // 400 = kontot finns inte, eller föräldern har inte gått med i truppen än. Då hjälper en
+        // inbjudan; 409 (samtycke saknas / redan kopplad) gör den inte, så erbjud den inte då.
+        if (error instanceof ApiError && error.status === 400) {
+          setInviteOffer(email)
+        }
+      })
+  }
+
+  function handleInvite(email: string): void {
+    setFailure(null)
+    setSuccess(null)
+    void invite
+      .mutateAsync(email)
+      .then(() => {
+        setInviteOffer(null)
+        setSuccess(
+          `Inbjudan skapad — ${email} får ett mejl. Koppla vårdnadshavaren när hen gått med och godkänt samtycket.`,
+        )
+      })
+      .catch((error: unknown) => setFailure(messageOf(error)))
   }
 
   if (child === null) {
@@ -599,7 +650,10 @@ function ChildDetail({
             id={`koppla-vh-${child.id}`}
             type="email"
             value={guardianEmail}
-            onChange={(event) => setGuardianEmail(event.target.value)}
+            onChange={(event) => {
+              setGuardianEmail(event.target.value)
+              clearNotices()
+            }}
           />
         </div>
         <div className="actions">
@@ -607,17 +661,30 @@ function ChildDetail({
             type="button"
             className="button button--small"
             disabled={link.isPending || guardianEmail.trim() === ''}
-            onClick={() =>
-              run(
-                link
-                  .mutateAsync({ childId: child.id, email: guardianEmail.trim() })
-                  .then(() => setGuardianEmail('')),
-              )
-            }
+            onClick={handleLink}
           >
             Koppla vårdnadshavare
           </button>
         </div>
+
+        {inviteOffer !== null && (
+          <div className="child-detail__invite">
+            <p className="admin-muted">
+              {inviteOffer} är inte medlem i truppen än. Bjud in vårdnadshavaren, så kan du koppla
+              hen efter att hen gått med och godkänt samtycket.
+            </p>
+            <div className="actions">
+              <button
+                type="button"
+                className="button button--small button--action"
+                disabled={invite.isPending}
+                onClick={() => handleInvite(inviteOffer)}
+              >
+                {invite.isPending ? 'Bjuder in…' : `Bjud in ${inviteOffer} till truppen`}
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="child-detail__block">
@@ -649,6 +716,12 @@ function ChildDetail({
           </button>
         )}
       </section>
+
+      {success !== null && (
+        <p className="form__success" role="status">
+          {success}
+        </p>
+      )}
 
       {failure !== null && (
         <p className="state state--error" role="alert">
