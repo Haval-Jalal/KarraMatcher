@@ -67,6 +67,9 @@ jobs:
           Database__SeedOnStartup: "true"
           Testing__Enabled: "true"
           Auth__SigningKey: e2e-testnyckel-0123456789-0123456789-0123456789
+          # Chattkrypteringen valideras vid start (§KM.10). Ett fast testvärde — 32 nollbyte
+          # base64 — aldrig ett riktigt.
+          Chat__EncryptionKey: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
           # Ingen omsändnings-cooldown i test: varje inloggning (samma konto loggar in
           # flera gånger i samåkningsflödet) ska alltid få en färsk kod direkt.
           Auth__LoginCodeResendCooldown: "00:00:00"

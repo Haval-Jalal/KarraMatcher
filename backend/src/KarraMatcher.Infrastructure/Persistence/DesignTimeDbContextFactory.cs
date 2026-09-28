@@ -1,3 +1,5 @@
+using KarraMatcher.Infrastructure.Security;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -26,6 +28,8 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Kar
             .UseNpgsql(connectionString)
             .Options;
 
-        return new KarraMatcherDbContext(options);
+        // Designtid bygger bara modellen; konverterarnas nyckel används aldrig här, så en
+        // dummy-nyckel räcker (den riktiga kommer ur konfigurationen i drift).
+        return new KarraMatcherDbContext(options, new AesGcmChatCipher(new byte[32]));
     }
 }

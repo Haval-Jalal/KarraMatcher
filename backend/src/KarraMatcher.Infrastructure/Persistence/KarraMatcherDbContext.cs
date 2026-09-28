@@ -1,5 +1,5 @@
 using System.Reflection;
-
+using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Audit;
@@ -8,12 +8,13 @@ using KarraMatcher.Domain.Chat;
 using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
-
 using Microsoft.EntityFrameworkCore;
 
 namespace KarraMatcher.Infrastructure.Persistence;
 
-public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext> options)
+public sealed class KarraMatcherDbContext(
+    DbContextOptions<KarraMatcherDbContext> options,
+    IChatTextCipher chatCipher)
     : DbContext(options)
 {
     public DbSet<Sport> Sports => Set<Sport>();
@@ -81,6 +82,17 @@ public sealed class KarraMatcherDbContext(DbContextOptions<KarraMatcherDbContext
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // Chattens fritext krypteras i vila (§KM.10). Kolumnerna är `text` (obegränsade) eftersom
+        // chiffret är längre än klartexten; inmatningslängden vaktas i validatorn, inte här. Läggs
+        // efter konfigurationerna så konverteraren gäller.
+        modelBuilder.Entity<ChatMessage>()
+            .Property(m => m.Body)
+            .HasConversion(value => chatCipher.Encrypt(value), value => chatCipher.Decrypt(value));
+        modelBuilder.Entity<ChatReport>()
+            .Property(r => r.Reason)
+            .HasConversion(value => chatCipher.Encrypt(value), value => chatCipher.Decrypt(value));
+
         base.OnModelCreating(modelBuilder);
     }
 }

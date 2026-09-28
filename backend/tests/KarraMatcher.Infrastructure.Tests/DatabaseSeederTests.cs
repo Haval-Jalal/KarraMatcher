@@ -2,6 +2,7 @@ using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Common;
 using KarraMatcher.Infrastructure.Persistence;
 using KarraMatcher.Infrastructure.Persistence.Seed;
+using KarraMatcher.Infrastructure.Security;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,9 +15,9 @@ public class DatabaseSeederTests
     private static readonly IConfiguration EmptyConfig = new ConfigurationBuilder().Build();
 
     private static KarraMatcherDbContext NewContext(string name) =>
-        new(new DbContextOptionsBuilder<KarraMatcherDbContext>()
-            .UseInMemoryDatabase(name)
-            .Options);
+        new(
+            new DbContextOptionsBuilder<KarraMatcherDbContext>().UseInMemoryDatabase(name).Options,
+            new AesGcmChatCipher(new byte[32]));
 
     [Fact]
     public async Task Seed_EnKorning_LaggerInAllStartdata()

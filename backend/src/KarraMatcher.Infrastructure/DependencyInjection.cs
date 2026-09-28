@@ -70,6 +70,21 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         /*
+         * Chattens fritext krypteras i vila (§KM.10). Nyckeln valideras vid start — en saknad
+         * eller felaktig nyckel ska fälla driftsättningen medan någon tittar, inte tyst göra
+         * varje meddelande oläsbart en lördagsmorgon.
+         */
+        services.AddOptions<Security.ChatEncryptionOptions>()
+            .Bind(configuration.GetSection(Security.ChatEncryptionOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(
+                o => KeyIsAes256(o.EncryptionKey),
+                "Chat:EncryptionKey måste vara 32 byte base64 (AES-256).")
+            .ValidateOnStart();
+        services.AddSingleton<
+            Application.Abstractions.Security.IChatTextCipher, Security.AesGcmChatCipher>();
+
+        /*
          * Jobb-hemligheten (#64). Inte ValidateOnStart: saknas den ska appen ga att kora --
          * kvallspaminnelsen ar ett komplement, och en tom hemlighet stanger bara jobbet
          * (endpointen avvisar allt), den valter inte driftsattningen.
@@ -179,6 +194,19 @@ public static class DependencyInjection
             .AddDbContextCheck<KarraMatcherDbContext>("database", tags: ["ready"]);
 
         return services;
+    }
+
+    /// <summary>Är strängen en giltig 32-byte (AES-256) base64-nyckel? Fångar fel vid start.</summary>
+    private static bool KeyIsAes256(string base64)
+    {
+        try
+        {
+            return Convert.FromBase64String(base64).Length == 32;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     /// <summary>

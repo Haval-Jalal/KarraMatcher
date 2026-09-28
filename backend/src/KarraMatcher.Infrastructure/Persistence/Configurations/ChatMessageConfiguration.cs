@@ -16,8 +16,9 @@ internal sealed class ChatMessageConfiguration : IEntityTypeConfiguration<ChatMe
 
         builder.HasKey(m => m.Id);
 
-        // Tom efter radering (tombstone), så inte required. Taket gäller ändå.
-        builder.Property(m => m.Body).HasMaxLength(MaxBodyLength);
+        // Krypteras i vila (se DbContext.OnModelCreating), så kolumnen är `text` (obegränsad):
+        // chiffret är längre än de MaxBodyLength klartext-tecken som validatorn vaktar. Tom efter
+        // radering (tombstone), så inte required.
 
         builder.Property(m => m.CreatedUtc).HasColumnType("timestamp with time zone").IsRequired();
         builder.Property(m => m.PublishAtUtc).HasColumnType("timestamp with time zone").IsRequired();

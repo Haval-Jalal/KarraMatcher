@@ -50,6 +50,10 @@ public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
         // riktigt: det har far garna sta i klartext i ett publikt repo.
         builder.UseSetting("Auth:SigningKey", "testnyckel-som-bara-anvands-i-tester-0123456789");
 
+        // Chattkrypteringens nyckel valideras vid start (32 byte base64). Ett fast testvärde —
+        // 32 nollbyte — aldrig ett riktigt.
+        builder.UseSetting("Chat:EncryptionKey", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
         builder.UseSetting(DatabaseInitializer.MigrateKey, "false");
         builder.UseSetting(DatabaseInitializer.SeedKey, "false");
 

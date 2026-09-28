@@ -1991,6 +1991,25 @@ a.match-card:focus-visible .match-card__opponent {
 
 /* ---- Chatt: meddelanden (#281) -------------------------------------------- */
 
+/* Krypterings-notisen: en diskret, centrerad rad överst i chatten (§KM.10). */
+.chat-encryption-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-raised));
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.chat-encryption-note__lock {
+  font-size: var(--text-sm);
+}
+
 .chat-messages {
   gap: 14px;
 }
