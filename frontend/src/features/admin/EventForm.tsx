@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { useClubVenue } from '@/features/clubs/useClubVenue'
-import type { TeamEvent } from '@/features/events'
+import { type TeamEvent, venueLine } from '@/features/events'
 import { ApiError } from '@/lib/api'
 import { swedishLocalToUtc, utcToSwedishLocalInput } from '@/lib/time'
 
@@ -254,7 +254,7 @@ export function EventForm({
         {isHome ? (
           club.data?.configured ? (
             <p className="state">
-              Klubbens plan: {club.data.name} — {club.data.address}
+              Klubbens plan: {venueLine(club.data.name ?? '', club.data.address ?? '')}
             </p>
           ) : (
             <p className="state state--error" role="alert">
@@ -298,7 +298,7 @@ export function EventForm({
       )}
 
       <div className="actions">
-        <button type="submit" className="button" disabled={isSubmitting}>
+        <button type="submit" className="button button--action" disabled={isSubmitting}>
           {isSubmitting ? 'Sparar…' : existing ? 'Spara ändringen' : 'Lägg till händelsen'}
         </button>
         <button type="button" className="button" onClick={onCancel}>
