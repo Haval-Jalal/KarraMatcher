@@ -47,7 +47,6 @@ public static class DependencyInjection
         services.AddScoped<Features.Carpool.CarpoolResponseService>();
         services.AddScoped<Features.Carpool.CarpoolOverviewService>();
         services.AddScoped<Features.Carpool.CarpoolRetentionService>();
-        services.AddScoped<Features.Attendance.AttendanceGate>();
         services.AddScoped<Features.Attendance.AttendanceService>();
         services.AddScoped<Features.Cup.CupSignupService>();
         services.AddScoped<Features.Cup.CupTeamService>();

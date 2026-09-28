@@ -115,7 +115,6 @@ public sealed class NotificationPiiTests(KarraMatcherApiFactory factory)
             Name = "Svart",
             ColorHex = "#161616",
             Slug = $"svart-p-{suffix}",
-            AttendanceEnabled = true,
         };
         var match = new Event
         {

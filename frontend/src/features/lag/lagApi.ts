@@ -36,14 +36,3 @@ export const updateLag = (
   colorHex: string,
 ): Promise<Lag> =>
   postJson<Lag>(`/api/v1/admin/trupper/${truppId}/lag/${id}`, { name, colorHex }, { method: 'PUT' })
-
-/**
- * Slår på eller av kallelsen för ett lag (§KM.7). Trupp-adminens beslut, inte tränarens; servern
- * verifierar att laget hör till truppen (IDOR-skydd).
- */
-export const setLagAttendance = (truppId: string, id: string, enabled: boolean): Promise<void> =>
-  postJson<void>(
-    `/api/v1/admin/trupper/${truppId}/lag/${id}/attendance`,
-    { enabled },
-    { method: 'PUT' },
-  )

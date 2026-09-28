@@ -38,8 +38,8 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
         CancellationToken cancellationToken)
     {
         // En rad per kommande händelse där något av kontots egna barn saknar svar (Reply == null)
-        // på en öppen kallelse i ett lag där kallelse är påslagen. Cup-anmälningar har alltid ett
-        // svar och faller därför bort av sig själva.
+        // på en öppen kallelse. Cup-anmälningar har alltid ett svar och faller därför bort av sig
+        // själva.
         var query =
             from invitation in context.AttendanceInvitations.AsNoTracking()
             join call in context.AttendanceCalls.AsNoTracking() on invitation.CallId equals call.Id
@@ -52,7 +52,6 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
                 && invitation.Reply == null
                 && item.KickoffUtc >= nowUtc
                 && item.Status != EventStatus.Cancelled
-                && team.AttendanceEnabled
             group invitation by new
             {
                 item.Id,

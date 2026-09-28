@@ -65,11 +65,6 @@ public sealed class KallelseAdminController(
                 title: "Ogiltigt barn",
                 detail: "Ett valt barn hör inte till truppen."),
 
-            SetKallelseOutcome.Disabled => Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                title: "Kallelser är avslagna",
-                detail: "Slå på kallelser för laget innan du skickar en kallelse (§KM.7)."),
-
             SetKallelseOutcome.EventNotInvitable => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Kallelse gäller inte den här händelsen",

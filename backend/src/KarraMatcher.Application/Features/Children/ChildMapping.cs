@@ -40,6 +40,6 @@ internal static class ChildMapping
     {
         ArgumentNullException.ThrowIfNull(team);
 
-        return new RosterTeamDto(team.Id, team.Name, team.ColorHex, team.AttendanceEnabled);
+        return new RosterTeamDto(team.Id, team.Name, team.ColorHex);
     }
 }

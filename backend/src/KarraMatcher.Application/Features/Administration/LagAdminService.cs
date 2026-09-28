@@ -48,7 +48,6 @@ public sealed class LagAdminService(IAdministrationRepository repository, IAudit
             Name = name,
             ColorHex = colorHex,
             Slug = slug,
-            AttendanceEnabled = false,
         };
 
         await repository.AddLagAsync(lag, cancellationToken).ConfigureAwait(false);

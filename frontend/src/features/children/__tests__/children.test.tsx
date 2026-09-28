@@ -22,7 +22,7 @@ interface Sent {
   body: unknown
 }
 
-const TEAMS = [{ id: 't1', name: 'Gul', colorHex: '#D9A21B', attendanceEnabled: false }]
+const TEAMS = [{ id: 't1', name: 'Gul', colorHex: '#D9A21B' }]
 
 const CHILDREN = [
   {
@@ -197,38 +197,6 @@ describe('Barn & lag', () => {
     })
 
     expect(await screen.findByText('Laget uppdaterades.')).toBeInTheDocument()
-  })
-
-  it('slår på kallelse för ett lag via kugghjulet (#379)', async () => {
-    const sent = stub(adminToken, (url, method) => {
-      // Kallelse-växeln ligger på /lag/{id}/attendance — matcha den före den vanliga lag-PUT.
-      if (url.includes('/attendance') && method === 'PUT') {
-        return []
-      }
-      if (url.includes('/children')) return { teams: TEAMS, children: CHILDREN }
-      return []
-    })
-    setAccessToken(adminToken)
-
-    const user = await openTrupp()
-
-    await user.click(screen.getByRole('button', { name: 'Lag' }))
-    await user.click(await screen.findByRole('button', { name: /Gul/ }))
-    await user.click(screen.getByRole('button', { name: 'Ändra Gul' }))
-    await user.click(screen.getByRole('checkbox', { name: /Kallelse påslagen/ }))
-
-    await waitFor(() => {
-      expect(
-        sent.some(
-          (r) =>
-            r.url.includes('/api/v1/admin/trupper/trupp-1/lag/t1/attendance') &&
-            r.method === 'PUT' &&
-            (r.body as { enabled: boolean }).enabled === true,
-        ),
-      ).toBe(true)
-    })
-
-    expect(await screen.findByText('Kallelse påslagen för laget.')).toBeInTheDocument()
   })
 
   it('lägger till ett barn — anropet bär förnamn, initial och lag', async () => {

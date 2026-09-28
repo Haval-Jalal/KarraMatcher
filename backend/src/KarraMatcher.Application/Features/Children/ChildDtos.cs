@@ -34,8 +34,7 @@ public sealed record ChildDto(
 /// <param name="Id">Lagets id.</param>
 /// <param name="Name">Lagets namn, t.ex. "Gul".</param>
 /// <param name="ColorHex">Lagfärgen.</param>
-/// <param name="AttendanceEnabled">Om kallelsen är påslagen för laget (§KM.7) — styr kugghjulets växel.</param>
-public sealed record RosterTeamDto(Guid Id, string Name, string ColorHex, bool AttendanceEnabled);
+public sealed record RosterTeamDto(Guid Id, string Name, string ColorHex);
 
 /// <summary>Truppens överblick: dess lag och dess barn (`#196`).</summary>
 /// <param name="Teams">Truppens lag (färg-grupperna).</param>
