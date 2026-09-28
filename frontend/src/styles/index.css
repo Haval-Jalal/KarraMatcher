@@ -979,20 +979,6 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0;
 }
 
-/* ---- Foten ------------------------------------------------------------ */
-
-/*
- * Skiljs från innehållet med en tunn linje och dämpad text — den ska finnas, inte ta
- * uppmärksamhet. Integritetslänken bor här så att även en gäst når den (§KM.6).
- */
-.app-footer {
-  margin-top: 40px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  text-align: center;
-  font-size: var(--text-sm);
-}
-
 /* ---- Löpande text (integritet m.m.) ------------------------------------ */
 
 /*

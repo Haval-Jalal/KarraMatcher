@@ -76,9 +76,10 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/inga spårningsskript/i)).toBeInTheDocument()
   })
 
-  it('länkas från foten på varje sida', async () => {
+  it('nås via Mer-menyn, även som gäst', async () => {
+    // Integritetslänken flyttades från foten till Mer (`#redesign`). Mer är publik → gästen når den.
     stubNoSession()
-    renderRoute('/')
+    renderRoute('/mer')
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'Så hanteras dina uppgifter' })).toBeInTheDocument()
