@@ -52,6 +52,14 @@ services:
       - key: Email__ApiKey
         sync: false
 
+      # Krypteringsnyckeln for chattens fritext i vila (#369, §KM.10). 32 byte base64.
+      # ChatEncryptionOptions valideras med ValidateOnStart, sa en saknad eller felaktig
+      # nyckel faller driftsattningen -- precis det som hande #370/#371 innan den sattes.
+      # Byt ALDRIG vardet utan att migrera; ett byte gor gammal text olasbar.
+      # Genereras med: openssl rand -base64 32
+      - key: Chat__EncryptionKey
+        sync: false
+
       # VAPID-nycklarna for notiser (#60). Push ar avstangt om de saknas -- appen
       # fungerar anda, kalenderfeeden ar den primara kanalen. Listade har av samma
       # skal som ovan: en tom ruta i dashboarden ar lattare att upptacka an en
