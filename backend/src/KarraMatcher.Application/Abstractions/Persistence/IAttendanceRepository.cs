@@ -27,15 +27,18 @@ public interface IAttendanceRepository
     public Task<bool?> IsEnabledForMatchAsync(Guid matchId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Slår på eller av kallelsen för ett lag.
+    /// Slår på eller av kallelsen för ett lag i truppen.
     ///
     /// <para>
-    /// Sparar <b>inte</b>. Ändringen och audit-raden hör ihop och ska stå eller falla
-    /// tillsammans — anroparen avslutar med <see cref="SaveChangesAsync"/>.
+    /// Laget måste höra till <paramref name="truppId"/> — annars kunde en admin för en trupp
+    /// ändra ett annat lags flagga (IDOR, §KM.3). Sparar <b>inte</b>: ändringen och audit-raden
+    /// hör ihop och ska stå eller falla tillsammans — anroparen avslutar med
+    /// <see cref="SaveChangesAsync"/>.
     /// </para>
     /// </summary>
-    /// <returns>Lagets id, eller null om laget inte finns.</returns>
-    public Task<Guid?> SetEnabledAsync(string slug, bool enabled, CancellationToken cancellationToken);
+    /// <returns>Lagets slug (för audit), eller null om laget inte finns i truppen.</returns>
+    public Task<string?> SetEnabledAsync(
+        Guid teamId, Guid truppId, bool enabled, CancellationToken cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }

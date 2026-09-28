@@ -1968,6 +1968,22 @@ a.match-card:focus-visible .match-card__opponent {
   border-color: var(--danger);
 }
 
+/* Kryssrute-fält (t.ex. lagets kallelse-växel): etiketten läser som en mening bredvid rutan,
+   inte som en versal fält-caption. */
+.form__field--checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--text-base);
+  color: var(--text);
+}
+
+.form__field--checkbox .admin-muted {
+  margin: 0;
+}
+
 /*
  * Felmeddelandet är text och inte bara en röd ram. Den som inte skiljer färger ska få
  * veta vad som är fel, inte bara att något är det (WCAG 1.4.1 och 3.3.1).

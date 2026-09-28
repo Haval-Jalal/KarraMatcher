@@ -32,7 +32,8 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
 {
     private static WebApplicationFactoryClientOptions ClientOptions => new() { HandleCookies = true };
 
-    private sealed record Fixture(string Slug, Guid MatchId, Guid AdminId, Guid CoachId);
+    private sealed record Fixture(
+        string Slug, Guid TruppId, Guid TeamId, Guid MatchId, Guid AdminId, Guid CoachId);
 
     private async Task<Fixture> SeedAsync(string suffix, bool enabled = false)
     {
@@ -92,7 +93,7 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
 
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return new Fixture(team.Slug, match.Id, admin.Id, coach.Id);
+        return new Fixture(team.Slug, ageGroup.Id, team.Id, match.Id, admin.Id, coach.Id);
     }
 
     private string TokenFor(Guid accountId, bool isAdmin = false, params string[] coachOf)
@@ -101,6 +102,17 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
         var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
 
         return issuer.Issue(accountId, "konto@example.com", new AccountRoles(isAdmin, [], coachOf)).Token;
+    }
+
+    /// <summary>En trupp-admin (anspråket <c>admin-trupp</c>), inte superadmin.</summary>
+    private string AdminTokenFor(Guid accountId, Guid truppId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var issuer = scope.ServiceProvider.GetRequiredService<IAccessTokenIssuer>();
+
+        return issuer
+            .Issue(accountId, "konto@example.com", new AccountRoles(false, [truppId.ToString()], []))
+            .Token;
     }
 
     private static async Task<(string Token, string Cookie)> GetCsrfAsync(
@@ -131,14 +143,15 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
         return await client.GetAsync(path, CancellationToken.None);
     }
 
-    private async Task<HttpResponseMessage> SetFlagAsync(string slug, bool enabled, string token)
+    private async Task<HttpResponseMessage> SetFlagAsync(
+        Guid truppId, Guid teamId, bool enabled, string token)
     {
         using var client = factory.CreateClient(ClientOptions);
         var (csrf, cookie) = await GetCsrfAsync(client, token);
 
         var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"/api/v1/admin/teams/{slug}/attendance")
+            $"/api/v1/admin/trupper/{truppId}/lag/{teamId}/attendance")
         {
             Content = JsonContent.Create(new { enabled }),
         };
@@ -228,7 +241,7 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
         using var client = factory.CreateClient();
 
         var response = await client.PutAsJsonAsync(
-            $"/api/v1/admin/teams/{fixture.Slug}/attendance",
+            $"/api/v1/admin/trupper/{fixture.TruppId}/lag/{fixture.TeamId}/attendance",
             new { enabled = true },
             CancellationToken.None);
 
@@ -246,7 +259,8 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
         var fixture = await SeedAsync("tranare");
 
         var response = await SetFlagAsync(
-            fixture.Slug,
+            fixture.TruppId,
+            fixture.TeamId,
             enabled: true,
             TokenFor(fixture.CoachId, isAdmin: false, fixture.Slug));
 
@@ -254,17 +268,32 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
-    public async Task Flaggan_SomAdmin_SlarPaOchAv()
+    public async Task Flaggan_SomAdminForAnnanTrupp_Nekas()
+    {
+        // IDOR: en admin för en annan trupp får inte slå på kallelsen för det här lagets.
+        var fixture = await SeedAsync("fel-trupp");
+
+        var response = await SetFlagAsync(
+            fixture.TruppId,
+            fixture.TeamId,
+            enabled: true,
+            AdminTokenFor(fixture.AdminId, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Flaggan_SomTruppAdmin_SlarPaOchAv()
     {
         var fixture = await SeedAsync("admin");
-        var token = TokenFor(fixture.AdminId, isAdmin: true);
+        var token = AdminTokenFor(fixture.AdminId, fixture.TruppId);
 
-        var enable = await SetFlagAsync(fixture.Slug, enabled: true, token);
+        var enable = await SetFlagAsync(fixture.TruppId, fixture.TeamId, enabled: true, token);
 
         Assert.Equal(HttpStatusCode.NoContent, enable.StatusCode);
         Assert.True(await FlagAsync(fixture.Slug));
 
-        var disable = await SetFlagAsync(fixture.Slug, enabled: false, token);
+        var disable = await SetFlagAsync(fixture.TruppId, fixture.TeamId, enabled: false, token);
 
         Assert.Equal(HttpStatusCode.NoContent, disable.StatusCode);
         Assert.False(await FlagAsync(fixture.Slug));
@@ -275,10 +304,12 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
     {
         var fixture = await SeedAsync("okant");
 
+        // Ett giltigt trupp-id (adminen äger truppen) men ett lag-id som inte finns i den.
         var response = await SetFlagAsync(
-            "finns-inte",
+            fixture.TruppId,
+            Guid.NewGuid(),
             enabled: true,
-            TokenFor(fixture.AdminId, isAdmin: true));
+            AdminTokenFor(fixture.AdminId, fixture.TruppId));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -289,7 +320,11 @@ public sealed class AttendanceFlagTests(KarraMatcherApiFactory factory)
         // §KM.10: att sla pa kallelsen ska ga att harleda i efterhand -- vem, vilket lag, nar.
         var fixture = await SeedAsync("audit");
 
-        await SetFlagAsync(fixture.Slug, enabled: true, TokenFor(fixture.AdminId, isAdmin: true));
+        await SetFlagAsync(
+            fixture.TruppId,
+            fixture.TeamId,
+            enabled: true,
+            AdminTokenFor(fixture.AdminId, fixture.TruppId));
 
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();

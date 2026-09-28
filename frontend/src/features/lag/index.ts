@@ -1,1 +1,1 @@
-export { useCreateLag, useUpdateLag } from './useLag'
+export { useCreateLag, useSetLagAttendance, useUpdateLag } from './useLag'

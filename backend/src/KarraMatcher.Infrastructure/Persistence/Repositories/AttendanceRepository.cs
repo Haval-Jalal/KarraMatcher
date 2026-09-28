@@ -30,15 +30,14 @@ internal sealed class AttendanceRepository(KarraMatcherDbContext context) : IAtt
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<Guid?> SetEnabledAsync(
-        string slug,
+    public async Task<string?> SetEnabledAsync(
+        Guid teamId,
+        Guid truppId,
         bool enabled,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(slug);
-
         var team = await context.Teams
-            .FirstOrDefaultAsync(t => t.Slug == slug, cancellationToken)
+            .FirstOrDefaultAsync(t => t.Id == teamId && t.AgeGroupId == truppId, cancellationToken)
             .ConfigureAwait(false);
 
         if (team is null)
@@ -48,7 +47,7 @@ internal sealed class AttendanceRepository(KarraMatcherDbContext context) : IAtt
 
         team.AttendanceEnabled = enabled;
 
-        return team.Id;
+        return team.Slug;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
