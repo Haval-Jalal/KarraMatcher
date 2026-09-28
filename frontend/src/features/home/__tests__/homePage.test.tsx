@@ -11,9 +11,9 @@ import type { HomeSummary } from '../homeApi'
  * Hem-vyn ("allt samlat").
  *
  * <para>
- * Den ska visa det som är på gång — nästa händelse, kallelser som väntar på svar, senaste i
- * chatten — och lagen som väg in i schemat. Alla tomlägen hanteras, och tiderna kommer ur den
- * enda tidszons-omvandlingen (§KM.5).
+ * Den ska visa det som är på gång — nästa händelse och kallelser som väntar på svar — och lagen
+ * som väg in i schemat. "Senaste i chatten" utgick i `#redesign` (chatten når man via egen flik).
+ * Alla tomlägen hanteras, och tiderna kommer ur den enda tidszons-omvandlingen (§KM.5).
  * </para>
  */
 
@@ -49,7 +49,7 @@ afterEach(() => {
 })
 
 describe('hem-vyn visar det som är på gång', () => {
-  it('visar nästa händelse, obesvarad kallelse och senaste i chatten', async () => {
+  it('visar nästa händelse och obesvarad kallelse', async () => {
     stub({
       nextEvent: {
         id: 'e1',
@@ -74,14 +74,7 @@ describe('hem-vyn visar det som är på gång', () => {
           unansweredCount: 2,
         },
       ],
-      latestChat: {
-        truppId: 't1',
-        teamSlug: null,
-        channelName: 'P2016 chatt',
-        authorName: 'Anna Andersson',
-        snippet: 'Vi ses imorgon!',
-        sentAtUtc: '2026-09-19T18:00:00Z',
-      },
+      latestChat: null,
     })
 
     renderRoute('/')
@@ -100,11 +93,8 @@ describe('hem-vyn visar det som är på gång', () => {
     const pendingSection = screen.getByRole('region', { name: 'Väntar på ditt svar' })
     expect(within(pendingSection).getByText(/2 barn har inte svarat/)).toBeInTheDocument()
 
-    // Senaste i chatten.
-    const chatSection = screen.getByRole('region', { name: 'Senaste i chatten' })
-    expect(within(chatSection).getByText('Vi ses imorgon!')).toBeInTheDocument()
-    expect(within(chatSection).getByText(/P2016 chatt/)).toBeInTheDocument()
-    expect(within(chatSection).getByText('Anna Andersson')).toBeInTheDocument()
+    // "Senaste i chatten" är borttagen (`#redesign`) — chatten når man via egen flik.
+    expect(screen.queryByRole('region', { name: 'Senaste i chatten' })).not.toBeInTheDocument()
   })
 
   it('visar tomlägen och lagen som väg in i schemat när det inte finns något på gång', async () => {
@@ -119,5 +109,44 @@ describe('hem-vyn visar det som är på gång', () => {
     // Lagen finns kvar som väg in i hela schemat.
     expect(screen.getByRole('heading', { name: 'Dina lag' })).toBeInTheDocument()
     expect(await screen.findByRole('link', { name: /Gul/ })).toHaveAttribute('href', '/lag/gul')
+  })
+
+  it('visar inte Truppen-ingången för en förälder utan admin-roll', async () => {
+    stub({ nextEvent: null, pendingKallelser: [], latestChat: null })
+
+    renderRoute('/')
+
+    await screen.findByRole('heading', { name: 'Dina lag' })
+    expect(screen.queryByRole('heading', { name: 'Truppen' })).not.toBeInTheDocument()
+  })
+
+  it('visar Truppen-ingången för en trupp-admin, länkad till truppsidan', async () => {
+    // Rollen ligger i token-anspråket `admin-trupp` (`#193`). Kortet är rollstyrt i UI:t; servern
+    // (AdminOfTrupp) är den riktiga grinden (§KM.3).
+    const adminToken = `x.${btoa(JSON.stringify({ email: 'tranare@example.com', 'admin-trupp': 't1' }))}.y`
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh')) {
+          return Promise.resolve(jsonResponse({ accessToken: adminToken }))
+        }
+        if (url.includes('/api/v1/hem')) {
+          return Promise.resolve(
+            jsonResponse({ nextEvent: null, pendingKallelser: [], latestChat: null }),
+          )
+        }
+
+        return Promise.resolve(jsonResponse(teams))
+      }),
+    )
+    setAccessToken(adminToken)
+
+    renderRoute('/')
+
+    const truppLink = await screen.findByRole('link', { name: /Hela truppen/ })
+    expect(truppLink).toHaveAttribute('href', '/trupp/t1')
   })
 })
