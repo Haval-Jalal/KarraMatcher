@@ -2022,6 +2022,7 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .chat-msg__body {
+  position: relative; /* Ankare för långtryck-menyn. */
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -2037,6 +2038,9 @@ a.match-card:focus-visible .match-card__opponent {
   border: 1px solid var(--border);
   border-radius: 4px 14px 14px 14px;
   box-shadow: var(--shadow-soft);
+
+  /* Stäng iOS-callouten vid långtryck — gesten öppnar vår egen meny i stället. */
+  -webkit-touch-callout: none;
 }
 
 .chat-msg__who {
@@ -2054,13 +2058,113 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .chat-msg__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
 
-.chat-msg__actions {
-  margin-top: 2px;
+/* ⋯-knappen: öppnar val-menyn för mus/tangentbord (långtryck är touch-genvägen). */
+.chat-msg__more {
+  margin-left: auto;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-msg__more:hover {
+  background: var(--sunk);
+  color: var(--text-strong);
+}
+
+.chat-msg__more:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- Meddelandets val-meny (långtryck / ⋯, `#redesign`) ------------------- */
+
+/* Osynlig heltäckande yta som fångar klick utanför menyn. */
+.msg-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.msg-menu {
+  position: absolute;
+  z-index: 21;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  margin-top: 4px;
+  padding: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.msg-menu__emojis {
+  display: flex;
+  gap: 2px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.msg-menu__emoji {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+
+.msg-menu__emoji:hover {
+  background: var(--sunk);
+}
+
+.msg-menu__item {
+  display: block;
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.msg-menu__item:hover {
+  background: var(--sunk);
+}
+
+.msg-menu__item--danger {
+  color: var(--danger);
+}
+
+.msg-menu__emoji:focus-visible,
+.msg-menu__item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -2px;
 }
 
 /*

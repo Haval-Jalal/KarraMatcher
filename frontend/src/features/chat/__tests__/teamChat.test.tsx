@@ -128,6 +128,7 @@ describe('lag-chatt', () => {
     renderRoute('/lag/gul/chatt')
 
     const row = (await screen.findByText('Vem tar med bollar?')).closest('li') as HTMLElement
+    await user.click(within(row).getByRole('button', { name: 'Fler val' }))
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
     await user.type(within(row).getByLabelText(/Varför anmäler/), 'Fel kanal')
     await user.click(within(row).getByRole('button', { name: 'Skicka anmälan' }))
