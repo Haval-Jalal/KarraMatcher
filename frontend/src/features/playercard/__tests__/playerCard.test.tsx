@@ -86,7 +86,8 @@ describe('totalerna', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Elias' })
 
-    expect(screen.getByText('Poäng').nextSibling).toHaveTextContent('3')
+    // Samlarkortets stat-ruta: siffran (<b>) står före etiketten.
+    expect(screen.getByText('Poäng').previousSibling).toHaveTextContent('3')
   })
 })
 

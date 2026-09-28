@@ -3434,3 +3434,91 @@ select.input {
 .next-match:active {
   transform: scale(0.985);
 }
+
+/* ---- Samlarkort: spelarkortets barnsida (#redesign, steg 4b) -------------- */
+.pcard {
+  --pc-accent: var(--accent);
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  margin: 12px 0 20px;
+}
+.pcard__top {
+  position: relative;
+  padding: 18px 18px 16px;
+  background:
+    radial-gradient(
+      150px 120px at 88% -12%,
+      color-mix(in srgb, var(--pc-accent) 55%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--pc-accent) 24%, var(--surface-raised)),
+      var(--surface-raised) 72%
+    );
+}
+.pcard__num {
+  position: absolute;
+  top: 2px;
+  right: 14px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 78px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: color-mix(in srgb, var(--pc-accent) 42%, transparent);
+  pointer-events: none;
+}
+.pcard__eyebrow {
+  margin: 0;
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--pc-accent) 35%, var(--text-muted));
+}
+.pcard__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 2.3rem;
+  line-height: 1;
+  margin: 4px 0 3px;
+  color: var(--text-strong);
+}
+.pcard__meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.pcard__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border);
+}
+.pcard__stat {
+  text-align: center;
+  padding: 13px 4px;
+  border-right: 1px solid var(--border);
+}
+.pcard__stat:last-child {
+  border-right: none;
+}
+.pcard__stat b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.pcard__stat span {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
