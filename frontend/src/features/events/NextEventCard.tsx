@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 
 import { formatKickoffTime, formatMatchDate, relativeDayLabel } from '@/lib/time'
 
+import { venueLine } from './shortAddress'
 import { eventTypeLabel, type TeamEvent } from './types'
 
 /**
@@ -42,10 +43,7 @@ export function NextEventCard({ event, now }: { event: TeamEvent; now?: Date | s
         )}
       </p>
 
-      <p className="next-match__venue">
-        {event.venue.name}
-        {event.address ? `, ${event.address}` : ''}
-      </p>
+      <p className="next-match__venue">{venueLine(event.venue.name, event.address)}</p>
 
       <p className="next-match__more">
         <Link to="/handelse/$id" params={{ id: event.id }}>

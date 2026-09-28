@@ -974,9 +974,16 @@ a.match-card:focus-visible .match-card__opponent {
  */
 .totals {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  /* 2×2 på en telefon — fyra i bredd blir för trångt och etiketterna radbryts. */
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin: 12px 0 20px;
+}
+
+@media (min-width: 30rem) {
+  .totals {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .totals__item {
@@ -1120,7 +1127,7 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .badge--earned {
-  border-color: var(--team-accent);
+  border-color: var(--accent);
   border-width: 2px;
 
   /* Kompenserar den tjockare ramen sa att raderna inte hoppar. */
@@ -3397,4 +3404,33 @@ select.input {
 }
 .button--action:hover {
   filter: brightness(1.06);
+}
+
+/* ---- Sidövergång + tryck-återkoppling (#redesign, steg 3) ----------------- */
+.page-enter {
+  animation: page-enter 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Länk-kort svarar på tryck — en liten intryckning. */
+.match-card,
+.child-card,
+.cup-card,
+.next-match {
+  transition: transform 0.12s ease;
+}
+.match-card:active,
+.child-card:active,
+.cup-card:active,
+.next-match:active {
+  transform: scale(0.985);
 }
