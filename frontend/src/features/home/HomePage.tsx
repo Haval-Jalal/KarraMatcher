@@ -88,6 +88,22 @@ export function HomePage() {
             )}
           </section>
 
+          {/*
+            Statistik-rutorna från designriktningen (`#redesign`). Bara riktiga siffror: antal
+            obesvarade kallelser (0 = allt besvarat) och antal lag man är med i. Artefaktens
+            "Nya i chatten"-ruta utelämnas medvetet — API:t har ingen olästa-räknare (§KM.2).
+          */}
+          <div className="hem-tiles">
+            <div className="hem-tile">
+              <span className="hem-tile__n">{pending.length}</span>
+              <span className="hem-tile__l">Obesvarade kallelser</span>
+            </div>
+            <div className="hem-tile">
+              <span className="hem-tile__n">{teams.data?.length ?? '—'}</span>
+              <span className="hem-tile__l">Dina lag</span>
+            </div>
+          </div>
+
           {pending.length > 0 && (
             <section className="hem-section" aria-labelledby="hem-kallelser">
               <h2 id="hem-kallelser" className="hem-section__label">

@@ -517,6 +517,38 @@ h2 {
   margin: 0 0 10px;
 }
 
+/* Statistik-rutorna (`#redesign`, artefakten): två snabba siffror under hjältekortet. */
+.hem-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hem-tile {
+  padding: 13px 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.hem-tile__n {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  color: var(--text-strong);
+}
+
+.hem-tile__l {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 /*
  * Hjältekortet: den enda information de flesta öppnar appen för. En mjuk accent-glöd i hörnet
  * lyfter det över de vanliga korten utan att skrika. Glöden är dekor — texten bär kontrasten
