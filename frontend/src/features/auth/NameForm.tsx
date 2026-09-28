@@ -125,7 +125,7 @@ export function NameForm({
       )}
 
       <div className="actions">
-        <button type="submit" className="button" disabled={isSubmitting}>
+        <button type="submit" className="button button--action" disabled={isSubmitting}>
           {isSubmitting ? 'Sparar…' : submitLabel}
         </button>
 

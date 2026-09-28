@@ -302,7 +302,7 @@ export function ChatChannel({
         )}
 
         <div className="actions">
-          <button type="submit" className="button" disabled={post.isPending}>
+          <button type="submit" className="button button--action" disabled={post.isPending}>
             {scheduling ? 'Schemalägg' : 'Skicka'}
           </button>
         </div>
