@@ -35,6 +35,18 @@ export interface ChildInput {
   teamId: string | null
 }
 
+/**
+ * Ett lags läsvy för dess tränare (`#redesign`). Bara det egna laget och dess barn — servern
+ * (policyn `CoachOfTeam`) är grinden, och svaret filtreras till laget (§KM.3).
+ */
+export interface TeamRoster {
+  team: RosterTeam
+  children: Child[]
+}
+
+export const getTeamRoster = (slug: string): Promise<TeamRoster> =>
+  getJson<TeamRoster>(`/api/v1/teams/${encodeURIComponent(slug)}/roster`)
+
 const base = (truppId: string) => `/api/v1/admin/trupper/${truppId}/children`
 
 export const getRoster = (truppId: string): Promise<Roster> => getJson<Roster>(base(truppId))

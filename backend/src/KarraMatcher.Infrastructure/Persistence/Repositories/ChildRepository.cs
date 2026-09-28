@@ -29,6 +29,10 @@ internal sealed class ChildRepository(KarraMatcherDbContext context) : IChildRep
         context.Teams.AsNoTracking()
             .AnyAsync(t => t.Id == teamId && t.AgeGroupId == ageGroupId, cancellationToken);
 
+    public Task<Team?> FindTeamBySlugAsync(string slug, CancellationToken cancellationToken) =>
+        context.Teams.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Slug == slug, cancellationToken);
+
     public async Task<IReadOnlyList<Team>> GetTeamsForTruppAsync(
         Guid ageGroupId, CancellationToken cancellationToken) =>
         await context.Teams.AsNoTracking()

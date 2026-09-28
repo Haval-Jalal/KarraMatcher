@@ -28,6 +28,10 @@ public interface IChildRepository
         Guid teamId, Guid ageGroupId, CancellationToken cancellationToken);
 
     // ---- Överblick -------------------------------------------------------------------
+
+    /// <summary>Laget med den slugen, eller null. Bär <c>AgeGroupId</c> för lagtränarens vy.</summary>
+    public Task<Team?> FindTeamBySlugAsync(string slug, CancellationToken cancellationToken);
+
     public Task<IReadOnlyList<Team>> GetTeamsForTruppAsync(
         Guid ageGroupId, CancellationToken cancellationToken);
 

@@ -3808,6 +3808,51 @@ a.match-card:focus-visible .match-card__opponent {
   max-width: 240px;
 }
 
+/* Lagtränarens läsvy av laget (`#redesign`): barn med vårdnadshavarnas kontakt. */
+.roster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.roster-list__item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.roster-list__name {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.roster-list__guardians {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.roster-list__guardians > li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  font-size: var(--text-sm);
+}
+
+.roster-list__guardian-name {
+  color: var(--ink);
+}
+
+.roster-list__guardian-mail {
+  color: var(--ink-soft);
+}
+
 .admin-section {
   padding: 16px;
   border: 1px solid var(--border);
