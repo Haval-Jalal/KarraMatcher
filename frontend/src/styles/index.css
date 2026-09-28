@@ -1835,7 +1835,12 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text-muted);
 }
 
-.form__field input {
+/*
+ * Text-, tal-, datum- och tidsfält. Radio och kryssruta undantas med flit: de är inte textfält
+ * och ska inte bära fältets ram, radie eller 48px-höjd — utan undantaget ritas de som stora
+ * ovaler/rutor (buggen som gjorde skapa-formuläret plottrigt). De får egen stil längre ned.
+ */
+.form__field input:not([type='radio']):not([type='checkbox']) {
   font: inherit;
   color: var(--text-strong);
   background: var(--surface);
@@ -3433,13 +3438,37 @@ input[type='checkbox']:disabled {
 }
 
 /* En radio/checkbox som sitter i en label-rad: mellanrum, pekare, centrering. */
+/*
+ * Val-rader (radio/kryssruta). Etiketten är ett `label` inuti `.form__field`, så den ärvde
+ * fältrubrikens VERSALER och dämpade färg — fel för ett alternativ man ska läsa som en mening.
+ * Här återställs de till brödtext, och hela raden blir en träffyta på 44px (WCAG 2.5.5).
+ */
+.form__field .form__radio,
+.form__field .form__checkbox,
 .form__radio,
 .form__checkbox {
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  padding: 3px 0;
+  min-height: 44px;
+  padding: 4px 0;
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-strong);
+}
+
+/* Kontrollen ritas med appens accent, i en lagom storlek — inte som ett textfält. */
+.form__radio input[type='radio'],
+.form__checkbox input[type='checkbox'] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 /* ---- Rena fieldsets ------------------------------------------------------- */
