@@ -96,6 +96,7 @@ internal sealed class UpdateLagCommandValidator : AbstractValidator<UpdateLagCom
 {
     public UpdateLagCommandValidator()
     {
+        RuleFor(c => c.TruppId).NotEmpty();
         RuleFor(c => c.Id).NotEmpty();
         RuleFor(c => c.Name).NotEmpty().WithMessage("Fyll i lagets namn.").MaximumLength(50);
         RuleFor(c => c.ColorHex).NotEmpty().MaximumLength(7)

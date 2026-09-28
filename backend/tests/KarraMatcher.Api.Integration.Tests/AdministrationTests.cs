@@ -216,6 +216,65 @@ public sealed class AdministrationTests(KarraMatcherApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Lag_Andras_AvTruppensAdmin_OchAuditloggas()
+    {
+        var truppId = await CreateTruppAsync("lag-andra");
+        var adminRoles = new AccountRoles(false, [truppId.ToString()], []);
+
+        var created = await SendWithRolesAsync(
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppId}/lag", adminRoles, "admin@test",
+            new { name = "Blå", colorHex = "#1B5FD9", slug = "bla-andra" });
+        created.EnsureSuccessStatusCode();
+        var lagId = (await created.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .GetProperty("id").GetGuid();
+
+        var update = await SendWithRolesAsync(
+            HttpMethod.Put, $"/api/v1/admin/trupper/{truppId}/lag/{lagId}", adminRoles, "admin@test",
+            new { name = "Marinblå", colorHex = "#0A2A66" });
+
+        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+        await AssertAuditedAsync(AuditActions.LagUpdated, lagId);
+
+        var list = await SendWithRolesAsync(
+            HttpMethod.Get, $"/api/v1/admin/trupper/{truppId}/lag", adminRoles, "admin@test");
+        var only = (await list.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .EnumerateArray().Single();
+        Assert.Equal("Marinblå", only.GetProperty("name").GetString());
+        Assert.Equal("#0A2A66", only.GetProperty("colorHex").GetString());
+    }
+
+    [Fact]
+    public async Task Lag_AndrasViaAnnanTrupp_Ger404_OchLamnarLagetOrort()
+    {
+        // IDOR-vakt: en admin för trupp B får inte ändra trupp A:s lag genom att gissa dess id
+        // och rikta anropet mot sin egen trupps adress. Tjänsten kräver att laget hör till truppen
+        // i adressen — annars 404 (vi bekräftar inte ens att id:t finns för fel admin).
+        var truppA = await CreateTruppAsync("lag-idor-a");
+        var adminA = new AccountRoles(false, [truppA.ToString()], []);
+        var created = await SendWithRolesAsync(
+            HttpMethod.Post, $"/api/v1/admin/trupper/{truppA}/lag", adminA, "a@test",
+            new { name = "Gul", colorHex = "#D9A21B", slug = "gul-idor" });
+        created.EnsureSuccessStatusCode();
+        var lagId = (await created.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .GetProperty("id").GetGuid();
+
+        var truppB = await CreateTruppAsync("lag-idor-b");
+        var adminB = new AccountRoles(false, [truppB.ToString()], []);
+
+        var attempt = await SendWithRolesAsync(
+            HttpMethod.Put, $"/api/v1/admin/trupper/{truppB}/lag/{lagId}", adminB, "b@test",
+            new { name = "Kapad", colorHex = "#000000" });
+
+        Assert.Equal(HttpStatusCode.NotFound, attempt.StatusCode);
+
+        var list = await SendWithRolesAsync(
+            HttpMethod.Get, $"/api/v1/admin/trupper/{truppA}/lag", adminA, "a@test");
+        var only = (await list.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .EnumerateArray().Single();
+        Assert.Equal("Gul", only.GetProperty("name").GetString());
+    }
+
     // ---- Admin-tilldelning -----------------------------------------------------------
 
     [Fact]

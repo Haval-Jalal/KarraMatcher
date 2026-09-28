@@ -61,6 +61,7 @@ public sealed class LagAdminService(IAdministrationRepository repository, IAudit
     }
 
     public async Task<AdminResult<LagDto>> UpdateAsync(
+        Guid truppId,
         Guid id,
         string name,
         string colorHex,
@@ -75,7 +76,10 @@ public sealed class LagAdminService(IAdministrationRepository repository, IAudit
 
         var lag = await repository.FindLagAsync(id, cancellationToken).ConfigureAwait(false);
 
-        if (lag is null)
+        // Laget måste höra till truppen i adressen. Annars kunde en admin för trupp A ändra ett
+        // lag i trupp B genom att gissa dess id (IDOR). Ett lag i en annan trupp behandlas som
+        // "finns inte" — vi bekräftar inte ens att id:t existerar för fel admin.
+        if (lag is null || lag.AgeGroupId != truppId)
         {
             return AdminResults.NotFound<LagDto>();
         }

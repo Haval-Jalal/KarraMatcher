@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
-import { useCreateLag } from '@/features/lag'
+import { useCreateLag, useUpdateLag } from '@/features/lag'
 import { ApiError } from '@/lib/api'
 import { slugify } from '@/lib/slugify'
 
@@ -103,6 +103,7 @@ export function BarnOchLag({ truppId }: { truppId: string }) {
 
       {view.kind === 'team' && (
         <TeamChildren
+          truppId={truppId}
           team={teams.find((team) => team.id === view.teamId) ?? null}
           children={children.filter((child) => child.teamId === view.teamId)}
           onBack={() => setView({ kind: 'lag' })}
@@ -326,25 +327,46 @@ function AddLag({ truppId }: { truppId: string }) {
 }
 
 function TeamChildren({
+  truppId,
   team,
   children,
   onBack,
   onOpenChild,
 }: {
+  truppId: string
   team: RosterTeam | null
   children: Child[]
   onBack: () => void
   onOpenChild: (childId: string) => void
 }) {
+  const [editing, setEditing] = useState(false)
+
   return (
     <div>
       <button type="button" className="drill-back" onClick={onBack}>
         ‹ Alla lag
       </button>
 
-      <h3 className="drill-title">
-        <TeamTag team={team} />
-      </h3>
+      <div className="drill-title-row">
+        <h3 className="drill-title">
+          <TeamTag team={team} />
+        </h3>
+        {team !== null && (
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={`Ändra ${team.name}`}
+            aria-expanded={editing}
+            onClick={() => setEditing((open) => !open)}
+          >
+            <span aria-hidden="true">⚙️</span>
+          </button>
+        )}
+      </div>
+
+      {editing && team !== null && (
+        <EditLag truppId={truppId} team={team} onDone={() => setEditing(false)} />
+      )}
 
       <ul className="drill-list">
         {children.length === 0 && <li className="state">Inga barn i det här laget än.</li>}
@@ -364,6 +386,105 @@ function TeamChildren({
         ))}
       </ul>
     </div>
+  )
+}
+
+/**
+ * Kugghjulets redigering av ett lag (`#redesign`): namn och färg. Slugen ändras aldrig — den
+ * lever i delade länkar. Servern verifierar att laget hör till truppen (IDOR-vakt, §KM.3).
+ */
+function EditLag({
+  truppId,
+  team,
+  onDone,
+}: {
+  truppId: string
+  team: RosterTeam
+  onDone: () => void
+}) {
+  const update = useUpdateLag(truppId)
+  const client = useQueryClient()
+  const [name, setName] = useState(team.name)
+  const [colorHex, setColorHex] = useState(team.colorHex)
+  const [failure, setFailure] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  function save(): void {
+    setFailure(null)
+    setSuccess(null)
+    const trimmed = name.trim()
+    void update
+      .mutateAsync({ id: team.id, name: trimmed, colorHex })
+      .then(() => {
+        // Rostern bär lagen som Lag-vyn visar — uppdatera den så namn/färg slår igenom direkt.
+        void client.invalidateQueries({ queryKey: childrenKeys.roster(truppId) })
+        setSuccess('Laget uppdaterades.')
+      })
+      .catch((error: unknown) => setFailure(messageOf(error)))
+  }
+
+  return (
+    <form
+      className="form"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (name.trim() !== '') {
+          save()
+        }
+      }}
+    >
+      <div className="form__field">
+        <label htmlFor={`lag-namn-${team.id}`}>Lagets namn</label>
+        <input
+          id={`lag-namn-${team.id}`}
+          type="text"
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value)
+            setSuccess(null)
+          }}
+        />
+      </div>
+
+      <div className="form__field">
+        <label htmlFor={`lag-farg-${team.id}`}>Färg</label>
+        <input
+          id={`lag-farg-${team.id}`}
+          type="color"
+          value={colorHex}
+          onChange={(event) => {
+            setColorHex(event.target.value)
+            setSuccess(null)
+          }}
+        />
+      </div>
+
+      {success !== null && (
+        <p className="form__success" role="status">
+          {success}
+        </p>
+      )}
+
+      {failure !== null && (
+        <p className="state state--error" role="alert">
+          {failure}
+        </p>
+      )}
+
+      <div className="actions">
+        <button
+          type="submit"
+          className="button button--action"
+          disabled={name.trim() === '' || update.isPending}
+        >
+          {update.isPending ? 'Sparar…' : 'Spara'}
+        </button>
+        <button type="button" className="button" onClick={onDone}>
+          Stäng
+        </button>
+      </div>
+    </form>
   )
 }
 
