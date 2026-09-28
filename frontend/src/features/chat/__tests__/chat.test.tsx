@@ -150,6 +150,8 @@ describe('trupp-chatt', () => {
     renderRoute('/chatt/trupp-1')
 
     const row = (await screen.findByText('Hej alla')).closest('li') as HTMLElement
+    // Valen ligger bakom långtryck/⋯-menyn nu.
+    await user.click(within(row).getByRole('button', { name: 'Fler val' }))
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
 
     // Motivering är obligatorisk: skicka-knappen är avstängd tills något skrivits.
@@ -356,9 +358,10 @@ describe('reaktioner (#301)', () => {
     // Den befintliga reaktionen visas som en chip med antal.
     expect(await screen.findByRole('button', { name: 'Tumme upp, 2' })).toBeInTheDocument()
 
-    // Öppna väljaren och reagera med hjärta → POST till reaktions-endpointen.
-    await user.click(screen.getByRole('button', { name: 'Lägg till en reaktion' }))
-    await user.click(screen.getByRole('button', { name: 'Hjärta' }))
+    // Öppna meddelandets meny och reagera med hjärta → POST till reaktions-endpointen.
+    const row = (await screen.findByText('Hej alla')).closest('li') as HTMLElement
+    await user.click(within(row).getByRole('button', { name: 'Fler val' }))
+    await user.click(within(row).getByRole('button', { name: 'Hjärta' }))
 
     await waitFor(() => {
       expect(

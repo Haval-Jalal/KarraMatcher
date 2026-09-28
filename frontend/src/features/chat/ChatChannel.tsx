@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate } from '@/lib/time'
 
 import type { ChatChannel as Channel, ChatMessage } from './chatApi'
+import { MessageMenu } from './MessageMenu'
 import { MessageReactions } from './MessageReactions'
 import {
   useCancelScheduled,
@@ -83,6 +84,26 @@ export function ChatChannel({
   const [reportingId, setReportingId] = useState<string | null>(null)
   const [reportText, setReportText] = useState('')
   const [reportedId, setReportedId] = useState<string | null>(null)
+
+  // Vilket meddelandes val-meny som är öppen, och en timer för långtryck (touch-genväg).
+  const [menuFor, setMenuFor] = useState<string | null>(null)
+  const pressTimer = useRef<number | null>(null)
+
+  function clearPress(): void {
+    if (pressTimer.current !== null) {
+      window.clearTimeout(pressTimer.current)
+      pressTimer.current = null
+    }
+  }
+
+  function startPress(event: React.PointerEvent, messageId: string): void {
+    // Långtryck är bara touch-genvägen; mus och tangentbord använder ⋯-knappen.
+    if (event.pointerType === 'mouse') {
+      return
+    }
+
+    pressTimer.current = window.setTimeout(() => setMenuFor(messageId), 500)
+  }
 
   const run = (action: Promise<unknown>) => {
     setFailure(null)
@@ -176,7 +197,15 @@ export function ChatChannel({
                 {initialOf(message.authorName)}
               </span>
               <div className="chat-msg__body">
-                <div className="chat-msg__bubble">
+                <div
+                  className="chat-msg__bubble"
+                  onPointerDown={
+                    message.deleted ? undefined : (event) => startPress(event, message.id)
+                  }
+                  onPointerUp={clearPress}
+                  onPointerLeave={clearPress}
+                  onPointerCancel={clearPress}
+                >
                   <span className="chat-msg__who">{message.authorName ?? 'Okänd'}</span>
                   {message.deleted ? (
                     <em className="chat-msg__text admin-muted">[borttaget]</em>
@@ -186,28 +215,32 @@ export function ChatChannel({
                 </div>
                 <p className="chat-msg__meta">
                   <time dateTime={message.publishedUtc}>{whenText(message.publishedUtc)}</time>
-                </p>
-                {!message.deleted && (
-                  <span className="actions chat-msg__actions">
+                  {!message.deleted && (
                     <button
                       type="button"
-                      className="button button--small"
-                      aria-expanded={reportingId === message.id}
-                      onClick={() => openReport(message.id)}
+                      className="chat-msg__more"
+                      aria-haspopup="true"
+                      aria-expanded={menuFor === message.id}
+                      aria-label="Fler val"
+                      onClick={() =>
+                        setMenuFor((current) => (current === message.id ? null : message.id))
+                      }
                     >
-                      Anmäl
+                      <span aria-hidden="true">⋯</span>
                     </button>
-                    {canDelete(message) && (
-                      <button
-                        type="button"
-                        className="button button--small"
-                        disabled={remove.isPending}
-                        onClick={() => run(remove.mutateAsync(message.id))}
-                      >
-                        Ta bort
-                      </button>
-                    )}
-                  </span>
+                  )}
+                </p>
+
+                {menuFor === message.id && !message.deleted && (
+                  <MessageMenu
+                    message={message}
+                    channel={channel}
+                    canDelete={canDelete(message)}
+                    deleting={remove.isPending}
+                    onReport={() => openReport(message.id)}
+                    onDelete={() => run(remove.mutateAsync(message.id))}
+                    onClose={() => setMenuFor(null)}
+                  />
                 )}
 
                 {reportingId === message.id && (
