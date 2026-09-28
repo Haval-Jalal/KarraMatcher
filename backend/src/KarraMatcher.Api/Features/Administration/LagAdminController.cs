@@ -83,7 +83,8 @@ public sealed class LagAdminController(
 
         var result = await commands
             .SendAsync(
-                new UpdateLagCommand(id, request.Name, request.ColorHex, actor.Value), cancellationToken)
+                new UpdateLagCommand(truppId, id, request.Name, request.ColorHex, actor.Value),
+                cancellationToken)
             .ConfigureAwait(false);
 
         return Respond(result, Ok);

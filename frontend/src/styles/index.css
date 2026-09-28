@@ -3760,6 +3760,41 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 4px 0 12px;
 }
 
+/* Lag-rubriken med kugghjulet bredvid — titeln tar plats, knappen hålls till höger. */
+.drill-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.drill-title-row .drill-title {
+  margin: 4px 0;
+}
+
+/* Rund ikonknapp (kugghjul). Träffytan är minst 40px och fokus är tydligt synligt (WCAG 2.4.7). */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--surface);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
 .child-detail__block {
   padding: 12px 0;
   border-top: 1px solid var(--hair);

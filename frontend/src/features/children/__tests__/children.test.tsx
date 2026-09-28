@@ -164,6 +164,41 @@ describe('Barn & lag', () => {
     expect(await screen.findByText('Röd skapades.')).toBeInTheDocument()
   })
 
+  it('ändrar ett lags namn via kugghjulet (PUT under truppen)', async () => {
+    const sent = stub(adminToken, (url, method) => {
+      if (url.includes('/lag/') && method === 'PUT') {
+        return { id: 't1', truppId: 'trupp-1', name: 'Guld', colorHex: '#D9A21B', slug: 'gul' }
+      }
+      if (url.includes('/children')) return { teams: TEAMS, children: CHILDREN }
+      return []
+    })
+    setAccessToken(adminToken)
+
+    const user = await openTrupp()
+
+    // Lag → Gul → kugghjul → byt namn.
+    await user.click(screen.getByRole('button', { name: 'Lag' }))
+    await user.click(await screen.findByRole('button', { name: /Gul/ }))
+    await user.click(screen.getByRole('button', { name: 'Ändra Gul' }))
+    const nameField = screen.getByLabelText('Lagets namn')
+    await user.clear(nameField)
+    await user.type(nameField, 'Guld')
+    await user.click(screen.getByRole('button', { name: 'Spara' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.url.includes('/api/v1/admin/trupper/trupp-1/lag/t1') &&
+            r.method === 'PUT' &&
+            (r.body as { name: string }).name === 'Guld',
+        ),
+      ).toBe(true)
+    })
+
+    expect(await screen.findByText('Laget uppdaterades.')).toBeInTheDocument()
+  })
+
   it('lägger till ett barn — anropet bär förnamn, initial och lag', async () => {
     const sent = stub(adminToken, (url, method) => {
       if (url.includes('/children') && method === 'POST') {

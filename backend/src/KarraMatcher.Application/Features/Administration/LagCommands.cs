@@ -7,9 +7,13 @@ public sealed record CreateLagCommand(
     Guid TruppId, string Name, string ColorHex, string Slug, Guid ActorAccountId)
     : ICommand<AdminResult<LagDto>>;
 
-/// <summary>Ändrar ett lags namn och färg (slugen är stabil).</summary>
+/// <summary>
+/// Ändrar ett lags namn och färg (slugen är stabil). <c>TruppId</c> bär truppen ur adressen så
+/// tjänsten kan verifiera att laget verkligen hör dit — annars kunde en admin för en trupp ändra
+/// ett lag i en annan (IDOR, §KM.3-objektnivå).
+/// </summary>
 public sealed record UpdateLagCommand(
-    Guid Id, string Name, string ColorHex, Guid ActorAccountId)
+    Guid TruppId, Guid Id, string Name, string ColorHex, Guid ActorAccountId)
     : ICommand<AdminResult<LagDto>>;
 
 internal sealed class CreateLagCommandHandler(LagAdminService service)
@@ -35,6 +39,7 @@ internal sealed class UpdateLagCommandHandler(LagAdminService service)
         ArgumentNullException.ThrowIfNull(command);
 
         return service.UpdateAsync(
-            command.Id, command.Name, command.ColorHex, command.ActorAccountId, cancellationToken);
+            command.TruppId, command.Id, command.Name, command.ColorHex, command.ActorAccountId,
+            cancellationToken);
     }
 }

@@ -24,3 +24,15 @@ export const createLag = (
   colorHex: string,
   slug: string,
 ): Promise<Lag> => postJson<Lag>(`/api/v1/admin/trupper/${truppId}/lag`, { name, colorHex, slug })
+
+/**
+ * Ändrar ett lags namn och färg. Slugen är stabil (lever i delade länkar) och byts inte här.
+ * `truppId` ligger i adressen så servern kan verifiera att laget hör dit (IDOR-vakt, §KM.3).
+ */
+export const updateLag = (
+  truppId: string,
+  id: string,
+  name: string,
+  colorHex: string,
+): Promise<Lag> =>
+  postJson<Lag>(`/api/v1/admin/trupper/${truppId}/lag/${id}`, { name, colorHex }, { method: 'PUT' })
