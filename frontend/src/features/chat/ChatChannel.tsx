@@ -28,6 +28,12 @@ function whenText(iso: string): string {
   return `${formatMatchDate(iso)} ${formatKickoffTime(iso)}`
 }
 
+/** Initialen till avataren. Bara en dekorativ bokstav — namnet står ändå i bubblan. */
+function initialOf(name: string | null): string {
+  const trimmed = name?.trim() ?? ''
+  return trimmed === '' ? '?' : trimmed.charAt(0).toUpperCase()
+}
+
 /**
  * Så många skilda anmälningar ett meddelande behöver innan truppens admin kan radera det
  * (speglar serverns `ChatService.RemovalReportThreshold`, `#263`). En admin tystar inte en
@@ -162,82 +168,91 @@ export function ChatChannel({
               key={message.id}
               className={
                 myAccountId !== null && message.authorAccountId === myAccountId
-                  ? 'admin-list__row chat-msg chat-msg--own'
-                  : 'admin-list__row chat-msg'
+                  ? 'chat-msg chat-msg--own'
+                  : 'chat-msg'
               }
             >
-              <span>
-                <strong>{message.authorName ?? 'Okänd'}</strong>{' '}
-                <span className="admin-muted">{whenText(message.publishedUtc)}</span>
-                <br />
-                {message.deleted ? (
-                  <em className="admin-muted">[borttaget]</em>
-                ) : (
-                  <span>{message.body}</span>
-                )}
+              <span className="chat-msg__avatar" aria-hidden="true">
+                {initialOf(message.authorName)}
               </span>
-              {!message.deleted && (
-                <span className="actions">
-                  <button
-                    type="button"
-                    className="button button--small"
-                    aria-expanded={reportingId === message.id}
-                    onClick={() => openReport(message.id)}
-                  >
-                    Anmäl
-                  </button>
-                  {canDelete(message) && (
-                    <button
-                      type="button"
-                      className="button button--small"
-                      disabled={remove.isPending}
-                      onClick={() => run(remove.mutateAsync(message.id))}
-                    >
-                      Ta bort
-                    </button>
+              <div className="chat-msg__body">
+                <div className="chat-msg__bubble">
+                  <span className="chat-msg__who">{message.authorName ?? 'Okänd'}</span>
+                  {message.deleted ? (
+                    <em className="chat-msg__text admin-muted">[borttaget]</em>
+                  ) : (
+                    <span className="chat-msg__text">{message.body}</span>
                   )}
-                </span>
-              )}
-
-              {reportingId === message.id && (
-                <form className="chat-report" onSubmit={(event) => submitReport(event, message.id)}>
-                  <label htmlFor={`report-${message.id}`}>Varför anmäler du meddelandet?</label>
-                  <textarea
-                    id={`report-${message.id}`}
-                    rows={2}
-                    maxLength={500}
-                    value={reportText}
-                    onChange={(event) => setReportText(event.target.value)}
-                  />
-                  <div className="actions">
-                    <button
-                      type="submit"
-                      className="button button--small"
-                      disabled={report.isPending || reportText.trim() === ''}
-                    >
-                      Skicka anmälan
-                    </button>
+                </div>
+                <p className="chat-msg__meta">
+                  <time dateTime={message.publishedUtc}>{whenText(message.publishedUtc)}</time>
+                </p>
+                {!message.deleted && (
+                  <span className="actions chat-msg__actions">
                     <button
                       type="button"
                       className="button button--small"
-                      onClick={() => {
-                        setReportingId(null)
-                        setReportText('')
-                      }}
+                      aria-expanded={reportingId === message.id}
+                      onClick={() => openReport(message.id)}
                     >
-                      Avbryt
+                      Anmäl
                     </button>
-                  </div>
-                </form>
-              )}
+                    {canDelete(message) && (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={remove.isPending}
+                        onClick={() => run(remove.mutateAsync(message.id))}
+                      >
+                        Ta bort
+                      </button>
+                    )}
+                  </span>
+                )}
 
-              {reportedId === message.id && (
-                <p className="chat-report__done" role="status">
-                  Tack — meddelandet är anmält till truppens admin.
-                </p>
-              )}
+                {reportingId === message.id && (
+                  <form
+                    className="chat-report"
+                    onSubmit={(event) => submitReport(event, message.id)}
+                  >
+                    <label htmlFor={`report-${message.id}`}>Varför anmäler du meddelandet?</label>
+                    <textarea
+                      id={`report-${message.id}`}
+                      rows={2}
+                      maxLength={500}
+                      value={reportText}
+                      onChange={(event) => setReportText(event.target.value)}
+                    />
+                    <div className="actions">
+                      <button
+                        type="submit"
+                        className="button button--small"
+                        disabled={report.isPending || reportText.trim() === ''}
+                      >
+                        Skicka anmälan
+                      </button>
+                      <button
+                        type="button"
+                        className="button button--small"
+                        onClick={() => {
+                          setReportingId(null)
+                          setReportText('')
+                        }}
+                      >
+                        Avbryt
+                      </button>
+                    </div>
+                  </form>
+                )}
 
-              {!message.deleted && <MessageReactions message={message} channel={channel} />}
+                {reportedId === message.id && (
+                  <p className="chat-report__done" role="status">
+                    Tack — meddelandet är anmält till truppens admin.
+                  </p>
+                )}
+
+                {!message.deleted && <MessageReactions message={message} channel={channel} />}
+              </div>
             </li>
           ))}
         </ul>
