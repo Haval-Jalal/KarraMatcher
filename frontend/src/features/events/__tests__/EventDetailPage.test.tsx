@@ -128,6 +128,16 @@ describe('Matchdetaljsidan — tillstånd', () => {
     expect(screen.getByRole('button', { name: 'Försök igen' })).toBeInTheDocument()
   })
 
+  it('säger ärligt vid 403 och erbjuder inget nytt försök (#378/#400)', async () => {
+    // Ett 403 blir aldrig rätt av att försökas igen; knappen hade bara väckt Render i onödan.
+    stubApi({ match: 'forbidden' })
+
+    renderRoute(`/handelse/${MATCH_ID}`)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('inte behörighet')
+    expect(screen.queryByRole('button', { name: /Försök igen/ })).not.toBeInTheDocument()
+  })
+
   it('erbjuder en väg tillbaka även när matchen inte gick att hämta', async () => {
     stubApi({ match: 'notFound' })
 
