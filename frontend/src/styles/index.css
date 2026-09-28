@@ -1876,16 +1876,88 @@ a.match-card:focus-visible .match-card__opponent {
 /* ---- Chatt: meddelanden (#281) -------------------------------------------- */
 
 .chat-messages {
-  gap: 6px;
+  gap: 14px;
 }
 
 /*
- * Egna meddelanden får en varm, nedsänkt ton så ett samtal läses som mitt-mot-andras.
- * Tonen är signalen utöver författarnamnet — inte en färg ensam (WCAG 1.4.1).
+ * Ett meddelande (`#redesign`): en avatar med initialen och en pratbubbla — samma språk som
+ * designriktningen. Vänsterställt för alla, även egna: en spegelvänd layout vinner lite men
+ * kostar i tangentbords-/skärmläsarordning, och samtalet läses ändå tydligt av namn + ton.
  */
-.chat-msg--own {
-  background: var(--sunk);
-  border-color: var(--hair-strong);
+.chat-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.chat-msg__avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--avatar-bg);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--text-base);
+}
+
+.chat-msg__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-msg__bubble {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 9px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 4px 14px 14px 14px;
+  box-shadow: var(--shadow-soft);
+}
+
+.chat-msg__who {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.chat-msg__text {
+  color: var(--text-strong);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-msg__meta {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.chat-msg__actions {
+  margin-top: 2px;
+}
+
+/*
+ * Egna meddelanden får en accent-tonad bubbla och avatar så ett samtal läses som mitt-mot-andras.
+ * Tonen är ett tillägg till författarnamnet — aldrig enda signalen (WCAG 1.4.1).
+ */
+.chat-msg--own .chat-msg__bubble {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.chat-msg--own .chat-msg__avatar {
+  background: color-mix(in srgb, var(--accent) 22%, var(--avatar-bg));
 }
 
 /* ---- Chatt: anmälan (#263) ------------------------------------------------ */
