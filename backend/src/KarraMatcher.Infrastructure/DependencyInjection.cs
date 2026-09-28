@@ -157,6 +157,20 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
+        /*
+         * Adress-förslag "as-you-type" mot Photon (Komoot, OSM-baserad). Skilt från Nominatim
+         * med flit: Nominatim tillåter inte autocomplete, Photon är byggd för det och kräver
+         * varken nyckel eller faktureringskonto (beslut i docs/PROJEKT-HANDOFF.md, §KM.6). En
+         * kort timeout — ett förslag som dröjer är värdelöst medan man skriver.
+         */
+        services.AddHttpClient<IAddressSuggester, PhotonAddressSuggester>(client =>
+        {
+            client.BaseAddress = new Uri("https://photon.komoot.io/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "KarraMatcher/1.0 (+https://github.com/Haval-Jalal/KarraMatcher)");
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
         AddEmail(services, configuration, isDevelopment);
 
         // Databaskontrollen taggas "ready". Därmed faller /health/ready när databasen
