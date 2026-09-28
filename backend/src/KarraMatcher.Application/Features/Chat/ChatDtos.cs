@@ -38,11 +38,22 @@ public sealed record ChatChannelDto(
 /// <summary>En reaktion på ett meddelande, aggregerad: emoji, antal och om jag själv reagerat (`#301`).</summary>
 public sealed record ChatReactionDto(string Emoji, int Count, bool Mine);
 
+/// <summary>
+/// En liten förhandsvisning av det meddelande ett svar syftar på (`#redesign`, tråd-svar) — som
+/// citatet i Teams/WhatsApp. Bär bara det chatten redan visar: författarnamn och en kort snutt.
+/// </summary>
+/// <param name="Id">Ursprungsmeddelandets id (för att t.ex. hoppa dit).</param>
+/// <param name="AuthorName">Ursprungets författare, eller null. Aldrig ett barns namn.</param>
+/// <param name="Snippet">En kort snutt av ursprungstexten, eller tom om det är borttaget.</param>
+/// <param name="Deleted">Sant om ursprunget är borttaget (citatet visar "[borttaget]").</param>
+public sealed record ChatReplyPreviewDto(Guid Id, string? AuthorName, string Snippet, bool Deleted);
+
 /// <summary>Ett publicerat meddelande så som chatten visar det (§KM.1/§KM.10, `#201`).</summary>
 /// <param name="AuthorName">Den vuxnes visningsnamn, eller null. Aldrig ett barns namn.</param>
 /// <param name="Body">Texten, eller tom när meddelandet är borttaget.</param>
 /// <param name="Deleted">Sant när meddelandet tagits bort (visas som "[borttaget]").</param>
 /// <param name="Reactions">Reaktionerna per emoji (`#301`). Tom lista när inga finns.</param>
+/// <param name="ReplyTo">Citatet detta svar syftar på, eller null för ett vanligt meddelande.</param>
 public sealed record ChatMessageDto(
     Guid Id,
     Guid AuthorAccountId,
@@ -50,7 +61,8 @@ public sealed record ChatMessageDto(
     string Body,
     DateTimeOffset PublishedUtc,
     bool Deleted,
-    IReadOnlyList<ChatReactionDto> Reactions);
+    IReadOnlyList<ChatReactionDto> Reactions,
+    ChatReplyPreviewDto? ReplyTo);
 
 /// <summary>Ett schemalagt (ännu opublicerat) meddelande — den som skapade det ser sina.</summary>
 public sealed record ScheduledMessageDto(Guid Id, string Body, DateTimeOffset PublishAtUtc);

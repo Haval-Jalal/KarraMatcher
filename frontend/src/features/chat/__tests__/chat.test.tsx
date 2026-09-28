@@ -369,4 +369,80 @@ describe('reaktioner (#301)', () => {
       ).toBe(true)
     })
   })
+
+  describe('svara i tråd', () => {
+    it('svara på ett meddelande skickar replyToMessageId', async () => {
+      const user = userEvent.setup()
+      const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+      setAccessToken(token)
+      const sent = stub(token, false, (url) => {
+        if (url.includes('/chat/messages')) {
+          return [
+            {
+              id: 'm1',
+              authorAccountId: 'a1',
+              authorName: 'Tor T',
+              body: 'Vem kör?',
+              publishedUtc: '2026-10-01T09:00:00Z',
+              deleted: false,
+              reactions: [],
+              replyTo: null,
+            },
+          ]
+        }
+        return []
+      })
+
+      renderRoute('/chatt/trupp-1')
+
+      const row = (await screen.findByText('Vem kör?')).closest('li') as HTMLElement
+      await user.click(within(row).getByRole('button', { name: 'Fler val' }))
+      await user.click(within(row).getByRole('button', { name: 'Svara' }))
+
+      // Citat-raden ovanför skrivfältet visar vem man svarar.
+      expect(await screen.findByText(/Svar till Tor T/)).toBeInTheDocument()
+
+      await user.type(screen.getByLabelText('Skriv ett meddelande'), 'Jag med')
+      await user.click(screen.getByRole('button', { name: 'Skicka' }))
+
+      await waitFor(() => {
+        expect(
+          sent.some(
+            (r) =>
+              r.url.endsWith('/chat/messages') &&
+              r.method === 'POST' &&
+              (r.body as { replyToMessageId?: string }).replyToMessageId === 'm1',
+          ),
+        ).toBe(true)
+      })
+    })
+
+    it('ett meddelande som är ett svar visar citatet', async () => {
+      const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+      setAccessToken(token)
+      stub(token, false, (url) => {
+        if (url.includes('/chat/messages')) {
+          return [
+            {
+              id: 'm2',
+              authorAccountId: 'a2',
+              authorName: 'Liam F',
+              body: 'Jag kör',
+              publishedUtc: '2026-10-01T10:00:00Z',
+              deleted: false,
+              reactions: [],
+              replyTo: { id: 'm1', authorName: 'Tor T', snippet: 'Vem kör?', deleted: false },
+            },
+          ]
+        }
+        return []
+      })
+
+      renderRoute('/chatt/trupp-1')
+
+      // Citatet i bubblan: ursprungets författare och snutt.
+      expect(await screen.findByText('Vem kör?')).toBeInTheDocument()
+      expect(screen.getByText('Tor T')).toBeInTheDocument()
+    })
+  })
 })

@@ -23,6 +23,7 @@ export function MessageMenu({
   channel,
   canDelete,
   deleting,
+  onReply,
   onReport,
   onDelete,
   onClose,
@@ -31,6 +32,7 @@ export function MessageMenu({
   channel: ChatChannel
   canDelete: boolean
   deleting: boolean
+  onReply: () => void
   onReport: () => void
   onDelete: () => void
   onClose: () => void
@@ -92,6 +94,17 @@ export function MessageMenu({
             </button>
           ))}
         </div>
+
+        <button
+          type="button"
+          className="msg-menu__item"
+          onClick={() => {
+            onReply()
+            onClose()
+          }}
+        >
+          Svara
+        </button>
 
         <button
           type="button"

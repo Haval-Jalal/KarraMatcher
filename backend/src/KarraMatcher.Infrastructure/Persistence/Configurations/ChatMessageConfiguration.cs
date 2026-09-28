@@ -48,5 +48,12 @@ internal sealed class ChatMessageConfiguration : IEntityTypeConfiguration<ChatMe
             .WithMany()
             .HasForeignKey(m => m.AuthorAccountId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Svar-i-tråd (`#redesign`): pekar på ett annat meddelande. SetNull, inte kaskad — gallras
+        // eller raderas ursprunget ska svaret bli kvar (utan citat), inte försvinna med det.
+        builder.HasOne<ChatMessage>()
+            .WithMany()
+            .HasForeignKey(m => m.ReplyToMessageId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

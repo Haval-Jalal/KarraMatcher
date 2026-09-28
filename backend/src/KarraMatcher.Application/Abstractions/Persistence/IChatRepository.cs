@@ -37,6 +37,10 @@ public interface IChatRepository
     /// <summary>Ett meddelande, spårat — för radering eller släpp. Null när det inte finns.</summary>
     public Task<ChatMessage?> FindMessageAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Meddelanden med givna id (för att citera tråd-svarens ursprung). Ospårade.</summary>
+    public Task<IReadOnlyList<ChatMessage>> ListByIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
     /// <summary>De senaste publicerade meddelandena i kanalen, äldst först, högst <paramref name="limit"/>.</summary>
     public Task<IReadOnlyList<ChatMessage>> ListPublishedAsync(
         Guid ageGroupId, Guid? teamId, int limit, CancellationToken cancellationToken);

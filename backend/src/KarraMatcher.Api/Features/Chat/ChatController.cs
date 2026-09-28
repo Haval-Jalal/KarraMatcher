@@ -150,7 +150,9 @@ public sealed class ChatController(
 
         var outcome = await commands
             .SendAsync(
-                new PostChatMessageCommand(truppId, null, actor.Value, request.Body, request.PublishAt),
+                new PostChatMessageCommand(
+                    truppId, null, actor.Value, request.Body, request.PublishAt,
+                    request.ReplyToMessageId),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -273,7 +275,10 @@ public sealed class ChatController(
 }
 
 /// <summary>Det medlemmen skickar: texten och en valfri framtida utskickstid (schemaläggning).</summary>
-public sealed record PostMessageRequest(string Body, DateTimeOffset? PublishAt);
+public sealed record PostMessageRequest(
+    string Body,
+    DateTimeOffset? PublishAt,
+    Guid? ReplyToMessageId = null);
 
 /// <summary>Det en anmälan bär: en obligatorisk motivering (`#263`). Fritext, prövas server-side.</summary>
 public sealed record ReportMessageRequest(string Reason);

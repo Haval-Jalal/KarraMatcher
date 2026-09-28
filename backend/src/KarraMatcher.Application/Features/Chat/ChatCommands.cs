@@ -17,7 +17,8 @@ public sealed record PostChatMessageCommand(
     Guid? TeamId,
     Guid AccountId,
     string Body,
-    DateTimeOffset? PublishAt) : ICommand<ChatPostOutcome>;
+    DateTimeOffset? PublishAt,
+    Guid? ReplyToMessageId = null) : ICommand<ChatPostOutcome>;
 
 /// <summary>Tar bort ett eget meddelande (`#263`: admin raderar andras bara ur kön, vid tröskeln).</summary>
 public sealed record DeleteChatMessageCommand(
@@ -153,7 +154,7 @@ internal sealed class PostChatMessageCommandHandler(ChatService service)
 
         return service.PostAsync(
             command.TruppId, command.TeamId, command.AccountId, command.Body, command.PublishAt,
-            cancellationToken);
+            command.ReplyToMessageId, cancellationToken);
     }
 }
 

@@ -43,6 +43,15 @@ export interface ChatReactionSummary {
   mine: boolean
 }
 
+/** Citatet ett svar syftar på (`#redesign`) — som i Teams/WhatsApp. Null för ett vanligt meddelande. */
+export interface ChatReplyPreview {
+  id: string
+  authorName: string | null
+  /** Kort snutt av ursprungstexten, eller tom om det är borttaget. */
+  snippet: string
+  deleted: boolean
+}
+
 export interface ChatMessage {
   id: string
   authorAccountId: string
@@ -53,6 +62,8 @@ export interface ChatMessage {
   deleted: boolean
   /** Reaktionerna per emoji (`#301`). Tom lista när inga finns. */
   reactions: ChatReactionSummary[]
+  /** Meddelandet detta är ett svar på, eller null (`#redesign`). */
+  replyTo: ChatReplyPreview | null
 }
 
 /** De tillåtna reaktionerna — måste matcha serverns `ChatReaction.Allowed` (`#301`). */
@@ -131,16 +142,21 @@ export const getReports = (truppId: string, signal?: AbortSignal): Promise<Repor
     signal,
   )
 
-/** Postar nu, eller schemalägger om `publishAt` (ISO-tid i framtiden) anges. */
+/**
+ * Postar nu, eller schemalägger om `publishAt` (ISO-tid i framtiden) anges. Anges
+ * `replyToMessageId` blir det ett svar-i-tråd på det meddelandet (`#redesign`).
+ */
 export const postMessage = (
   channel: ChatChannel,
   body: string,
   publishAt?: string,
+  replyToMessageId?: string,
 ): Promise<void> =>
-  postJson<void>(
-    `${base(channel)}/messages`,
-    publishAt === undefined ? { body } : { body, publishAt },
-  )
+  postJson<void>(`${base(channel)}/messages`, {
+    body,
+    ...(publishAt === undefined ? {} : { publishAt }),
+    ...(replyToMessageId === undefined ? {} : { replyToMessageId }),
+  })
 
 export const deleteMessage = (channel: ChatChannel, id: string): Promise<void> =>
   postJson<void>(`${base(channel)}/messages/${id}`, undefined, { method: 'DELETE' })

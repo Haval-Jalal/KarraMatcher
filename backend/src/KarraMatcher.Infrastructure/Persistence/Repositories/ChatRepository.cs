@@ -25,6 +25,15 @@ internal sealed class ChatRepository(KarraMatcherDbContext context) : IChatRepos
     public Task<ChatMessage?> FindMessageAsync(Guid id, CancellationToken cancellationToken) =>
         context.ChatMessages.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<ChatMessage>> ListByIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        ids.Count == 0
+            ? []
+            : await context.ChatMessages.AsNoTracking()
+                .Where(m => ids.Contains(m.Id))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
     public async Task<IReadOnlyList<ChatMessage>> ListPublishedAsync(
         Guid ageGroupId, Guid? teamId, int limit, CancellationToken cancellationToken)
     {

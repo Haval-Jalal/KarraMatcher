@@ -133,7 +133,8 @@ public sealed class ChatTeamController(
         var outcome = await commands
             .SendAsync(
                 new PostChatMessageCommand(
-                    channel.AgeGroupId, channel.TeamId, actor.Value, request.Body, request.PublishAt),
+                    channel.AgeGroupId, channel.TeamId, actor.Value, request.Body, request.PublishAt,
+                    request.ReplyToMessageId),
                 cancellationToken)
             .ConfigureAwait(false);
 
