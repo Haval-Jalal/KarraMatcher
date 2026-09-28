@@ -27,7 +27,11 @@ import { fileURLToPath } from 'node:url'
 const BUDGETS_KB = {
   entry: 125,
   totalJs: 235,
-  css: 10,
+  // Höjt 10 → 12 (2026-09-28): redesignen enligt designriktningen la till bestående stil —
+  // hjältekort, statistik-rutor, statuspiller, segmenterad kontroll, val-kort, lag-piller,
+  // mjuka ramar och chattens långtryck-meny. En medveten, varaktig ökning (§KM.11), fortfarande
+  // ~5 kB gzip marginal kvar. Sänk igen om stilmallen krymper.
+  css: 12,
 }
 
 const here = dirname(fileURLToPath(import.meta.url))
