@@ -3655,13 +3655,142 @@ input[type='checkbox']:disabled {
 
 /* Kontrollen ritas med appens accent, i en lagom storlek — inte som ett textfält. */
 .form__radio input[type='radio'],
-.form__checkbox input[type='checkbox'] {
+.form__checkbox input[type='checkbox'],
+.opt input[type='radio'] {
   flex: none;
   width: 20px;
   height: 20px;
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/*
+ * Redesign-kontroller (`#redesign`, artefakten): segmenterad typväljare, val-kort och lag-piller.
+ * Alla är `label`-element inuti ett `.form__field`, så de scopas med `.form__field` för att slå
+ * fältrubrikens VERSAL-stil — annars skulle "Match", "Hemmamatch", "Gul" skrika.
+ */
+.form__field .seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--sunk);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.form__field .seg__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 4px;
+  border-radius: 9px;
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: center;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.form__field .seg__option:has(input:checked) {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.form__field .seg__option:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.form__field .opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap-target);
+  margin-bottom: 8px;
+  padding: 12px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.form__field .opt:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-raised));
+}
+
+.form__field .opt:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.opt__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 600;
+}
+
+.opt__txt small {
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form__field .tpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-family: var(--sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.form__field .tpill:has(input:checked) {
+  color: var(--text-strong);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
+}
+
+.form__field .tpill:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.tpill__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border-strong);
 }
 
 /* ---- Rena fieldsets ------------------------------------------------------- */

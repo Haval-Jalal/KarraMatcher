@@ -158,25 +158,27 @@ export function EventForm({
         })(event)
       }}
     >
-      <div className="form__field">
-        <label htmlFor="handelsetyp">Typ</label>
-        <select
-          id="handelsetyp"
-          value={type}
-          onChange={(event) => {
-            const next = event.target.value as FormValues['type']
-            setType(next)
-            setValue('type', next, { shouldValidate: false })
-            onTypeChange?.(next)
-          }}
-        >
+      <fieldset className="form__field">
+        <legend>Typ</legend>
+        <div className="seg">
           {(['Match', 'Training', 'Cup', 'Other'] as const).map((value) => (
-            <option key={value} value={value}>
-              {TYPE_LABELS[value]}
-            </option>
+            <label key={value} className="seg__option">
+              <input
+                type="radio"
+                name="handelsetyp"
+                className="visually-hidden"
+                checked={type === value}
+                onChange={() => {
+                  setType(value)
+                  setValue('type', value, { shouldValidate: false })
+                  onTypeChange?.(value)
+                }}
+              />
+              <span>{TYPE_LABELS[value]}</span>
+            </label>
           ))}
-        </select>
-      </div>
+        </div>
+      </fieldset>
 
       <div className="form__field">
         <label htmlFor="avspark">{isMatch ? 'Avspark (svensk tid)' : 'Start (svensk tid)'}</label>
@@ -234,7 +236,7 @@ export function EventForm({
       <fieldset className="form__field">
         <legend>Plats</legend>
 
-        <label className="form__radio">
+        <label className="opt">
           <input
             type="radio"
             name="plats"
@@ -243,11 +245,14 @@ export function EventForm({
               setIsHome(true)
               setValue('isHome', true, { shouldValidate: true })
             }}
-          />{' '}
-          {isMatch ? 'Hemmamatch' : 'Hemma'} (klubbens plan)
+          />
+          <span className="opt__txt">
+            {isMatch ? 'Hemmamatch' : 'Hemma'}
+            <small>Klubbens plan</small>
+          </span>
         </label>
 
-        <label className="form__radio">
+        <label className="opt">
           <input
             type="radio"
             name="plats"
@@ -256,8 +261,11 @@ export function EventForm({
               setIsHome(false)
               setValue('isHome', false, { shouldValidate: true })
             }}
-          />{' '}
-          {isMatch ? 'Bortamatch' : 'Annan plats'}
+          />
+          <span className="opt__txt">
+            {isMatch ? 'Bortamatch' : 'Annan plats'}
+            <small>Skriv adressen</small>
+          </span>
         </label>
 
         {isHome ? (

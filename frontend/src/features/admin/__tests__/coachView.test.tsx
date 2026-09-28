@@ -136,7 +136,7 @@ describe('tiden skrivs i svensk tid och skickas i UTC', () => {
     renderRoute('/lag/gul/tranare')
 
     await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
-    await user.selectOptions(await screen.findByLabelText('Typ'), 'Training')
+    await user.click(await screen.findByLabelText('Träning'))
 
     await user.type(await screen.findByLabelText(/Start/), '2026-09-22T18:00')
     await user.type(screen.getByLabelText('Rubrik'), 'Lagträning')

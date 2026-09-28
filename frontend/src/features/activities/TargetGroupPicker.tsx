@@ -66,14 +66,14 @@ export function TargetGroupPicker({
       <legend>Kallelse-målgrupp</legend>
 
       {(['trupp', 'lag', 'children'] as const).map((mode) => (
-        <label key={mode} className="form__radio">
+        <label key={mode} className="opt">
           <input
             type="radio"
             name="kallelse-malgrupp"
             checked={value.mode === mode}
             onChange={() => setMode(mode)}
-          />{' '}
-          {MODE_LABEL[mode]}
+          />
+          <span className="opt__txt">{MODE_LABEL[mode]}</span>
         </label>
       ))}
 
@@ -82,16 +82,24 @@ export function TargetGroupPicker({
           {roster.teams.length === 0 ? (
             <p className="admin-muted">Truppen har inga lag ännu.</p>
           ) : (
-            roster.teams.map((team) => (
-              <label key={team.id} className="form__checkbox">
-                <input
-                  type="checkbox"
-                  checked={value.teamIds.includes(team.id)}
-                  onChange={() => toggleTeam(team.id)}
-                />{' '}
-                {team.name}
-              </label>
-            ))
+            <div className="pills">
+              {roster.teams.map((team) => (
+                <label key={team.id} className="tpill">
+                  <input
+                    type="checkbox"
+                    className="visually-hidden"
+                    checked={value.teamIds.includes(team.id)}
+                    onChange={() => toggleTeam(team.id)}
+                  />
+                  <span
+                    className="tpill__dot"
+                    style={{ background: team.colorHex }}
+                    aria-hidden="true"
+                  />
+                  {team.name}
+                </label>
+              ))}
+            </div>
           )}
         </div>
       )}
