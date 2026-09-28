@@ -30,6 +30,7 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         Guid SvartId,
         Guid GulId,
         Guid AdminId,
+        Guid SvartCoachId,
         Guid SvartGuardianId,
         Guid UnassignedGuardianId,
         Guid NonMemberId);
@@ -40,6 +41,7 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         var svartId = Guid.NewGuid();
         var gulId = Guid.NewGuid();
         var adminId = Guid.NewGuid();
+        var svartCoachId = Guid.NewGuid();
         var svartGuardianId = Guid.NewGuid();
         var unassignedGuardianId = Guid.NewGuid();
         var nonMemberId = Guid.NewGuid();
@@ -77,6 +79,7 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
 
         db.Accounts.AddRange(
             Acct(adminId, $"admin-{suffix}"),
+            Acct(svartCoachId, $"coach-svart-{suffix}"),
             Acct(svartGuardianId, $"vh-svart-{suffix}"),
             Acct(unassignedGuardianId, $"vh-utan-{suffix}"),
             Acct(nonMemberId, $"utom-{suffix}"));
@@ -91,6 +94,16 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
             GrantedUtc = now,
         });
 
+        // En färg-lag-tränare knuten BARA till Svart. Ska ändå se alla lags kanaler (2026-09-28).
+        db.TeamRoles.Add(new TeamRole
+        {
+            Id = Guid.NewGuid(),
+            AccountId = svartCoachId,
+            TeamId = svartId,
+            Role = RoleKind.Coach,
+            GrantedUtc = now,
+        });
+
         // En vårdnadshavare med barn i Svart, och en vars barn ännu inte tilldelats ett lag.
         AddGuardianChild(db, truppId, svartId, svartGuardianId, now);
         AddGuardianChild(db, truppId, null, unassignedGuardianId, now);
@@ -98,7 +111,8 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         await db.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(
-            truppId, svartId, gulId, adminId, svartGuardianId, unassignedGuardianId, nonMemberId);
+            truppId, svartId, gulId, adminId, svartCoachId, svartGuardianId, unassignedGuardianId,
+            nonMemberId);
     }
 
     private static Account Acct(Guid id, string tag) =>
@@ -179,6 +193,21 @@ public sealed class ChatChannelsTests(KarraMatcherApiFactory factory)
         // Primärkanalen först (namngiven efter truppen), sedan varje lag i truppen.
         Assert.Equal("Trupp", Kind(channels[0]));
         Assert.Equal("P2016 chatt", Name(channels[0]));
+        Assert.True(HasTeam(channels, "Lag Svart chatt"));
+        Assert.True(HasTeam(channels, "Lag Gul chatt"));
+        Assert.Equal(3, channels.Count);
+    }
+
+    [Fact]
+    public async Task FargLagTranare_SerAllaLagensKanaler()
+    {
+        // En tränare knuten bara till Svart ska ändå se ALLA färg-lags kanaler i sin trupp
+        // (färg-lagen är indelningar av samma trupp; tränarna leder truppen, 2026-09-28).
+        var f = await SeedAsync("coach-alla");
+
+        var channels = await ChannelsAsync(f.TruppId, f.SvartCoachId);
+
+        Assert.Equal("Trupp", Kind(channels[0]));
         Assert.True(HasTeam(channels, "Lag Svart chatt"));
         Assert.True(HasTeam(channels, "Lag Gul chatt"));
         Assert.Equal(3, channels.Count);

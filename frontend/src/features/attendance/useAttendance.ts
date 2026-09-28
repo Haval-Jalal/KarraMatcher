@@ -3,11 +3,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/lib/api'
 
 import {
+  getCoachKallelseRoster,
   getKallelseSummary,
   getMyKallelse,
+  getTeamKallelseSummary,
   remind,
+  remindTeam,
   respond,
   setKallelse,
+  setTeamKallelse,
   type AttendanceReply,
 } from './attendanceApi'
 
@@ -76,6 +80,47 @@ export function useRemind(truppId: string, eventId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: () => remind(truppId, eventId),
+    onSuccess: () => invalidate(client, eventId),
+  })
+}
+
+// ---- Färg-lag-tränarens kallelse (`#redesign`) — samma vy, lag-scopade endpoints -------------
+
+export const coachKallelseRosterQueryKey = (slug: string) => ['kallelse', 'roster', slug] as const
+
+/** Truppens barn (utan vårdnadshavare) för tränarens väljare. */
+export function useCoachKallelseRoster(slug: string, enabled: boolean) {
+  return useQuery({
+    queryKey: coachKallelseRosterQueryKey(slug),
+    queryFn: ({ signal }) => getCoachKallelseRoster(slug, signal),
+    enabled,
+  })
+}
+
+/** Tränarens sammanställning för sitt lags händelse. Samma cache-nyckel som adminens (per händelse). */
+export function useTeamKallelseSummary(slug: string, eventId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: kallelseSummaryQueryKey(eventId),
+    queryFn: ({ signal }) => getTeamKallelseSummary(slug, eventId, signal),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+/** Tränaren skickar/uppdaterar kallelsen för sitt lags händelse. */
+export function useSetTeamKallelse(slug: string, eventId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (childIds: string[]) => setTeamKallelse(slug, eventId, childIds),
+    onSuccess: () => invalidate(client, eventId),
+  })
+}
+
+/** Tränaren påminner dem som inte svarat. */
+export function useRemindTeam(slug: string, eventId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => remindTeam(slug, eventId),
     onSuccess: () => invalidate(client, eventId),
   })
 }

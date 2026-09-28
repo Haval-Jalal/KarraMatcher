@@ -402,29 +402,33 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
 
         if (!truppWide)
         {
-            // Utan trupp-bred åtkomst: bara de lag kontot är tränare för eller har ett barn i.
-            // Samma gräns som MemberOfTeam (IsMemberCoreAsync) drar per lag.
-            var coachTeamIds = await context.TeamRoles
+            // En tränare för något av truppens färg-lag ser ALLA lag-kanaler i sin trupp
+            // (ägarbeslut 2026-09-28): färg-lagen är indelningar av samma trupp, och tränarna
+            // leder truppen. En ren vårdnadshavare ser däremot bara sitt eget barns lag (§KM.3).
+            var coachesAnyTeamInTrupp = await context.TeamRoles
                 .AsNoTracking()
-                .Where(r => r.AccountId == accountId
-                    && r.Role == RoleKind.Coach
-                    && r.TeamId != null
-                    && r.Team!.AgeGroupId == ageGroupId)
-                .Select(r => r.TeamId!.Value)
-                .ToListAsync(cancellationToken)
+                .AnyAsync(
+                    r => r.AccountId == accountId
+                        && r.Role == RoleKind.Coach
+                        && r.TeamId != null
+                        && r.Team!.AgeGroupId == ageGroupId,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            var guardianTeamIds = await context.Guardianships
-                .AsNoTracking()
-                .Where(g => g.AccountId == accountId
-                    && g.Child!.AgeGroupId == ageGroupId
-                    && g.Child!.TeamId != null)
-                .Select(g => g.Child!.TeamId!.Value)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+            if (!coachesAnyTeamInTrupp)
+            {
+                var guardianTeamIds = await context.Guardianships
+                    .AsNoTracking()
+                    .Where(g => g.AccountId == accountId
+                        && g.Child!.AgeGroupId == ageGroupId
+                        && g.Child!.TeamId != null)
+                    .Select(g => g.Child!.TeamId!.Value)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
-            var ids = coachTeamIds.Concat(guardianTeamIds).ToHashSet();
-            teams = teams.Where(t => ids.Contains(t.Id));
+                var ids = guardianTeamIds.ToHashSet();
+                teams = teams.Where(t => ids.Contains(t.Id));
+            }
         }
 
         return await teams

@@ -60,10 +60,33 @@ export interface KallelseSummary {
   children: KallelseChild[]
 }
 
+/** Ett barn i kallelse-väljaren (färg-lag-tränaren). Speglar `KallelseRosterChildDto` — inga vårdnadshavare (§KM.1). */
+export interface KallelseRosterChild {
+  id: string
+  displayName: string
+  teamId: string | null
+}
+
+/** Ett färg-lag i väljaren. Speglar `RosterTeamDto`. */
+export interface KallelseRosterTeam {
+  id: string
+  name: string
+  colorHex: string
+}
+
+/** Hela truppens barn grupperbara per färg-lag, för tränarens kallelse-väljare. */
+export interface KallelseRoster {
+  teams: KallelseRosterTeam[]
+  children: KallelseRosterChild[]
+}
+
 const guardianBase = (eventId: string) => `/api/v1/events/${encodeURIComponent(eventId)}/kallelse`
 
 const adminBase = (truppId: string, eventId: string) =>
   `/api/v1/admin/trupper/${encodeURIComponent(truppId)}/events/${encodeURIComponent(eventId)}/kallelse`
+
+const coachBase = (slug: string, eventId: string) =>
+  `/api/v1/teams/${encodeURIComponent(slug)}/events/${encodeURIComponent(eventId)}/kallelse`
 
 /**
  * Mina egna kallade barn för en händelse.
@@ -109,4 +132,36 @@ export function setKallelse(truppId: string, eventId: string, childIds: string[]
 /** Påminner vårdnadshavarna till de kallade barn som inte svarat. Svarar med antalet. */
 export function remind(truppId: string, eventId: string): Promise<{ reminded: number }> {
   return postJson<{ reminded: number }>(`${adminBase(truppId, eventId)}/remind`)
+}
+
+// ---- Färg-lag-tränarens kallelse (`#redesign`) — endpoints under laget (CoachOfTeam) ---------
+
+/** Truppens barn (utan vårdnadshavare) för tränarens väljare — hela truppen, för fyll-på. */
+export function getCoachKallelseRoster(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<KallelseRoster> {
+  return getAuthJson<KallelseRoster>(
+    `/api/v1/teams/${encodeURIComponent(slug)}/kallelse-roster`,
+    signal,
+  )
+}
+
+/** Tränarens sammanställning för sitt lags händelse. */
+export function getTeamKallelseSummary(
+  slug: string,
+  eventId: string,
+  signal?: AbortSignal,
+): Promise<KallelseSummary> {
+  return getAuthJson<KallelseSummary>(coachBase(slug, eventId), signal)
+}
+
+/** Tränaren skickar/uppdaterar kallelsen för sitt lags händelse. Mottagare får vara hela truppen. */
+export function setTeamKallelse(slug: string, eventId: string, childIds: string[]): Promise<void> {
+  return postJson<void>(coachBase(slug, eventId), { childIds }, { method: 'PUT' })
+}
+
+/** Tränaren påminner de kallade barn i sitt lags händelse som inte svarat. */
+export function remindTeam(slug: string, eventId: string): Promise<{ reminded: number }> {
+  return postJson<{ reminded: number }>(`${coachBase(slug, eventId)}/remind`)
 }
