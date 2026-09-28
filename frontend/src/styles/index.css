@@ -104,13 +104,43 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * Sval, modern kol — exakt artefaktens mörka hud (`#redesign`, designriktningen). Bara de
+ * kanoniska tokensen (+ de få literalerna) definieras om; aliasen är var(--paper) osv. och
+ * följer med av sig själva.
+ *
+ * Mörkret gäller i två fall: när användaren själv valt Mörkt (`[data-theme='dark']`), och när
+ * systemet är mörkt och användaren inte valt Ljust. Ett eget Ljust-val vinner alltså över
+ * systemet. De två reglerna bär samma deklarationer — håll dem i synk (se src/lib/theme.ts).
+ */
+:root[data-theme='dark'] {
+  /* Så att datumväljare, rullningslister m.m. följer det valda läget, inte systemets. */
+  color-scheme: dark;
+
+  --paper: #0d0f14;
+  --card: #171b23;
+  --sunk: #1e232d;
+  --ink: #eef1f6;
+  --ink-soft: #9aa4b4;
+  --ink-faint: #6b7482;
+  --hair: #29303b;
+  --hair-strong: #78818f;
+  --avatar-bg: #232936;
+  --shadow-soft: 0 12px 34px -20px rgba(0, 0, 0, 0.95);
+
+  --text-strong: #faf8f2;
+  --focus: #9db4ef;
+  --danger: #ff9098;
+
+  --accent: #37d98a;
+  --accent-strong: #21a869;
+  --accent-ink: #05130c;
+
+  --away: #6f9bff;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    /*
-     * Sval, modern kol — exakt artefaktens mörka hud (`#redesign`, designriktningen). Bara de
-     * kanoniska tokensen (+ de få literalerna) definieras om; aliasen är var(--paper) osv. och
-     * följer med av sig själva.
-     */
+  :root:not([data-theme='light']) {
     --paper: #0d0f14;
     --card: #171b23;
     --sunk: #1e232d;
@@ -126,14 +156,17 @@
     --focus: #9db4ef;
     --danger: #ff9098;
 
-    /* Klarare grön i mörkt läge (`#redesign`). */
     --accent: #37d98a;
     --accent-strong: #21a869;
     --accent-ink: #05130c;
 
-    /* Klarare bortablå i mörkt läge (artefakten). */
     --away: #6f9bff;
   }
+}
+
+/* Eget Ljust-val: håll native-kontrollerna ljusa även när systemet står på mörkt. */
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 * {

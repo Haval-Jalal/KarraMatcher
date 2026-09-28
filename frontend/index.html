@@ -30,6 +30,17 @@
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16161a" media="(prefers-color-scheme: dark)" />
 
+    <!-- Sätt sparat tema (Ljust/Mörkt) innan appen laddas, så sidan aldrig blinkar i fel
+         läge först. "System" sparar inget och låter media-frågan gälla. Se src/lib/theme.ts. -->
+    <script>
+      try {
+        var t = localStorage.getItem('karra.theme')
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {
+        /* Lagringen kan vara blockerad; appen faller tillbaka på systemets läge. */
+      }
+    </script>
+
     <!-- iOS läser inte manifestets display-läge. Utan de här raderna öppnas appen i
          Safari med adressfält även när den ligger på hemskärmen. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
