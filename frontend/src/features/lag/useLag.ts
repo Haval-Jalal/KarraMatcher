@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { createLag, getLag, updateLag } from './lagApi'
+import { createLag, getLag, setLagAttendance, updateLag } from './lagApi'
 
 const lagKey = (truppId: string) => ['admin', 'lag', truppId] as const
 
@@ -24,6 +24,16 @@ export function useUpdateLag(truppId: string) {
   return useMutation({
     mutationFn: (input: { id: string; name: string; colorHex: string }) =>
       updateLag(truppId, input.id, input.name, input.colorHex),
+    onSuccess: () => client.invalidateQueries({ queryKey: lagKey(truppId) }),
+  })
+}
+
+export function useSetLagAttendance(truppId: string) {
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { id: string; enabled: boolean }) =>
+      setLagAttendance(truppId, input.id, input.enabled),
     onSuccess: () => client.invalidateQueries({ queryKey: lagKey(truppId) }),
   })
 }

@@ -47,8 +47,12 @@ public sealed class AttendanceGate(IAttendanceRepository attendance)
         await attendance.IsEnabledForMatchAsync(matchId, cancellationToken).ConfigureAwait(false) is true;
 }
 
-/// <summary>Slår på eller av kallelsen för ett lag. Bara administratör (§KM.7).</summary>
-public sealed record SetAttendanceEnabledCommand(string Slug, bool Enabled, Guid ActorAccountId)
+/// <summary>
+/// Slår på eller av kallelsen för ett lag. Trupp-adminens beslut (§KM.7), inte tränarens.
+/// <c>TruppId</c> kommer ur adressen så tjänsten kan verifiera att laget hör dit (IDOR-skydd).
+/// </summary>
+public sealed record SetAttendanceEnabledCommand(
+    Guid TruppId, Guid TeamId, bool Enabled, Guid ActorAccountId)
     : ICommand<bool>;
 
 internal sealed class SetAttendanceEnabledCommandValidator
@@ -56,7 +60,8 @@ internal sealed class SetAttendanceEnabledCommandValidator
 {
     public SetAttendanceEnabledCommandValidator()
     {
-        RuleFor(c => c.Slug).NotEmpty();
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.TeamId).NotEmpty();
         RuleFor(c => c.ActorAccountId).NotEmpty();
     }
 }
@@ -80,11 +85,11 @@ internal sealed class SetAttendanceEnabledCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var teamId = await attendance
-            .SetEnabledAsync(command.Slug, command.Enabled, cancellationToken)
+        var slug = await attendance
+            .SetEnabledAsync(command.TeamId, command.TruppId, command.Enabled, cancellationToken)
             .ConfigureAwait(false);
 
-        if (teamId is null)
+        if (slug is null)
         {
             return false;
         }
@@ -93,8 +98,8 @@ internal sealed class SetAttendanceEnabledCommandHandler(
             command.Enabled ? AuditActions.AttendanceEnabled : AuditActions.AttendanceDisabled,
             command.ActorAccountId,
             cancellationToken,
-            teamId.Value,
-            command.Slug).ConfigureAwait(false);
+            command.TeamId,
+            slug).ConfigureAwait(false);
 
         // Ett sparande for bada. Skrivs raden separat kan flaggan andras utan att det syns,
         // eller synas utan att den andrades -- och en auditlogg man inte kan lita pa ar

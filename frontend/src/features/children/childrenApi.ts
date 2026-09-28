@@ -22,6 +22,8 @@ export interface RosterTeam {
   id: string
   name: string
   colorHex: string
+  /** Om kallelsen är påslagen för laget (§KM.7) — styr kugghjulets växel. */
+  attendanceEnabled: boolean
 }
 
 export interface Roster {
