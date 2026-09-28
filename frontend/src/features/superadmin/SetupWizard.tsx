@@ -342,7 +342,7 @@ function PickOrCreate({
           )}
 
           <div className="actions">
-            <button type="submit" className="button" disabled={isSubmitting}>
+            <button type="submit" className="button button--action" disabled={isSubmitting}>
               {isSubmitting ? 'Skapar…' : `Skapa ${singular}`}
             </button>
             <button
@@ -485,7 +485,7 @@ function TruppStep({
           )}
 
           <div className="actions">
-            <button type="submit" className="button" disabled={isSubmitting}>
+            <button type="submit" className="button button--action" disabled={isSubmitting}>
               {isSubmitting ? 'Skapar…' : 'Skapa trupp'}
             </button>
             <button

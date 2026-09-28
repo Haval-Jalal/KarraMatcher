@@ -108,7 +108,7 @@ export function CupSignupSection({
                 onChange={(event) => setCapacity(event.target.value)}
                 placeholder={summary.data.capacity?.toString() ?? ''}
               />
-              <button type="submit" className="button" disabled={open.isPending}>
+              <button type="submit" className="button button--action" disabled={open.isPending}>
                 {summary.data.open ? 'Ändra platser' : 'Öppna anmälan'}
               </button>
             </form>

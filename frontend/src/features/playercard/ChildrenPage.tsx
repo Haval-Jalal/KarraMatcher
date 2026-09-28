@@ -288,7 +288,7 @@ function ChildForm({
       </div>
 
       <div className="actions">
-        <button type="submit" className="button">
+        <button type="submit" className="button button--action">
           {existing === null ? 'Lägg till' : 'Spara'}
         </button>
         {onCancel !== null && (

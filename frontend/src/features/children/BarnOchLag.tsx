@@ -310,7 +310,11 @@ function AddLag({ truppId }: { truppId: string }) {
       )}
 
       <div className="actions">
-        <button type="submit" className="button" disabled={name.trim() === '' || create.isPending}>
+        <button
+          type="submit"
+          className="button button--action"
+          disabled={name.trim() === '' || create.isPending}
+        >
           {create.isPending ? 'Skapar…' : 'Skapa färg-lag'}
         </button>
         <button type="button" className="button" onClick={() => setOpen(false)}>
@@ -635,7 +639,11 @@ function AddChild({ truppId, teams }: { truppId: string; teams: RosterTeam[] }) 
       )}
 
       <div className="actions">
-        <button type="submit" className="button" disabled={!canSave || create.isPending}>
+        <button
+          type="submit"
+          className="button button--action"
+          disabled={!canSave || create.isPending}
+        >
           {create.isPending ? 'Lägger till…' : 'Lägg till barn'}
         </button>
         <button type="button" className="button" onClick={() => setOpen(false)}>

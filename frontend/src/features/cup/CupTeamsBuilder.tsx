@@ -106,7 +106,7 @@ export function CupTeamsBuilder({
             onChange={(event) => setName(event.target.value)}
             placeholder="t.ex. Lag 1"
           />
-          <button type="submit" className="button" disabled={create.isPending}>
+          <button type="submit" className="button button--action" disabled={create.isPending}>
             Skapa cup-lag
           </button>
         </form>

@@ -119,7 +119,7 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
           )}
 
           <div className="actions">
-            <button type="submit" className="button" disabled={save.isPending}>
+            <button type="submit" className="button button--action" disabled={save.isPending}>
               {venue.data.configured ? 'Spara ändring' : 'Spara hemmaplan'}
             </button>
           </div>
