@@ -52,6 +52,11 @@
   --accent: #12905a;
   --accent-strong: #0d7a4a;
   --accent-ink: #ffffff;
+  /*
+   * Accent som TEXT på en accent-tonad yta (piller m.m.). I ljust läge är det den djupa gröna;
+   * i mörkt den klara (se dark-blocken) — annars faller kontrasten under 4.5:1 på tinten.
+   */
+  --accent-text: var(--accent-strong);
   --danger: #a4262c;
 
   /*
@@ -135,6 +140,8 @@
   --accent: #37d98a;
   --accent-strong: #21a869;
   --accent-ink: #05130c;
+  /* Klar grön som text på tint i mörkt läge (den djupa blir för svag mot den mörka tinten). */
+  --accent-text: var(--accent);
 
   --away: #6f9bff;
 }
@@ -159,6 +166,7 @@
     --accent: #37d98a;
     --accent-strong: #21a869;
     --accent-ink: #05130c;
+    --accent-text: var(--accent);
 
     --away: #6f9bff;
   }
@@ -2225,7 +2233,7 @@ a.match-card:focus-visible .match-card__opponent {
   padding: 12px;
   border: none;
   border-radius: var(--radius);
-  background: var(--accent);
+  background: var(--accent-strong);
   color: var(--accent-ink);
   font-family: var(--sans);
   font-weight: 700;
@@ -2515,7 +2523,7 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .pill--home {
-  color: var(--accent-strong);
+  color: var(--accent-text);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
@@ -2634,7 +2642,7 @@ a.match-card:focus-visible .match-card__opponent {
   font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--accent-strong);
+  color: var(--accent-text);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 999px;
@@ -3286,7 +3294,7 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .cup-card__state--open {
-  color: var(--accent-strong);
+  color: var(--accent-text);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
@@ -3851,7 +3859,7 @@ input[type='checkbox']:disabled {
 }
 
 .form__field .seg__option:has(input:checked) {
-  background: var(--accent);
+  background: var(--accent-strong);
   color: var(--accent-ink);
 }
 
@@ -3996,8 +4004,9 @@ select.input {
 }
 /* Primärknappen (accent) blir fylld i stället för bara ramad. */
 .button--action {
-  background: var(--accent);
-  border-color: var(--accent);
+  /* accent-strong, inte accent: vit/mörk text på den ljusa accenten når inte 4.5:1 (WCAG 1.4.3). */
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
   color: var(--accent-ink);
   font-weight: 700;
   box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--accent) 90%, transparent);
