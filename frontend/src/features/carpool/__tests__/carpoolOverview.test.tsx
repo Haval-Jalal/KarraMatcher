@@ -90,6 +90,13 @@ function stubApi(options: { overview?: unknown[] | 'error'; token: string }) {
         )
       }
 
+      // Lagtränarens läsvy (`#redesign`) hämtar lagets roster på samma sida.
+      if (url.includes('/roster')) {
+        return Promise.resolve(
+          jsonResponse({ team: { id: 't1', name: 'Gul', colorHex: '#D9A21B' }, children: [] }),
+        )
+      }
+
       return Promise.resolve(jsonResponse({}))
     }),
   )

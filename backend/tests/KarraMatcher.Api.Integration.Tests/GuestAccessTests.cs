@@ -113,6 +113,7 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
         [
             "/api/v1/teams",
             "/api/v1/teams/gast/events",
+            "/api/v1/teams/gast/roster",
             "/api/v1/events/{0}",
             "/api/v1/matches/{0}/carpool/offers",
             "/api/v1/push/key",

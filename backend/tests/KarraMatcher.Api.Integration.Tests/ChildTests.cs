@@ -129,6 +129,75 @@ public sealed class ChildTests(KarraMatcherApiFactory factory)
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    // ---- Lagtränarens läsvy (`#redesign`, §KM.3) -------------------------------------
+
+    [Fact]
+    public async Task LagRoster_SomLagetsTranare_VisarLagetsBarnOchVardnadshavare()
+    {
+        var trupp = await SeedTruppAsync("coach-ser");
+        var childId = await CreateChildAsync(trupp.AgeGroupId, "Liam", "J", trupp.TeamId);
+        var (accountId, email) = await SeedMemberAsync(trupp.AgeGroupId, "coach-ser", consent: true);
+        await SendAsync(
+            HttpMethod.Post, $"/api/v1/admin/trupper/{trupp.AgeGroupId}/children/{childId}/guardians",
+            AdminToken(trupp.AgeGroupId), new { email });
+
+        var response = await SendAsync(
+            HttpMethod.Get, "/api/v1/teams/gul-b-coach-ser/roster", CoachToken("gul-b-coach-ser"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var roster = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+        Assert.Equal("Gul", roster.GetProperty("team").GetProperty("name").GetString());
+
+        var child = roster.GetProperty("children").EnumerateArray()
+            .Single(c => c.GetProperty("id").GetGuid() == childId);
+        Assert.Equal("Liam J", child.GetProperty("displayName").GetString());
+        Assert.Contains(
+            child.GetProperty("guardians").EnumerateArray(),
+            g => g.GetProperty("accountId").GetGuid() == accountId
+                && g.GetProperty("email").GetString() == email);
+    }
+
+    [Fact]
+    public async Task LagRoster_VisarBaraDetEgnaLagetsBarn()
+    {
+        var trupp = await SeedTruppAsync("coach-filter");
+        var otherTeamId = await SeedExtraTeamAsync(trupp.AgeGroupId, "bla-coach-filter");
+        var mine = await CreateChildAsync(trupp.AgeGroupId, "Ella", "S", trupp.TeamId);
+        var theirs = await CreateChildAsync(trupp.AgeGroupId, "Noah", "K", otherTeamId);
+
+        var response = await SendAsync(
+            HttpMethod.Get, "/api/v1/teams/gul-b-coach-filter/roster",
+            CoachToken("gul-b-coach-filter"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var children = (await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .GetProperty("children").EnumerateArray().ToArray();
+        Assert.Contains(children, c => c.GetProperty("id").GetGuid() == mine);
+        Assert.DoesNotContain(children, c => c.GetProperty("id").GetGuid() == theirs);
+    }
+
+    [Fact]
+    public async Task LagRoster_SomTranareForAnnatLag_Nekas()
+    {
+        var trupp = await SeedTruppAsync("coach-fel");
+
+        var response = await SendAsync(
+            HttpMethod.Get, "/api/v1/teams/gul-b-coach-fel/roster", CoachToken("nagot-annat-lag"));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LagRoster_SomVanligMedlem_Nekas()
+    {
+        var trupp = await SeedTruppAsync("coach-medlem");
+
+        var response = await SendAsync(
+            HttpMethod.Get, "/api/v1/teams/gul-b-coach-medlem/roster", PlainToken("ingen@example.com"));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     // ---- Vårdnadshavarkoppling (samtyckesgrindad) ------------------------------------
 
     [Fact]
@@ -343,6 +412,10 @@ public sealed class ChildTests(KarraMatcherApiFactory factory)
         TestAuth.TokenFor(
             factory.Services, Guid.NewGuid(),
             new AccountRoles(false, [ageGroupId.ToString()], []), "admin@test");
+
+    private string CoachToken(string slug) =>
+        TestAuth.TokenFor(
+            factory.Services, Guid.NewGuid(), new AccountRoles(false, [], [slug]), "tranare@test");
 
     private string PlainToken(string email) =>
         TestAuth.TokenFor(factory.Services, Guid.NewGuid(), AccountRoles.None, email);

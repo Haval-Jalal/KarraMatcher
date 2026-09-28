@@ -51,6 +51,11 @@ function stubApi(suggestions: string[]) {
           }),
         )
       }
+      if (url.includes('/roster')) {
+        return Promise.resolve(
+          jsonResponse({ team: { id: 't1', name: 'Gul', colorHex: '#D9A21B' }, children: [] }),
+        )
+      }
 
       return Promise.resolve(jsonResponse({}))
     }),

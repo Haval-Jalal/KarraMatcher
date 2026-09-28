@@ -42,3 +42,16 @@ public sealed record RosterTeamDto(Guid Id, string Name, string ColorHex);
 public sealed record TruppRosterDto(
     IReadOnlyList<RosterTeamDto> Teams,
     IReadOnlyList<ChildDto> Children);
+
+/// <summary>
+/// Ett lags överblick för dess tränare (`#redesign`): laget och dess barn med vårdnadshavare.
+///
+/// <para>
+/// Till skillnad från <see cref="TruppRosterDto"/> bär den bara det ena laget — en tränare ser
+/// aldrig andra lags barn (§KM.3). Vårdnadshavarnas mejl följer med, precis som i adminvyn:
+/// synliga för admin och lagets tränare.
+/// </para>
+/// </summary>
+/// <param name="Team">Laget.</param>
+/// <param name="Children">Barnen i laget, med kopplade vårdnadshavare.</param>
+public sealed record TeamRosterDto(RosterTeamDto Team, IReadOnlyList<ChildDto> Children);

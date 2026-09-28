@@ -3,6 +3,7 @@ import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { CarpoolOverview } from '@/features/carpool'
+import { TeamRosterSection } from '@/features/children'
 import { useAuth } from '@/features/auth'
 import { eventLabel, teamEventsQueryKey, useTeamEvents, type TeamEvent } from '@/features/events'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
@@ -121,6 +122,12 @@ export function CoachEventsPage() {
           void refresh()
         }}
       />
+
+      {/*
+        Laget (barn + vårdnadshavares kontakt) — tränarens läsvy av sitt eget lag (`#redesign`).
+        Servern scopar svaret till laget; tränaren ser aldrig andra lags barn (§KM.3).
+      */}
+      <TeamRosterSection slug={slug} />
 
       {/*
         Samåkningen står före säsongslistan: den är det som är färskvara.

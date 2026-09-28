@@ -4,6 +4,7 @@ import {
   createChild,
   deleteChild,
   getRoster,
+  getTeamRoster,
   linkGuardian,
   unlinkGuardian,
   updateChild,
@@ -14,6 +15,7 @@ import {
 
 export const childrenKeys = {
   roster: (truppId: string) => ['admin', 'roster', truppId] as const,
+  teamRoster: (slug: string) => ['team', 'roster', slug] as const,
 }
 
 export function useRoster(truppId: string | null) {
@@ -21,6 +23,14 @@ export function useRoster(truppId: string | null) {
     queryKey: childrenKeys.roster(truppId ?? ''),
     queryFn: () => getRoster(truppId as string),
     enabled: truppId !== null,
+  })
+}
+
+/** Lagtränarens läsvy över sitt lag (`#redesign`). */
+export function useTeamRoster(slug: string) {
+  return useQuery({
+    queryKey: childrenKeys.teamRoster(slug),
+    queryFn: () => getTeamRoster(slug),
   })
 }
 
