@@ -249,7 +249,22 @@ function AdminKallelse({
         </p>
       )}
 
-      {roster.data && (
+      {/*
+        Väljaren och skicka-knappen väntar på BÅDE rostern och sammanställningen. Skickandet är en
+        full synk: en tom uppsättning tar bort varje befintlig kallelse och dess svar. Förr kunde
+        rostern vinna kapplöpningen, väljaren renderas med sammanställningen ännu ohämtad (current
+        tom) och ett tryck nollställa allt (#392). Nu speglar current alltid de redan kallade barnen
+        innan knappen finns.
+      */}
+      {roster.data && summary.isPending && <p className="state">Hämtar svar…</p>}
+      {roster.data && summary.isError && (
+        <p className="state state--error" role="alert">
+          Kunde inte hämta vilka som redan är kallade. Ladda om och försök igen — kallelsen skickas
+          inte förrän den listan hämtats, så att inga svar råkar nollställas.
+        </p>
+      )}
+
+      {roster.data && summary.isSuccess && (
         <>
           <div className="actions">
             <button type="button" className="button button--small" onClick={selectTeam}>
