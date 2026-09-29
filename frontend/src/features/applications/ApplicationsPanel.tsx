@@ -33,9 +33,13 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
 
   return (
     <div className="admin-subsection">
-      <h3>Ansökningar</h3>
+      <h2>Ansökningar</h2>
 
-      {applications.isLoading && <p className="state">Hämtar…</p>}
+      {applications.isLoading && (
+        <p className="state" role="status">
+          Hämtar…
+        </p>
+      )}
       {applications.isError && (
         <p className="state state--error" role="alert">
           {applications.error instanceof ApiError && applications.error.offline

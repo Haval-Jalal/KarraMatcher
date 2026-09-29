@@ -69,17 +69,47 @@ export function MessageMenu({
     onClose()
   }
 
+  // Fokusfälla: Tab och Shift+Tab cirkulerar inom panelen i stället för att lämna den (WCAG 2.4.3
+  // för en modal popover, #404). Escape och klick utanför stänger den fortfarande.
+  function trapFocus(event: React.KeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== 'Tab') {
+      return
+    }
+
+    const panel = panelRef.current
+    if (panel === null) {
+      return
+    }
+
+    const focusables = panel.querySelectorAll<HTMLElement>('button:not([disabled])')
+    if (focusables.length === 0) {
+      return
+    }
+
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    const active = document.activeElement
+
+    if (event.shiftKey && (active === first || active === panel)) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
   return (
     <>
-      {/* Klick utanför stänger. En knapp och inte en div, så den når tangentbordet. */}
-      <button
-        type="button"
-        className="msg-menu__backdrop"
-        aria-label="Stäng menyn"
-        onClick={onClose}
-      />
-
-      <div className="msg-menu" aria-label="Val för meddelandet" tabIndex={-1} ref={panelRef}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="msg-menu"
+        aria-label="Val för meddelandet"
+        tabIndex={-1}
+        ref={panelRef}
+        onKeyDown={trapFocus}
+      >
         <div className="msg-menu__emojis" role="group" aria-label="Reagera">
           {REACTION_EMOJIS.map((emoji) => (
             <button
@@ -169,6 +199,12 @@ export function MessageMenu({
           </div>
         )}
       </div>
+
+      {/*
+        Klick utanför stänger. Ligger efter panelen och är aria-hidden, så det aldrig blir en
+        fokuserbar "Stäng menyn"-knapp före innehållet (#404). Tangentbordet stänger med Escape.
+      */}
+      <div className="msg-menu__backdrop" aria-hidden="true" onClick={onClose} />
     </>
   )
 }

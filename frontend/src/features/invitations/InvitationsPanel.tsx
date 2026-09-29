@@ -45,7 +45,7 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
 
   return (
     <div className="admin-subsection">
-      <h3>Inbjudningar</h3>
+      <h2>Inbjudningar</h2>
 
       {invitations.isLoading && <p className="state">Hämtar…</p>}
       {invitations.data && (

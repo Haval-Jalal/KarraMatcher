@@ -130,7 +130,7 @@ export function NameForm({
         </button>
 
         {onSkip !== undefined && (
-          <button type="button" className="button button--action" onClick={onSkip}>
+          <button type="button" className="button" onClick={onSkip}>
             Senare
           </button>
         )}

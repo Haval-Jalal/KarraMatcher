@@ -226,7 +226,11 @@ export function ChatChannel({
         Krypterad chatt — meddelandena lagras krypterade
       </p>
 
-      {messages.isLoading && <p className="state">Hämtar meddelanden…</p>}
+      {messages.isLoading && (
+        <p className="state" role="status">
+          Hämtar meddelanden…
+        </p>
+      )}
       {messages.isError && (
         <p className="state state--error" role="alert">
           {messages.error instanceof ApiError && messages.error.offline

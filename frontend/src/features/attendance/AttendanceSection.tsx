@@ -260,7 +260,11 @@ function AdminKallelse({
     <div className="attendance__admin">
       <h3 className="attendance__subheading">Skicka kallelse</h3>
 
-      {roster.isLoading && <p className="state">Hämtar truppen…</p>}
+      {roster.isLoading && (
+        <p className="state" role="status">
+          Hämtar truppen…
+        </p>
+      )}
       {roster.isError && (
         <p className="state state--error" role="alert">
           {roster.error instanceof ApiError && roster.error.offline
@@ -276,7 +280,11 @@ function AdminKallelse({
         tom) och ett tryck nollställa allt (#392). Nu speglar current alltid de redan kallade barnen
         innan knappen finns.
       */}
-      {roster.data && summary.isPending && <p className="state">Hämtar svar…</p>}
+      {roster.data && summary.isPending && (
+        <p className="state" role="status">
+          Hämtar svar…
+        </p>
+      )}
       {roster.data && summary.isError && (
         <p className="state state--error" role="alert">
           Kunde inte hämta vilka som redan är kallade. Ladda om och försök igen — kallelsen skickas
@@ -349,7 +357,7 @@ function AdminKallelse({
 
       {summary.data && summary.data.callOpen && (
         <div className="attendance__summary">
-          <h4 className="attendance__subheading">Svar hittills</h4>
+          <h3 className="attendance__subheading">Svar hittills</h3>
           <p className="attendance__totals">
             <strong>{summary.data.coming}</strong> kommer, {summary.data.notComing} kan inte,{' '}
             {summary.data.notAnswered} har inte svarat

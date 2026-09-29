@@ -59,7 +59,9 @@ export function AdminPage() {
   if (status === 'okand') {
     return (
       <main className="page">
-        <p className="state">Laddar…</p>
+        <p className="state" role="status">
+          Laddar…
+        </p>
       </main>
     )
   }
@@ -88,7 +90,11 @@ export function AdminPage() {
         <p>Hantera din trupp — skapa färg-lag, sortera barnen och bjud in vårdnadshavare.</p>
       </header>
 
-      {trupper.isLoading && <p className="state">Hämtar dina trupper…</p>}
+      {trupper.isLoading && (
+        <p className="state" role="status">
+          Hämtar dina trupper…
+        </p>
+      )}
       {trupper.isError && (
         <p className="state state--error" role="alert">
           {trupper.error instanceof ApiError && trupper.error.offline

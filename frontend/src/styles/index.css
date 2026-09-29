@@ -3895,6 +3895,7 @@ a.match-card:focus-visible .match-card__opponent {
   border-top: 1px solid var(--border);
 }
 
+.admin-subsection > h2,
 .admin-subsection > h3 {
   margin: 0 0 8px;
 }
@@ -4269,10 +4270,24 @@ fieldset.form__field > legend {
 select.input {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239aa4b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  /* Mörkare pil i ljust läge: #9aa4b4 gav bara ~2:1 mot den ljusa ytan (#404, WCAG 1.4.11). */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235b6472' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 13px center;
   padding-right: 38px;
+}
+
+/* Ljusare pil i mörkt läge, där den mörka inte skulle synas mot det mörka fältet. */
+:root[data-theme='dark'] .form__field select,
+:root[data-theme='dark'] select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239aa4b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .form__field select,
+  :root:not([data-theme='light']) select.input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239aa4b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  }
 }
 
 /* ---- Accent-fokus på fält ------------------------------------------------- */

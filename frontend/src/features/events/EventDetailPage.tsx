@@ -88,7 +88,7 @@ export function EventDetailPage() {
       <header className="app-header">
         <p className="app-header__subtitle">
           <Link to="/lag/$slug" params={{ slug: team.slug }}>
-            ← {team.ageGroup} {team.name}
+            <span aria-hidden="true">←</span> {team.ageGroup} {team.name}
           </Link>
         </p>
         <h1>{eventLabel(event)}</h1>
