@@ -72,6 +72,21 @@ describe('bekräftelsen går inte att klicka igenom', () => {
     expect(calls.filter((call) => call.startsWith('DELETE'))).toHaveLength(1)
   })
 
+  it('flyttar fokus till bekräftelse-rubriken, inte till radera-knappen (#397)', async () => {
+    // WCAG 2.4.3: när steget fälls in ska tangentbord/SR tas till rubriken — och inte till den
+    // destruktiva knappen, så ett kvardröjande Enter inte råkar radera kontot.
+    stubApi()
+    const user = userEvent.setup()
+
+    render(<DeleteAccountSection onDeleted={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Radera mitt konto' }))
+
+    const heading = await screen.findByRole('heading', { name: 'Är du säker?' })
+    expect(heading).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Ja, radera kontot' })).not.toHaveFocus()
+  })
+
   it('går att ångra innan det är gjort', async () => {
     const calls = stubApi()
     const user = userEvent.setup()

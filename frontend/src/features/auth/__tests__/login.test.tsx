@@ -100,6 +100,20 @@ describe('inloggningsvyn', () => {
     )
   })
 
+  it('flyttar fokus till kod-fältet när kod-steget fälls in (#397)', async () => {
+    // WCAG 2.4.3: när adress-steget byts mot kod-steget ska fokus tas till kod-fältet, inte
+    // tappas till <body>, så man kan skriva koden direkt.
+    stubAuth()
+
+    const user = userEvent.setup()
+    renderRoute('/logga-in')
+
+    await user.type(await screen.findByLabelText('Mejladress'), 'foralder@example.com')
+    await user.click(screen.getByRole('button', { name: 'Skicka kod' }))
+
+    expect(await screen.findByLabelText('Kod från mejlet')).toHaveFocus()
+  })
+
   it('låter en skicka en ny kod utan att börja om', async () => {
     // Kommer koden inte fram, eller går den ut, ska en ny kunna begäras — utan att skriva in
     // adressen igen. Nedräkningen hindrar bara att man spammar backendens rate-limit.

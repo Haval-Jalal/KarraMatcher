@@ -244,8 +244,16 @@ function CodeStep({
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<CodeForm>({ resolver: zodResolver(codeSchema) })
+
+  // Kod-steget fälldes just in (från adress-steget); flytta fokus till kod-fältet så tangentbord-
+  // och skärmläsaranvändare kan skriva koden direkt i stället för att tappas till <body> (WCAG
+  // 2.4.3, #397).
+  useEffect(() => {
+    setFocus('code')
+  }, [setFocus])
 
   // En kod skickades nyss (steget innan), så nedräkningen börjar direkt: "skicka ny" väntar.
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ApiError } from '@/lib/api'
 
@@ -24,6 +24,15 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
   const [confirming, setConfirming] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
+  const confirmHeadingRef = useRef<HTMLHeadingElement>(null)
+
+  // När bekräftelse-steget fälls in flyttas fokus till dess rubrik (WCAG 2.4.3, #397) — inte till
+  // den destruktiva knappen, så ett kvardröjande Enter inte råkar radera kontot.
+  useEffect(() => {
+    if (confirming) {
+      confirmHeadingRef.current?.focus()
+    }
+  }, [confirming])
 
   if (!confirming) {
     return (
@@ -47,7 +56,9 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
 
   return (
     <section className="danger-zone">
-      <h2>Är du säker?</h2>
+      <h2 ref={confirmHeadingRef} tabIndex={-1}>
+        Är du säker?
+      </h2>
 
       <p className="state" role="alert">
         Det här tas bort direkt och går inte att ångra: ditt konto, dina samåkningar och dina
