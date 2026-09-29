@@ -50,6 +50,8 @@ interface Options {
   token?: string
   mine?: Record<string, unknown> | 'gate-off'
   summary?: unknown
+  /** Låter adminens summerings-GET hänga, så racet "roster klar före summering" kan prövas (#392). */
+  summaryPending?: boolean
   roster?: unknown
 }
 
@@ -81,6 +83,8 @@ function stub(options: Options) {
       // Adminens kallelse (GET summering / PUT urval): /admin/.../kallelse
       if (url.includes('/admin/') && url.includes('/kallelse')) {
         if (method === 'PUT') return Promise.resolve(emptyResponse(204))
+        // Hänger med flit: summeringen är ännu inte klar.
+        if (options.summaryPending) return new Promise<Response>(() => {})
         return Promise.resolve(
           jsonResponse(
             options.summary ?? {
@@ -224,6 +228,22 @@ describe('adminen skickar kallelse', () => {
       const ids = (put?.body as { childIds: string[] } | undefined)?.childIds ?? []
       expect([...ids].sort()).toEqual(['c1', 'c2'])
     })
+  })
+
+  it('döljer skicka-knappen tills sammanställningen laddat — nollställer inte kallelsen (#392)', async () => {
+    setAccessToken(ADMIN_TOKEN)
+    const sent = stub({ token: ADMIN_TOKEN, roster, summaryPending: true })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    // Rostern hinner klart medan summeringen ännu hänger: panelen säger att svaren hämtas...
+    expect(await screen.findByText('Hämtar svar…')).toBeInTheDocument()
+    // ...men den destruktiva knappen och kryssrutorna finns inte förrän vi vet vilka som är
+    // kallade. Utan grinden skulle ett tryck här full-synka en tom mängd och radera allt.
+    expect(screen.queryByRole('button', { name: 'Skicka kallelse' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Liam J')).not.toBeInTheDocument()
+    // Ingen kallelse-PUT har skickats.
+    expect(sent.some((r) => r.method === 'PUT' && r.url.includes('/kallelse'))).toBe(false)
   })
 
   it('visar sammanställningen och kan påminna', async () => {
