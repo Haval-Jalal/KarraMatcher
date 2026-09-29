@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { type HTMLAttributes, useId, useRef, useState } from 'react'
 
 import { accountIdFromToken } from '@/features/auth/authApi'
 import { ApiError } from '@/lib/api'
@@ -107,9 +107,22 @@ export function ChatView({
     moveTo(next)
   }
 
+  // Tab-semantiken gäller bara när det finns flera kanaler att växla mellan. Med en enda kanal
+  // renderas ingen tablist, så panelen får då INTE vara en tabpanel som pekar på ett tab-id som
+  // inte finns — då blir det en ensam tabpanel med ett hängande accessible name (#398).
+  const tabbed = list.length > 1
+  const panelProps: HTMLAttributes<HTMLDivElement> = tabbed
+    ? {
+        role: 'tabpanel',
+        id: `${baseId}-panel`,
+        'aria-labelledby': `${baseId}-tab-${selectedKey}`,
+        tabIndex: 0,
+      }
+    : {}
+
   return (
     <>
-      {list.length > 1 && (
+      {tabbed && (
         <div role="tablist" aria-label="Kanaler" className="chat-tabs">
           {list.map((channel, index) => {
             const key = keyOf(channel)
@@ -150,13 +163,7 @@ export function ChatView({
         </div>
       )}
 
-      <div
-        role="tabpanel"
-        id={`${baseId}-panel`}
-        aria-labelledby={`${baseId}-tab-${selectedKey}`}
-        tabIndex={0}
-        className="chat-panel"
-      >
+      <div className="chat-panel" {...panelProps}>
         <ChatChannel
           key={selectedKey}
           channel={toChannel(truppId, selected)}

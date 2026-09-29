@@ -344,6 +344,24 @@ describe('trupp-chatt', () => {
 })
 
 describe('kanalväxlare (#294)', () => {
+  it('med en enda kanal finns ingen tablist och ingen ensam tabpanel (#398)', async () => {
+    // Med bara primärkanalen ska varken tablist eller tabpanel renderas — annars pekar panelens
+    // aria-labelledby på ett tab-id som inte finns (hängande accessible name).
+    const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+    setAccessToken(token)
+    stub(token, false, (url) => {
+      if (url.includes('/chat/messages')) return MESSAGES
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    // Meddelandena finns (vyn renderade), men inga tab-roller.
+    expect(await screen.findByText('Hej alla')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument()
+  })
+
   it('listar truppens kanaler och byter kanal', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'm@example.com', sub: 'me' })
