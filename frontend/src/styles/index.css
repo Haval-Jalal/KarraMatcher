@@ -1978,6 +1978,21 @@ a.match-card:focus-visible .match-card__opponent {
   border-color: var(--danger);
 }
 
+/* Textareor (t.ex. chattens skrivfält) fick tidigare ingen egen stil och därmed webbläsarens
+   mindre standardtypsnitt — vilket zoomade in på iOS vid fokus. Samma stil som inmatningsfälten,
+   inkl. minst 16px. */
+.form__field textarea {
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  width: 100%;
+  resize: vertical;
+}
+
 /*
  * Felmeddelandet är text och inte bara en röd ram. Den som inte skiljer färger ska få
  * veta vad som är fel, inte bara att något är det (WCAG 1.4.1 och 3.3.1).
@@ -2106,23 +2121,7 @@ a.match-card:focus-visible .match-card__opponent {
  */
 .chat-msg {
   display: flex;
-  gap: 10px;
   align-items: flex-start;
-}
-
-.chat-msg__avatar {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--avatar-bg);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: var(--text-base);
 }
 
 .chat-msg__body {
@@ -2137,10 +2136,10 @@ a.match-card:focus-visible .match-card__opponent {
 .chat-msg__bubble {
   align-self: flex-start;
   max-width: 100%;
-  padding: 9px 12px;
+  padding: 6px 11px;
   background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 4px 14px 14px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
   box-shadow: var(--shadow-soft);
   cursor: pointer;
 
@@ -2256,16 +2255,12 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 /*
- * Egna meddelanden får en accent-tonad bubbla och avatar så ett samtal läses som mitt-mot-andras.
+ * Egna meddelanden får en accent-tonad bubbla så ett samtal läses som mitt-mot-andras.
  * Tonen är ett tillägg till författarnamnet — aldrig enda signalen (WCAG 1.4.1).
  */
 .chat-msg--own .chat-msg__bubble {
   background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-}
-
-.chat-msg--own .chat-msg__avatar {
-  background: color-mix(in srgb, var(--accent) 22%, var(--avatar-bg));
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* ---- Chatt: anmälan (#263) ------------------------------------------------ */
@@ -3360,7 +3355,8 @@ a.match-card:focus-visible .match-card__opponent {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
+  /* Reaktionerna hänger tätt under bubblan (bara flex-gapet från chat-msg__body). */
+  margin-top: 0;
 }
 
 .reaction {

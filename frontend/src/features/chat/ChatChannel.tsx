@@ -31,11 +31,6 @@ function whenText(iso: string): string {
 }
 
 /** Initialen till avataren. Bara en dekorativ bokstav — namnet står ändå i bubblan. */
-function initialOf(name: string | null): string {
-  const trimmed = name?.trim() ?? ''
-  return trimmed === '' ? '?' : trimmed.charAt(0).toUpperCase()
-}
-
 /**
  * Så många skilda anmälningar ett meddelande behöver innan truppens admin kan radera det
  * (speglar serverns `ChatService.RemovalReportThreshold`, `#263`). En admin tystar inte en
@@ -226,9 +221,6 @@ export function ChatChannel({
                   : 'chat-msg'
               }
             >
-              <span className="chat-msg__avatar" aria-hidden="true">
-                {initialOf(message.authorName)}
-              </span>
               <div className="chat-msg__body">
                 <div
                   className="chat-msg__bubble"
