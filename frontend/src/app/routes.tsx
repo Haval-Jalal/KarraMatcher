@@ -8,6 +8,7 @@ import {
 
 import { LoadingState } from '@/components/LoadingState'
 import { NotFound } from '@/components/NotFound'
+import { RouteError } from '@/components/RouteError'
 import { RootLayout } from '@/app/RootLayout'
 import { LoginPage } from '@/features/auth'
 import { HomePage } from '@/features/home'
@@ -426,6 +427,9 @@ export const router = createRouter({
   routeTree,
   // Förladda en routes chunk redan när muspekaren/fokus når länken, så bytet oftast känns direkt.
   defaultPreload: 'intent',
+  // Ett fel i en route (loader eller komponent) visar ett svenskt, loggat fallback med retry
+  // i stället för TanStacks engelska, ologgade standard (#389).
+  defaultErrorComponent: RouteError,
   // Medan en lazy-laddad vy hämtas: ett lugnt laddningsbesked i stället för en tom sida.
   defaultPendingComponent: () => (
     <main>
