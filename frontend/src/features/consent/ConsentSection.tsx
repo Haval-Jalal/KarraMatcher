@@ -25,6 +25,9 @@ export function ConsentSection() {
   const current = useCurrentConsent()
   const grant = useGrantConsent()
   const [failure, setFailure] = useState<string | null>(null)
+  // §KM.6: samtycket ska vara uttryckligt. En kryssruta "jag har läst och godkänner" måste
+  // bockas i innan knappen går att trycka — inte bara ett ensamt klick (#406).
+  const [affirmed, setAffirmed] = useState(false)
 
   return (
     <section aria-labelledby="samtycke-rubrik">
@@ -70,11 +73,20 @@ export function ConsentSection() {
             </p>
           )}
 
+          <label className="consent-confirm">
+            <input
+              type="checkbox"
+              checked={affirmed}
+              onChange={(event) => setAffirmed(event.target.checked)}
+            />{' '}
+            Jag har läst och godkänner texten ovan
+          </label>
+
           <div className="actions">
             <button
               type="button"
               className="button"
-              disabled={grant.isPending}
+              disabled={grant.isPending || !affirmed}
               onClick={() => {
                 setFailure(null)
                 void grant

@@ -83,6 +83,11 @@ describe('Samtycke på Mitt konto', () => {
     const consent = await screen.findByRole('button', { name: 'Jag samtycker' })
     expect(screen.getByText('Samtyckestext om barnets uppgifter.')).toBeInTheDocument()
 
+    // Uttryckligt samtycke (#406): knappen är avstängd tills man bockat "jag har läst och godkänner".
+    expect(consent).toBeDisabled()
+    await user.click(screen.getByLabelText(/Jag har läst och godkänner/))
+    expect(consent).toBeEnabled()
+
     consented = true
     await user.click(consent)
 

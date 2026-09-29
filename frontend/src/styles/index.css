@@ -3994,6 +3994,14 @@ a.match-card:focus-visible .match-card__opponent {
   color: var(--text);
 }
 
+/* Uttryckligt samtycke (#406): kryssrutan som låser upp "Jag samtycker". */
+.consent-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
 .state--ok code {
   word-break: break-all;
 }

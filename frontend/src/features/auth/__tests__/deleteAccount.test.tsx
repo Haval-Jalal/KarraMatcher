@@ -67,9 +67,34 @@ describe('bekräftelsen går inte att klicka igenom', () => {
     render(<DeleteAccountSection onDeleted={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: 'Radera mitt konto' }))
+    await user.type(await screen.findByLabelText(/Skriv RADERA/), 'RADERA')
     await user.click(await screen.findByRole('button', { name: 'Ja, radera kontot' }))
 
     expect(calls.filter((call) => call.startsWith('DELETE'))).toHaveLength(1)
+  })
+
+  it('kräver att man skriver RADERA innan knappen går att trycka (#406)', async () => {
+    const calls = stubApi()
+    const user = userEvent.setup()
+
+    render(<DeleteAccountSection onDeleted={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Radera mitt konto' }))
+
+    // Utan rätt ord är knappen avstängd.
+    const confirm = await screen.findByRole('button', { name: 'Ja, radera kontot' })
+    expect(confirm).toBeDisabled()
+
+    // Fel ord räcker inte.
+    await user.type(await screen.findByLabelText(/Skriv RADERA/), 'nej')
+    expect(confirm).toBeDisabled()
+
+    // Rätt ord låser upp den (skiftlägesokänsligt).
+    await user.clear(screen.getByLabelText(/Skriv RADERA/))
+    await user.type(screen.getByLabelText(/Skriv RADERA/), 'radera')
+    expect(confirm).toBeEnabled()
+
+    expect(calls.filter((call) => call.startsWith('DELETE'))).toHaveLength(0)
   })
 
   it('flyttar fokus till bekräftelse-rubriken, inte till radera-knappen (#397)', async () => {
@@ -137,6 +162,7 @@ describe('efter raderingen', () => {
     render(<DeleteAccountSection onDeleted={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: 'Radera mitt konto' }))
+    await user.type(await screen.findByLabelText(/Skriv RADERA/), 'RADERA')
     await user.click(await screen.findByRole('button', { name: 'Ja, radera kontot' }))
 
     expect(getAccessToken()).toBeNull()
@@ -151,6 +177,7 @@ describe('efter raderingen', () => {
     render(<DeleteAccountSection onDeleted={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: 'Radera mitt konto' }))
+    await user.type(await screen.findByLabelText(/Skriv RADERA/), 'RADERA')
     await user.click(await screen.findByRole('button', { name: 'Ja, radera kontot' }))
 
     expect(getAccessToken()).toBeNull()
