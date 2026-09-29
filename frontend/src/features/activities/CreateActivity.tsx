@@ -40,6 +40,21 @@ export function CreateActivity({ truppId }: { truppId: string }) {
     setFailure(null)
 
     const rosterData = roster.data
+
+    // Match och träning kallar barn. Kunde truppen inte hämtas (fel eller offline) skulle
+    // händelsen annars skapas helt utan kallelse, tyst — admin skulle tro att barnen blev
+    // kallade. Blockera i stället och säg varför (#391). rosterData saknas både vid fel och
+    // medan den fortfarande hämtas, så guardet täcker båda.
+    if (typeHasTarget(input.type) && !rosterData) {
+      setFailure(
+        roster.error instanceof ApiError && roster.error.offline
+          ? 'Ingen anslutning, så truppens barn och lag kunde inte hämtas. Ingen kallelse kan skickas — kontrollera nätet och försök igen.'
+          : 'Truppens barn och lag kunde inte hämtas, så ingen kallelse kan skickas. Ladda om och försök igen.',
+      )
+
+      return
+    }
+
     const { eventTeamId, childIds } =
       typeHasTarget(input.type) && rosterData
         ? resolveTarget(target, rosterData)

@@ -180,6 +180,47 @@ describe('skapa aktivitet med kallelse-målgrupp', () => {
     expect((kallelse(sent)!.body as { childIds: string[] }).childIds).toEqual(['c3'])
   })
 
+  it('blockerar en match när truppen inte kunde hämtas — ingen tyst händelse utan kallelse (#391)', async () => {
+    const sent: Sent[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+        const method = init?.method ?? 'GET'
+        sent.push({
+          url,
+          method,
+          body: typeof init?.body === 'string' ? JSON.parse(init.body) : null,
+        })
+
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        // Rostern misslyckas — barnväljaren kan inte laddas.
+        if (url.includes('/children')) return Promise.resolve(emptyResponse(500))
+        if (url.includes('/club-venue')) {
+          return Promise.resolve(
+            jsonResponse({ configured: true, name: 'Karra IP', address: 'Idrottsvagen 1' }),
+          )
+        }
+        if (url.includes('/events')) return Promise.resolve(jsonResponse({ id: 'ev-new' }, 201))
+        return Promise.resolve(jsonResponse({}))
+      }),
+    )
+
+    await renderWithProviders(<CreateActivity truppId={TRUPP} />)
+
+    // Match är förval. Fel-banner för rostern syns, men knappen är kvar — utan guardet skulle
+    // ett tryck skapa en match utan kallelse.
+    expect(await screen.findByText(/Kunde inte hämta truppens barn och lag/)).toBeInTheDocument()
+
+    setTime()
+    await userEvent.type(screen.getByLabelText('Motståndare'), 'Torslanda')
+    await userEvent.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
+
+    expect(await screen.findByText(/Truppens barn och lag kunde inte hämtas/)).toBeInTheDocument()
+    // Ingen händelse skapades.
+    expect(created(sent)).toBeUndefined()
+  })
+
   it('cup skapar bara händelsen — ingen kallelse', async () => {
     const sent = stub()
     await renderWithProviders(<CreateActivity truppId={TRUPP} />)
