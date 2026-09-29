@@ -28,8 +28,8 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
   // Raden försvinner när ansökan hanterats; utan ett besked märker en skärmläsaranvändare
   // ingenting (#394). role="status" annonserar utfallet.
   const [notice, setNotice] = useState<string | null>(null)
-
-  const busy = approve.isPending || deny.isPending
+  // Vilken ansökan som hanteras — så bara den radens knappar låses, inte alla (#407).
+  const [pendingId, setPendingId] = useState<string | null>(null)
 
   return (
     <div className="admin-subsection">
@@ -76,14 +76,16 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
                 <button
                   type="button"
                   className="button button--small"
-                  disabled={busy}
+                  disabled={pendingId === application.id}
                   onClick={() => {
                     setFailure(null)
                     setNotice(null)
+                    setPendingId(application.id)
                     void approve
                       .mutateAsync(application.id)
                       .then(() => setNotice('Ansökan godkänd.'))
                       .catch((error: unknown) => setFailure(messageOf(error)))
+                      .finally(() => setPendingId(null))
                   }}
                 >
                   Godkänn
@@ -92,14 +94,16 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
                   label="Neka"
                   className="button button--small"
                   confirmClassName="button button--small button--danger"
-                  disabled={busy}
+                  disabled={pendingId === application.id}
                   onConfirm={() => {
                     setFailure(null)
                     setNotice(null)
+                    setPendingId(application.id)
                     void deny
                       .mutateAsync(application.id)
                       .then(() => setNotice('Ansökan nekad.'))
                       .catch((error: unknown) => setFailure(messageOf(error)))
+                      .finally(() => setPendingId(null))
                   }}
                 />
               </div>
