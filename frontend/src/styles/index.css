@@ -3532,6 +3532,15 @@ a.match-card:focus-visible .match-card__opponent {
   border-top: 1px solid var(--hair);
 }
 
+/* Cup-lagets rad: namn + åtgärder inline; omdöpnings-fältet på samma rad (#408). */
+.cup-teams__team-actions,
+.cup-teams__rename {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 .cup__open {
   display: flex;
   flex-wrap: wrap;

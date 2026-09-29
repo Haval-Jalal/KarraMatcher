@@ -4,6 +4,7 @@ import {
   assignCupChild,
   createCupTeam,
   deleteCupTeam,
+  renameCupTeam,
   getCupSummary,
   getTruppCups,
   openCup,
@@ -78,6 +79,15 @@ export function useCreateCupTeam(truppId: string, eventId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (name: string) => createCupTeam(truppId, eventId, name),
+    onSuccess: () => client.invalidateQueries({ queryKey: cupKeys.summary(eventId) }),
+  })
+}
+
+export function useRenameCupTeam(truppId: string, eventId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ cupTeamId, name }: { cupTeamId: string; name: string }) =>
+      renameCupTeam(truppId, eventId, cupTeamId, name),
     onSuccess: () => client.invalidateQueries({ queryKey: cupKeys.summary(eventId) }),
   })
 }
