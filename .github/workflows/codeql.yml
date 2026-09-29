@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Hämta koden
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Initiera CodeQL
         uses: github/codeql-action/init@v4
