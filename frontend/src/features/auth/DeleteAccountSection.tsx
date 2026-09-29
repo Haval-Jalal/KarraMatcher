@@ -24,7 +24,12 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
   const [confirming, setConfirming] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
+  // §KM.6: raderingen är oåterkallelig. Kräv att man skriver RADERA — ett avsiktligt handgrepp,
+  // inte bara ett klick — innan knappen går att trycka (#406).
+  const [confirmText, setConfirmText] = useState('')
   const confirmHeadingRef = useRef<HTMLHeadingElement>(null)
+
+  const canDelete = confirmText.trim().toUpperCase() === 'RADERA'
 
   // När bekräftelse-steget fälls in flyttas fokus till dess rubrik (WCAG 2.4.3, #397) — inte till
   // den destruktiva knappen, så ett kvardröjande Enter inte råkar radera kontot.
@@ -70,6 +75,19 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
         den ligger kvar i den här telefonen tills du tar bort den själv.
       </p>
 
+      <div className="form__field">
+        <label htmlFor="radera-bekraftelse">
+          Skriv <strong>RADERA</strong> för att bekräfta
+        </label>
+        <input
+          id="radera-bekraftelse"
+          type="text"
+          autoComplete="off"
+          value={confirmText}
+          onChange={(event) => setConfirmText(event.target.value)}
+        />
+      </div>
+
       {failure !== null && (
         <p className="state state--error" role="alert">
           {failure}
@@ -82,6 +100,7 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
           className="button"
           onClick={() => {
             setConfirming(false)
+            setConfirmText('')
             setFailure(null)
           }}
         >
@@ -91,7 +110,7 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
         <button
           type="button"
           className="button button--danger"
-          disabled={working}
+          disabled={working || !canDelete}
           onClick={() => {
             void (async () => {
               setWorking(true)
