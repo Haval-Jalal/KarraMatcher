@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { CreateActivity } from './CreateActivity'
+import { ManageActivities } from './ManageActivities'
 import { useTruppActivities } from './useActivities'
 
 /**
@@ -127,6 +128,9 @@ export function ActivitiesPage() {
           {activities.data &&
             (activities.data.length === 0 ? (
               <p className="state">Inga aktiviteter är inlagda än.</p>
+            ) : canCreate ? (
+              // Admin: hanterbar tabell (ändra/ställ in/ta bort) i stället för läslistan (#408).
+              <ManageActivities truppId={truppId} activities={activities.data} />
             ) : (
               <EventList events={activities.data.map((item) => item.event)} />
             ))}
