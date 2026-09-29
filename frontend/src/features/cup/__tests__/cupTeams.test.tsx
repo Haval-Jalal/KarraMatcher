@@ -123,6 +123,34 @@ describe('cup-lag på händelsesidan', () => {
     })
   })
 
+  it('en admin byter namn på ett cup-lag (#408)', async () => {
+    const user = userEvent.setup()
+    setAccessToken(ADMIN_TOKEN)
+    const sent = stub(ADMIN_TOKEN, {
+      ...openCup,
+      teams: [{ id: 't1', name: 'Lag 1', members: [] }],
+    })
+
+    renderRoute(`/handelse/${CUP_ID}`)
+
+    await user.click(await screen.findByRole('button', { name: 'Byt namn' }))
+    const field = screen.getByLabelText('Nytt namn på Lag 1')
+    await user.clear(field)
+    await user.type(field, 'Lag Röd')
+    await user.click(screen.getByRole('button', { name: 'Spara' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.method === 'PUT' &&
+            r.url.includes(`/admin/trupper/${TRUPP}/events/${CUP_ID}/cup/teams/t1`) &&
+            !r.url.includes('/children'),
+        ),
+      ).toBe(true)
+    })
+  })
+
   it('en vårdnadshavare ser cup-lagen i läsläge utan skapa-knapp', async () => {
     setAccessToken(GUARDIAN_TOKEN)
     stub(GUARDIAN_TOKEN, {

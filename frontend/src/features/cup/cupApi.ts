@@ -99,6 +99,19 @@ export const createCupTeam = (
   name: string,
 ): Promise<{ id: string }> => postJson<{ id: string }>(cupTeamsBase(truppId, eventId), { name })
 
+/** Byter namn på ett cup-lag (`#408`). */
+export const renameCupTeam = (
+  truppId: string,
+  eventId: string,
+  cupTeamId: string,
+  name: string,
+): Promise<void> =>
+  postJson<void>(
+    `${cupTeamsBase(truppId, eventId)}/${encodeURIComponent(cupTeamId)}`,
+    { name },
+    { method: 'PUT' },
+  )
+
 /** Tar bort ett cup-lag (dess placeringar försvinner med det). */
 export const deleteCupTeam = (truppId: string, eventId: string, cupTeamId: string): Promise<void> =>
   postJson<void>(`${cupTeamsBase(truppId, eventId)}/${encodeURIComponent(cupTeamId)}`, undefined, {

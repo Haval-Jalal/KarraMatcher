@@ -7,6 +7,7 @@ import {
   useAssignCupChild,
   useCreateCupTeam,
   useDeleteCupTeam,
+  useRenameCupTeam,
   useUnassignCupChild,
 } from './useCup'
 
@@ -40,11 +41,14 @@ export function CupTeamsBuilder({
   isAdmin: boolean
 }) {
   const create = useCreateCupTeam(truppId, eventId)
+  const rename = useRenameCupTeam(truppId, eventId)
   const remove = useDeleteCupTeam(truppId, eventId)
   const assign = useAssignCupChild(truppId, eventId)
   const unassign = useUnassignCupChild(truppId, eventId)
 
   const [name, setName] = useState('')
+  // Vilket cup-lag som byter namn just nu, och den redigerade texten (#408).
+  const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
   const run = (action: Promise<unknown>) => {
@@ -116,19 +120,76 @@ export function CupTeamsBuilder({
         <ul className="cup-teams__list">
           {summary.teams.map((team) => (
             <li key={team.id} className="cup-teams__team">
-              <div className="cup-teams__team-head">
-                <strong>{team.name}</strong>
-                {isAdmin && (
+              {isAdmin && renaming?.id === team.id ? (
+                <form
+                  className="cup-teams__rename"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    const trimmed = renaming.value.trim()
+                    if (trimmed === '') {
+                      setFailure('Ge cup-laget ett namn.')
+                      return
+                    }
+                    run(
+                      rename
+                        .mutateAsync({ cupTeamId: team.id, name: trimmed })
+                        .then(() => setRenaming(null)),
+                    )
+                  }}
+                >
+                  <label htmlFor={`cup-team-rename-${team.id}`} className="visually-hidden">
+                    Nytt namn på {team.name}
+                  </label>
+                  <input
+                    id={`cup-team-rename-${team.id}`}
+                    type="text"
+                    autoComplete="off"
+                    maxLength={60}
+                    value={renaming.value}
+                    onChange={(event) => setRenaming({ id: team.id, value: event.target.value })}
+                  />
+                  <button
+                    type="submit"
+                    className="button button--small"
+                    disabled={rename.isPending}
+                  >
+                    Spara
+                  </button>
                   <button
                     type="button"
                     className="button button--small"
-                    disabled={remove.isPending}
-                    onClick={() => run(remove.mutateAsync(team.id))}
+                    onClick={() => setRenaming(null)}
                   >
-                    Ta bort laget
+                    Avbryt
                   </button>
-                )}
-              </div>
+                </form>
+              ) : (
+                <div className="cup-teams__team-head">
+                  <strong>{team.name}</strong>
+                  {isAdmin && (
+                    <span className="cup-teams__team-actions">
+                      <button
+                        type="button"
+                        className="button button--small"
+                        onClick={() => {
+                          setFailure(null)
+                          setRenaming({ id: team.id, value: team.name })
+                        }}
+                      >
+                        Byt namn
+                      </button>
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={remove.isPending}
+                        onClick={() => run(remove.mutateAsync(team.id))}
+                      >
+                        Ta bort laget
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
               {team.members.length > 0 ? (
                 <ul>
                   {team.members.map((member) => (
