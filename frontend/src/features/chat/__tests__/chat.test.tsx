@@ -206,6 +206,60 @@ describe('trupp-chatt', () => {
     })
   })
 
+  it('schemalägg utan tid postar inte — den visar ett fältfel i stället (#388)', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'ledare@example.com', sub: 'lead' })
+    setAccessToken(token)
+    const sent = stub(token, true, (url) => {
+      if (url.includes('/chat/scheduled')) return []
+      if (url.includes('/chat/messages')) return MESSAGES
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    await user.type(await screen.findByLabelText('Skriv ett meddelande'), 'Kom ihåg matchen')
+    await user.click(screen.getByLabelText(/Schemalägg/))
+    // Tiden lämnas tom med flit.
+    await user.click(screen.getByRole('button', { name: 'Schemalägg' }))
+
+    expect(await screen.findByText('Välj en giltig tid att skicka vid.')).toBeInTheDocument()
+    // Ingen direktpost: förr skickades meddelandet nu när tiden var tom.
+    expect(sent.some((r) => r.method === 'POST' && r.url.includes('/chat/messages'))).toBe(false)
+  })
+
+  it('schemalagd tid tolkas i svensk zon, inte enhetens (§KM.5, #388)', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'ledare@example.com', sub: 'lead' })
+    setAccessToken(token)
+    const sent = stub(token, true, (url) => {
+      if (url.includes('/chat/scheduled')) return []
+      if (url.includes('/chat/messages')) return MESSAGES
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    await user.type(await screen.findByLabelText('Skriv ett meddelande'), 'Kom ihåg matchen')
+    await user.click(screen.getByLabelText(/Schemalägg/))
+    fireEvent.change(screen.getByLabelText('Skicka vid'), {
+      target: { value: '2030-01-01T12:00' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Schemalägg' }))
+
+    // 12:00 svensk vintertid (UTC+1) ⇒ 11:00 UTC, oavsett testmiljöns zon.
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.url.includes('/api/v1/trupper/trupp-1/chat/messages') &&
+            r.method === 'POST' &&
+            (r.body as { publishAt?: string }).publishAt === '2030-01-01T11:00:00.000Z',
+        ),
+      ).toBe(true)
+    })
+  })
+
   it('en admin ser anmälda meddelanden med motiveringar, men får inte radera under tröskeln', async () => {
     const token = tokenWith({ email: 'admin@example.com', sub: 'adm', 'admin-trupp': 'trupp-1' })
     setAccessToken(token)

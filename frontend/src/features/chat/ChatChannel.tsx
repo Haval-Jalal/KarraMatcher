@@ -2,7 +2,12 @@ import { useRef, useState } from 'react'
 
 import { ConfirmButton } from '@/components/ConfirmButton'
 import { ApiError } from '@/lib/api'
-import { formatKickoffTime, formatMatchDate } from '@/lib/time'
+import {
+  formatKickoffTime,
+  formatMatchDate,
+  swedishLocalToUtc,
+  utcToSwedishLocalInput,
+} from '@/lib/time'
 
 import type { ChatChannel as Channel, ChatMessage } from './chatApi'
 import { MessageMenu } from './MessageMenu'
@@ -74,6 +79,7 @@ export function ChatChannel({
   const [body, setBody] = useState('')
   const [scheduling, setScheduling] = useState(false)
   const [when, setWhen] = useState('')
+  const [whenError, setWhenError] = useState<string | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
   // Anmälan: vilket meddelande formuläret är öppet för, motiveringstexten, och senast kvitterade.
@@ -156,8 +162,28 @@ export function ChatChannel({
       return
     }
 
-    const publishAt = scheduling && when !== '' ? new Date(when).toISOString() : undefined
+    // Schemaläggning kräver en giltig framtida tid. Tolkas alltid i Europe/Stockholm (§KM.5),
+    // aldrig i enhetens zon — annars sparar en ledare på resa fel ögonblick. Är tiden tom,
+    // ogiltig (eller den överhoppade timmen vid vårskiftet) eller redan passerad, avbryts
+    // sändningen med ett fältfel i stället för att posta nu.
+    let publishAt: string | undefined
+    if (scheduling) {
+      const iso = when === '' ? null : swedishLocalToUtc(when)
 
+      if (iso === null) {
+        setWhenError('Välj en giltig tid att skicka vid.')
+        return
+      }
+
+      if (new Date(iso).getTime() <= Date.now()) {
+        setWhenError('Välj en tid i framtiden.')
+        return
+      }
+
+      publishAt = iso
+    }
+
+    setWhenError(null)
     setFailure(null)
     post.mutate(
       {
@@ -381,7 +407,10 @@ export function ChatChannel({
               <input
                 type="checkbox"
                 checked={scheduling}
-                onChange={(event) => setScheduling(event.target.checked)}
+                onChange={(event) => {
+                  setScheduling(event.target.checked)
+                  setWhenError(null)
+                }}
               />{' '}
               Schemalägg i stället för att skicka nu
             </label>
@@ -393,8 +422,19 @@ export function ChatChannel({
                   id="chatt-tid"
                   type="datetime-local"
                   value={when}
-                  onChange={(event) => setWhen(event.target.value)}
+                  min={utcToSwedishLocalInput(new Date())}
+                  aria-invalid={whenError !== null}
+                  aria-describedby={whenError !== null ? 'chatt-tid-fel' : undefined}
+                  onChange={(event) => {
+                    setWhen(event.target.value)
+                    setWhenError(null)
+                  }}
                 />
+                {whenError !== null && (
+                  <p id="chatt-tid-fel" className="state state--error" role="alert">
+                    {whenError}
+                  </p>
+                )}
               </div>
             )}
           </>
