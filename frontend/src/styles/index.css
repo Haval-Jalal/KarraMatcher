@@ -859,6 +859,11 @@ h2 {
   margin-top: 20px;
 }
 
+/* Fallback vid ett oväntat renderingsfel (#389): knappen får luft från texten ovanför. */
+.error-fallback .button--action {
+  margin-top: 8px;
+}
+
 /* Två-stegs-bekräftelse (ConfirmButton): Bekräfta + Avbryt sida vid sida, på raden där knappen låg. */
 .confirm-inline {
   display: inline-flex;
