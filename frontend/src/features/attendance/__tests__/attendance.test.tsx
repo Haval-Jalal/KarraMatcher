@@ -228,6 +228,9 @@ describe('adminen skickar kallelse', () => {
       const ids = (put?.body as { childIds: string[] } | undefined)?.childIds ?? []
       expect([...ids].sort()).toEqual(['c1', 'c2'])
     })
+
+    // Skickandet kvitteras — annars vet adminen (och en skärmläsare) inte att det gick fram (#394).
+    expect(await screen.findByText('Kallelsen är skickad.')).toBeInTheDocument()
   })
 
   it('döljer skicka-knappen tills sammanställningen laddat — nollställer inte kallelsen (#392)', async () => {

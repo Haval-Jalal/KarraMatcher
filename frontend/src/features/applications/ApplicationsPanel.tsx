@@ -25,6 +25,9 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
   const approve = useApproveApplication(truppId)
   const deny = useDenyApplication(truppId)
   const [failure, setFailure] = useState<string | null>(null)
+  // Raden försvinner när ansökan hanterats; utan ett besked märker en skärmläsaranvändare
+  // ingenting (#394). role="status" annonserar utfallet.
+  const [notice, setNotice] = useState<string | null>(null)
 
   const busy = approve.isPending || deny.isPending
 
@@ -47,6 +50,12 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
         </p>
       )}
 
+      {notice !== null && (
+        <p className="state" role="status">
+          {notice}
+        </p>
+      )}
+
       {applications.data && (
         <ul className="admin-list">
           {applications.data.length === 0 && <li className="state">Inga väntande ansökningar.</li>}
@@ -66,8 +75,10 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
                   disabled={busy}
                   onClick={() => {
                     setFailure(null)
+                    setNotice(null)
                     void approve
                       .mutateAsync(application.id)
+                      .then(() => setNotice('Ansökan godkänd.'))
                       .catch((error: unknown) => setFailure(messageOf(error)))
                   }}
                 >
@@ -80,8 +91,10 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
                   disabled={busy}
                   onConfirm={() => {
                     setFailure(null)
+                    setNotice(null)
                     void deny
                       .mutateAsync(application.id)
+                      .then(() => setNotice('Ansökan nekad.'))
                       .catch((error: unknown) => setFailure(messageOf(error)))
                   }}
                 />
