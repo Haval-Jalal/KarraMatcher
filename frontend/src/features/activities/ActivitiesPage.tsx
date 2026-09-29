@@ -55,6 +55,13 @@ export function ActivitiesPage() {
           Hämtar…
         </p>
       )}
+      {trupper.isError && (
+        <p className="state state--error" role="alert">
+          {trupper.error instanceof ApiError && trupper.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta dina trupper just nu.'}
+        </p>
+      )}
       {trupper.data && options.length === 0 && (
         <p className="state">Du är inte medlem i någon trupp än.</p>
       )}

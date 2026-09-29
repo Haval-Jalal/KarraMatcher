@@ -1,5 +1,6 @@
 import { useApplications } from '@/features/applications'
 import { useRoster } from '@/features/children'
+import { ApiError } from '@/lib/api'
 
 import { useInvitations } from './useInvitations'
 
@@ -14,6 +15,36 @@ export function AdminOverview({ truppId, onGotoApplications }: Props) {
   const roster = useRoster(truppId)
   const applications = useApplications(truppId)
   const invitations = useInvitations(truppId)
+
+  // Nyckeltalen ska aldrig visa en påhittad nolla: faller någon fråga vet vi inte antalet, och
+  // "0 barn" när hämtningen misslyckats vilseleder adminen (`#381`). Visa tillstånd i stället.
+  const isPending = roster.isPending || applications.isPending || invitations.isPending
+  const isError = roster.isError || applications.isError || invitations.isError
+  const offline = [roster.error, applications.error, invitations.error].some(
+    (error) => error instanceof ApiError && error.offline,
+  )
+
+  if (isPending) {
+    return (
+      <div className="admin-overview">
+        <p className="state" role="status">
+          Hämtar översikten…
+        </p>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="admin-overview">
+        <p className="state state--error" role="alert">
+          {offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta översikten just nu.'}
+        </p>
+      </div>
+    )
+  }
 
   const children = roster.data?.children?.length ?? 0
   const teams = roster.data?.teams?.length ?? 0

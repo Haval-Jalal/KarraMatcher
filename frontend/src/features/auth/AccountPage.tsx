@@ -27,6 +27,9 @@ export function AccountPage() {
 
   const [profile, setProfile] = useState<AccountProfile | null>(null)
   const [editing, setEditing] = useState(false)
+  // Skilj "hämtningen misslyckades" från "namnet är tomt" — annars ser ett fel ut som att
+  // föräldern saknar namn (`#381`).
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useDocumentTitle('Mitt konto')
 
@@ -46,7 +49,11 @@ export function AccountPage() {
           setProfile(loaded)
         }
       } catch {
-        // Namnet ar inte det viktigaste pa sidan. Gar det inte att hamta star resten kvar.
+        // Namnet ar inte det viktigaste pa sidan. Gar det inte att hamta star resten kvar --
+        // men vi sager att det inte gick, i stallet for att visa "Inget namn ifyllt" (`#381`).
+        if (!cancelled) {
+          setLoadFailed(true)
+        }
       }
     })()
 
@@ -100,7 +107,11 @@ export function AccountPage() {
           />
         ) : (
           <div className="actions">
-            <p className="account__name">{profile?.displayName ?? 'Inget namn ifyllt'}</p>
+            <p className="account__name">
+              {loadFailed
+                ? 'Kunde inte hämta namnet just nu.'
+                : (profile?.displayName ?? 'Inget namn ifyllt')}
+            </p>
             <button
               type="button"
               className="button button--action"

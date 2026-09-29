@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { ApiError } from '@/lib/api'
 import { formatMatchDate } from '@/lib/time'
 
 import { listPasskeys, removePasskey } from './passkeysApi'
@@ -70,6 +71,14 @@ export function PasskeysSection() {
         Logga in snabbare nästa gång — med Face ID eller fingeravtryck, utan att vänta på en kod.
         E-postkoden fungerar fortfarande.
       </p>
+
+      {list.isError && (
+        <p className="state state--error" role="alert">
+          {list.error instanceof ApiError && list.error.offline
+            ? 'Ingen anslutning — dina passkeys kunde inte hämtas.'
+            : 'Kunde inte hämta dina passkeys just nu.'}
+        </p>
+      )}
 
       {list.data && list.data.length > 0 && (
         <ul className="passkey-list">
