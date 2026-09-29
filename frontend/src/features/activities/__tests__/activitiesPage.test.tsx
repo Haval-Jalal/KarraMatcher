@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
@@ -107,8 +108,94 @@ describe('Aktivitet-fliken', () => {
     renderRoute('/aktivitet')
 
     expect(await screen.findByRole('button', { name: 'Skapa aktivitet' })).toBeInTheDocument()
-    // Läslistan finns ändå.
-    expect(await screen.findByText(/Torslanda/)).toBeInTheDocument()
+    // Admin ser den hanterbara tabellen (ändra/ställ in/ta bort), inte bara läslistan (#408).
+    expect(
+      await screen.findByRole('button', { name: 'Ändra Borta mot Torslanda' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ta bort Borta mot Torslanda' })).toBeInTheDocument()
+  })
+
+  it('en admin kan ställa in och ta bort en aktivitet (#408)', async () => {
+    setAccessToken(ADMIN_TOKEN)
+    const sent: { url: string; method: string }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+        const method = init?.method ?? 'GET'
+        sent.push({ url, method })
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: ADMIN_TOKEN }))
+        if (url.includes('/api/v1/trupper/mina')) {
+          return Promise.resolve(
+            jsonResponse([{ id: TRUPP, clubName: 'Kärra', name: 'P2016', season: '2026' }]),
+          )
+        }
+        if (url.includes(`/api/v1/trupper/${TRUPP}/events`)) {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                event: {
+                  id: 'm1',
+                  type: 'Match',
+                  kickoffUtc: FUTURE,
+                  title: null,
+                  opponent: 'Torslanda',
+                  isHome: false,
+                  status: 'Scheduled',
+                  address: 'Klarebergsvallen',
+                  venue: {
+                    name: 'Klarebergsvallen',
+                    address: 'Klarebergsvallen',
+                    latitude: 57.8,
+                    longitude: 12,
+                  },
+                },
+                team: { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
+              },
+            ]),
+          )
+        }
+        if (url.includes('/api/v1/hem')) {
+          return Promise.resolve(
+            jsonResponse({ nextEvent: null, pendingKallelser: [], latestChat: null }),
+          )
+        }
+        // Admin-muteringarna svarar ok.
+        return Promise.resolve(jsonResponse({ id: 'm1', status: 'Cancelled' }))
+      }),
+    )
+    const user = userEvent.setup()
+
+    renderRoute('/aktivitet')
+
+    // Ställ in (ConfirmButton: klick + bekräfta) → POST .../events/m1/cancel.
+    await user.click(await screen.findByRole('button', { name: 'Ställ in Borta mot Torslanda' }))
+    await user.click(screen.getByRole('button', { name: 'Ställ in' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.method === 'POST' &&
+            r.url.includes(`/api/v1/admin/trupper/${TRUPP}/events/m1/cancel`),
+        ),
+      ).toBe(true)
+    })
+
+    // Ta bort → bekräftelsepanel → DELETE .../events/m1.
+    await user.click(screen.getByRole('button', { name: 'Ta bort Borta mot Torslanda' }))
+    await user.click(await screen.findByRole('button', { name: 'Ja, ta bort' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.method === 'DELETE' && r.url.includes(`/api/v1/admin/trupper/${TRUPP}/events/m1`),
+        ),
+      ).toBe(true)
+    })
   })
 
   it('visar ett tomläge när truppen saknar aktiviteter', async () => {

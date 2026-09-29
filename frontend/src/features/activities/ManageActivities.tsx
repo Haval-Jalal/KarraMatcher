@@ -1,0 +1,160 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+
+import type { EventInput } from '@/features/admin/adminApi'
+import { EventForm, SeasonOverview } from '@/features/admin'
+import { eventLabel, eventQueryKey, type TeamEvent } from '@/features/events'
+import { ApiError } from '@/lib/api'
+
+import {
+  cancelTruppEvent,
+  deleteTruppEvent,
+  updateTruppEvent,
+  type Activity,
+} from './activitiesApi'
+import { activitiesKeys } from './useActivities'
+
+function messageOf(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.offline ? 'Ingen anslutning. Kontrollera nätet och försök igen.' : error.message
+  }
+
+  return 'Något gick fel. Försök igen om en stund.'
+}
+
+/**
+ * Adminens hantering av truppens aktiviteter (`#408`): ändra, ställ in eller ta bort — för både
+ * trupp-övergripande och lag-riktade händelser i truppen. Backend fanns redan
+ * (`TruppEventAdminController`); det här är gränssnittet som saknades.
+ *
+ * <para>
+ * Samma tabell och formulär som tränarens lag-vy (<c>SeasonOverview</c>/<c>EventForm</c>), men
+ * riktat mot truppens admin-endpoints. Behörigheten prövas server-side (<c>AdminOfTrupp</c>);
+ * knapparna här speglar bara vad som går att göra.
+ * </para>
+ */
+export function ManageActivities({
+  truppId,
+  activities,
+}: {
+  truppId: string
+  activities: Activity[]
+}) {
+  const queryClient = useQueryClient()
+  const [editing, setEditing] = useState<TeamEvent | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<TeamEvent | null>(null)
+  const [failure, setFailure] = useState<string | null>(null)
+
+  const events = activities.map((item) => item.event)
+
+  // Efter en ändring: truppens aktivitetslista alltid, och den enskilda händelsen när ändringen
+  // rör en känd händelse — annars behåller en öppen händelsesida gammalt läge (samma som #393).
+  async function refresh(eventId?: string): Promise<void> {
+    await queryClient.invalidateQueries({ queryKey: activitiesKeys.list(truppId) })
+    if (eventId !== undefined) {
+      await queryClient.invalidateQueries({ queryKey: eventQueryKey(eventId) })
+    }
+  }
+
+  async function handleCancel(event: TeamEvent): Promise<void> {
+    setFailure(null)
+    try {
+      await cancelTruppEvent(truppId, event.id)
+      await refresh(event.id)
+    } catch (error) {
+      setFailure(messageOf(error))
+    }
+  }
+
+  async function handleDelete(event: TeamEvent): Promise<void> {
+    setFailure(null)
+    try {
+      await deleteTruppEvent(truppId, event.id)
+      await refresh(event.id)
+      setConfirmDelete(null)
+    } catch (error) {
+      setFailure(messageOf(error))
+    }
+  }
+
+  if (editing !== null) {
+    return (
+      <EventForm
+        truppId={truppId}
+        existing={editing}
+        onSubmit={async (input: EventInput) => {
+          // EventForm fångar och visar ett fel som kastas här; vid succé stänger vi formuläret.
+          await updateTruppEvent(truppId, editing.id, input)
+          await refresh(editing.id)
+          setEditing(null)
+        }}
+        onCancel={() => setEditing(null)}
+      />
+    )
+  }
+
+  return (
+    <>
+      {failure !== null && confirmDelete === null && (
+        <p className="state state--error" role="alert">
+          {failure}
+        </p>
+      )}
+
+      <SeasonOverview
+        events={events}
+        onEdit={(event) => {
+          setFailure(null)
+          setEditing(event)
+        }}
+        onCancel={(event) => {
+          void handleCancel(event)
+        }}
+        onDelete={(event) => {
+          setFailure(null)
+          setConfirmDelete(event)
+        }}
+      />
+
+      {confirmDelete !== null && (
+        <section className="danger-zone">
+          <h3>Ta bort {eventLabel(confirmDelete)}?</h3>
+
+          <p className="state" role="alert">
+            Händelsen försvinner helt ur schemat.{' '}
+            <strong>Ska en match ställas in ska du välja Ställ in i stället</strong> — då blir den
+            kvar i schemat, markerad som inställd.
+          </p>
+
+          {failure !== null && (
+            <p className="state state--error" role="alert">
+              {failure}
+            </p>
+          )}
+
+          <div className="actions">
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setFailure(null)
+                setConfirmDelete(null)
+              }}
+            >
+              Avbryt
+            </button>
+            <button
+              type="button"
+              className="button button--danger"
+              onClick={() => {
+                void handleDelete(confirmDelete)
+              }}
+            >
+              Ja, ta bort
+            </button>
+          </div>
+        </section>
+      )}
+    </>
+  )
+}

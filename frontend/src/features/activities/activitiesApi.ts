@@ -46,3 +46,28 @@ export interface Activity {
 export function getTruppActivities(truppId: string): Promise<Activity[]> {
   return getJson<Activity[]>(`/api/v1/trupper/${encodeURIComponent(truppId)}/events`)
 }
+
+const adminBase = (truppId: string) => `/api/v1/admin/trupper/${encodeURIComponent(truppId)}/events`
+
+/**
+ * Adminens hantering av en befintlig trupp-aktivitet (`#408`): ändra, ställ in eller ta bort.
+ * Laget flyttas inte vid ändring (server ignorerar `teamId` i kroppen); det bestäms vid skapande.
+ * Behörigheten prövas mot truppen (`AdminOfTrupp`).
+ */
+export function updateTruppEvent(
+  truppId: string,
+  id: string,
+  input: EventInput,
+): Promise<TeamEvent> {
+  return postJson<TeamEvent>(`${adminBase(truppId)}/${id}`, input, { method: 'PUT' })
+}
+
+/** Ställer in en trupp-aktivitet — den blir kvar i schemat, markerad som inställd. */
+export function cancelTruppEvent(truppId: string, id: string): Promise<TeamEvent> {
+  return postJson<TeamEvent>(`${adminBase(truppId)}/${id}/cancel`)
+}
+
+/** Tar bort en trupp-aktivitet helt. */
+export function deleteTruppEvent(truppId: string, id: string): Promise<void> {
+  return postJson<void>(`${adminBase(truppId)}/${id}`, undefined, { method: 'DELETE' })
+}
