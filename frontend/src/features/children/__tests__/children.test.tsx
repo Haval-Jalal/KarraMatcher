@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -107,6 +108,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('Barn & lag', () => {
@@ -224,6 +226,7 @@ describe('Barn & lag', () => {
     await user.type(screen.getByLabelText('Förnamn'), 'Ada')
     await user.type(screen.getByLabelText('Efternamnets initial'), 'S')
     await user.selectOptions(screen.getByLabelText('Lag (valfritt)'), 't1')
+    const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
     await user.click(screen.getByRole('button', { name: 'Lägg till barn' }))
 
     await waitFor(() => {
@@ -237,6 +240,11 @@ describe('Barn & lag', () => {
             (r.body as { teamId: string }).teamId === 't1',
         ),
       ).toBe(true)
+    })
+
+    // Även tränarens lag-roster invalideras (via prefix), inte bara admin-rostern (#399).
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['team', 'roster'] })
     })
 
     // Kvitto efter sparat, och fältet tömt för nästa barn.

@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -83,6 +84,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('lag-chatt', () => {
@@ -131,6 +133,7 @@ describe('lag-chatt', () => {
     fireEvent.contextMenu(within(row).getByRole('button', { name: /Vem tar med bollar/ }))
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
     await user.type(within(row).getByLabelText(/Varför anmäler/), 'Fel kanal')
+    const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
     await user.click(within(row).getByRole('button', { name: 'Skicka anmälan' }))
 
     await waitFor(() => {
@@ -142,6 +145,12 @@ describe('lag-chatt', () => {
             (r.body as { reason: string }).reason === 'Fel kanal',
         ),
       ).toBe(true)
+    })
+
+    // Anmälan från en lag-kanal ska ändå invalidera trupp-anmälningskön (via prefix), som förr
+    // bara hände för trupp-kanalen (#399).
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['chat', 'reports'] })
     })
   })
 
