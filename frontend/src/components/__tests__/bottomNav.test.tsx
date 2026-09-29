@@ -24,6 +24,7 @@ function tokenWith(claims: Record<string, unknown>): string {
 
 const PARENT = tokenWith({ email: 'foralder@example.com' })
 const COACH = tokenWith({ email: 'tranare@example.com', coach: ['gul'] })
+const ADMIN = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
 
 /** Släpper loss en förnyelse som hålls tillbaka. Sätts av stubben. */
 let releaseRenewal: (() => void) | null = null
@@ -222,6 +223,19 @@ describe('"Mer"-sidan visar rätt sak för rätt person', () => {
     await within(nav).findByRole('link', { name: 'Mitt konto' })
 
     expect(within(nav).queryByRole('link', { name: 'Sköt laget' })).not.toBeInTheDocument()
+  })
+
+  it('kallar trupp-admin-länken "Administrera truppen", inte "Tränare" (#395)', async () => {
+    signedInAs(ADMIN)
+
+    renderRoute('/mer')
+
+    // Skild från tränarens "Sköt laget" — annars går de två inte att skilja åt.
+    const link = await within(await merNav()).findByRole('link', {
+      name: 'Administrera truppen',
+    })
+    expect(link).toHaveAttribute('href', '/admin')
+    expect(within(await merNav()).queryByRole('link', { name: 'Tränare' })).not.toBeInTheDocument()
   })
 })
 

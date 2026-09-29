@@ -56,7 +56,7 @@ export function MorePage() {
           {loggedIn && adminOf.length > 0 && (
             <li>
               <Link className="mer-link" to="/admin">
-                Tränare
+                Administrera truppen
               </Link>
             </li>
           )}
