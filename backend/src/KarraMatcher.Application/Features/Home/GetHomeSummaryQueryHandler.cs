@@ -49,7 +49,8 @@ internal sealed class GetHomeSummaryQueryHandler(
         var truppIds = trupper.Select(t => t.Id).ToList();
         var teamIds = teams.Keys.ToList();
 
-        var nextEvent = await NextEventAsync(teamIds, nowUtc, cancellationToken).ConfigureAwait(false);
+        var nextEvent = await NextEventAsync(teamIds, truppIds, truppNames, nowUtc, cancellationToken)
+            .ConfigureAwait(false);
         var pending = await PendingAsync(accountId, nowUtc, cancellationToken).ConfigureAwait(false);
         var latestChat = await LatestChatAsync(truppIds, teamIds, truppNames, teams, cancellationToken)
             .ConfigureAwait(false);
@@ -59,18 +60,20 @@ internal sealed class GetHomeSummaryQueryHandler(
 
     private async Task<HomeEventDto?> NextEventAsync(
         List<Guid> teamIds,
+        List<Guid> truppIds,
+        Dictionary<Guid, string> truppNames,
         DateTime nowUtc,
         CancellationToken cancellationToken)
     {
-        if (teamIds.Count == 0)
+        if (teamIds.Count == 0 && truppIds.Count == 0)
         {
             return null;
         }
 
-        var item = await repository.NextEventAsync(teamIds, nowUtc, cancellationToken)
+        var item = await repository.NextEventAsync(teamIds, truppIds, nowUtc, cancellationToken)
             .ConfigureAwait(false);
 
-        if (item?.Team is null)
+        if (item is null)
         {
             return null;
         }
@@ -80,6 +83,10 @@ internal sealed class GetHomeSummaryQueryHandler(
         var dto = item.ToDto();
         var place = string.IsNullOrWhiteSpace(dto.Venue.Name) ? dto.Address : dto.Venue.Name;
 
+        // En trupp-övergripande händelse (utan lag) etiketteras med truppens namn (#386).
+        var teamName = item.Team?.Name
+            ?? (truppNames.TryGetValue(item.AgeGroupId, out var name) ? name : "Truppen");
+
         return new HomeEventDto(
             item.Id,
             item.Type.ToString(),
@@ -87,8 +94,8 @@ internal sealed class GetHomeSummaryQueryHandler(
             item.Title,
             item.OpponentName,
             item.IsHome,
-            item.Team.Slug,
-            item.Team.Name,
+            item.Team?.Slug,
+            teamName,
             place);
     }
 

@@ -14,7 +14,8 @@ export interface HomeEvent {
   title: string | null
   opponent: string | null
   isHome: boolean | null
-  teamSlug: string
+  /** Null för en trupp-övergripande händelse utan färg-lag (#386); teamName bär då truppens namn. */
+  teamSlug: string | null
   teamName: string
   place: string
 }

@@ -182,6 +182,7 @@
 | Issue | Vem | Branch | Status |
 |-------|-----|--------|--------|
 | `#244` Klient-push | Haval | `feature/v2-client-push` | In Review — enhetsprenumeration (tillstånd → `pushManager.subscribe` → `POST /teams/{slug}/push`, av via `DELETE`), service worker `push`/`notificationclick`, enhetsväxel i notisinställningarna; buggfix `/match/`→`/handelse/` i samåkningsnotiser; BE 640 + FE 602 tester gröna |
+| `#386` Hem visar trupp-övergripande händelser | Haval | `fix/home-trupp-events` | In Review — Hem-vyns "Nästa händelse" och "Väntar på ditt svar" tog bara med lag-riktade händelser; en trupp-övergripande händelse (`TeamId == null`) i medlemmens trupp föll bort. `NextEventAsync`/`PendingKallelserAsync` tar nu med dem (vänster-join laget) och etiketterar dem med truppens namn (`teamSlug = null`). BE + FE gröna |
 
 ## ➡️ Nästa steg
 

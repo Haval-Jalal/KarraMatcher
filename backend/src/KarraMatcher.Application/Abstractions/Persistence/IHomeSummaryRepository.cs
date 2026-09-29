@@ -9,17 +9,19 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 public interface IHomeSummaryRepository
 {
     /// <summary>
-    /// Närmaste kommande, ej inställda händelse i något av <paramref name="teamIds"/>. Laddar
-    /// spelplats och klubb så att platsen kan lösas som i schemat.
+    /// Närmaste kommande, ej inställda händelse i något av <paramref name="teamIds"/> eller en
+    /// trupp-övergripande händelse (utan lag) i någon av <paramref name="truppIds"/> (`#332`, #386).
+    /// Laddar spelplats och klubb så att platsen kan lösas som i schemat.
     /// </summary>
     public Task<Event?> NextEventAsync(
         IReadOnlyCollection<Guid> teamIds,
+        IReadOnlyCollection<Guid> truppIds,
         DateTime nowUtc,
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Kommande händelser där ett av kontots egna barn saknar svar på en öppen kallelse (endast
-    /// lag där kallelse är påslagen). En rad per händelse med antalet barn utan svar.
+    /// Kommande händelser där ett av kontots egna barn saknar svar på en öppen kallelse — inklusive
+    /// trupp-övergripande händelser utan lag (#386). En rad per händelse med antalet barn utan svar.
     /// </summary>
     public Task<IReadOnlyList<PendingKallelseRow>> PendingKallelserAsync(
         Guid accountId,
