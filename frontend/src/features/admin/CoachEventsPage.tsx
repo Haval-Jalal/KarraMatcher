@@ -5,13 +5,28 @@ import { useState } from 'react'
 import { CarpoolOverview } from '@/features/carpool'
 import { TeamRosterSection } from '@/features/children'
 import { useAuth } from '@/features/auth'
-import { eventLabel, teamEventsQueryKey, useTeamEvents, type TeamEvent } from '@/features/events'
+import {
+  eventLabel,
+  eventQueryKey,
+  teamEventsQueryKey,
+  useTeamEvents,
+  type TeamEvent,
+} from '@/features/events'
+import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { cancelEvent, createEvent, deleteEvent, updateEvent } from './adminApi'
 import { EventForm } from './EventForm'
 import { ScheduleImport } from './ScheduleImport'
 import { SeasonOverview } from './SeasonOverview'
+
+function messageOf(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.offline ? 'Ingen anslutning. Kontrollera nätet och försök igen.' : error.message
+  }
+
+  return 'Något gick fel. Försök igen om en stund.'
+}
 
 /**
  * Tränarens vy för ett lag.
@@ -35,11 +50,40 @@ export function CoachEventsPage() {
   const [editing, setEditing] = useState<TeamEvent | null>(null)
   const [adding, setAdding] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<TeamEvent | null>(null)
+  const [failure, setFailure] = useState<string | null>(null)
 
   useDocumentTitle('Sköt laget')
 
-  const refresh = async () => {
+  // Efter en ändring: lagets schema alltid, och den enskilda händelsen när ändringen rör en
+  // känd händelse — annars behåller en öppen händelsesida gammal tid/motståndare/inställt-läge
+  // (#393).
+  const refresh = async (eventId?: string) => {
     await queryClient.invalidateQueries({ queryKey: teamEventsQueryKey(slug) })
+    if (eventId !== undefined) {
+      await queryClient.invalidateQueries({ queryKey: eventQueryKey(eventId) })
+    }
+  }
+
+  async function handleCancel(event: TeamEvent): Promise<void> {
+    setFailure(null)
+    try {
+      await cancelEvent(slug, event.id)
+      await refresh(event.id)
+    } catch (error) {
+      setFailure(messageOf(error))
+    }
+  }
+
+  async function handleDelete(event: TeamEvent): Promise<void> {
+    setFailure(null)
+    try {
+      await deleteEvent(slug, event.id)
+      await refresh(event.id)
+      setConfirmDelete(null)
+    } catch (error) {
+      // Panelen står kvar öppen så tränaren ser felet och kan försöka igen eller avbryta.
+      setFailure(messageOf(error))
+    }
   }
 
   /*
@@ -87,13 +131,15 @@ export function CoachEventsPage() {
           truppId={data.truppId}
           {...(editing !== null ? { existing: editing } : {})}
           onSubmit={async (input) => {
+            // EventForm fångar och visar ett fel som kastas här; vid succé stänger vi formuläret.
             if (editing !== null) {
               await updateEvent(slug, editing.id, input)
+              await refresh(editing.id)
             } else {
               await createEvent(slug, input)
+              await refresh()
             }
 
-            await refresh()
             setAdding(false)
             setEditing(null)
           }}
@@ -136,16 +182,25 @@ export function CoachEventsPage() {
 
       <h2 className="match-list__title">Hela säsongen</h2>
 
+      {failure !== null && confirmDelete === null && (
+        <p className="state state--error" role="alert">
+          {failure}
+        </p>
+      )}
+
       <SeasonOverview
         events={data?.events ?? []}
-        onEdit={setEditing}
-        onCancel={(event) => {
-          void (async () => {
-            await cancelEvent(slug, event.id)
-            await refresh()
-          })()
+        onEdit={(event) => {
+          setFailure(null)
+          setEditing(event)
         }}
-        onDelete={setConfirmDelete}
+        onCancel={(event) => {
+          void handleCancel(event)
+        }}
+        onDelete={(event) => {
+          setFailure(null)
+          setConfirmDelete(event)
+        }}
       />
 
       {confirmDelete !== null && (
@@ -158,11 +213,18 @@ export function CoachEventsPage() {
             kvar i schemat, markerad som inställd.
           </p>
 
+          {failure !== null && (
+            <p className="state state--error" role="alert">
+              {failure}
+            </p>
+          )}
+
           <div className="actions">
             <button
               type="button"
               className="button"
               onClick={() => {
+                setFailure(null)
                 setConfirmDelete(null)
               }}
             >
@@ -172,11 +234,7 @@ export function CoachEventsPage() {
               type="button"
               className="button button--danger"
               onClick={() => {
-                void (async () => {
-                  await deleteEvent(slug, confirmDelete.id)
-                  await refresh()
-                  setConfirmDelete(null)
-                })()
+                void handleDelete(confirmDelete)
               }}
             >
               Ja, ta bort

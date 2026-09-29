@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
-import { jsonResponse } from '@/test/apiStub'
+import { emptyResponse, jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -256,6 +256,123 @@ describe('borttagning kräver bekräftelse', () => {
     // Utan matcher finns ingen Ta bort-knapp — vilket i sig är rätt beteende.
     expect(await screen.findByRole('heading', { name: 'Sköt laget' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Ja, ta bort matchen' })).not.toBeInTheDocument()
+  })
+})
+
+describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
+  const MATCH = {
+    id: 'ev1',
+    type: 'Match' as const,
+    kickoffUtc: '2026-09-20T12:00:00.000Z',
+    title: null,
+    opponent: 'Torslanda',
+    isHome: true,
+    status: 'Scheduled' as const,
+    address: 'Kareby Hed, Kungälv',
+    venue: {
+      name: 'Kareby IS',
+      address: 'Kareby Hed, Kungälv',
+      latitude: 57.9,
+      longitude: 12.0,
+    },
+  }
+
+  /** Som stubApi, men med en seedad match och styrbara fel på ställ-in/ta-bort. */
+  function seedStub(token: string, options: { failCancel?: boolean; failDelete?: boolean }) {
+    const sent: { url: string; method: string; body: unknown }[] = []
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+        const method = init?.method ?? 'GET'
+        sent.push({
+          url,
+          method,
+          body: typeof init?.body === 'string' ? JSON.parse(init.body) : null,
+        })
+
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: token }))
+        if (url.includes('/club-venue')) {
+          return Promise.resolve(
+            jsonResponse({
+              name: 'Kareby IS',
+              address: 'Kareby Hed, Kungälv',
+              latitude: 57.9,
+              longitude: 12.0,
+              configured: true,
+            }),
+          )
+        }
+        if (url.includes('/roster')) {
+          return Promise.resolve(
+            jsonResponse({ team: { id: 't1', name: 'Gul', colorHex: '#D9A21B' }, children: [] }),
+          )
+        }
+        if (url.includes('/events/ev1/cancel') && method === 'POST') {
+          return options.failCancel
+            ? Promise.resolve(
+                jsonResponse({ title: 'Kunde inte ställa in', detail: 'Redan borttagen.' }, 409),
+              )
+            : Promise.resolve(jsonResponse({ ...MATCH, status: 'Cancelled' }))
+        }
+        if (url.includes('/events/ev1') && method === 'DELETE') {
+          return options.failDelete
+            ? Promise.resolve(
+                jsonResponse({ title: 'Kunde inte ta bort', detail: 'Redan borttagen.' }, 409),
+              )
+            : Promise.resolve(emptyResponse(204))
+        }
+        if (url.includes('/events')) {
+          return Promise.resolve(
+            jsonResponse({
+              team: { slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' },
+              events: [MATCH],
+              truppId: 'trupp-p2016',
+            }),
+          )
+        }
+
+        return Promise.resolve(jsonResponse({}))
+      }),
+    )
+
+    return sent
+  }
+
+  it('ett misslyckat borttag visar ett fel och stänger inte panelen', async () => {
+    const token = coachToken('gul')
+    seedStub(token, { failDelete: true })
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Ta bort Hemma mot Torslanda' }))
+    const heading = await screen.findByRole('heading', { name: 'Ta bort Hemma mot Torslanda?' })
+    await user.click(screen.getByRole('button', { name: 'Ja, ta bort' }))
+
+    expect(await screen.findByText('Kunde inte ta bort — Redan borttagen.')).toBeInTheDocument()
+    // Panelen står kvar öppen så tränaren kan försöka igen eller avbryta.
+    expect(heading).toBeInTheDocument()
+  })
+
+  it('en lyckad inställning uppdaterar även händelsesidans cache', async () => {
+    const token = coachToken('gul')
+    seedStub(token, {})
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    const { queryClient } = renderRoute('/lag/gul/tranare')
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+    await user.click(await screen.findByRole('button', { name: 'Ställ in Hemma mot Torslanda' }))
+    await user.click(await screen.findByRole('button', { name: 'Ställ in' }))
+
+    // Utan detta behåller en öppen händelsesida gammal tid/inställt-läge (#393).
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['event', 'ev1'] }))
   })
 })
 
