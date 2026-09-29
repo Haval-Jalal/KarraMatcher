@@ -138,6 +138,22 @@ describe('trupp-chatt', () => {
     })
   })
 
+  it('långtryck-menyn är en dialog med ett namn (#404)', async () => {
+    setAccessToken(tokenWith({ email: 'm@example.com', sub: 'me' }))
+    stub(tokenWith({ email: 'm@example.com', sub: 'me' }), false, (url) => {
+      if (url.includes('/chat/messages')) return MESSAGES
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    const row = (await screen.findByText('Hej alla')).closest('li') as HTMLElement
+    fireEvent.contextMenu(within(row).getByRole('button', { name: /Hej alla/ }))
+
+    // Rollen gör menyn till en modal popover för skärmläsare (i stället för bara en märkt div).
+    expect(await screen.findByRole('dialog', { name: 'Val för meddelandet' })).toBeInTheDocument()
+  })
+
   it('anmälan kräver en motivering och POST:ar den, med kvitto', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'm@example.com', sub: 'me' })

@@ -82,7 +82,7 @@ export function ScheduleImport({ slug, onImported }: { slug: string; onImported:
     <section className="import">
       <h2>Klistra in hela schemat</h2>
 
-      <p className="state">
+      <p id="schema-hjalp" className="state">
         En rad per match: datum, tid, lag, motståndare och spelplats. Tabb, semikolon eller komma
         mellan fälten — ett kopierat kalkylark fungerar som det är.
       </p>
@@ -92,6 +92,7 @@ export function ScheduleImport({ slug, onImported }: { slug: string; onImported:
         <textarea
           id="schema"
           rows={8}
+          aria-describedby="schema-hjalp"
           value={text}
           onChange={(event) => {
             setText(event.target.value)

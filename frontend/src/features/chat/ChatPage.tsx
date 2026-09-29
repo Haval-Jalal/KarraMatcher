@@ -41,7 +41,11 @@ export function ChatPage() {
         )}
       </header>
 
-      {trupper.isLoading && <p className="state">Hämtar…</p>}
+      {trupper.isLoading && (
+        <p className="state" role="status">
+          Hämtar…
+        </p>
+      )}
       {trupper.isError && (
         <p className="state state--error" role="alert">
           {trupper.error instanceof ApiError && trupper.error.offline

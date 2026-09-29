@@ -92,6 +92,12 @@ export function CalendarSection() {
             </button>
           </div>
 
+          {/* Kvitto i en live-region: en skärmläsare annonserar "Kopierad" — knappens egen
+              textväxling annonseras inte av sig själv (#404). */}
+          <p className="visually-hidden" role="status">
+            {copied ? 'Länken är kopierad.' : ''}
+          </p>
+
           <p className="admin-muted">
             I Apple Kalender eller Google Kalender: välj <em>Prenumerera på kalender</em> och
             klistra in länken.

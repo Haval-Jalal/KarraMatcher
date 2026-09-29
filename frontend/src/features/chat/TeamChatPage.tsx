@@ -29,7 +29,11 @@ export function TeamChatPage() {
         <h1>Chatt</h1>
       </header>
 
-      {meta.isLoading && <p className="state">Hämtar…</p>}
+      {meta.isLoading && (
+        <p className="state" role="status">
+          Hämtar…
+        </p>
+      )}
       {meta.isError && (
         <p className="state state--error" role="alert">
           {meta.error instanceof ApiError && meta.error.offline
