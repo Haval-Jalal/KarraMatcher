@@ -25,15 +25,37 @@ export class ApiError extends Error {
   }
 }
 
+/** Samlar fältmeddelandena ur ett ValidationProblemDetails `errors`-objekt: { fält: [msg, …] }. */
+function fieldMessages(errors: unknown): string[] {
+  if (errors === null || typeof errors !== 'object') {
+    return []
+  }
+
+  return Object.values(errors as Record<string, unknown>)
+    .flatMap((value): unknown[] => (Array.isArray(value) ? (value as unknown[]) : [value]))
+    .filter((message): message is string => typeof message === 'string' && message.trim() !== '')
+}
+
 /** Plockar ut ett begripligt meddelande ur ett ProblemDetails-svar. */
 async function messageFor(response: Response): Promise<string> {
   try {
     const problem: unknown = await response.json()
 
     if (problem !== null && typeof problem === 'object') {
-      const { title, detail } = problem as { title?: unknown; detail?: unknown }
-      const parts = [title, detail].filter((part): part is string => typeof part === 'string')
+      const { title, detail, errors } = problem as {
+        title?: unknown
+        detail?: unknown
+        errors?: unknown
+      }
 
+      // Ett valideringsfel (400) bär de faktiska fältmeddelandena i `errors` och lämnar `detail`
+      // tom — utan det här hade användaren bara sett titeln "Felaktig förfrågan" (#403).
+      const fields = fieldMessages(errors)
+      if (fields.length > 0) {
+        return fields.join(' ')
+      }
+
+      const parts = [title, detail].filter((part): part is string => typeof part === 'string')
       if (parts.length > 0) {
         return parts.join(' — ')
       }

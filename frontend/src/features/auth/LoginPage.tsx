@@ -53,7 +53,11 @@ function safeDestination(next: unknown): string {
 const RESEND_COOLDOWN_SECONDS = 30
 
 const emailSchema = z.object({
-  email: z.string().min(1, 'Fyll i din mejladress.').email('Mejladressen ser inte riktig ut.'),
+  email: z
+    .string()
+    .min(1, 'Fyll i din mejladress.')
+    .email('Mejladressen ser inte riktig ut.')
+    .max(320, 'Mejladressen är för lång.'),
 })
 
 const codeSchema = z.object({

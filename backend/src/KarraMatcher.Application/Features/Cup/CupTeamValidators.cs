@@ -25,3 +25,44 @@ internal sealed class RenameCupTeamCommandValidator : AbstractValidator<RenameCu
             .MaximumLength(CupTeam.MaxName).WithMessage("Namnet är för långt.");
     }
 }
+
+/*
+ * Kommandona nedan har inga fritextfält — bara id:n — men saknade tidigare validator helt, så
+ * CommandValidationBehavior hoppade tyst över dem (`#403`). NotEmpty-reglerna avvisar ett tomt
+ * Guid tidigt med ett begripligt fel i stället för att låta ett meningslöst id nå tjänsten.
+ */
+
+/// <summary>Ett cup-lag att ta bort måste pekas ut.</summary>
+internal sealed class DeleteCupTeamCommandValidator : AbstractValidator<DeleteCupTeamCommand>
+{
+    public DeleteCupTeamCommandValidator()
+    {
+        RuleFor(command => command.TruppId).NotEmpty();
+        RuleFor(command => command.EventId).NotEmpty();
+        RuleFor(command => command.CupTeamId).NotEmpty();
+    }
+}
+
+/// <summary>Både laget och barnet måste pekas ut vid placering.</summary>
+internal sealed class AssignCupChildCommandValidator : AbstractValidator<AssignCupChildCommand>
+{
+    public AssignCupChildCommandValidator()
+    {
+        RuleFor(command => command.TruppId).NotEmpty();
+        RuleFor(command => command.EventId).NotEmpty();
+        RuleFor(command => command.CupTeamId).NotEmpty();
+        RuleFor(command => command.ChildId).NotEmpty();
+    }
+}
+
+/// <summary>Både laget och barnet måste pekas ut när barnet tas bort ur laget.</summary>
+internal sealed class UnassignCupChildCommandValidator : AbstractValidator<UnassignCupChildCommand>
+{
+    public UnassignCupChildCommandValidator()
+    {
+        RuleFor(command => command.TruppId).NotEmpty();
+        RuleFor(command => command.EventId).NotEmpty();
+        RuleFor(command => command.CupTeamId).NotEmpty();
+        RuleFor(command => command.ChildId).NotEmpty();
+    }
+}

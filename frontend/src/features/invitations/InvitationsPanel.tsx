@@ -18,7 +18,7 @@ function messageOf(error: unknown): string {
 }
 
 const schema = z.object({
-  email: z.string().trim().email('Adressen ser inte giltig ut.'),
+  email: z.string().trim().email('Adressen ser inte giltig ut.').max(320, 'Adressen är för lång.'),
 })
 
 type FormValues = z.infer<typeof schema>

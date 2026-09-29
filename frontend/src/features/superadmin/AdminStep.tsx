@@ -6,7 +6,9 @@ import { z } from 'zod'
 import { superadminError } from './superadminError'
 import { useAdmins, useGrantAdmin, useRevokeAdmin } from './useSuperadmin'
 
-const schema = z.object({ email: z.string().trim().email('Adressen ser inte giltig ut.') })
+const schema = z.object({
+  email: z.string().trim().email('Adressen ser inte giltig ut.').max(320, 'Adressen är för lång.'),
+})
 
 /**
  * Tilldela admins till en trupp (`#192`, `#261`) — sista steget i uppsättningsguiden.

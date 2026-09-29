@@ -649,6 +649,7 @@ function ChildDetail({
           <input
             id={`koppla-vh-${child.id}`}
             type="email"
+            maxLength={320}
             value={guardianEmail}
             onChange={(event) => {
               setGuardianEmail(event.target.value)
@@ -785,6 +786,7 @@ function AddChild({ truppId, teams }: { truppId: string; teams: RosterTeam[] }) 
         <input
           id="nytt-barn-fornamn"
           type="text"
+          maxLength={50}
           value={firstName}
           onChange={(event) => {
             setFirstName(event.target.value)
