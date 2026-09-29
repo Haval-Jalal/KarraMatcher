@@ -32,7 +32,8 @@ export function useInvitations(truppId: string | null) {
 export function useCreateInvitation(truppId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (email: string) => createInvitation(truppId, email),
+    mutationFn: ({ email, teamId }: { email: string; teamId: string | null }) =>
+      createInvitation(truppId, email, teamId),
     onSuccess: () => client.invalidateQueries({ queryKey: invitationKeys.list(truppId) }),
   })
 }
