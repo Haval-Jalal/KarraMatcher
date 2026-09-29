@@ -21,8 +21,10 @@ internal sealed class GetEventQueryHandler(IEventRepository events)
         }
 
         // Laget är valfritt (`#332`): en trupp-vid händelse har inget lag (och ingen lagfärg),
-        // men hör alltid till en trupp. Truppens id tas från händelsen direkt (AgeGroupId),
-        // inte via laget, så det finns även utan lag.
-        return new EventDetailDto(item.ToDto(), item.Team?.ToDto(), item.AgeGroupId);
+        // men hör alltid till en trupp. Truppens id och namn tas från händelsen direkt (AgeGroup),
+        // inte via laget, så de finns även utan lag — detaljsidan får då en rubrik ändå (#408).
+        var truppName = item.Team?.AgeGroup?.Name ?? item.AgeGroup?.Name ?? "Truppen";
+
+        return new EventDetailDto(item.ToDto(), item.Team?.ToDto(), item.AgeGroupId, truppName);
     }
 }

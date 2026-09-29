@@ -68,7 +68,7 @@ export function EventDetailPage() {
     )
   }
 
-  const { event, team, truppId } = data
+  const { event, team, truppId, truppName } = data
   const isMatch = event.type === 'Match'
   // Kallelsen gäller match och träning (§KM.7): hela truppen tränar ihop, och en match
   // kallar ett lag som fylls på med barn ur andra lag. Övrig händelse har ingen kallelse.
@@ -76,20 +76,26 @@ export function EventDetailPage() {
 
   /*
    * Barnen som spelar i det har laget. Lases direkt fran enheten, inte genom en hook.
+   * En trupp-vid händelse (utan lag) matchar alla barns kort.
    */
   const childrenForMatch = readCard().children.filter(
-    (child) => child.teamSlug === null || child.teamSlug === team.slug,
+    (child) => child.teamSlug === null || (team !== null && child.teamSlug === team.slug),
   )
   const isCancelled = event.status === 'Cancelled'
   const isPostponed = event.status === 'Postponed'
 
   return (
-    <main style={teamThemeStyle(team.colorHex)}>
+    <main style={teamThemeStyle(team?.colorHex)}>
       <header className="app-header">
         <p className="app-header__subtitle">
-          <Link to="/lag/$slug" params={{ slug: team.slug }}>
-            <span aria-hidden="true">←</span> {team.ageGroup} {team.name}
-          </Link>
+          {team !== null ? (
+            <Link to="/lag/$slug" params={{ slug: team.slug }}>
+              <span aria-hidden="true">←</span> {team.ageGroup} {team.name}
+            </Link>
+          ) : (
+            // Trupp-övergripande händelse: inget lag att länka till, men truppen namnges (#408).
+            <span>{truppName} · Hela truppen</span>
+          )}
         </p>
         <h1>{eventLabel(event)}</h1>
       </header>
@@ -185,15 +191,15 @@ export function EventDetailPage() {
         <AttendanceSection
           eventId={event.id}
           truppId={truppId}
-          teamName={team.name}
-          teamSlug={team.slug}
+          teamName={team?.name ?? truppName}
+          teamSlug={team?.slug ?? ''}
           kickoffUtc={event.kickoffUtc}
         />
       )}
 
       {/* Cupen har öppen anmälan i stället för kallelse (§KM.12, `#295`/`#296`). */}
       {event.type === 'Cup' && !isCancelled && (
-        <CupSignupSection eventId={event.id} truppId={truppId} teamSlug={team.slug} />
+        <CupSignupSection eventId={event.id} truppId={truppId} teamSlug={team?.slug ?? ''} />
       )}
 
       {isMatch && <MatchReportCard match={event} children={childrenForMatch} />}

@@ -40,9 +40,12 @@ export interface TeamEventSchedule {
 /** Svaret från `GET /api/v1/events/{id}`: händelsen, dess lag och truppens id. */
 export interface EventDetail {
   event: TeamEvent
-  team: TeamSummary
+  /** Laget händelsen är riktad mot, eller `null` för en trupp-övergripande händelse (`#332`). */
+  team: TeamSummary | null
   /** Åldersgruppens (truppens) id — som en admin behöver för kallelsen (§KM.7, `#199`). */
   truppId: string
+  /** Truppens namn — rubrik för en trupp-övergripande händelse som saknar lag (#408). */
+  truppName: string
 }
 
 /** Svensk etikett för händelsens typ. */

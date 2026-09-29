@@ -113,7 +113,12 @@ export function stubApi(options: {
           match: testEvent('a', '2026-09-20T12:00:00Z'),
         }
         return Promise.resolve(
-          jsonResponse({ team: detail.team, event: detail.match, truppId: 'trupp-stub' }),
+          jsonResponse({
+            team: detail.team,
+            event: detail.match,
+            truppId: 'trupp-stub',
+            truppName: detail.team?.ageGroup ?? 'P2016',
+          }),
         )
       }
 

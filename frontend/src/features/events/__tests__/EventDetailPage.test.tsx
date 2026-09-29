@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TeamEvent } from '@/features/events'
 import { clearSession, setAccessToken } from '@/lib/session'
-import { stubApi, testEvent, testTeams } from '@/test/apiStub'
+import { jsonResponse, stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 beforeEach(() => {
@@ -64,6 +64,67 @@ describe('Matchdetaljsidan — innehåll', () => {
 
     const back = await screen.findByRole('link', { name: /P2016 Gul/ })
     expect(back).toHaveAttribute('href', '/lag/gul')
+  })
+
+  it('renderar en trupp-övergripande händelse (utan lag) utan att krascha (#408)', async () => {
+    // En cup skapad "hela truppen" har inget lag → svaret ger team = null. Förr kraschade sidan
+    // på team.slug; nu visas truppens namn och sidan står kvar.
+    const truppWideId = '99999999-8888-7777-6666-555555555555'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: 'test-token' }))
+        if (url.includes(`/events/${truppWideId}/cup`)) {
+          return Promise.resolve(
+            jsonResponse({
+              open: false,
+              capacity: null,
+              spotsTaken: 0,
+              spotsLeft: 0,
+              isFull: false,
+              signedUp: [],
+              mine: [],
+              teams: [],
+            }),
+          )
+        }
+        if (url.includes(`/api/v1/events/${truppWideId}`)) {
+          return Promise.resolve(
+            jsonResponse({
+              team: null,
+              truppId: 'trupp-1',
+              truppName: 'P2016',
+              event: {
+                id: truppWideId,
+                type: 'Cup',
+                kickoffUtc: '2026-09-20T12:00:00Z',
+                title: 'Sommarcup',
+                opponent: null,
+                isHome: false,
+                status: 'Scheduled',
+                address: 'Cupvägen 1, Göteborg',
+                venue: { name: '', address: 'Cupvägen 1, Göteborg', latitude: 57.8, longitude: 12 },
+              },
+            }),
+          )
+        }
+        return Promise.resolve(jsonResponse({}))
+      }),
+    )
+
+    renderRoute(`/handelse/${truppWideId}`)
+
+    // Sidan renderar: rubriken (cupens titel) och truppnamnet i stället för en lag-länk.
+    expect(await screen.findByRole('heading', { name: 'Sommarcup' })).toBeInTheDocument()
+    expect(screen.getByText(/P2016 · Hela truppen/)).toBeInTheDocument()
+    // Ingen lag-länk, och ingen felgräns-fallback.
+    expect(screen.queryByRole('link', { name: /Gul/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Något gick fel')).not.toBeInTheDocument()
+    // Cup-sektionen finns.
+    expect(await screen.findByRole('heading', { name: 'Cup-anmälan' })).toBeInTheDocument()
   })
 })
 
