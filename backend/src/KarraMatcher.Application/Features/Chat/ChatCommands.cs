@@ -237,12 +237,24 @@ internal sealed class GetChatMessagesQueryHandler(ChatService service)
 
 internal sealed class ToggleReactionCommandValidator : AbstractValidator<ToggleReactionCommand>
 {
+    /// <summary>
+    /// Speglar klientens fasta urval (frontend/src/features/chat/chatApi.ts: <c>REACTION_EMOJIS</c>).
+    /// En reaktion är ett val ur en meny, inte fritext — utan den här listan kunde ett riktat anrop
+    /// spara en godtycklig eller lång sträng som "reaktion" (§KM.1, `#402`). Listan binder också
+    /// längden.
+    /// </summary>
+    private static readonly HashSet<string> AllowedEmojis =
+        new(StringComparer.Ordinal) { "👍", "❤️", "😂", "😮", "😢", "👏" };
+
     public ToggleReactionCommandValidator()
     {
         RuleFor(c => c.TruppId).NotEmpty();
         RuleFor(c => c.MessageId).NotEmpty();
         RuleFor(c => c.AccountId).NotEmpty();
-        RuleFor(c => c.Emoji).NotEmpty();
+        RuleFor(c => c.Emoji)
+            .NotEmpty()
+            .Must(emoji => AllowedEmojis.Contains(emoji))
+            .WithMessage("Reaktionen måste vara en av de tillåtna symbolerna.");
     }
 }
 
