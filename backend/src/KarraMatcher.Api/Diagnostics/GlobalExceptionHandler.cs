@@ -20,8 +20,12 @@ public sealed partial class GlobalExceptionHandler(
         ArgumentNullException.ThrowIfNull(httpContext);
 
         // Detaljerna loggas server-side tillsammans med correlation-ID,
-        // men skickas aldrig till klienten.
-        LogUnhandled(logger, httpContext.Request.Method, httpContext.Request.Path, exception);
+        // men skickas aldrig till klienten. Kalender-nyckeln redigeras bort ur sökvägen (§KM.10, #401).
+        LogUnhandled(
+            logger,
+            httpContext.Request.Method,
+            RequestLogRedaction.Redact(httpContext.Request.Path.ToString()),
+            exception);
 
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 

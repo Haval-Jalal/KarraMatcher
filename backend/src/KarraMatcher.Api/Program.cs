@@ -133,8 +133,9 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 
-// Loggar en rad per request i stället för flera — kompakt och lätt att följa.
-app.UseSerilogRequestLogging();
+// Loggar en rad per request i stället för flera — kompakt och lätt att följa. Kalender-nyckeln
+// redigeras bort ur sökvägen först, så bärar-token aldrig hamnar i loggen (§KM.10, #401).
+app.UseSerilogRequestLogging(RequestLogRedaction.Configure);
 
 // Cache-headers före rate limitern, så att även ett 429-svar får no-store i stället
 // för att bli liggande på edge (§KM.11).
