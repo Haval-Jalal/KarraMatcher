@@ -23,6 +23,8 @@ export function PasskeysSection() {
   const supported = passkeysSupported()
   const queryClient = useQueryClient()
   const [failure, setFailure] = useState<string | null>(null)
+  // Vilken passkey som håller på att tas bort — så bara den radens knapp låses, inte alla (#407).
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const list = useQuery({
     queryKey: passkeysQueryKey,
@@ -48,6 +50,16 @@ export function PasskeysSection() {
     mutationFn: (id: string) => removePasskey(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: passkeysQueryKey }),
   })
+
+  function handleRemove(id: string): void {
+    setFailure(null)
+    setRemovingId(id)
+    remove.mutate(id, {
+      // Tidigare tyst vid fel (#407): ge ett besked så man vet att inget togs bort.
+      onError: () => setFailure('Det gick inte att ta bort passkeyn just nu. Försök igen.'),
+      onSettled: () => setRemovingId(null),
+    })
+  }
 
   if (!supported) {
     return (
@@ -92,9 +104,9 @@ export function PasskeysSection() {
                 label="Ta bort"
                 className="button button--small"
                 confirmClassName="button button--small button--danger"
-                disabled={remove.isPending}
+                disabled={removingId === passkey.id}
                 onConfirm={() => {
-                  remove.mutate(passkey.id)
+                  handleRemove(passkey.id)
                 }}
               />
             </li>

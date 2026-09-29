@@ -73,6 +73,42 @@ describe('passkey-sektionen', () => {
     expect(mockRegister).toHaveBeenCalledOnce()
   })
 
+  it('visar ett fel när en borttagning misslyckas (#407)', async () => {
+    const user = userEvent.setup()
+    // Passkey-listan hämtas, men DELETE svarar med fel.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+        const method = init?.method ?? 'GET'
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/api/v1/passkeys') && method === 'DELETE') {
+          return Promise.resolve(jsonResponse({ title: 'Nej' }, 500))
+        }
+        if (url.includes('/api/v1/passkeys')) {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                id: 'p1',
+                deviceLabel: 'iPhone',
+                createdUtc: '2026-09-20T12:00:00Z',
+                lastUsedUtc: null,
+              },
+            ]),
+          )
+        }
+        return Promise.resolve(emptyResponse(204))
+      }),
+    )
+
+    await renderWithProviders(<PasskeysSection />)
+
+    await user.click(await screen.findByRole('button', { name: 'Ta bort' }))
+    await user.click(await screen.findByRole('button', { name: 'Bekräfta' }))
+
+    expect(await screen.findByText(/Det gick inte att ta bort passkeyn/)).toBeInTheDocument()
+  })
+
   it('säger till när webbläsaren inte stöder passkeys', async () => {
     mockSupported.mockReturnValue(false)
 
