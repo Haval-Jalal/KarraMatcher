@@ -25,5 +25,19 @@ public sealed class AgeGroup
 
     public required string Season { get; set; }
 
+    /// <summary>
+    /// Truppens hemmaplan (`#405`): namn och adress en admin för truppen skriver in. Koordinaterna
+    /// geokodas ur adressen så väder och vägbeskrivning fungerar. Null tills någon satt den — då kan
+    /// en hemma-händelse inte skapas förrän platsen finns. Hör till truppen, inte klubben: varje
+    /// trupp sätter sin egen, och en trupp-admin når aldrig en annan trupps plan (isolering).
+    /// </summary>
+    public string? HomeVenueName { get; set; }
+
+    public string? HomeAddress { get; set; }
+
+    public double? HomeLatitude { get; set; }
+
+    public double? HomeLongitude { get; set; }
+
     public ICollection<Team> Teams { get; } = [];
 }

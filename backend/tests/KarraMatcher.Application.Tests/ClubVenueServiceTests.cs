@@ -7,21 +7,28 @@ using KarraMatcher.Domain.Teams;
 namespace KarraMatcher.Application.Tests;
 
 /// <summary>
-/// Klubbens hemmaplan (`#307`).
+/// Truppens hemmaplan (`#307`/`#405`).
 ///
 /// <para>
 /// Som spelplatsregistret: koordinaterna skrivs aldrig in, de härleds ur adressen. En adress
 /// som inte hittas avvisas, och en tvetydig adress låter tränaren välja i stället för att
-/// gissa. Hemmaplanen bor på klubben och sätts via en av dess truppar.
+/// gissa. Hemmaplanen hör till truppen — en annan trupp har sin egen.
 /// </para>
 /// </summary>
 public sealed class ClubVenueServiceTests
 {
     private readonly Guid _truppId = Guid.NewGuid();
-    private readonly Club _club = new() { Id = Guid.NewGuid(), Name = "Kärra", Slug = "karra" };
+    private readonly AgeGroup _trupp = new()
+    {
+        Id = Guid.NewGuid(),
+        ClubId = Guid.NewGuid(),
+        SportId = Guid.NewGuid(),
+        Name = "P2016",
+        Season = "2026",
+    };
 
     private ClubVenueService CreateService(params GeocodedPlace[] hits) =>
-        new(new FakeClubVenueRepository(_truppId, _club), new StubGeocoder(hits), new NoOpAuditLog());
+        new(new FakeClubVenueRepository(_truppId, _trupp), new StubGeocoder(hits), new NoOpAuditLog());
 
     [Fact]
     public async Task Set_TarKoordinaterFranAdressen()
@@ -32,10 +39,10 @@ public sealed class ClubVenueServiceTests
             _truppId, "Klarebergsvallen", "Klarebergsvallen", Guid.NewGuid(), CancellationToken.None);
 
         Assert.Equal(SetClubVenueOutcome.Set, result.Outcome);
-        Assert.Equal("Klarebergsvallen", _club.HomeVenueName);
-        Assert.Equal("Klarebergsvallen, Göteborg", _club.HomeAddress);
-        Assert.Equal(57.7845, _club.HomeLatitude);
-        Assert.Equal(11.9612, _club.HomeLongitude);
+        Assert.Equal("Klarebergsvallen", _trupp.HomeVenueName);
+        Assert.Equal("Klarebergsvallen, Göteborg", _trupp.HomeAddress);
+        Assert.Equal(57.7845, _trupp.HomeLatitude);
+        Assert.Equal(11.9612, _trupp.HomeLongitude);
     }
 
     [Fact]
@@ -47,7 +54,7 @@ public sealed class ClubVenueServiceTests
             _truppId, "Planen", "Finns inte", Guid.NewGuid(), CancellationToken.None);
 
         Assert.Equal(SetClubVenueOutcome.AddressNotFound, result.Outcome);
-        Assert.Null(_club.HomeLatitude);
+        Assert.Null(_trupp.HomeLatitude);
     }
 
     [Fact]
@@ -62,7 +69,7 @@ public sealed class ClubVenueServiceTests
 
         Assert.Equal(SetClubVenueOutcome.Ambiguous, result.Outcome);
         Assert.Equal(2, result.Candidates.Count);
-        Assert.Null(_club.HomeLatitude);
+        Assert.Null(_trupp.HomeLatitude);
     }
 
     [Fact]
@@ -78,12 +85,12 @@ public sealed class ClubVenueServiceTests
     }
 
     [Fact]
-    public async Task Get_SpeglarKlubbensHemmaplan()
+    public async Task Get_SpeglarTruppensHemmaplan()
     {
-        _club.HomeVenueName = "Klarebergsvallen";
-        _club.HomeAddress = "Klarebergsvallen, Göteborg";
-        _club.HomeLatitude = 57.78;
-        _club.HomeLongitude = 11.96;
+        _trupp.HomeVenueName = "Klarebergsvallen";
+        _trupp.HomeAddress = "Klarebergsvallen, Göteborg";
+        _trupp.HomeLatitude = 57.78;
+        _trupp.HomeLongitude = 11.96;
         var service = CreateService();
 
         var dto = await service.GetByTruppAsync(_truppId, CancellationToken.None);
@@ -94,10 +101,10 @@ public sealed class ClubVenueServiceTests
         Assert.Equal(57.78, dto.Latitude);
     }
 
-    private sealed class FakeClubVenueRepository(Guid truppId, Club? club) : IClubVenueRepository
+    private sealed class FakeClubVenueRepository(Guid truppId, AgeGroup? trupp) : IClubVenueRepository
     {
-        public Task<Club?> FindClubByTruppAsync(Guid id, CancellationToken cancellationToken) =>
-            Task.FromResult(id == truppId ? club : null);
+        public Task<AgeGroup?> FindTruppAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult(id == truppId ? trupp : null);
 
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }

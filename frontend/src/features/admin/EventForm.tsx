@@ -248,7 +248,7 @@ export function EventForm({
           />
           <span className="opt__txt">
             {isMatch ? 'Hemmamatch' : 'Hemma'}
-            <small>Klubbens plan</small>
+            <small>Truppens hemmaplan</small>
           </span>
         </label>
 
@@ -271,11 +271,11 @@ export function EventForm({
         {isHome ? (
           club.data?.configured ? (
             <p className="state">
-              Klubbens plan: {venueLine(club.data.name ?? '', club.data.address ?? '')}
+              Truppens hemmaplan: {venueLine(club.data.name ?? '', club.data.address ?? '')}
             </p>
           ) : (
             <p className="state state--error" role="alert">
-              Klubben har ingen hemmaplan ännu. Sätt den under Inställningar innan du lägger upp en
+              Truppen har ingen hemmaplan ännu. Sätt den under Inställningar innan du lägger upp en
               hemma-aktivitet.
             </p>
           )

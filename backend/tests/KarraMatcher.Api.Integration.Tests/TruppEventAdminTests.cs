@@ -37,12 +37,19 @@ public sealed class TruppEventAdminTests(KarraMatcherApiFactory factory)
             Id = Guid.NewGuid(),
             Name = "Karra KIF",
             Slug = $"klubb-ta-{suffix}",
+        };
+        var trupp = new AgeGroup
+        {
+            Id = Guid.NewGuid(),
+            ClubId = club.Id,
+            Name = "P2016",
+            Season = "2026",
+            // Hemmaplanen hör till truppen (#405).
             HomeVenueName = "Karra IP",
             HomeAddress = "Idrottsvagen 1, Goteborg",
             HomeLatitude = 57.79,
             HomeLongitude = 11.94,
         };
-        var trupp = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
         var team = new Team
         {
             Id = Guid.NewGuid(),
