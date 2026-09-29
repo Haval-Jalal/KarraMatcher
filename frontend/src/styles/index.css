@@ -2142,9 +2142,18 @@ a.match-card:focus-visible .match-card__opponent {
   border: 1px solid var(--border);
   border-radius: 4px 14px 14px 14px;
   box-shadow: var(--shadow-soft);
+  cursor: pointer;
 
-  /* Stäng iOS-callouten vid långtryck — gesten öppnar vår egen meny i stället. */
+  /* Långtrycket öppnar vår egen meny — stäng iOS-callouten OCH textmarkeringen, annars
+     markeras texten (och drar med sig halva sidan) när man håller in bubblan (`#redesign`). */
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.chat-msg__bubble:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
 }
 
 .chat-msg__who {
@@ -2168,31 +2177,6 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0;
   font-size: var(--text-xs);
   color: var(--text-muted);
-}
-
-/* ⋯-knappen: öppnar val-menyn för mus/tangentbord (långtryck är touch-genvägen). */
-.chat-msg__more {
-  margin-left: auto;
-  min-width: 32px;
-  min-height: 32px;
-  padding: 0 6px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: var(--text-lg);
-  line-height: 1;
-  cursor: pointer;
-}
-
-.chat-msg__more:hover {
-  background: var(--sunk);
-  color: var(--text-strong);
-}
-
-.chat-msg__more:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  outline-offset: 2px;
 }
 
 /* ---- Meddelandets val-meny (långtryck / ⋯, `#redesign`) ------------------- */

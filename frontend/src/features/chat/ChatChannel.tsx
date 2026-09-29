@@ -89,6 +89,13 @@ export function ChatChannel({
   // Vilket meddelandes val-meny som är öppen, och en timer för långtryck (touch-genväg).
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const pressTimer = useRef<number | null>(null)
+  // Bubblan som öppnade menyn — fokus flyttas tillbaka dit när menyn stängs (WCAG 2.4.3, #384).
+  const triggerRef = useRef<HTMLDivElement | null>(null)
+
+  function closeMenu(): void {
+    setMenuFor(null)
+    triggerRef.current?.focus()
+  }
 
   // Meddelandet man håller på att svara på (tråd-svar), eller null.
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
@@ -101,7 +108,8 @@ export function ChatChannel({
   }
 
   function startPress(event: React.PointerEvent, messageId: string): void {
-    // Långtryck är bara touch-genvägen; mus och tangentbord använder ⋯-knappen.
+    // Långtryck är touch-genvägen. Mus öppnar menyn med högerklick, tangentbord med Enter/Space
+    // på bubblan (som är en knapp) — därför ignoreras mus-långtryck här.
     if (event.pointerType === 'mouse') {
       return
     }
@@ -224,12 +232,39 @@ export function ChatChannel({
               <div className="chat-msg__body">
                 <div
                   className="chat-msg__bubble"
+                  role={message.deleted ? undefined : 'button'}
+                  tabIndex={message.deleted ? undefined : 0}
+                  aria-haspopup={message.deleted ? undefined : 'menu'}
+                  aria-expanded={message.deleted ? undefined : menuFor === message.id}
                   onPointerDown={
                     message.deleted ? undefined : (event) => startPress(event, message.id)
                   }
                   onPointerUp={clearPress}
                   onPointerLeave={clearPress}
                   onPointerCancel={clearPress}
+                  onContextMenu={
+                    message.deleted
+                      ? undefined
+                      : (event) => {
+                          // Höger­klick (och långtryck på vissa enheter) öppnar menyn — ersätter
+                          // den borttagna ⋯-knappen för mus.
+                          event.preventDefault()
+                          triggerRef.current = event.currentTarget
+                          setMenuFor(message.id)
+                        }
+                  }
+                  onKeyDown={
+                    message.deleted
+                      ? undefined
+                      : (event) => {
+                          // Tangentbord: Enter/Mellanslag öppnar/stänger menyn (bubblan är en knapp).
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            triggerRef.current = event.currentTarget
+                            setMenuFor((current) => (current === message.id ? null : message.id))
+                          }
+                        }
+                  }
                 >
                   {message.replyTo && (
                     <span className="chat-msg__quote">
@@ -248,22 +283,12 @@ export function ChatChannel({
                     <span className="chat-msg__text">{message.body}</span>
                   )}
                 </div>
+
+                {/* Reaktionerna hänger direkt under bubblan — inte bredvid tiden (`#redesign`). */}
+                {!message.deleted && <MessageReactions message={message} channel={channel} />}
+
                 <p className="chat-msg__meta">
                   <time dateTime={message.publishedUtc}>{whenText(message.publishedUtc)}</time>
-                  {!message.deleted && (
-                    <button
-                      type="button"
-                      className="chat-msg__more"
-                      aria-haspopup="true"
-                      aria-expanded={menuFor === message.id}
-                      aria-label="Fler val"
-                      onClick={() =>
-                        setMenuFor((current) => (current === message.id ? null : message.id))
-                      }
-                    >
-                      <span aria-hidden="true">⋯</span>
-                    </button>
-                  )}
                 </p>
 
                 {menuFor === message.id && !message.deleted && (
@@ -275,7 +300,7 @@ export function ChatChannel({
                     onReply={() => setReplyingTo(message)}
                     onReport={() => openReport(message.id)}
                     onDelete={() => run(remove.mutateAsync(message.id))}
-                    onClose={() => setMenuFor(null)}
+                    onClose={closeMenu}
                   />
                 )}
 
@@ -319,8 +344,6 @@ export function ChatChannel({
                     Tack — meddelandet är anmält till truppens admin.
                   </p>
                 )}
-
-                {!message.deleted && <MessageReactions message={message} channel={channel} />}
               </div>
             </li>
           ))}

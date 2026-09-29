@@ -150,8 +150,8 @@ describe('trupp-chatt', () => {
     renderRoute('/chatt/trupp-1')
 
     const row = (await screen.findByText('Hej alla')).closest('li') as HTMLElement
-    // Valen ligger bakom långtryck/⋯-menyn nu.
-    await user.click(within(row).getByRole('button', { name: 'Fler val' }))
+    // Valen ligger bakom långtryck-menyn nu — öppna den från bubblan (högerklick/kontextmeny).
+    fireEvent.contextMenu(within(row).getByRole('button', { name: /Hej alla/ }))
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
 
     // Motivering är obligatorisk: skicka-knappen är avstängd tills något skrivits.
@@ -362,7 +362,7 @@ describe('reaktioner (#301)', () => {
 
     // Öppna meddelandets meny och reagera med hjärta → POST till reaktions-endpointen.
     const row = (await screen.findByText('Hej alla')).closest('li') as HTMLElement
-    await user.click(within(row).getByRole('button', { name: 'Fler val' }))
+    fireEvent.contextMenu(within(row).getByRole('button', { name: /Hej alla/ }))
     await user.click(within(row).getByRole('button', { name: 'Hjärta' }))
 
     await waitFor(() => {
@@ -398,7 +398,7 @@ describe('reaktioner (#301)', () => {
       renderRoute('/chatt/trupp-1')
 
       const row = (await screen.findByText('Vem kör?')).closest('li') as HTMLElement
-      await user.click(within(row).getByRole('button', { name: 'Fler val' }))
+      fireEvent.contextMenu(within(row).getByRole('button', { name: /Vem kör/ }))
       await user.click(within(row).getByRole('button', { name: 'Svara' }))
 
       // Citat-raden ovanför skrivfältet visar vem man svarar.
