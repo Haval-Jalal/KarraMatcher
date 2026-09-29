@@ -43,8 +43,8 @@ export function EventCard({ event }: { event: TeamEvent }) {
         </p>
 
         <p className="match-card__opponent">
-          {isCancelled && <span className="badge badge--cancelled">Inställd</span>}
-          {isPostponed && <span className="badge">Framflyttad</span>}
+          {isCancelled && <span className="event-badge event-badge--cancelled">Inställd</span>}
+          {isPostponed && <span className="event-badge">Framflyttad</span>}
           {isMatch ? (
             <>
               <span>{event.isHome ? 'Hemma mot' : 'Borta mot'} </span>

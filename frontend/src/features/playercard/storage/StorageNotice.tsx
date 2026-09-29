@@ -18,13 +18,13 @@
  */
 export function StorageNotice() {
   return (
-    <section className="notice">
-      <p className="notice__lead">
+    <section className="storage-notice">
+      <p className="storage-notice__lead">
         <strong>Allt här sparas bara på den här telefonen.</strong> Du behöver inget konto, och
         ingen annan kan se det — men statistiken följer med telefonen, inte med dig.
       </p>
 
-      <details className="notice__more">
+      <details className="storage-notice__more">
         <summary>Vad betyder det?</summary>
 
         <p>
