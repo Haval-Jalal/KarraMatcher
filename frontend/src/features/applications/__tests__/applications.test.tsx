@@ -137,5 +137,8 @@ describe('Ansökningskön', () => {
         ),
       ).toBe(true)
     })
+
+    // Utfallet kvitteras — annars vet adminen (och en skärmläsare) inte att något hände (#394).
+    expect(await screen.findByText('Ansökan godkänd.')).toBeInTheDocument()
   })
 })

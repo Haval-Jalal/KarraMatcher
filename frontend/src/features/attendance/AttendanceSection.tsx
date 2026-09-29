@@ -172,6 +172,9 @@ function AdminKallelse({
   // en sen laddad sammanställning ger båda rätt förkryssning.
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+  // Kvitto på att kallelsen faktiskt skickades — annars vet adminen inte om något hände, och en
+  // skärmläsaranvändare får ingen signal (#394). role="status" annonserar det.
+  const [sentMsg, setSentMsg] = useState<string | null>(null)
   const [remindMsg, setRemindMsg] = useState<string | null>(null)
 
   const rosterChildren = roster.data?.children ?? []
@@ -179,6 +182,7 @@ function AdminKallelse({
   const current = selected ?? new Set(summary.data?.children.map((child) => child.childId) ?? [])
 
   function toggle(childId: string): void {
+    setSentMsg(null)
     const next = new Set(current)
     if (next.has(childId)) {
       next.delete(childId)
@@ -189,18 +193,22 @@ function AdminKallelse({
   }
 
   function selectTeam(): void {
+    setSentMsg(null)
     setSelected(
       new Set(rosterChildren.filter((child) => child.teamName === teamName).map((c) => c.id)),
     )
   }
 
   function selectAll(): void {
+    setSentMsg(null)
     setSelected(new Set(rosterChildren.map((child) => child.id)))
   }
 
   function submit(): void {
     setFailure(null)
+    setSentMsg(null)
     send.mutate([...current], {
+      onSuccess: () => setSentMsg('Kallelsen är skickad.'),
       onError: (error) =>
         setFailure(
           error instanceof ApiError ? error.message : 'Kallelsen gick inte att skicka just nu.',
@@ -318,6 +326,12 @@ function AdminKallelse({
               {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
             </button>
           </div>
+
+          {sentMsg !== null && (
+            <p className="state" role="status">
+              {sentMsg}
+            </p>
+          )}
         </>
       )}
 
