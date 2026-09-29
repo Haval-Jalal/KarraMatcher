@@ -59,8 +59,14 @@ export function AttendanceSection({
   const myChildren = gateOff ? [] : (my.data?.children ?? [])
   const guardianVisible = !gateOff && (my.data?.callOpen ?? false) && myChildren.length > 0
 
+  // Medan den egna kallelsen hämtas vet vi ännu inte om föräldern har en. Visa en
+  // laddnings-platshållare i stället för ingenting, annars kan en verklig kallelse se ut att
+  // saknas på en långsam uppkoppling (#396). Admin/tränare har alltid sin panel och berörs inte;
+  // en 404 (kallelsen avslagen för laget) är inte "pending" och ska fortsatt ge tomt.
+  const guardianPending = !isAdmin && !isCoach && !gateOff && my.isPending
+
   // Gäst, inga egna kallade barn — och varken admin eller tränare: ingenting.
-  if (!isAdmin && !isCoach && !guardianVisible) {
+  if (!isAdmin && !isCoach && !guardianVisible && !guardianPending) {
     return null
   }
 
@@ -71,6 +77,12 @@ export function AttendanceSection({
       <h2 id="kallelse" className="attendance__heading">
         Kallelse
       </h2>
+
+      {guardianPending && (
+        <p className="state" role="status">
+          Hämtar kallelsen…
+        </p>
+      )}
 
       {guardianVisible && (
         <GuardianReplies eventId={eventId} childInvitations={myChildren} closed={closed} />

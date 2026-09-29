@@ -49,6 +49,8 @@ function eventDetail() {
 interface Options {
   token?: string
   mine?: Record<string, unknown> | 'gate-off'
+  /** Låter vårdnadshavarens egen kallelse-GET hänga, så laddnings-platshållaren kan prövas (#396). */
+  minePending?: boolean
   summary?: unknown
   /** Låter adminens summerings-GET hänga, så racet "roster klar före summering" kan prövas (#392). */
   summaryPending?: boolean
@@ -100,6 +102,7 @@ function stub(options: Options) {
 
       // Vårdnadshavarens vy: GET /events/{id}/kallelse
       if (url.includes('/kallelse')) {
+        if (options.minePending) return new Promise<Response>(() => {})
         if (options.mine === 'gate-off') return Promise.resolve(emptyResponse(404))
         return Promise.resolve(
           jsonResponse(options.mine ?? { callOpen: true, kickoffUtc: FUTURE, children: [] }),
@@ -151,6 +154,19 @@ describe('vårdnadshavaren svarar per barn', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Kallelse' })).not.toBeInTheDocument(),
     )
+  })
+
+  it('visar en laddnings-platshållare medan den egna kallelsen hämtas (#396)', async () => {
+    // På en långsam uppkoppling får föräldern förr varken sektion eller spinner — en verklig
+    // kallelse såg ut att saknas. Nu visas "Kallelse" med ett laddningsbesked medan frågan hämtas.
+    setAccessToken(PARENT_TOKEN)
+    stub({ minePending: true })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    expect(await screen.findByRole('heading', { name: /Torslanda/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Kallelse' })).toBeInTheDocument()
+    expect(await screen.findByText('Hämtar kallelsen…')).toBeInTheDocument()
   })
 
   it('ser sina egna kallade barn och svarar Ja', async () => {
