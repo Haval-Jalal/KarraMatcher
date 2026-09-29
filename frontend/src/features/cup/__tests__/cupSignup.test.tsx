@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -72,6 +73,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('cup-anmälan på händelsesidan', () => {
@@ -95,6 +97,7 @@ describe('cup-anmälan på händelsesidan', () => {
     expect(screen.getByText('Noah K')).toBeInTheDocument()
 
     // Föräldern anmäler sitt barn → POST till anmälnings-endpointen.
+    const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
     await user.click(screen.getByRole('button', { name: 'Anmäl' }))
 
     await waitFor(() => {
@@ -103,6 +106,11 @@ describe('cup-anmälan på händelsesidan', () => {
           (r) => r.url.includes(`/events/${CUP_ID}/cup/children/mine1`) && r.method === 'POST',
         ),
       ).toBe(true)
+    })
+
+    // Cuper-listan (spots-left/öppet) invalideras också, inte bara sammanställningen (#399).
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['cup', 'trupp', 'trupp-1'] })
     })
   })
 

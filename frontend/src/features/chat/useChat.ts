@@ -26,6 +26,9 @@ export const chatKeys = {
   messages: (channel: ChatChannel) => ['chat', 'messages', channelKey(channel)] as const,
   scheduled: (channel: ChatChannel) => ['chat', 'scheduled', channelKey(channel)] as const,
   reports: (truppId: string) => ['chat', 'reports', truppId] as const,
+  /** Prefix som matchar alla trupp-anmälningsköer. En lag-kanal känner bara sin slug, inte
+   *  truppId, så anmälningskön invalideras brett (#399). */
+  reportsAll: ['chat', 'reports'] as const,
 }
 
 export function useMyTrupper() {
@@ -133,11 +136,9 @@ export function useReport(channel: ChatChannel) {
   return useMutation({
     mutationFn: (input: { id: string; reason: string }) =>
       reportMessage(channel, input.id, input.reason),
-    onSuccess: () => {
-      // Admins anmälningskö lever på trupp-nivå; håll den i synk om anmälaren ser den.
-      if (channel.kind === 'trupp') {
-        void client.invalidateQueries({ queryKey: chatKeys.reports(channel.truppId) })
-      }
-    },
+    // Admins anmälningskö lever på trupp-nivå. En anmälan från en lag-kanal (som bara känner sin
+    // slug) ska ändå synas i kön, så den invalideras brett via prefixet i stället för att missas
+    // för allt utom trupp-kanalen (#399).
+    onSuccess: () => client.invalidateQueries({ queryKey: chatKeys.reportsAll }),
   })
 }

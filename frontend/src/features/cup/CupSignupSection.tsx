@@ -39,8 +39,8 @@ export function CupSignupSection({
 
   const summary = useCupSummary(eventId)
   const open = useOpenCup(truppId, eventId)
-  const signUp = useSignUpChild(eventId)
-  const withdraw = useWithdrawChild(eventId)
+  const signUp = useSignUpChild(truppId, eventId)
+  const withdraw = useWithdrawChild(truppId, eventId)
 
   const [capacity, setCapacity] = useState('')
   const [failure, setFailure] = useState<string | null>(null)

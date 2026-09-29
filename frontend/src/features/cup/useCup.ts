@@ -34,27 +34,42 @@ export function useTruppCups(truppId: string | null) {
   })
 }
 
+/**
+ * Både cupens egen sammanställning och truppens cup-lista påverkas: listan visar öppet-läge och
+ * platser-kvar, som ändras när en cup öppnas eller ett barn anmäls/dras tillbaka (#399).
+ */
+function invalidateCup(
+  client: ReturnType<typeof useQueryClient>,
+  truppId: string,
+  eventId: string,
+): Promise<void> {
+  return Promise.all([
+    client.invalidateQueries({ queryKey: cupKeys.summary(eventId) }),
+    client.invalidateQueries({ queryKey: cupKeys.truppCups(truppId) }),
+  ]).then(() => undefined)
+}
+
 export function useOpenCup(truppId: string, eventId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (capacity: number) => openCup(truppId, eventId, capacity),
-    onSuccess: () => client.invalidateQueries({ queryKey: cupKeys.summary(eventId) }),
+    onSuccess: () => invalidateCup(client, truppId, eventId),
   })
 }
 
-export function useSignUpChild(eventId: string) {
+export function useSignUpChild(truppId: string, eventId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (childId: string) => signUpChild(eventId, childId),
-    onSuccess: () => client.invalidateQueries({ queryKey: cupKeys.summary(eventId) }),
+    onSuccess: () => invalidateCup(client, truppId, eventId),
   })
 }
 
-export function useWithdrawChild(eventId: string) {
+export function useWithdrawChild(truppId: string, eventId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (childId: string) => withdrawChild(eventId, childId),
-    onSuccess: () => client.invalidateQueries({ queryKey: cupKeys.summary(eventId) }),
+    onSuccess: () => invalidateCup(client, truppId, eventId),
   })
 }
 
