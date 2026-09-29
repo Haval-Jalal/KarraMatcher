@@ -137,6 +137,52 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     }
 
     [Fact]
+    public async Task GetMatch_TruppovergripandeHandelse_GerNullTeamOchTruppNamn()
+    {
+        // En trupp-vid händelse (utan lag, `#332`) — svaret ska ge team = null och truppens namn,
+        // så detaljsidan kan visa en rubrik utan att krascha på ett saknat lag (#408).
+        Guid eventId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = "karra-tw" };
+            var ageGroup = new AgeGroup
+            {
+                Id = Guid.NewGuid(),
+                ClubId = club.Id,
+                Name = "P2015",
+                Season = "2026",
+            };
+            var truppEvent = new Event
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = ageGroup.Id,
+                TeamId = null,
+                Type = EventType.Cup,
+                KickoffUtc = Kickoff,
+                Title = "Sommarcup",
+                IsHome = false,
+                AddressOverride = "Cupvägen 1, Göteborg",
+                Status = EventStatus.Scheduled,
+                UpdatedUtc = DateTime.UtcNow,
+            };
+            context.Clubs.Add(club);
+            context.AgeGroups.Add(ageGroup);
+            context.Events.Add(truppEvent);
+            await context.SaveChangesAsync(CancellationToken.None);
+            eventId = truppEvent.Id;
+        }
+
+        using var client = _factory.CreateSuperAdminClient();
+        var response = await client.GetAsync($"/api/v1/events/{eventId}", CancellationToken.None);
+        var json = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(JsonValueKind.Null, json.GetProperty("team").ValueKind);
+        Assert.Equal("P2015", json.GetProperty("truppName").GetString());
+    }
+
+    [Fact]
     public async Task GetMatch_GerKoordinaterFranSpelplatsen()
     {
         // Koordinaterna driver väderprognosen och kommer ur vår egen Venue-tabell —

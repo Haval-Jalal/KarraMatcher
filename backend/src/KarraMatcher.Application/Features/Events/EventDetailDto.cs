@@ -19,4 +19,9 @@ namespace KarraMatcher.Application.Features.Events;
 /// Åldersgruppens (truppens) id — som en admin behöver för att skicka en kallelse och hämta
 /// truppens barn (§KM.7, `#199`). Bara ett id, ingen PII.
 /// </param>
-public sealed record EventDetailDto(EventDto Event, TeamDto? Team, Guid TruppId);
+/// <param name="TruppName">
+/// Truppens namn (t.ex. "P2016"). Låter detaljsidan visa en rubrik även för en trupp-vid
+/// händelse som saknar lag (`#332`/#408) — annars fanns inget att skriva när <see cref="Team"/>
+/// är null.
+/// </param>
+public sealed record EventDetailDto(EventDto Event, TeamDto? Team, Guid TruppId, string TruppName);
