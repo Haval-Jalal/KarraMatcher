@@ -31,13 +31,15 @@ const LABEL: Record<SectionKey, string> = {
 }
 
 /**
- * Tränarens vy för sin trupp (§KM.3, `#193`, omgjord i `#279`, en trupp-bred tränarroll i `#285`).
+ * Trupp-adminens vy för sin trupp (§KM.3, `#193`, omgjord i `#279`, en trupp-bred roll i `#285`).
  *
  * <h3>En trupp-bred roll</h3>
  *
- * Tränare gäller hela truppen (P2016), inte en enskild färg. En tränare skapar färg-lagen,
- * tilldelar barnen färger och sköter kallelser, inbjudningar och ansökningar. (Koden kallar
- * rollen fortfarande "admin", §KM.9 — bara gränssnittet säger "Tränare".)
+ * Rollen gäller hela truppen (P2016), inte en enskild färg. En admin för truppen skapar
+ * färg-lagen, tilldelar barnen färger och sköter kallelser, inbjudningar och ansökningar.
+ * (Koden kallar rollen "admin", §KM.9.) Gränssnittet sa tidigare "Tränare"; det är omdöpt till
+ * "Administrera truppen" (#395) sedan färg-lag-tränaren blev en egen roll skild från trupp-admin
+ * — annars går de två inte att skilja åt bredvid tränarens egen "Sköt laget".
  *
  * <h3>Översikt först, en sektion i taget</h3>
  *
@@ -82,7 +84,7 @@ export function AdminPage() {
   return (
     <main className="page admin">
       <header className="app-header">
-        <h1>Tränare</h1>
+        <h1>Administrera truppen</h1>
         <p>Hantera din trupp — skapa färg-lag, sortera barnen och bjud in vårdnadshavare.</p>
       </header>
 
