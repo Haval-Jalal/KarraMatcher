@@ -34,7 +34,9 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
       {applications.isLoading && <p className="state">Hämtar…</p>}
       {applications.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta ansökningarna.
+          {applications.error instanceof ApiError && applications.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta ansökningarna.'}
         </p>
       )}
 

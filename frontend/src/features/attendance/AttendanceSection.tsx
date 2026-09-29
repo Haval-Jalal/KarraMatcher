@@ -243,7 +243,9 @@ function AdminKallelse({
       {roster.isLoading && <p className="state">Hämtar truppen…</p>}
       {roster.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta truppens barn.
+          {roster.error instanceof ApiError && roster.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta truppens barn.'}
         </p>
       )}
 

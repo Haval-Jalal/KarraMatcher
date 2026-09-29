@@ -199,7 +199,9 @@ export function ChatChannel({
       {messages.isLoading && <p className="state">Hämtar meddelanden…</p>}
       {messages.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta meddelandena.
+          {messages.error instanceof ApiError && messages.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta meddelandena.'}
         </p>
       )}
 

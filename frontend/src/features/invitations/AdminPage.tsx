@@ -5,6 +5,7 @@ import { ApplicationsPanel } from '@/features/applications'
 import { useAuth } from '@/features/auth'
 import { BarnOchLag } from '@/features/children'
 import { ClubVenueSettings } from '@/features/clubs'
+import { ApiError } from '@/lib/api'
 
 import { AdminOverview } from './AdminOverview'
 import { InvitationsPanel } from './InvitationsPanel'
@@ -88,7 +89,9 @@ export function AdminPage() {
       {trupper.isLoading && <p className="state">Hämtar dina trupper…</p>}
       {trupper.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta dina trupper.
+          {trupper.error instanceof ApiError && trupper.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta dina trupper.'}
         </p>
       )}
 

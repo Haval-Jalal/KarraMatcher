@@ -29,6 +29,28 @@ export function InvitationLandingPage() {
     )
   }
 
+  // Offline får aldrig se ut som en död länk — då hade en giltig inbjudan sagt "finns inte" bara
+  // för att nätet dog (`#382`). Säg att anslutningen saknas och låt användaren försöka igen.
+  if (preview.error instanceof ApiError && preview.error.offline) {
+    return (
+      <main className="page">
+        <h1>Ingen anslutning</h1>
+        <p className="state">
+          Inbjudan kan inte hämtas just nu. Kontrollera nätet och försök igen.
+        </p>
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            void preview.refetch()
+          }}
+        >
+          Försök igen
+        </button>
+      </main>
+    )
+  }
+
   if (preview.isError || preview.data === undefined) {
     return (
       <main className="page">

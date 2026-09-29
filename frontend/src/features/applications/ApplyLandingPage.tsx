@@ -54,6 +54,25 @@ export function ApplyLandingPage() {
     )
   }
 
+  // Offline får inte se ut som en död länk (`#382`) — säg att nätet saknas och erbjud omförsök.
+  if (info.error instanceof ApiError && info.error.offline) {
+    return (
+      <main className="page">
+        <h1>Ingen anslutning</h1>
+        <p className="state">Sidan kan inte hämtas just nu. Kontrollera nätet och försök igen.</p>
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            void info.refetch()
+          }}
+        >
+          Försök igen
+        </button>
+      </main>
+    )
+  }
+
   if (info.isError || info.data === undefined) {
     return (
       <main className="page">
