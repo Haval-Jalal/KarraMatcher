@@ -275,7 +275,9 @@ describe('trupp-chatt', () => {
     renderRoute('/chatt/trupp-1')
 
     const row = (await screen.findByText('Tre')).closest('.admin-list__row') as HTMLElement
+    // Två steg (`#383`): "Ta bort" beväpnar, "Bekräfta" utför.
     await user.click(within(row).getByRole('button', { name: 'Ta bort' }))
+    await user.click(within(row).getByRole('button', { name: 'Bekräfta' }))
 
     await waitFor(() => {
       expect(

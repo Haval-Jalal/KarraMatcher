@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { ApiError } from '@/lib/api'
 
 import type { CarpoolRequest } from './carpoolApi'
@@ -161,16 +162,13 @@ function RequestRow({
 
       {!isDriver && request.isMine && isPending && (
         <div className="actions">
-          <button
-            type="button"
-            className="button button--action"
+          <ConfirmButton
+            label="Återta förfrågan"
             disabled={busy}
-            onClick={() => {
+            onConfirm={() => {
               void run(() => onRetract(request))
             }}
-          >
-            Återta förfrågan
-          </button>
+          />
         </div>
       )}
     </>

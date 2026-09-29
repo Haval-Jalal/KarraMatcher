@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { ApiError } from '@/lib/api'
 import { formatFullDate } from '@/lib/time'
 
@@ -72,19 +73,18 @@ export function ApplicationsPanel({ truppId }: { truppId: string }) {
                 >
                   Godkänn
                 </button>
-                <button
-                  type="button"
+                <ConfirmButton
+                  label="Neka"
                   className="button button--small"
+                  confirmClassName="button button--small button--danger"
                   disabled={busy}
-                  onClick={() => {
+                  onConfirm={() => {
                     setFailure(null)
                     void deny
                       .mutateAsync(application.id)
                       .catch((error: unknown) => setFailure(messageOf(error)))
                   }}
-                >
-                  Neka
-                </button>
+                />
               </div>
             </li>
           ))}
