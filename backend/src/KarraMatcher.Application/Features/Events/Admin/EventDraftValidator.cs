@@ -97,3 +97,13 @@ internal sealed class CreateTruppEventCommandValidator : AbstractValidator<Creat
         RuleFor(c => c.Draft).NotNull().SetValidator(new EventDraftValidator()!);
     }
 }
+
+internal sealed class UpdateTruppEventCommandValidator : AbstractValidator<UpdateTruppEventCommand>
+{
+    public UpdateTruppEventCommandValidator()
+    {
+        RuleFor(c => c.TruppId).NotEmpty();
+        RuleFor(c => c.EventId).NotEmpty();
+        RuleFor(c => c.Draft).NotNull().SetValidator(new EventDraftValidator()!);
+    }
+}
