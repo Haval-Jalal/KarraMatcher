@@ -39,7 +39,7 @@ jobs:
       FRONTEND_URL: https://localhost:5173
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Sätt upp .NET
         uses: actions/setup-dotnet@v6

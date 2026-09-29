@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Hämta koden
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: ZAP baseline-skanning
         uses: zaproxy/action-baseline@v0.15.0
