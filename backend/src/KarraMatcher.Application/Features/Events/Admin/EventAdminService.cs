@@ -61,7 +61,7 @@ public sealed class EventAdminService(
             return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
         }
 
-        var location = await ResolveLocationAsync(team.AgeGroup?.Club, draft, cancellationToken)
+        var location = await ResolveLocationAsync(team.AgeGroup, draft, cancellationToken)
             .ConfigureAwait(false);
 
         if (location.Outcome != EventSaveOutcome.Ok)
@@ -144,7 +144,7 @@ public sealed class EventAdminService(
             return new EventSaveResult(EventSaveOutcome.TeamNotFound, null);
         }
 
-        var location = await ResolveLocationAsync(trupp.Club, draft, cancellationToken)
+        var location = await ResolveLocationAsync(trupp, draft, cancellationToken)
             .ConfigureAwait(false);
 
         if (location.Outcome != EventSaveOutcome.Ok)
@@ -241,7 +241,7 @@ public sealed class EventAdminService(
     {
         // Trupp-vid händelse (`#332`) har inget lag; klubben nås då via truppen direkt.
         var location = await ResolveLocationAsync(
-            item.Team?.AgeGroup?.Club ?? item.AgeGroup?.Club, draft, cancellationToken)
+            item.Team?.AgeGroup ?? item.AgeGroup, draft, cancellationToken)
             .ConfigureAwait(false);
 
         if (location.Outcome != EventSaveOutcome.Ok)
@@ -492,12 +492,12 @@ public sealed class EventAdminService(
     /// Löser händelsens plats ur utkastet (`#307`). Tre vägar, som speglar mappningen:
     /// <list type="bullet">
     /// <item>utkastet bär ett <c>VenueId</c> (import/seed) → äldre registervägen behålls;</item>
-    /// <item>hemma → klubbens hemmaplan (måste vara satt); inget lagras på händelsen;</item>
+    /// <item>hemma → truppens hemmaplan (måste vara satt); inget lagras på händelsen;</item>
     /// <item>annars → den skrivna adressen geokodas till adress + koordinat på händelsen.</item>
     /// </list>
     /// </summary>
     private async Task<Resolved> ResolveLocationAsync(
-        Club? club, EventDraft draft, CancellationToken cancellationToken)
+        AgeGroup? trupp, EventDraft draft, CancellationToken cancellationToken)
     {
         if (draft.VenueId is not null)
         {
@@ -512,7 +512,8 @@ public sealed class EventAdminService(
 
         if (draft.IsHome == true)
         {
-            if (club?.HomeLatitude is null || club.HomeLongitude is null)
+            // Hemma → truppens egen hemmaplan (måste vara satt) (#405).
+            if (trupp?.HomeLatitude is null || trupp.HomeLongitude is null)
             {
                 return new Resolved(EventSaveOutcome.NoHomeVenue, null, null, null, null, null);
             }

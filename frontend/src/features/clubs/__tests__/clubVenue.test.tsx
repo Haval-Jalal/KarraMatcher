@@ -8,7 +8,7 @@ import { jsonResponse } from '@/test/apiStub'
 import { renderWithProviders } from '@/test/renderWithProviders'
 
 /**
- * Klubbens hemmaplan i inställningarna (`#307`): en tränare skriver in namn + adress, servern
+ * Truppens hemmaplan i inställningarna (`#307`/`#405`): en admin skriver in namn + adress, servern
  * geokodar, och hemma-adressen fylls sedan i automatiskt när en aktivitet läggs upp.
  */
 
@@ -54,7 +54,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('klubbens hemmaplan', () => {
+describe('truppens hemmaplan', () => {
   it('sparar namn och adress — anropet bär dem', async () => {
     const user = userEvent.setup()
     const sent = stub({

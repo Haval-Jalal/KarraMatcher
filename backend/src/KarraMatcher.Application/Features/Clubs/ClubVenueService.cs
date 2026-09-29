@@ -5,7 +5,7 @@ using KarraMatcher.Domain.Audit;
 
 namespace KarraMatcher.Application.Features.Clubs;
 
-/// <summary>Klubbens hemmaplan så FE:t visar den (`#307`). <c>Configured</c> = en plan är satt.</summary>
+/// <summary>Truppens hemmaplan så FE:t visar den (`#307`/`#405`). <c>Configured</c> = en plan är satt.</summary>
 public sealed record ClubVenueDto(
     string? Name,
     string? Address,
@@ -19,7 +19,7 @@ public enum SetClubVenueOutcome
     /// <summary>Hemmaplanen sattes.</summary>
     Set = 0,
 
-    /// <summary>Truppen (och därmed klubben) finns inte.</summary>
+    /// <summary>Truppen finns inte.</summary>
     TruppNotFound = 1,
 
     /// <summary>Adressen gick inte att hitta vid geokodningen.</summary>
@@ -35,31 +35,31 @@ public sealed record SetClubVenueResult(
     IReadOnlyList<GeocodedPlace> Candidates);
 
 /// <summary>
-/// Klubbens hemmaplan (`#307`): den plan alla klubbens truppar spelar hemma på. En tränare i
-/// klubben skriver in namn + adress; adressen geokodas (samma väg som det gamla registret) så
-/// att väder och vägbeskrivning har koordinater. Planen bor på klubben och delas — sätts den
-/// via en trupp gäller den alla truppar i samma klubb.
+/// Truppens hemmaplan (`#307`/`#405`): den plan truppen spelar hemma på. En admin för truppen
+/// skriver in namn + adress; adressen geokodas (samma väg som det gamla registret) så att väder
+/// och vägbeskrivning har koordinater. Planen hör till truppen — varje trupp sätter sin egen och
+/// en trupp-admin når aldrig en annan trupps plan (isolering). (Typnamnet är historiskt "Club".)
 /// </summary>
-public sealed class ClubVenueService(IClubVenueRepository clubs, IGeocoder geocoder, IAuditLog audit)
+public sealed class ClubVenueService(IClubVenueRepository trupper, IGeocoder geocoder, IAuditLog audit)
 {
     public async Task<ClubVenueDto?> GetByTruppAsync(Guid truppId, CancellationToken cancellationToken)
     {
-        var club = await clubs.FindClubByTruppAsync(truppId, cancellationToken).ConfigureAwait(false);
+        var trupp = await trupper.FindTruppAsync(truppId, cancellationToken).ConfigureAwait(false);
 
-        if (club is null)
+        if (trupp is null)
         {
             return null;
         }
 
         return new ClubVenueDto(
-            club.HomeVenueName,
-            club.HomeAddress,
-            club.HomeLatitude,
-            club.HomeLongitude,
-            club.HomeLatitude is not null && club.HomeLongitude is not null);
+            trupp.HomeVenueName,
+            trupp.HomeAddress,
+            trupp.HomeLatitude,
+            trupp.HomeLongitude,
+            trupp.HomeLatitude is not null && trupp.HomeLongitude is not null);
     }
 
-    /// <summary>Sätter (eller ändrar) klubbens hemmaplan. Adressen geokodas till koordinater.</summary>
+    /// <summary>Sätter (eller ändrar) truppens hemmaplan. Adressen geokodas till koordinater.</summary>
     public async Task<SetClubVenueResult> SetByTruppAsync(
         Guid truppId,
         string name,
@@ -67,9 +67,9 @@ public sealed class ClubVenueService(IClubVenueRepository clubs, IGeocoder geoco
         Guid actorAccountId,
         CancellationToken cancellationToken)
     {
-        var club = await clubs.FindClubByTruppAsync(truppId, cancellationToken).ConfigureAwait(false);
+        var trupp = await trupper.FindTruppAsync(truppId, cancellationToken).ConfigureAwait(false);
 
-        if (club is null)
+        if (trupp is null)
         {
             return new SetClubVenueResult(SetClubVenueOutcome.TruppNotFound, []);
         }
@@ -91,16 +91,17 @@ public sealed class ClubVenueService(IClubVenueRepository clubs, IGeocoder geoco
 
         var place = hits[0];
 
-        club.HomeVenueName = name?.Trim() ?? string.Empty;
-        club.HomeAddress = place.Label;
-        club.HomeLatitude = place.Latitude;
-        club.HomeLongitude = place.Longitude;
+        trupp.HomeVenueName = name?.Trim() ?? string.Empty;
+        trupp.HomeAddress = place.Label;
+        trupp.HomeLatitude = place.Latitude;
+        trupp.HomeLongitude = place.Longitude;
 
+        // Audit-målet är truppen (planen hör till den), inte klubben.
         await audit.RecordAsync(
-            AuditActions.ClubHomeVenueSet, actorAccountId, cancellationToken, club.Id)
+            AuditActions.ClubHomeVenueSet, actorAccountId, cancellationToken, trupp.Id)
             .ConfigureAwait(false);
 
-        await clubs.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await trupper.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return new SetClubVenueResult(SetClubVenueOutcome.Set, []);
     }

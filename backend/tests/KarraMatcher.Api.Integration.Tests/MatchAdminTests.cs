@@ -46,10 +46,6 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             Id = Guid.NewGuid(),
             Name = "Karra KIF",
             Slug = $"klubb-{suffix}",
-            HomeVenueName = withHomeVenue ? "Karra IP" : null,
-            HomeAddress = withHomeVenue ? "Idrottsvagen 1, Goteborg" : null,
-            HomeLatitude = withHomeVenue ? 57.79 : null,
-            HomeLongitude = withHomeVenue ? 11.94 : null,
         };
         var ageGroup = new AgeGroup
         {
@@ -57,6 +53,11 @@ public sealed class MatchAdminTests(KarraMatcherApiFactory factory)
             ClubId = club.Id,
             Name = "P2016",
             Season = "2026",
+            // Hemmaplanen hör till truppen (#405).
+            HomeVenueName = withHomeVenue ? "Karra IP" : null,
+            HomeAddress = withHomeVenue ? "Idrottsvagen 1, Goteborg" : null,
+            HomeLatitude = withHomeVenue ? 57.79 : null,
+            HomeLongitude = withHomeVenue ? 11.94 : null,
         };
         var team = new Team
         {

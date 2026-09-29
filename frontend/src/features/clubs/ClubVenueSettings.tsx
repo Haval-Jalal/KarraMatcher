@@ -13,12 +13,12 @@ function messageOf(error: unknown): string {
 }
 
 /**
- * Klubbens hemmaplan i inställningarna (`#307`).
+ * Truppens hemmaplan i inställningarna (`#307`/`#405`).
  *
  * <para>
- * Vilken tränare/admin som helst i klubben kan skriva in klubbens plan (namn + adress).
- * Servern geokodar adressen så väder och vägbeskrivning får koordinater. Planen delas av alla
- * klubbens truppar, och när en aktivitet läggs upp "hemma" autofylls den här adressen.
+ * En admin för truppen skriver in truppens plan (namn + adress). Servern geokodar adressen så
+ * väder och vägbeskrivning får koordinater. Planen hör till truppen — en annan trupp har sin egen —
+ * och när en aktivitet läggs upp "hemma" autofylls den här adressen.
  * </para>
  */
 export function ClubVenueSettings({ truppId }: { truppId: string }) {
@@ -56,10 +56,10 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
 
   return (
     <section className="club-venue">
-      <h3>Klubbens hemmaplan</h3>
+      <h3>Truppens hemmaplan</h3>
       <p className="admin-muted">
-        Adressen som fylls i automatiskt när en aktivitet läggs upp <strong>hemma</strong>. Delas av
-        alla klubbens truppar.
+        Adressen som fylls i automatiskt när en aktivitet läggs upp <strong>hemma</strong>. Gäller
+        den här truppen — en annan trupp har sin egen.
       </p>
 
       {venue.isPending && (
@@ -70,7 +70,7 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
 
       {venue.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta klubbens hemmaplan.
+          Kunde inte hämta truppens hemmaplan.
         </p>
       )}
 

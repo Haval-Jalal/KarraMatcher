@@ -45,7 +45,7 @@ internal static class TeamMapping
     /// Händelsens plats: namn, adress och koordinat (`#307`). Tre vägar:
     /// <list type="number">
     /// <item>äldre rader pekar på spelplatsregistret (seed) — då gäller <see cref="Event.Venue"/>;</item>
-    /// <item>en hemma-händelse löser platsen ur klubbens hemmaplan;</item>
+    /// <item>en hemma-händelse löser platsen ur truppens hemmaplan;</item>
     /// <item>annars (borta/annan plats) ur händelsens egen adress + koordinat.</item>
     /// </list>
     /// </summary>
@@ -60,14 +60,15 @@ internal static class TeamMapping
 
         if (item.IsHome == true)
         {
-            // En trupp-vid händelse (`#332`) har inget lag; klubben nås då via truppen direkt.
-            var club = item.Team?.AgeGroup?.Club ?? item.AgeGroup?.Club;
+            // Hemmaplanen hör till truppen (#405). En trupp-vid händelse (`#332`) har inget lag —
+            // truppen nås då direkt via händelsens AgeGroup.
+            var trupp = item.Team?.AgeGroup ?? item.AgeGroup;
 
             return (
-                club?.HomeVenueName ?? string.Empty,
-                club?.HomeAddress ?? string.Empty,
-                club?.HomeLatitude ?? 0,
-                club?.HomeLongitude ?? 0);
+                trupp?.HomeVenueName ?? string.Empty,
+                trupp?.HomeAddress ?? string.Empty,
+                trupp?.HomeLatitude ?? 0,
+                trupp?.HomeLongitude ?? 0);
         }
 
         // Borta/annan plats: händelsens egen adress. Namnet lämnas tomt — adressen bär platsen.

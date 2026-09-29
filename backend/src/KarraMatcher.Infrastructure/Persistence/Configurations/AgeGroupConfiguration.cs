@@ -18,6 +18,10 @@ internal sealed class AgeGroupConfiguration : IEntityTypeConfiguration<AgeGroup>
         // En åldersgrupp per namn och säsong inom en förening.
         builder.HasIndex(a => new { a.ClubId, a.Name, a.Season }).IsUnique();
 
+        // Truppens hemmaplan (`#405`). Nullbara tills en admin satt den.
+        builder.Property(a => a.HomeVenueName).HasMaxLength(100);
+        builder.Property(a => a.HomeAddress).HasMaxLength(200);
+
         // Sporten truppen tillhör (v2). Restrict: en sport som har trupper går inte att
         // radera av misstag och ta med sig hela årskullar i fallet.
         builder.HasOne(a => a.Sport)
