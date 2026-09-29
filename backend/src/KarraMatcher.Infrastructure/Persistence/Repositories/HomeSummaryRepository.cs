@@ -13,6 +13,7 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
 {
     public async Task<Event?> NextEventAsync(
         IReadOnlyCollection<Guid> teamIds,
+        IReadOnlyCollection<Guid> truppIds,
         DateTime nowUtc,
         CancellationToken cancellationToken)
     {
@@ -22,9 +23,14 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
             .Include(e => e.Team!)
             .ThenInclude(team => team!.AgeGroup!)
             .ThenInclude(ageGroup => ageGroup!.Club)
-            // Trupp-vida händelser (utan lag) tas in i lagens vyer i slice 1b-ii; här ännu bara
-            // lag-riktade (`#332`).
-            .Where(e => e.TeamId != null && teamIds.Contains(e.TeamId.Value)
+            // Trupp-vida händelser (utan lag) har ingen Team-navigering — ladda AgeGroup+klubb direkt
+            // så att namn och hemma-plats kan lösas även då (#386).
+            .Include(e => e.AgeGroup!)
+            .ThenInclude(ageGroup => ageGroup!.Club)
+            // Ett lag-riktat event i något av medlemmens lag, ELLER en trupp-övergripande händelse
+            // (TeamId == null) i någon av medlemmens trupper (`#332`, #386).
+            .Where(e => ((e.TeamId != null && teamIds.Contains(e.TeamId.Value))
+                    || (e.TeamId == null && truppIds.Contains(e.AgeGroupId)))
                 && e.KickoffUtc >= nowUtc
                 && e.Status != EventStatus.Cancelled)
             .OrderBy(e => e.KickoffUtc)
@@ -47,7 +53,12 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
             join child in context.Children.AsNoTracking() on invitation.ChildId equals child.Id
             join guardianship in context.Guardianships.AsNoTracking()
                 on child.Id equals guardianship.ChildId
-            join team in context.Teams.AsNoTracking() on item.TeamId equals team.Id
+            join ageGroup in context.AgeGroups.AsNoTracking() on item.AgeGroupId equals ageGroup.Id
+            // Vänster-join laget: en trupp-övergripande händelse (TeamId == null) saknar lag men
+            // ska ändå med (#386) — då används truppens namn som etikett.
+            join teamCandidate in context.Teams.AsNoTracking() on item.TeamId equals teamCandidate.Id
+                into teamMatch
+            from team in teamMatch.DefaultIfEmpty()
             where guardianship.AccountId == accountId
                 && invitation.Reply == null
                 && item.KickoffUtc >= nowUtc
@@ -60,7 +71,7 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
                 item.Title,
                 item.OpponentName,
                 item.IsHome,
-                TeamName = team.Name,
+                TeamName = team != null ? team.Name : ageGroup.Name,
             }
             into grouped
             orderby grouped.Key.KickoffUtc

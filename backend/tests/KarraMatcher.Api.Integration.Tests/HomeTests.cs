@@ -60,6 +60,7 @@ public sealed class HomeTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = svart.Id,
             Type = EventType.Match,
             KickoffUtc = now.AddDays(3),
@@ -74,6 +75,7 @@ public sealed class HomeTests(KarraMatcherApiFactory factory)
         var past = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = svart.Id,
             Type = EventType.Match,
             KickoffUtc = now.AddDays(-2),
@@ -194,6 +196,103 @@ public sealed class HomeTests(KarraMatcherApiFactory factory)
         Assert.Equal("Anna Andersson", chat.GetProperty("authorName").GetString());
         Assert.Contains("Vi ses", chat.GetProperty("snippet").GetString(), StringComparison.Ordinal);
         Assert.Equal(JsonValueKind.Null, chat.GetProperty("teamSlug").ValueKind);
+    }
+
+    [Fact]
+    public async Task Medlem_SerTruppovergripandeHandelse_UtanLag()
+    {
+        // En trupp-övergripande händelse (TeamId == null) i medlemmens trupp ska med i "nästa
+        // händelse" trots att den saknar färg-lag; etiketten blir då truppens namn och teamSlug
+        // är null (#386).
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var now = DateTime.UtcNow;
+
+            var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = "klubb-h-trupp" };
+            var trupp = new AgeGroup
+            {
+                Id = Guid.NewGuid(),
+                ClubId = club.Id,
+                Name = "P2016",
+                Season = "2026",
+            };
+            var team = new Team
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = trupp.Id,
+                Name = "Svart",
+                ColorHex = "#161616",
+                Slug = "svart-h-trupp",
+            };
+            var venue = new Venue
+            {
+                Id = Guid.NewGuid(),
+                Name = "Karra IP",
+                Address = "Idrottsvagen 1, Goteborg",
+                Latitude = 57.79,
+                Longitude = 11.94,
+                IsHome = true,
+            };
+            // Trupp-övergripande händelse (utan lag), tidigare än ett tänkt lag-event.
+            var truppEvent = new Event
+            {
+                Id = Guid.NewGuid(),
+                TeamId = null,
+                AgeGroupId = trupp.Id,
+                Type = EventType.Training,
+                KickoffUtc = now.AddDays(1),
+                Title = "Gemensam träning",
+                VenueId = venue.Id,
+                IsHome = true,
+                Status = EventStatus.Scheduled,
+                UpdatedUtc = now,
+            };
+
+            var guardian = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "vh-h-trupp@example.com",
+                FirstName = "Bo",
+                LastName = "Berg",
+                CreatedUtc = now,
+            };
+            var child = new Child
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Noah",
+                LastInitial = "B",
+                AgeGroupId = trupp.Id,
+                TeamId = team.Id,
+                CreatedUtc = now,
+            };
+
+            context.Clubs.Add(club);
+            context.AgeGroups.Add(trupp);
+            context.Teams.Add(team);
+            context.Venues.Add(venue);
+            context.Events.Add(truppEvent);
+            context.Accounts.Add(guardian);
+            context.Children.Add(child);
+            context.Guardianships.Add(new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = guardian.Id,
+                ChildId = child.Id,
+                GrantedUtc = now,
+            });
+            await context.SaveChangesAsync(CancellationToken.None);
+
+            var body = await GetHemAsync(TokenFor(guardian.Id));
+
+            var next = body.GetProperty("nextEvent");
+            Assert.Equal(truppEvent.Id, next.GetProperty("id").GetGuid());
+            Assert.Equal("Gemensam träning", next.GetProperty("title").GetString());
+            // Utan lag: teamSlug är null och truppens namn står som etikett.
+            Assert.Equal(JsonValueKind.Null, next.GetProperty("teamSlug").ValueKind);
+            Assert.Equal("P2016", next.GetProperty("teamName").GetString());
+            Assert.Equal("Karra IP", next.GetProperty("place").GetString());
+        }
     }
 
     [Fact]

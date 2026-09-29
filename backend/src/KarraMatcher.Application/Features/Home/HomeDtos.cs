@@ -23,7 +23,8 @@ public sealed record HomeEventDto(
     string? Title,
     string? Opponent,
     bool? IsHome,
-    string TeamSlug,
+    // Null för en trupp-övergripande händelse utan lag (#386); TeamName bär då truppens namn.
+    string? TeamSlug,
     string TeamName,
     string Place);
 
