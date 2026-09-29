@@ -1,6 +1,7 @@
 import { useParams } from '@tanstack/react-router'
 
 import { useAuth } from '@/features/auth'
+import { ApiError } from '@/lib/api'
 
 import { ChatView } from './ChatView'
 import { useTeamChatMeta } from './useChat'
@@ -31,7 +32,9 @@ export function TeamChatPage() {
       {meta.isLoading && <p className="state">Hämtar…</p>}
       {meta.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte öppna lagchatten.
+          {meta.error instanceof ApiError && meta.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte öppna lagchatten.'}
         </p>
       )}
 

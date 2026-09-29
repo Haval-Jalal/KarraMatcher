@@ -2,6 +2,7 @@ import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
+import { ApiError } from '@/lib/api'
 
 import { ChatView } from './ChatView'
 import { useMyTrupper } from './useChat'
@@ -43,7 +44,9 @@ export function ChatPage() {
       {trupper.isLoading && <p className="state">Hämtar…</p>}
       {trupper.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta dina trupper.
+          {trupper.error instanceof ApiError && trupper.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta dina trupper.'}
         </p>
       )}
       {trupper.data && options.length === 0 && (

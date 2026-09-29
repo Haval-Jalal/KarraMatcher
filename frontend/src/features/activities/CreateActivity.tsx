@@ -106,7 +106,9 @@ export function CreateActivity({ truppId }: { truppId: string }) {
 
       {roster.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta truppens barn och lag. Ladda om och försök igen.
+          {roster.error instanceof ApiError && roster.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta truppens barn och lag. Ladda om och försök igen.'}
         </p>
       )}
 

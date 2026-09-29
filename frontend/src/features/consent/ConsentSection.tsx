@@ -35,7 +35,9 @@ export function ConsentSection() {
       {(mine.isLoading || current.isLoading) && <p className="state">Hämtar…</p>}
       {(mine.isError || current.isError) && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta samtyckesinformationen.
+          {[mine.error, current.error].some((e) => e instanceof ApiError && e.offline)
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta samtyckesinformationen.'}
         </p>
       )}
 

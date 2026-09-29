@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react'
 
 import { accountIdFromToken } from '@/features/auth/authApi'
+import { ApiError } from '@/lib/api'
 import { getAccessToken } from '@/lib/session'
 
 import { ChatChannel } from './ChatChannel'
@@ -62,7 +63,9 @@ export function ChatView({
   if (channels.isError) {
     return (
       <p className="state state--error" role="alert">
-        Kunde inte hämta kanalerna.
+        {channels.error instanceof ApiError && channels.error.offline
+          ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+          : 'Kunde inte hämta kanalerna.'}
       </p>
     )
   }
