@@ -64,6 +64,23 @@ describe('svar med kropp', () => {
 
     await expect(postJson('/api/v1/auth/verify-code', {})).rejects.toThrow('Koden stämmer inte')
   })
+
+  it('surfar fältfelen ur ett ValidationProblemDetails i stället för bara titeln (#403)', async () => {
+    // Servern skickar de faktiska meddelandena i `errors` och lämnar `detail` tom. Förr visades
+    // bara "Felaktig förfrågan"; nu ska fältmeddelandet nå användaren.
+    stubFetch(() =>
+      jsonResponse(
+        {
+          title: 'Felaktig förfrågan',
+          status: 400,
+          errors: { Opponent: ['Fyll i motståndarlaget.'] },
+        },
+        400,
+      ),
+    )
+
+    await expect(postJson('/api/v1/nagot', {})).rejects.toThrow('Fyll i motståndarlaget.')
+  })
 })
 
 describe('hämtningar som beror på vem som frågar', () => {
