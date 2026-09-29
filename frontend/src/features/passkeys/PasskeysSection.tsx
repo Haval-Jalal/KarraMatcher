@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { ApiError } from '@/lib/api'
 import { formatMatchDate } from '@/lib/time'
 
@@ -87,16 +88,15 @@ export function PasskeysSection() {
               <span>
                 {passkey.deviceLabel ?? 'Passkey'} · tillagd {formatMatchDate(passkey.createdUtc)}
               </span>
-              <button
-                type="button"
+              <ConfirmButton
+                label="Ta bort"
                 className="button button--small"
+                confirmClassName="button button--small button--danger"
                 disabled={remove.isPending}
-                onClick={() => {
+                onConfirm={() => {
                   remove.mutate(passkey.id)
                 }}
-              >
-                Ta bort
-              </button>
+              />
             </li>
           ))}
         </ul>

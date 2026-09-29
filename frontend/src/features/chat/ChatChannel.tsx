@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate } from '@/lib/time'
 
@@ -408,14 +409,13 @@ export function ChatChannel({
                   <br />
                   {item.body}
                 </span>
-                <button
-                  type="button"
+                <ConfirmButton
+                  label="Ta bort"
                   className="button button--small"
+                  confirmClassName="button button--small button--danger"
                   disabled={cancel.isPending}
-                  onClick={() => run(cancel.mutateAsync(item.id))}
-                >
-                  Ta bort
-                </button>
+                  onConfirm={() => run(cancel.mutateAsync(item.id))}
+                />
               </li>
             ))}
           </ul>
@@ -451,14 +451,13 @@ export function ChatChannel({
                   </span>
                   {!item.deleted &&
                     (canRemove ? (
-                      <button
-                        type="button"
+                      <ConfirmButton
+                        label="Ta bort"
                         className="button button--small"
+                        confirmClassName="button button--small button--danger"
                         disabled={adminRemove.isPending}
-                        onClick={() => run(adminRemove.mutateAsync(item.messageId))}
-                      >
-                        Ta bort
-                      </button>
+                        onConfirm={() => run(adminRemove.mutateAsync(item.messageId))}
+                      />
                     ) : (
                       <span className="admin-muted chat-report__gate">
                         Kan tas bort när minst {REMOVAL_THRESHOLD} anmälningar kommit in.

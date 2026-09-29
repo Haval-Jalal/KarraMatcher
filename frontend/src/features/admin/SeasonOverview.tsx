@@ -1,3 +1,4 @@
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { eventLabel, type TeamEvent } from '@/features/events'
 import { formatKickoffTime, formatMatchDate, formatMonthHeading } from '@/lib/time'
 
@@ -90,16 +91,19 @@ export function SeasonOverview({
                         </button>
 
                         {event.status !== 'Cancelled' && (
-                          <button
-                            type="button"
+                          <ConfirmButton
                             className="button"
-                            onClick={() => {
+                            confirmLabel="Ställ in"
+                            onConfirm={() => {
                               onCancel(event)
                             }}
-                          >
-                            <span aria-hidden="true">Ställ in</span>
-                            <span className="visually-hidden">{`Ställ in ${eventLabel(event)}`}</span>
-                          </button>
+                            label={
+                              <>
+                                <span aria-hidden="true">Ställ in</span>
+                                <span className="visually-hidden">{`Ställ in ${eventLabel(event)}`}</span>
+                              </>
+                            }
+                          />
                         )}
 
                         <button

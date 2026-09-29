@@ -859,6 +859,14 @@ h2 {
   margin-top: 20px;
 }
 
+/* Två-stegs-bekräftelse (ConfirmButton): Bekräfta + Avbryt sida vid sida, på raden där knappen låg. */
+.confirm-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 .button--action {
   display: inline-flex;
   align-items: center;

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { REACTION_EMOJIS, reactionLabel, type ChatChannel, type ChatMessage } from './chatApi'
 import { useToggleReaction } from './useChat'
@@ -39,6 +39,8 @@ export function MessageMenu({
 }) {
   const toggle = useToggleReaction(channel)
   const panelRef = useRef<HTMLDivElement>(null)
+  // Radering är oåterkallelig — kräv ett andra klick i menyn i stället för att ta bort direkt (`#383`).
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   useEffect(() => {
     panelRef.current?.focus()
@@ -127,18 +129,43 @@ export function MessageMenu({
           Anmäl
         </button>
 
-        {canDelete && (
+        {canDelete && !confirmingDelete && (
           <button
             type="button"
             className="msg-menu__item msg-menu__item--danger"
             disabled={deleting}
             onClick={() => {
-              onDelete()
-              onClose()
+              setConfirmingDelete(true)
             }}
           >
             Ta bort
           </button>
+        )}
+
+        {canDelete && confirmingDelete && (
+          <div role="group" aria-label="Bekräfta radering">
+            <button
+              type="button"
+              className="msg-menu__item msg-menu__item--danger"
+              disabled={deleting}
+              autoFocus
+              onClick={() => {
+                onDelete()
+                onClose()
+              }}
+            >
+              Bekräfta radering
+            </button>
+            <button
+              type="button"
+              className="msg-menu__item"
+              onClick={() => {
+                setConfirmingDelete(false)
+              }}
+            >
+              Avbryt
+            </button>
+          </div>
         )}
       </div>
     </>
