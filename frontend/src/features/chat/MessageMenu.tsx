@@ -15,8 +15,9 @@ import { useToggleReaction } from './useChat'
  *
  * <h3>Tillgänglighet</h3>
  *
- * Menyn öppnas även med ⋯-knappen, så den når tangentbord och skärmläsare (långtryck är bara en
- * touch-genväg). Escape och klick utanför stänger; fokus flyttas in i menyn när den öppnas.
+ * Bubblan är en knapp: tangentbord öppnar menyn med Enter/Mellanslag och mus med högerklick, så
+ * den når fler än touch-långtrycket. Escape och klick utanför stänger; fokus flyttas in i menyn
+ * när den öppnas och tillbaka till bubblan när den stängs (WCAG 2.4.3).
  */
 export function MessageMenu({
   message,

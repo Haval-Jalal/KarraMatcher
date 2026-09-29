@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -128,7 +128,7 @@ describe('lag-chatt', () => {
     renderRoute('/lag/gul/chatt')
 
     const row = (await screen.findByText('Vem tar med bollar?')).closest('li') as HTMLElement
-    await user.click(within(row).getByRole('button', { name: 'Fler val' }))
+    fireEvent.contextMenu(within(row).getByRole('button', { name: /Vem tar med bollar/ }))
     await user.click(within(row).getByRole('button', { name: 'Anmäl' }))
     await user.type(within(row).getByLabelText(/Varför anmäler/), 'Fel kanal')
     await user.click(within(row).getByRole('button', { name: 'Skicka anmälan' }))
