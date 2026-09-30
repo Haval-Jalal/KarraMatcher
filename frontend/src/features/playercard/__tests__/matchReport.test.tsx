@@ -179,6 +179,29 @@ describe('resultatet', () => {
     expect(reports).toHaveLength(2)
     expect(reports.every((report) => report.teamGoals === 1)).toBe(true)
   })
+
+  it('skrivs inte till ett syskon i ett annat lag som inte spelade (#479)', async () => {
+    // Liam spelar i Gul, Noah i Blå. Föräldern öppnar Guls match och fyller i resultatet — det
+    // ska bara skrivas till Liam. Förr fick Noah en ifylld fantom-rapport som räknades mot
+    // säsongen och Stammis-märket.
+    writeCard({
+      ...emptyCard(),
+      children: [
+        { id: '1', name: 'Liam', shirtNumber: null, teamSlug: 'gul', seenBadges: [] },
+        { id: '2', name: 'Noah', shirtNumber: null, teamSlug: 'bla', seenBadges: [] },
+      ],
+    })
+
+    const user = userEvent.setup()
+    openMatch() // Gul-match (testTeams[0])
+
+    await user.click(await screen.findByRole('button', { name: 'Öka Våra mål' }))
+
+    const reports = readCard().reports
+    expect(reports).toHaveLength(1)
+    expect(reports[0]?.childId).toBe('1')
+    expect(reports[0]?.teamGoals).toBe(1)
+  })
 })
 
 describe('inga barn på enheten', () => {
