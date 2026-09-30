@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { ChatView } from './ChatView'
 import { useMyTrupper } from './useChat'
@@ -16,6 +17,7 @@ import { useMyTrupper } from './useChat'
  * gäller alla truppens kanaler.
  */
 export function ChatPage() {
+  useDocumentTitle('Chatt')
   const auth = useAuth()
   const params = useParams({ strict: false })
   const routeTruppId = typeof params.truppId === 'string' ? params.truppId : null
