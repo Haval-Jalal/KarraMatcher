@@ -249,6 +249,50 @@ describe('adminen skickar kallelse', () => {
     expect(await screen.findByText('Kallelsen är skickad.')).toBeInTheDocument()
   })
 
+  it('varnar innan ett svarat barn tas bort ur kallelsen och skickar först efter bekräftelse (#472)', async () => {
+    setAccessToken(ADMIN_TOKEN)
+    const sent = stub({
+      token: ADMIN_TOKEN,
+      roster,
+      summary: {
+        callOpen: true,
+        coming: 1,
+        notComing: 0,
+        notAnswered: 0,
+        children: [
+          {
+            childId: 'c1',
+            displayName: 'Liam J',
+            teamName: 'Svart',
+            colorHex: '#161616',
+            reply: 'Coming',
+          },
+        ],
+      },
+    })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    // Liam är redan kallad och har svarat Ja → förkryssad. Avmarkera honom och skicka.
+    await userEvent.click(await screen.findByLabelText('Liam J'))
+    await userEvent.click(screen.getByRole('button', { name: 'Skicka kallelse' }))
+
+    // Ingen PUT än — full synk skulle radera Liams svar, så en bekräftelse krävs först (#472).
+    const warning = await screen.findByText(/tas bort ur kallelsen och förlorar sitt svar/)
+    expect(warning).toHaveTextContent('Liam J')
+    expect(sent.some((r) => r.method === 'PUT' && r.url.includes('/kallelse'))).toBe(false)
+
+    // Bekräfta: nu skickas kallelsen utan Liam.
+    await userEvent.click(screen.getByRole('button', { name: 'Skicka ändå' }))
+
+    await waitFor(() => {
+      const put = sent.find((r) => r.method === 'PUT' && r.url.includes('/kallelse'))
+      const ids = (put?.body as { childIds: string[] } | undefined)?.childIds ?? []
+      expect(put).toBeDefined()
+      expect(ids).not.toContain('c1')
+    })
+  })
+
   it('döljer skicka-knappen tills sammanställningen laddat — nollställer inte kallelsen (#392)', async () => {
     setAccessToken(ADMIN_TOKEN)
     const sent = stub({ token: ADMIN_TOKEN, roster, summaryPending: true })

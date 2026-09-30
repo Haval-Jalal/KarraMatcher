@@ -60,6 +60,24 @@ export interface KallelseSummary {
   children: KallelseChild[]
 }
 
+/**
+ * Namnen på redan svarade barn som ett nytt urval skulle ta bort ur kallelsen (`#472`).
+ *
+ * <para>
+ * Skicket är en full synk: barn utanför urvalet får sina inbjudningar <b>och svar</b> raderade
+ * (servern). Att avmarkera ett barn som svarat "Ja"/"Nej" — eller klicka "Hela laget" — kastar
+ * alltså deras svar tyst. Panelen använder den här listan för att varna först.
+ * </para>
+ */
+export function answeredChildrenBeingDropped(
+  summaryChildren: readonly KallelseChild[],
+  selected: ReadonlySet<string>,
+): string[] {
+  return summaryChildren
+    .filter((child) => child.reply !== null && !selected.has(child.childId))
+    .map((child) => child.displayName)
+}
+
 /** Ett barn i kallelse-väljaren (färg-lag-tränaren). Speglar `KallelseRosterChildDto` — inga vårdnadshavare (§KM.1). */
 export interface KallelseRosterChild {
   id: string
