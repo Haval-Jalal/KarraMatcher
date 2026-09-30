@@ -265,10 +265,22 @@ h2 {
   margin: 0 0 12px;
 }
 
-/* Synlig fokusmarkering överallt — WCAG 2.4.7. Aldrig outline: none. */
+/* Synlig fokusmarkering överallt — WCAG 2.4.7. Aldrig outline: none på en manövrerbar kontroll. */
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+/*
+ * Innehålls-wrappern fokuseras med kod vid varje sidbyte (RootLayout) för att flytta skärmläsaren
+ * till den nya sidans början. Den är inget man manövrerar — bara ett ankare — så dess fokusram ska
+ * inte målas. Utan detta ritar iOS Safari en blå ram runt hela innehållet vid start/sidbyte,
+ * eftersom Safari matchar :focus-visible även för programmatisk fokus (en känd egenhet). Undantaget
+ * gäller bara den här wrappern; 2.4.7 rör manövrerbara kontroller, som behåller sin ram ovan.
+ */
+#innehall:focus,
+#innehall:focus-visible {
+  outline: none;
 }
 
 /*
