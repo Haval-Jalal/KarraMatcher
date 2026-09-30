@@ -16,9 +16,21 @@ import type { PlayerCardData } from './storage/schema'
  *
  * Påminnelsen visas när kortet har innehåll men aldrig kopierats — inte som en varning,
  * utan som ett konstaterande av vad som händer om telefonen byts i det läget.
+ *
+ * <h3>Ägaren håller kortet, inte den här sektionen (`#467`)</h3>
+ *
+ * Kortet kommer in som prop från <see cref="usePlayerCard"/> på sidan. Tidigare höll
+ * sektionen en egen ögonblicksbild (<c>useState(readCard)</c>), som inte uppdaterades när
+ * ett barn lades till på samma sida — då kunde "Kopiera koden" koda en tom profil men ändå
+ * visa grönt "Säkerhetskopierad". Nu speglar kod och status alltid det aktuella kortet.
  */
-export function BackupSection({ onChanged }: { onChanged: () => void }) {
-  const [card, setCard] = useState<PlayerCardData>(readCard)
+export function BackupSection({
+  card,
+  onChanged,
+}: {
+  card: PlayerCardData
+  onChanged: () => void
+}) {
   const [copied, setCopied] = useState(false)
   const [pasted, setPasted] = useState('')
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null)
@@ -58,8 +70,9 @@ export function BackupSection({ onChanged }: { onChanged: () => void }) {
               const stamped = { ...card, lastBackupUtc: new Date().toISOString() }
 
               writeCard(stamped)
-              setCard(stamped)
               setCopied(true)
+              // Sidan äger kortet: onChanged läser om och skickar ned det stämplade kortet,
+              // så status och kod speglar det utan en egen ögonblicksbild här (`#467`).
               onChanged()
             })()
           }}
@@ -121,7 +134,6 @@ export function BackupSection({ onChanged }: { onChanged: () => void }) {
               const merged = mergeCards(before, result.card)
 
               writeCard(merged)
-              setCard(merged)
               setPasted('')
               setOutcome({
                 ok: true,
