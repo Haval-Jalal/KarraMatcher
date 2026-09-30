@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Application.Features.Auth;
@@ -14,6 +16,27 @@ public sealed record CompletePasskeyRegistrationCommand(
     Guid AccountId,
     string AttestationJson,
     string? DeviceLabel) : ICommand<PasskeyRegistrationOutcome>;
+
+/// <summary>
+/// Utan en validator hoppar <c>CommandValidationBehavior</c> tyst över kontrollen (auto
+/// assembly-scan), så en enhetsnamns-fritext (`DeviceLabel`) längre än DB-taket (60) hade slagit
+/// igenom till spar och gett 500 i stället för 400, och en tom attestering hade nått ceremonin
+/// (`#471`).
+/// </summary>
+internal sealed class CompletePasskeyRegistrationCommandValidator
+    : AbstractValidator<CompletePasskeyRegistrationCommand>
+{
+    public CompletePasskeyRegistrationCommandValidator()
+    {
+        RuleFor(c => c.AccountId).NotEmpty();
+        RuleFor(c => c.AttestationJson).NotEmpty();
+
+        // Speglar DB-taket i PasskeyConfiguration (HasMaxLength(60)); fritext, valfri (null = inget
+        // namn), men aldrig längre än kolumnen rymmer.
+        RuleFor(c => c.DeviceLabel)
+            .MaximumLength(60).WithMessage("Enhetsnamnet är för långt.");
+    }
+}
 
 // ---- Inloggning (anonym) ------------------------------------------------------------------
 

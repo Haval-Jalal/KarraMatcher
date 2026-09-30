@@ -169,4 +169,20 @@ public sealed class PasskeyTests(KarraMatcherApiFactory factory)
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Registrering_MedForLangtEnhetsnamn_Ger400_Inte500()
+    {
+        // Utan validatorn nådde fritexten spar och gav 500 på DB-taket (60). Nu avvisas den som
+        // 400 innan ceremonin ens körs (`#471`).
+        var accountId = await SeedAccountAsync("langt-namn");
+
+        var response = await SendAsync(
+            HttpMethod.Post,
+            "/api/v1/passkeys/registrera/klar",
+            TokenFor(accountId),
+            new { attestation = new { dummy = "x" }, deviceLabel = new string('x', 61) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }
