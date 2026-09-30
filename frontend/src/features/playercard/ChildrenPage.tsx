@@ -175,7 +175,7 @@ export function ChildrenPage() {
         }
       />
 
-      <BackupSection onChanged={reload} />
+      <BackupSection card={card} onChanged={reload} />
 
       {confirmRemove !== null && (
         <section className="danger-zone">

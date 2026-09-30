@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { readCard, writeCard } from '@/features/playercard'
+import { decodeBackup, readCard, writeCard } from '@/features/playercard'
 import { emptyCard } from '@/features/playercard/storage/schema'
 import { stubApi } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
@@ -217,5 +217,44 @@ describe('texten är ärlig om var datan finns', () => {
 
     expect(lead).toHaveTextContent('Du behöver inget konto')
     expect(lead).toHaveTextContent('statistiken följer med telefonen, inte med dig')
+  })
+})
+
+describe('säkerhetskopian speglar aktuell data (#467)', () => {
+  it('varnar "Ingen kopia än" när ett barn lagts till på samma sida men inget kopierats', async () => {
+    stubApi({})
+
+    const user = userEvent.setup()
+    renderRoute('/spelarkort')
+
+    await user.type(await screen.findByLabelText('Namn eller smeknamn'), 'Liam')
+    await user.click(screen.getByRole('button', { name: 'Lägg till' }))
+
+    // Innan fixen tog sektionen en tom ögonblicksbild vid montering: den missade barnet och
+    // visade grönt "Säkerhetskopierad" trots att ingen kopia fanns.
+    expect(await screen.findByText(/Ingen kopia än/)).toBeInTheDocument()
+    expect(screen.queryByText(/Säkerhetskopierad/)).not.toBeInTheDocument()
+  })
+
+  it('kodar det aktuella kortet, inte en tom ögonblicksbild', async () => {
+    stubApi({})
+
+    const user = userEvent.setup()
+    renderRoute('/spelarkort')
+
+    await user.type(await screen.findByLabelText('Namn eller smeknamn'), 'Liam')
+    await user.click(screen.getByRole('button', { name: 'Lägg till' }))
+    await user.click(screen.getByRole('button', { name: 'Kopiera koden' }))
+
+    // Kopian ska ha stämplats och koden ska bära barnet — inte den tomma profil sektionen
+    // annars kodade från sin egen inaktuella snapshot.
+    const card = readCard()
+    expect(card.lastBackupUtc).not.toBeNull()
+    expect(card.children).toHaveLength(1)
+
+    const code = screen.getByLabelText('Din säkerhetskopieringskod')
+    const restored = decodeBackup((code as HTMLTextAreaElement).value)
+    expect(restored.ok).toBe(true)
+    expect(restored.ok && restored.card.children).toHaveLength(1)
   })
 })
