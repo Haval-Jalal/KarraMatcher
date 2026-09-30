@@ -50,6 +50,7 @@ public sealed class CarpoolRequestService(
 {
     /// <summary>Skickar en förfrågan.</summary>
     public async Task<(CarpoolRequestOutcome Outcome, CarpoolRequestDto? Request)> CreateAsync(
+        Guid matchId,
         Guid offerId,
         CarpoolRequestDraft draft,
         Guid requesterAccountId,
@@ -64,8 +65,13 @@ public sealed class CarpoolRequestService(
          * Tillbakadraget erbjudande gar inte att fraga om. Samma svar som for ett
          * erbjudande som inte finns -- den som frisatt sin plats ska inte fa fler
          * forfragningar, och en gissare ska inte kunna kartlagga vilka id som finns.
+         *
+         * Erbjudandet maste ocksa hora till matchen i route:n (§KM.3, `#470`). Grinden
+         * MemberOfEvent provar bara matchId; utan den har kontrollen kunde en medlem i en match
+         * rikta en forfragan mot ett erbjudande i en annan trupp/klubb. Samma tysta "finns inte"-
+         * svar sa ett erbjudande i en annan match inte kan kartlaggas.
          */
-        if (offer is null || offer.Status != CarpoolOfferStatus.Open)
+        if (offer is null || offer.MatchId != matchId || offer.Status != CarpoolOfferStatus.Open)
         {
             return (CarpoolRequestOutcome.OfferUnavailable, null);
         }
