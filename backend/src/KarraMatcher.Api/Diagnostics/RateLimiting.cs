@@ -134,11 +134,14 @@ public static class RateLimiting
                     new StringValues(retryAfter.ToString(CultureInfo.InvariantCulture));
 
                 // Lämna ett spår så en attack som håller servern uppe ändå syns (§KM.0 A1).
-                // Aldrig e-post eller fritext här (§KM.10) — bara metod och sökväg.
+                // Aldrig e-post eller fritext här (§KM.10) — bara metod och sökväg, och sökvägen
+                // går genom samma redigering som request-loggen: kalender-ICS-feeden pollas ofta
+                // och lyder rate-limitern, så en 429 hade annars lagt dess 256-bitars token rått i
+                // loggen (§KM.4/§KM.10, `#469`).
                 var request = context.HttpContext.Request;
                 context.HttpContext.RequestServices
                     .GetService<ISecurityEventSink>()
-                    ?.RateLimitRejected(request.Method, request.Path.Value ?? "/");
+                    ?.RateLimitRejected(request.Method, RequestLogRedaction.Redact(request.Path.Value ?? "/"));
 
                 return ValueTask.CompletedTask;
             };
