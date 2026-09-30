@@ -121,7 +121,7 @@ describe('stilmallen använder rätt ram på rätt ställe', () => {
     expect(block).toContain('var(--border-strong)')
   })
 
-  it('tar aldrig bort fokusmarkeringen', () => {
+  it('tar aldrig bort fokusmarkeringen från en manövrerbar kontroll', () => {
     // outline: none utan ersättning är det enskilt vanligaste tillgänglighetsfelet i en
     // webbapp, och det märks inte förrän någon försöker använda tangentbord.
     //
@@ -129,7 +129,16 @@ describe('stilmallen använder rätt ram på rätt ställe', () => {
     // i stilmallen, vilket det gjorde när det skrevs.
     const declarations = CSS_SOURCE.replace(/\/\*[\s\S]*?\*\//g, '')
 
-    expect(declarations).not.toMatch(/outline:\s*(none|0)/)
+    // Enda tillåtna undantaget: #innehall fokuseras med kod vid varje sidbyte (RootLayout) för
+    // att flytta skärmläsaren till nya sidans början. Det är ett ankare, inte en manövrerbar
+    // kontroll, så WCAG 2.4.7 gäller inte det — och iOS Safari målar annars en ram runt hela
+    // innehållet. Släpp igenom just det blocket; kravet står kvar för allt annat.
+    const withoutAnchor = declarations.replace(
+      /#innehall:focus,\s*#innehall:focus-visible\s*\{[^}]*\}/g,
+      '',
+    )
+
+    expect(withoutAnchor).not.toMatch(/outline:\s*(none|0)/)
   })
 
   it('respekterar prefers-reduced-motion', () => {
