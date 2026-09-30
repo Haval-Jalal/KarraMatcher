@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { EventInput } from '@/features/admin/adminApi'
 import { EventForm, SeasonOverview } from '@/features/admin'
 import { eventLabel, eventQueryKey, type TeamEvent } from '@/features/events'
+import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
 import { ApiError } from '@/lib/api'
 
 import {
@@ -51,6 +52,8 @@ export function ManageActivities({
   // rör en känd händelse — annars behåller en öppen händelsesida gammalt läge (samma som #393).
   async function refresh(eventId?: string): Promise<void> {
     await queryClient.invalidateQueries({ queryKey: activitiesKeys.list(truppId) })
+    // Hem-vyn visar nästa händelse — håll den i takt när en händelse skapas/ändras/ställs in (#476).
+    await queryClient.invalidateQueries({ queryKey: homeSummaryQueryKey })
     if (eventId !== undefined) {
       await queryClient.invalidateQueries({ queryKey: eventQueryKey(eventId) })
     }

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
+
 import {
   cancelScheduled,
   channelKey,
@@ -85,6 +87,8 @@ export function usePost(channel: ChatChannel) {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: chatKeys.messages(channel) })
       void client.invalidateQueries({ queryKey: chatKeys.scheduled(channel) })
+      // Hem-vyn visar senaste chatten — annars ligger den kvar inaktuell i 60 s (#476).
+      void client.invalidateQueries({ queryKey: homeSummaryQueryKey })
     },
   })
 }
