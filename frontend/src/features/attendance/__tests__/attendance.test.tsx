@@ -20,6 +20,7 @@ const FUTURE = '2026-12-20T11:00:00Z'
 
 const PARENT_TOKEN = `x.${btoa('{"email":"foralder@example.com"}')}.y`
 const ADMIN_TOKEN = `x.${btoa(JSON.stringify({ email: 'admin@example.com', 'admin-trupp': TRUPP }))}.y`
+const COACH_TOKEN = `x.${btoa(JSON.stringify({ email: 'coach@example.com', coach: 'svart' }))}.y`
 
 const team = { slug: 'svart', name: 'Svart', ageGroup: 'P2016', colorHex: '#161616' }
 
@@ -87,6 +88,28 @@ function stub(options: Options) {
         if (method === 'PUT') return Promise.resolve(emptyResponse(204))
         // Hänger med flit: summeringen är ännu inte klar.
         if (options.summaryPending) return new Promise<Response>(() => {})
+        return Promise.resolve(
+          jsonResponse(
+            options.summary ?? {
+              callOpen: true,
+              coming: 0,
+              notComing: 0,
+              notAnswered: 0,
+              children: [],
+            },
+          ),
+        )
+      }
+
+      // Tränarens väljar-roster (lag-scopad): GET /teams/{slug}/kallelse-roster
+      if (url.includes('/kallelse-roster')) {
+        return Promise.resolve(options.roster ?? jsonResponse({ teams: [], children: [] }))
+      }
+
+      // Tränarens kallelse (lag-scopad): GET summering / PUT urval på
+      // /teams/{slug}/events/{id}/kallelse
+      if (url.includes('/teams/') && url.includes('/events/') && url.includes('/kallelse')) {
+        if (method === 'PUT') return Promise.resolve(emptyResponse(204))
         return Promise.resolve(
           jsonResponse(
             options.summary ?? {
@@ -352,5 +375,39 @@ describe('adminen skickar kallelse', () => {
       expect(sent.some((r) => r.method === 'POST' && r.url.includes('/remind'))).toBe(true),
     )
     expect(await screen.findByText(/Påminde 2/)).toBeInTheDocument()
+  })
+})
+
+describe('färg-lag-tränaren skickar kallelse', () => {
+  const roster = jsonResponse({
+    teams: [{ id: 't-svart', name: 'Svart', colorHex: '#161616' }],
+    children: [
+      {
+        id: 'c1',
+        firstName: 'Liam',
+        lastInitial: 'J',
+        displayName: 'Liam J',
+        teamId: 't-svart',
+        teamName: 'Svart',
+        guardians: [],
+      },
+    ],
+  })
+
+  it('kvitterar att kallelsen skickades (#473)', async () => {
+    setAccessToken(COACH_TOKEN)
+    stub({
+      token: COACH_TOKEN,
+      roster,
+      summary: { callOpen: true, coming: 0, notComing: 0, notAnswered: 0, children: [] },
+    })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Hela laget Svart' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Skicka kallelse' }))
+
+    // Tränaren fick tidigare ingen bekräftelse och kunde skicka om i osäkerhet (#473).
+    expect(await screen.findByText('Kallelsen är skickad.')).toBeInTheDocument()
   })
 })
