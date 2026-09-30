@@ -214,6 +214,26 @@ describe('vårdnadshavaren svarar per barn', () => {
       expect(put?.body).toEqual({ reply: 'Coming' })
     })
   })
+
+  it('invaliderar Hem-sammanställningen när ett svar sparas (#476)', async () => {
+    setAccessToken(PARENT_TOKEN)
+    stub({
+      mine: {
+        callOpen: true,
+        kickoffUtc: FUTURE,
+        children: [{ childId: 'c1', displayName: 'Liam J', reply: null }],
+      },
+    })
+
+    const { queryClient } = renderRoute(`/handelse/${EVENT}`)
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const group = await screen.findByRole('group', { name: 'Svar för Liam J' })
+    await userEvent.click(within(group).getByRole('button', { name: 'Ja' }))
+
+    // Hem räknar obesvarade kallelser — utan detta visar den ett inaktuellt antal i 60 s (#476).
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['home-summary'] }))
+  })
 })
 
 describe('adminen skickar kallelse', () => {

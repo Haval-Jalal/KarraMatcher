@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
 import { ApiError } from '@/lib/api'
 
 import {
@@ -132,5 +133,7 @@ async function invalidate(
   await Promise.all([
     client.invalidateQueries({ queryKey: myKallelseQueryKey(eventId) }),
     client.invalidateQueries({ queryKey: kallelseSummaryQueryKey(eventId) }),
+    // Hem-vyn räknar obesvarade kallelser — annars visar den ett inaktuellt antal i 60 s (#476).
+    client.invalidateQueries({ queryKey: homeSummaryQueryKey }),
   ])
 }

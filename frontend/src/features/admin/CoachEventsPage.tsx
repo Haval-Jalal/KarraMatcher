@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { CarpoolOverview } from '@/features/carpool'
 import { TeamRosterSection } from '@/features/children'
 import { useAuth } from '@/features/auth'
+import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
 import {
   eventLabel,
   eventQueryKey,
@@ -59,6 +60,8 @@ export function CoachEventsPage() {
   // (#393).
   const refresh = async (eventId?: string) => {
     await queryClient.invalidateQueries({ queryKey: teamEventsQueryKey(slug) })
+    // Hem-vyn visar nästa händelse — håll den i takt när en händelse skapas/ändras/ställs in (#476).
+    await queryClient.invalidateQueries({ queryKey: homeSummaryQueryKey })
     if (eventId !== undefined) {
       await queryClient.invalidateQueries({ queryKey: eventQueryKey(eventId) })
     }
