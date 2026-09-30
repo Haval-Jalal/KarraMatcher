@@ -91,10 +91,15 @@ internal static class EventNotification
     {
         ArgumentNullException.ThrowIfNull(due);
 
+        // Utelämna " · plats" när platsen saknas (t.ex. hemmaplan inte satt) i stället för en
+        // hängande separator (#465).
+        var when = When(due.KickoffUtc);
+        var body = string.IsNullOrWhiteSpace(due.VenueName) ? when : $"{when} · {due.VenueName}";
+
         return new PushMessage(
             $"{Kind(due.Type)} i morgon {EventDisplay.Label(due.Type, due.IsHome, due.Opponent, due.Title)}"
                 .TrimEnd(),
-            $"{When(due.KickoffUtc)} · {due.VenueName}",
+            body,
             Url(due.EventId));
     }
 

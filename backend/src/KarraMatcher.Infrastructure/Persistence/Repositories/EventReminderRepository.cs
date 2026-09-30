@@ -12,18 +12,51 @@ internal sealed class EventReminderRepository(KarraMatcherDbContext context)
     public async Task<IReadOnlyList<DueEvent>> ListDueAsync(
         DateTime fromUtc,
         DateTime toUtc,
-        CancellationToken cancellationToken) =>
-        await context.Events
+        CancellationToken cancellationToken)
+    {
+        // Plocka ut de nullbara plats-delarna null-säkert och lös själva platsen i minnet — samma
+        // ordning som schemat/detaljsidan (TeamMapping.ResolveLocation): en legacy-spelplats
+        // (VenueId), annars hemma → truppens hemmaplan, annars den skrivna adressen. App-skapade
+        // händelser har inget VenueId sedan #307/#405, så `Venue.Name` ensamt gav en tom plats i
+        // påminnelsen (#465).
+        var rows = await context.Events
             .AsNoTracking()
             .Where(e => e.KickoffUtc >= fromUtc
                 && e.KickoffUtc < toUtc
                 && e.Status != EventStatus.Cancelled
                 && e.ReminderSentUtc == null)
             .OrderBy(e => e.KickoffUtc)
-            .Select(e => new DueEvent(
-                e.Id, e.TeamId, e.AgeGroupId, e.Type.ToString(), e.KickoffUtc, e.Title, e.OpponentName, e.IsHome, e.Venue!.Name))
+            .Select(e => new
+            {
+                e.Id,
+                e.TeamId,
+                e.AgeGroupId,
+                Type = e.Type.ToString(),
+                e.KickoffUtc,
+                e.Title,
+                e.OpponentName,
+                e.IsHome,
+                VenueName = e.Venue != null ? e.Venue.Name : null,
+                HomeVenueName = e.AgeGroup != null ? e.AgeGroup.HomeVenueName : null,
+                e.AddressOverride,
+            })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        return rows
+            .Select(r => new DueEvent(
+                r.Id,
+                r.TeamId,
+                r.AgeGroupId,
+                r.Type,
+                r.KickoffUtc,
+                r.Title,
+                r.OpponentName,
+                r.IsHome,
+                (r.VenueName ?? (r.IsHome == true ? r.HomeVenueName : r.AddressOverride))
+                    ?? string.Empty))
+            .ToList();
+    }
 
     public async Task MarkRemindedAsync(
         IReadOnlyCollection<Guid> eventIds,

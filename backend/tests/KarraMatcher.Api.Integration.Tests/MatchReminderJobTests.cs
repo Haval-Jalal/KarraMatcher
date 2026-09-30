@@ -104,6 +104,10 @@ public sealed class MatchReminderJobTests(KarraMatcherApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
 
+        // Varje händelse hör till en trupp (AgeGroupId) precis som i produktionen — annars droppas
+        // den när platsupplösningen refererar AgeGroup-navigeringen (#386/#465).
+        var ageGroupId = (await context.Teams.FindAsync([teamId], CancellationToken.None))!.AgeGroupId;
+
         var venue = new Venue
         {
             Id = Guid.NewGuid(),
@@ -117,6 +121,7 @@ public sealed class MatchReminderJobTests(KarraMatcherApiFactory factory)
         {
             Id = Guid.NewGuid(),
             TeamId = teamId,
+            AgeGroupId = ageGroupId,
             KickoffUtc = SwedishTime.ToUtc(date, new TimeOnly(10, 0)),
             OpponentName = "Torslanda",
             VenueId = venue.Id,
@@ -231,6 +236,89 @@ public sealed class MatchReminderJobTests(KarraMatcherApiFactory factory)
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
         Assert.Equal(0, body.GetProperty("reminded").GetInt32());
         Assert.False(outbox.Dispatches.TryDequeue(out _));
+    }
+
+    [Fact]
+    public async Task AppSkapadeHandelser_BarPlats_IntTom()
+    {
+        // App-skapade händelser har inget VenueId sedan #307/#405 — platsen löses ur truppens
+        // hemmaplan (hemma) eller den skrivna adressen (borta). Förr projicerade reminder-repot
+        // bara Venue.Name → tom plats i pushen (#465).
+        Guid teamId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var club = new Club { Id = Guid.NewGuid(), Name = "Karra KIF", Slug = "klubb-j-appvenue" };
+            var ageGroup = new AgeGroup
+            {
+                Id = Guid.NewGuid(),
+                ClubId = club.Id,
+                Name = "P2016",
+                Season = "2026",
+                HomeVenueName = "Kareby IP",
+                HomeAddress = "Kareby Hed, Kungälv",
+                HomeLatitude = 57.9,
+                HomeLongitude = 12.0,
+            };
+            var team = new Team
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = ageGroup.Id,
+                Name = "Gul",
+                ColorHex = "#D9A21B",
+                Slug = "gul-j-appvenue",
+            };
+            var homeMatch = new Event
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = ageGroup.Id,
+                TeamId = team.Id,
+                KickoffUtc = SwedishTime.ToUtc(Tomorrow, new TimeOnly(10, 0)),
+                OpponentName = "Torslanda",
+                VenueId = null,
+                IsHome = true,
+                Status = EventStatus.Scheduled,
+                IcsSequence = 0,
+                UpdatedUtc = FixedNow.UtcDateTime,
+            };
+            var awayMatch = new Event
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = ageGroup.Id,
+                TeamId = team.Id,
+                KickoffUtc = SwedishTime.ToUtc(Tomorrow, new TimeOnly(12, 0)),
+                OpponentName = "Kungälv",
+                VenueId = null,
+                IsHome = false,
+                AddressOverride = "Bortavägen 5, Kungälv",
+                Status = EventStatus.Scheduled,
+                IcsSequence = 0,
+                UpdatedUtc = FixedNow.UtcDateTime,
+            };
+
+            context.Clubs.Add(club);
+            context.AgeGroups.Add(ageGroup);
+            context.Teams.Add(team);
+            context.Events.AddRange(homeMatch, awayMatch);
+            await context.SaveChangesAsync(CancellationToken.None);
+            teamId = team.Id;
+        }
+
+        var (app, outbox) = Configured();
+
+        var response = await RunAsync(app, Secret);
+        response.EnsureSuccessStatusCode();
+
+        var bodies = outbox.Dispatches
+            .Where(d => d.TeamId == teamId)
+            .Select(d => d.Message.Body)
+            .ToList();
+
+        Assert.Equal(2, bodies.Count);
+        // Hemma → truppens hemmaplan; borta → den skrivna adressen. Ingen tom " · ".
+        Assert.Contains(bodies, b => b.Contains("Kareby IP", StringComparison.Ordinal));
+        Assert.Contains(bodies, b => b.Contains("Bortavägen 5", StringComparison.Ordinal));
+        Assert.DoesNotContain(bodies, b => b.TrimEnd().EndsWith('·'));
     }
 
     [Fact]
