@@ -37,6 +37,9 @@ export function CoachKallelse({
   // null tills tränaren rört urvalet: då speglar vyn de barn som redan är kallade (ur summeringen).
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+  // Kvitto på att kallelsen skickades — annars vet tränaren (och en skärmläsare) inte att det
+  // gick fram och kan skicka om i osäkerhet (`#473`, speglar admin-panelens #394-kvitto).
+  const [sentMsg, setSentMsg] = useState<string | null>(null)
   const [remindMsg, setRemindMsg] = useState<string | null>(null)
   // Namnen på svarade barn som urvalet skulle kasta — kräver en bekräftelse innan svaren
   // raderas (`#472`). Nollas så fort urvalet ändras igen.
@@ -48,6 +51,7 @@ export function CoachKallelse({
   const ownTeamId = rosterTeams.find((team) => team.name === teamName)?.id ?? null
 
   function toggle(childId: string): void {
+    setSentMsg(null)
     setDropWarning(null)
     const next = new Set(current)
     if (next.has(childId)) {
@@ -59,6 +63,7 @@ export function CoachKallelse({
   }
 
   function selectTeam(): void {
+    setSentMsg(null)
     setDropWarning(null)
     setSelected(
       new Set(rosterChildren.filter((child) => child.teamId === ownTeamId).map((c) => c.id)),
@@ -66,6 +71,7 @@ export function CoachKallelse({
   }
 
   function selectAll(): void {
+    setSentMsg(null)
     setDropWarning(null)
     setSelected(new Set(rosterChildren.map((child) => child.id)))
   }
@@ -73,6 +79,7 @@ export function CoachKallelse({
   function doSend(): void {
     setDropWarning(null)
     send.mutate([...current], {
+      onSuccess: () => setSentMsg('Kallelsen är skickad.'),
       onError: (error) =>
         setFailure(
           error instanceof ApiError ? error.message : 'Kallelsen gick inte att skicka just nu.',
@@ -82,6 +89,7 @@ export function CoachKallelse({
 
   function submit(): void {
     setFailure(null)
+    setSentMsg(null)
 
     // Varna en gång innan svarade barn kastas ur kallelsen (full synk, `#472`).
     const dropped = answeredChildrenBeingDropped(summary.data?.children ?? [], current)
@@ -216,6 +224,12 @@ export function CoachKallelse({
                 {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
               </button>
             </div>
+          )}
+
+          {sentMsg !== null && (
+            <p className="state" role="status">
+              {sentMsg}
+            </p>
           )}
         </>
       )}
