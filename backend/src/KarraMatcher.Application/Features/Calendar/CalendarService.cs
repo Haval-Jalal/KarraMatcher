@@ -74,11 +74,20 @@ public sealed class CalendarService(
             : await repository.EventsForTeamsAsync(teamIds, truppIds, fromUtc, cancellationToken)
                 .ConfigureAwait(false);
 
+        // Samma match-synlighet som appen: en match man inte är kallad på hamnar inte i kalendern
+        // (§KM.7, ägarbeslut, `#514`); träning/cup/övrigt följer med som förr.
+        var visibility = await membership
+            .GetMatchVisibilityAsync(accountId.Value, cancellationToken)
+            .ConfigureAwait(false);
+
         var stamp = new DateTimeOffset(clock.GetUtcNow().UtcDateTime, TimeSpan.Zero);
 
-        // Trupp-vida händelser (Team == null) tas nu med (#475) — etiketten härleds ur truppnamnet
+        // Trupp-vida händelser (Team == null) tas med (#475) — etiketten härleds ur truppnamnet
         // i ToEntry i stället för att raden filtreras bort.
-        var entries = events.Select(item => ToEntry(item, stamp)).ToList();
+        var entries = events
+            .Where(item => visibility.CanSee(item.Type, item.AgeGroupId, item.Id))
+            .Select(item => ToEntry(item, stamp))
+            .ToList();
 
         return CalendarBuilder.Build("Kärra Matcher", entries);
     }

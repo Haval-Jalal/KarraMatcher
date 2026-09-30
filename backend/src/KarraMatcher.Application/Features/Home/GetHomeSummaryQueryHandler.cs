@@ -49,7 +49,8 @@ internal sealed class GetHomeSummaryQueryHandler(
         var truppIds = trupper.Select(t => t.Id).ToList();
         var teamIds = teams.Keys.ToList();
 
-        var nextEvent = await NextEventAsync(teamIds, truppIds, truppNames, nowUtc, cancellationToken)
+        var nextEvent = await NextEventAsync(
+            accountId, teamIds, truppIds, truppNames, nowUtc, cancellationToken)
             .ConfigureAwait(false);
         var pending = await PendingAsync(accountId, nowUtc, cancellationToken).ConfigureAwait(false);
         var latestChat = await LatestChatAsync(truppIds, teamIds, truppNames, teams, cancellationToken)
@@ -59,6 +60,7 @@ internal sealed class GetHomeSummaryQueryHandler(
     }
 
     private async Task<HomeEventDto?> NextEventAsync(
+        Guid accountId,
         List<Guid> teamIds,
         List<Guid> truppIds,
         Dictionary<Guid, string> truppNames,
@@ -70,8 +72,18 @@ internal sealed class GetHomeSummaryQueryHandler(
             return null;
         }
 
-        var item = await repository.NextEventAsync(teamIds, truppIds, nowUtc, cancellationToken)
+        // Hämta en liten lista kommande händelser och välj den första kontot faktiskt får se:
+        // en match man inte är kallad på gallras (§KM.7, ägarbeslut), träning/cup/övrigt är kvar.
+        var upcoming = await repository
+            .UpcomingEventsAsync(teamIds, truppIds, nowUtc, 100, cancellationToken)
             .ConfigureAwait(false);
+
+        var visibility = await membership
+            .GetMatchVisibilityAsync(accountId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var item = upcoming.FirstOrDefault(
+            e => visibility.CanSee(e.Type, e.AgeGroupId, e.Id));
 
         if (item is null)
         {

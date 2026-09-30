@@ -102,6 +102,10 @@ public sealed class TruppActivitiesTests(KarraMatcherApiFactory factory)
             GrantedUtc = now,
         });
 
+        // Matcher grindas av kallelse (`#514`): barnet kallas till matchen så vårdnadshavaren ser
+        // den i listan. Träning/cup syns ändå för alla medlemmar.
+        AttendanceSeed.CallChildrenToMatch(context, match.Id, guardian.Id, child.Id);
+
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(trupp.Id, guardian.Id, nonMember.Id);
@@ -159,5 +163,110 @@ public sealed class TruppActivitiesTests(KarraMatcherApiFactory factory)
         var response = await GetAsync($"/api/v1/trupper/{f.TruppId}/events", Token(f.NonMemberId));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Medlem_UtanKallelse_SerTraningMenIngenMatch()
+    {
+        // §KM.7, ägarbeslut (`#514`): en match man inte är kallad på ska inte synas — men träningen
+        // (fasta tider varje vecka) syns för alla truppens medlemmar.
+        var (truppId, guardianId, matchId, trainingId) = await SeedUncalledAsync("okallad");
+
+        var response = await GetAsync($"/api/v1/trupper/{truppId}/events", Token(guardianId));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var ids = (await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .EnumerateArray()
+            .Select(item => item.GetProperty("event").GetProperty("id").GetGuid())
+            .ToList();
+
+        Assert.Contains(trainingId, ids);
+        Assert.DoesNotContain(matchId, ids);
+    }
+
+    [Fact]
+    public async Task Medlem_UtanKallelse_KanInteOppnaMatchen()
+    {
+        // Samma grind på detaljsidan: matchen går inte att öppna utan kallelse (403), men träningen
+        // gör det.
+        var (_, guardianId, matchId, trainingId) = await SeedUncalledAsync("okallad-detalj");
+
+        var match = await GetAsync($"/api/v1/events/{matchId}", Token(guardianId));
+        Assert.Equal(HttpStatusCode.Forbidden, match.StatusCode);
+
+        var training = await GetAsync($"/api/v1/events/{trainingId}", Token(guardianId));
+        Assert.Equal(HttpStatusCode.OK, training.StatusCode);
+    }
+
+    /// <summary>En trupp med en match och en träning, och en medlem (vårdnadshavare) som INTE är
+    /// kallad till matchen.</summary>
+    private async Task<(Guid TruppId, Guid GuardianId, Guid MatchId, Guid TrainingId)> SeedUncalledAsync(
+        string suffix)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+        var now = DateTime.UtcNow;
+
+        var club = new Club { Id = Guid.NewGuid(), Name = "Kärra", Slug = $"klubb-uk-{suffix}" };
+        var trupp = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
+        var team = new Team
+        {
+            Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
+            Name = "Gul",
+            ColorHex = "#D9A21B",
+            Slug = $"gul-uk-{suffix}",
+        };
+        var match = new Event
+        {
+            Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
+            TeamId = team.Id,
+            Type = EventType.Match,
+            KickoffUtc = now.AddDays(2),
+            OpponentName = "Torslanda",
+            Status = EventStatus.Scheduled,
+            UpdatedUtc = now,
+        };
+        var training = new Event
+        {
+            Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
+            TeamId = null,
+            Type = EventType.Training,
+            KickoffUtc = now.AddDays(1),
+            Title = "Gemensam träning",
+            Status = EventStatus.Scheduled,
+            UpdatedUtc = now,
+        };
+        var guardian = new Account { Id = Guid.NewGuid(), Email = $"vh-uk-{suffix}@example.com", CreatedUtc = now };
+        var child = new Child
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Nora",
+            LastInitial = "K",
+            AgeGroupId = trupp.Id,
+            TeamId = team.Id,
+            CreatedUtc = now,
+        };
+
+        context.Clubs.Add(club);
+        context.AgeGroups.Add(trupp);
+        context.Teams.Add(team);
+        context.Events.AddRange(match, training);
+        context.Accounts.Add(guardian);
+        context.Children.Add(child);
+        context.Guardianships.Add(new Guardianship
+        {
+            Id = Guid.NewGuid(),
+            AccountId = guardian.Id,
+            ChildId = child.Id,
+            GrantedUtc = now,
+        });
+
+        // Ingen kallelse: barnet är medlem men inte kallat till matchen.
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return (trupp.Id, guardian.Id, match.Id, training.Id);
     }
 }

@@ -134,6 +134,9 @@ public sealed class AccountNameTests(KarraMatcherApiFactory factory)
         });
         context.CarpoolOffers.Add(offer);
 
+        // Matcher grindas av kallelse (`#514`): kalla barnet så föraren når matchens samåkningslista.
+        AttendanceSeed.CallChildrenToMatch(context, match.Id, driver.Id, child.Id);
+
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(match.Id, driver.Id);

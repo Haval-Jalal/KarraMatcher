@@ -32,8 +32,15 @@ public sealed class TruppActivitiesController(IQueryDispatcher queries) : Contro
     public async Task<ActionResult<IReadOnlyList<TruppActivityDto>>> List(
         Guid truppId, CancellationToken cancellationToken)
     {
+        var accountId = Membership.AccountId(User);
+
+        if (accountId is null)
+        {
+            return Unauthorized();
+        }
+
         var activities = await queries
-            .SendAsync(new GetTruppActivitiesQuery(truppId), cancellationToken)
+            .SendAsync(new GetTruppActivitiesQuery(truppId, accountId.Value), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(activities);

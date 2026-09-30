@@ -63,8 +63,15 @@ public sealed class TeamsController(
         string slug,
         CancellationToken cancellationToken)
     {
+        var accountId = Membership.AccountId(User);
+
+        if (accountId is null)
+        {
+            return Unauthorized();
+        }
+
         var result = await dispatcher
-            .SendAsync(new GetTeamEventsQuery(slug), cancellationToken)
+            .SendAsync(new GetTeamEventsQuery(slug, accountId.Value), cancellationToken)
             .ConfigureAwait(false);
 
         // Ett okänt lag är inte ett fel i systemet utan en felaktig länk. 404 med

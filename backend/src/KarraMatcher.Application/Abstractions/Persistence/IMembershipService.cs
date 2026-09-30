@@ -1,8 +1,34 @@
+using KarraMatcher.Domain.Events;
+
 namespace KarraMatcher.Application.Abstractions.Persistence;
 
 /// <summary>En trupp den inloggade är medlem av — för medlemmens egna vyer (t.ex. chatt, `#201`).</summary>
 /// <param name="IsLeader">Sant om kontot är admin för truppen eller tränare för något av dess lag (får schemalägga).</param>
 public sealed record MemberTruppDto(Guid Id, string ClubName, string Name, string Season, bool IsLeader);
+
+/// <summary>
+/// Vad ett konto får se av <b>matcher</b> (§KM.7, ägarbeslut `#514`-uppföljning).
+///
+/// <para>
+/// En match visas bara för den som <em>sköter</em> laget/truppen (superadmin, admin för truppen,
+/// tränare för något av dess lag) eller för en vårdnadshavare vars barn är <em>kallat</em> till
+/// just den matchen. Träning, cup och övrig händelse visas för hela truppen som förr — kallelsen
+/// är planering, och en match man inte är kallad på ska inte ens synas i schemat. Beräknas en gång
+/// per konto och tillämpas på varje yta som listar händelser (schema, Hem, Aktivitet, kalender).
+/// </para>
+/// </summary>
+public sealed record MatchVisibility(
+    bool IsSuperAdmin,
+    IReadOnlySet<Guid> ManagerAgeGroupIds,
+    IReadOnlySet<Guid> CalledMatchEventIds)
+{
+    /// <summary>Får kontot se händelsen? Bara matcher gallras; övriga typer är alltid synliga här.</summary>
+    public bool CanSee(EventType type, Guid ageGroupId, Guid eventId) =>
+        type != EventType.Match
+        || IsSuperAdmin
+        || ManagerAgeGroupIds.Contains(ageGroupId)
+        || CalledMatchEventIds.Contains(eventId);
+}
 
 /// <summary>Ett lags chatt-kanal-info: id, slug, namn och färg (`#293`).</summary>
 public sealed record TeamChannelInfo(Guid TeamId, string Slug, string Name, string ColorHex);
@@ -83,6 +109,15 @@ public interface IMembershipService
     public Task<bool> IsMemberOfEventAsync(
         Guid accountId,
         Guid eventId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Kontots match-synlighet (<see cref="MatchVisibility"/>): vilka trupper det sköter och vilka
+    /// matcher dess barn är kallat till. Tillämpas där händelser listas för att gallra matcher man
+    /// inte är kallad på (§KM.7, ägarbeslut).
+    /// </summary>
+    public Task<MatchVisibility> GetMatchVisibilityAsync(
+        Guid accountId,
         CancellationToken cancellationToken);
 
     /// <summary>Truppens (åldersgruppens) namn, eller null om den inte finns — för kanaletiketten (`#298`).</summary>

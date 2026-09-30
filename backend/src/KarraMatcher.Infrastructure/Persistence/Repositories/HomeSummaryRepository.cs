@@ -11,10 +11,11 @@ namespace KarraMatcher.Infrastructure.Persistence.Repositories;
 /// </summary>
 internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHomeSummaryRepository
 {
-    public async Task<Event?> NextEventAsync(
+    public async Task<IReadOnlyList<Event>> UpcomingEventsAsync(
         IReadOnlyCollection<Guid> teamIds,
         IReadOnlyCollection<Guid> truppIds,
         DateTime nowUtc,
+        int take,
         CancellationToken cancellationToken)
     {
         return await context.Events
@@ -34,7 +35,8 @@ internal sealed class HomeSummaryRepository(KarraMatcherDbContext context) : IHo
                 && e.KickoffUtc >= nowUtc
                 && e.Status != EventStatus.Cancelled)
             .OrderBy(e => e.KickoffUtc)
-            .FirstOrDefaultAsync(cancellationToken)
+            .Take(take)
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
 
