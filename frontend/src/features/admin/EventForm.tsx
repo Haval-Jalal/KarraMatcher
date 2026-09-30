@@ -277,14 +277,27 @@ export function EventForm({
         </label>
 
         {isHome ? (
-          club.data?.configured ? (
+          club.isPending ? (
+            // Under Renders kallstart (~50 s, §KM.11) hänger venue-frågan. Visa ett neutralt
+            // laddningsbesked i stället för det röda "ingen hemmaplan", som annars blinkade förbi
+            // för trupper som visst har en plan (`#478`).
+            <p className="state" role="status">
+              Hämtar hemmaplan…
+            </p>
+          ) : club.data?.configured ? (
             <p className="state">
               Truppens hemmaplan: {venueLine(club.data.name ?? '', club.data.address ?? '')}
             </p>
-          ) : (
+          ) : club.data ? (
             <p className="state state--error" role="alert">
               Truppen har ingen hemmaplan ännu. Sätt den under Inställningar innan du lägger upp en
               hemma-aktivitet.
+            </p>
+          ) : (
+            // Frågan gick inte igenom (offline/fel) — säg det, i stället för att påstå att planen
+            // saknas (`#478`).
+            <p className="state state--error" role="alert">
+              Kunde inte hämta hemmaplanen. Kontrollera nätet och försök igen.
             </p>
           )
         ) : (
