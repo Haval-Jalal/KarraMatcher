@@ -28,7 +28,7 @@ function truppCoachToken(truppId: string): string {
 }
 
 /** Fångar det som skickas, så testet kan läsa vad servern skulle ha fått. */
-function stubApi(token: string) {
+function stubApi(token: string, options: { venuePending?: boolean } = {}) {
   const sent: { url: string; method: string; body: unknown }[] = []
 
   vi.stubGlobal(
@@ -53,6 +53,8 @@ function stubApi(token: string) {
         return Promise.resolve(jsonResponse({ accessToken: token }))
       }
       if (url.includes('/club-venue')) {
+        // Hänger med flit, så laddningstillståndet för hemmaplanen kan prövas (#478).
+        if (options.venuePending) return new Promise<Response>(() => {})
         return Promise.resolve(
           jsonResponse({
             name: 'Kareby IS',
@@ -181,6 +183,22 @@ describe('hemma eller annan plats', () => {
     expect(await screen.findByText(/Kareby Hed, Kungälv/)).toBeInTheDocument()
     // Ingen adress att skriva när platsen kommer ur klubbens plan.
     expect(screen.queryByLabelText('Adress')).not.toBeInTheDocument()
+  })
+
+  it('visar ett laddningsbesked, inte "ingen hemmaplan", medan planen hämtas (#478)', async () => {
+    // Under Renders kallstart hänger venue-frågan; förr blinkade det röda "ingen hemmaplan" förbi
+    // för trupper som visst har en plan. Nu står ett neutralt laddningsbesked.
+    const token = coachToken('gul')
+    stubApi(token, { venuePending: true })
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Lägg till händelse' }))
+
+    expect(await screen.findByText('Hämtar hemmaplan…')).toBeInTheDocument()
+    expect(screen.queryByText(/ingen hemmaplan ännu/)).not.toBeInTheDocument()
   })
 
   it('kräver en adress när annan plats är vald', async () => {
