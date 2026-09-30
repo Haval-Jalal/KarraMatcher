@@ -76,10 +76,11 @@ export function EventDetailPage() {
 
   /*
    * Barnen som spelar i det har laget. Lases direkt fran enheten, inte genom en hook.
-   * En trupp-vid händelse (utan lag) matchar alla barns kort.
+   * En trupp-vid händelse (utan lag) matchar alla barns kort (#474); en lag-riktad matchar
+   * barnen i det laget plus de utan lag (kan kallas som fyllnad).
    */
   const childrenForMatch = readCard().children.filter(
-    (child) => child.teamSlug === null || (team !== null && child.teamSlug === team.slug),
+    (child) => team === null || child.teamSlug === null || child.teamSlug === team.slug,
   )
   const isCancelled = event.status === 'Cancelled'
   const isPostponed = event.status === 'Postponed'
