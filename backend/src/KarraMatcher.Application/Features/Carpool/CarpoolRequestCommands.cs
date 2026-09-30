@@ -4,8 +4,18 @@ using KarraMatcher.Application.Abstractions.Messaging;
 
 namespace KarraMatcher.Application.Features.Carpool;
 
-/// <summary>Skickar en förfrågan om att få åka med.</summary>
+/// <summary>
+/// Skickar en förfrågan om att få åka med.
+///
+/// <para>
+/// <see cref="MatchId"/> kommer ur route:n och måste stämma med erbjudandets match (§KM.3):
+/// under-routen grindas av <c>MemberOfEvent</c> på matchen, men förfrågan agerar på
+/// <see cref="OfferId"/> — utan bindningen kunde en medlem i en match rikta en förfrågan mot
+/// ett erbjudande i en annan trupp/klubb (`#470`, IDOR).
+/// </para>
+/// </summary>
 public sealed record CreateCarpoolRequestCommand(
+    Guid MatchId,
     Guid OfferId,
     CarpoolRequestDraft Draft,
     Guid RequesterAccountId) : ICommand<(CarpoolRequestOutcome Outcome, CarpoolRequestDto? Request)>;
@@ -56,6 +66,7 @@ internal sealed class CreateCarpoolRequestCommandValidator
 {
     public CreateCarpoolRequestCommandValidator()
     {
+        RuleFor(c => c.MatchId).NotEmpty();
         RuleFor(c => c.OfferId).NotEmpty();
         RuleFor(c => c.RequesterAccountId).NotEmpty();
         RuleFor(c => c.Draft).NotNull().SetValidator(new CarpoolRequestDraftValidator()!);
@@ -72,7 +83,11 @@ internal sealed class CreateCarpoolRequestCommandHandler(CarpoolRequestService s
         ArgumentNullException.ThrowIfNull(command);
 
         return service.CreateAsync(
-            command.OfferId, command.Draft, command.RequesterAccountId, cancellationToken);
+            command.MatchId,
+            command.OfferId,
+            command.Draft,
+            command.RequesterAccountId,
+            cancellationToken);
     }
 }
 

@@ -424,6 +424,30 @@ public sealed class CarpoolRequestTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Fraga_MotErbjudandeIEnAnnanMatch_Avvisas()
+    {
+        // §KM.3/IDOR (`#470`): under-routen grindas på matchId (MemberOfEvent), men förfrågan
+        // agerar på offerId. En medlem i match A får inte rikta en förfrågan mot ett erbjudande
+        // i match B (en annan trupp/klubb) via sin egen route.
+        var a = await SeedAsync("idor-a");
+        var b = await SeedAsync("idor-b");
+
+        var path = $"/api/v1/matches/{a.MatchId}/carpool/offers/{b.OfferId}/requests";
+        var response = await SendAsync(
+            HttpMethod.Post, path, a.AskerId, new { seats = 1, message = Greeting });
+
+        // Samma tysta "finns inte" som ett okänt erbjudande — den andra matchens id kartläggs inte.
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+        var any = await context.CarpoolRequests.AsNoTracking()
+            .AnyAsync(r => r.OfferId == b.OfferId, CancellationToken.None);
+
+        Assert.False(any);
+    }
+
+    [Fact]
     public async Task Fraga_PaSittEget_Avvisas()
     {
         var fixture = await SeedAsync("mitt-eget");

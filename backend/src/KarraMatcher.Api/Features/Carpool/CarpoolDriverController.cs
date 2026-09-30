@@ -136,7 +136,7 @@ public sealed class CarpoolDriverController(
 
         var (outcome, created) = await commands
             .SendAsync(
-                new CreateCarpoolRequestCommand(offerId, request.ToDraft(), actor.Value),
+                new CreateCarpoolRequestCommand(matchId, offerId, request.ToDraft(), actor.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
