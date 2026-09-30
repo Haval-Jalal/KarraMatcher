@@ -18,8 +18,20 @@ import type { MatchReport } from './storage/schema'
  * Ett negativt antal mål betyder ingenting. Spärren sitter både här och på knappen — i
  * gränssnittet så att den syns, och här så att den gäller.
  */
-export function useMatchReports(matchId: string, opponent: string | null = null) {
+export function useMatchReports(
+  matchId: string,
+  opponent: string | null = null,
+  /**
+   * Barnen som deltar i matchen (`#479`). Matchresultatet skrivs bara till dem — annars fick
+   * ett syskon i ett annat färg-lag, som inte spelade, en ifylld fantom-rapport som räknades
+   * mot säsongen och Stammis-märket. Utelämnas den skrivs resultatet till alla barn (bakåtkompat).
+   */
+  participantIds?: readonly string[],
+) {
   const [card, setCard] = useState(readCard)
+  // Stabil nyckel för deps: barn-id:n är UUID/`barn-…`, aldrig med komma. undefined = alla barn,
+  // '' = inga.
+  const participantKey = participantIds?.join(',')
 
   const reportFor = useCallback(
     (childId: string): MatchReport =>
@@ -73,23 +85,30 @@ export function useMatchReports(matchId: string, opponent: string | null = null)
    * Resultatet gäller matchen, inte ett enskilt barn.
    *
    * <para>
-   * Det skrivs ändå på varje syskons rapport, så att en rapport är fullständig i sig
-   * själv. Tas ett barn bort ska den andra syskonets rapport fortfarande veta hur matchen
-   * slutade.
+   * Det skrivs på varje <em>deltagande</em> syskons rapport, så att en rapport är fullständig i
+   * sig själv — tas ett barn bort ska syskonets rapport fortfarande veta hur matchen slutade.
+   * Men bara barn som faktiskt spelade matchen (<see cref="participantIds"/>, `#479`): annars
+   * fick ett syskon i ett annat lag en fantom-rapport.
    * </para>
    */
   const setResult = useCallback(
     (field: 'teamGoals' | 'opponentGoals', delta: number) => {
       const current = readCard()
+      const targets =
+        participantKey === undefined
+          ? current.children.map((child) => child.id)
+          : participantKey === ''
+            ? []
+            : participantKey.split(',')
 
-      for (const child of current.children) {
-        save(child.id, (report) => ({
+      for (const childId of targets) {
+        save(childId, (report) => ({
           ...report,
           [field]: Math.max(0, (report[field] ?? 0) + delta),
         }))
       }
     },
-    [save],
+    [save, participantKey],
   )
 
   /**

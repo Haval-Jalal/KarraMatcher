@@ -24,9 +24,12 @@ import { useMatchReports } from './useMatchReports'
  * §KM.2. Komponenten når lagringen, aldrig API-lagret.
  */
 export function MatchReportCard({ match, children }: { match: TeamEvent; children: Child[] }) {
+  // Bara de barn kortet visar (matchens deltagare) ska få matchresultatet skrivet — annars fick
+  // ett syskon som inte spelade en fantom-rapport (`#479`).
   const { card, reportFor, adjust, setResult, acknowledgeBadges } = useMatchReports(
     match.id,
     match.opponent ?? '',
+    children.map((child) => child.id),
   )
 
   if (match.status === 'Cancelled') {
