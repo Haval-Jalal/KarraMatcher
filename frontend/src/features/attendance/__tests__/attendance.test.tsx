@@ -24,10 +24,11 @@ const COACH_TOKEN = `x.${btoa(JSON.stringify({ email: 'coach@example.com', coach
 
 const team = { slug: 'svart', name: 'Svart', ageGroup: 'P2016', colorHex: '#161616' }
 
-function eventDetail() {
+function eventDetail(truppWide = false) {
   return {
-    team,
+    team: truppWide ? null : team,
     truppId: TRUPP,
+    truppName: 'P2016',
     event: {
       id: EVENT,
       type: 'Match',
@@ -56,6 +57,8 @@ interface Options {
   /** Låter adminens summerings-GET hänga, så racet "roster klar före summering" kan prövas (#392). */
   summaryPending?: boolean
   roster?: unknown
+  /** Gör händelse-detaljen trupp-övergripande (utan lag), för #477. */
+  truppWide?: boolean
 }
 
 function stub(options: Options) {
@@ -139,7 +142,8 @@ function stub(options: Options) {
 
       if (url.includes('/carpool')) return Promise.resolve(jsonResponse([]))
 
-      if (url.includes('/api/v1/events/')) return Promise.resolve(jsonResponse(eventDetail()))
+      if (url.includes('/api/v1/events/'))
+        return Promise.resolve(jsonResponse(eventDetail(options.truppWide)))
 
       return Promise.resolve(jsonResponse({}))
     }),
@@ -314,6 +318,23 @@ describe('adminen skickar kallelse', () => {
       expect(put).toBeDefined()
       expect(ids).not.toContain('c1')
     })
+  })
+
+  it('döljer "Hela laget" på en trupp-övergripande händelse (#477)', async () => {
+    setAccessToken(ADMIN_TOKEN)
+    stub({
+      token: ADMIN_TOKEN,
+      roster,
+      truppWide: true,
+      summary: { callOpen: true, coming: 0, notComing: 0, notAnswered: 0, children: [] },
+    })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    // "Hela truppen" finns kvar; "Hela laget {truppnamn}" döljs — den matchade förr noll barn
+    // eftersom barnens teamName är färg-lag, aldrig truppnamnet (#477).
+    expect(await screen.findByRole('button', { name: 'Hela truppen' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Hela laget/ })).not.toBeInTheDocument()
   })
 
   it('döljer skicka-knappen tills sammanställningen laddat — nollställer inte kallelsen (#392)', async () => {
