@@ -89,7 +89,14 @@ export function AttendanceSection({
         <GuardianReplies eventId={eventId} childInvitations={myChildren} closed={closed} />
       )}
 
-      {isAdmin && <AdminKallelse truppId={truppId} eventId={eventId} teamName={teamName} />}
+      {isAdmin && (
+        <AdminKallelse
+          truppId={truppId}
+          eventId={eventId}
+          teamName={teamName}
+          hasTeam={teamSlug !== ''}
+        />
+      )}
 
       {isCoach && <CoachKallelse slug={teamSlug} eventId={eventId} teamName={teamName} />}
     </section>
@@ -170,10 +177,17 @@ function AdminKallelse({
   truppId,
   eventId,
   teamName,
+  hasTeam,
 }: {
   truppId: string
   eventId: string
   teamName: string
+  /**
+   * Har händelsen ett färg-lag? En trupp-övergripande händelse (utan lag, `#332`) får
+   * `teamName` = truppens namn — då matchar "Hela laget {namn}" inga barn (barnens teamName är
+   * färg-lag, aldrig truppnamnet), så knappen döljs och bara "Hela truppen" visas (`#477`).
+   */
+  hasTeam: boolean
 }) {
   const roster = useRoster(truppId)
   const summary = useKallelseSummary(truppId, eventId, true)
@@ -316,9 +330,12 @@ function AdminKallelse({
       {roster.data && summary.isSuccess && (
         <>
           <div className="actions">
-            <button type="button" className="button button--small" onClick={selectTeam}>
-              Hela laget {teamName}
-            </button>
+            {/* En trupp-övergripande händelse har inget lag att välja — bara "Hela truppen" (`#477`). */}
+            {hasTeam && (
+              <button type="button" className="button button--small" onClick={selectTeam}>
+                Hela laget {teamName}
+              </button>
+            )}
             <button type="button" className="button button--small" onClick={selectAll}>
               Hela truppen
             </button>
