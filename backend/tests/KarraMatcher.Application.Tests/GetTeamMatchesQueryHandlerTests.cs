@@ -11,8 +11,8 @@ public class GetTeamEventsQueryHandlerTests
 
     // Match-synligheten prövas i integrationstesterna (med riktiga roller/kallelser). Här räcker
     // en synlighet som visar allt (superadmin), så mappnings- och ordningstesterna står orörda.
-    private static IMembershipService AllVisible() =>
-        new StubMembershipService(new MatchVisibility(true, new HashSet<Guid>(), new HashSet<Guid>()));
+    private static StubMembershipService AllVisible() =>
+        new(new MatchVisibility(true, new HashSet<Guid>(), new HashSet<Guid>()));
 
     [Fact]
     public async Task HandleAsync_OkantLag_GerNull()
