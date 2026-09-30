@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TeamEvent } from '@/features/events'
+import { emptyCard, writeCard } from '@/features/playercard'
 import { clearSession, setAccessToken } from '@/lib/session'
 import { jsonResponse, stubApi, testEvent, testTeams } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
@@ -10,11 +11,14 @@ beforeEach(() => {
   // Händelsesidan kräver inloggning (§KM.3); en gäst skickas till inloggningen i stället.
   // Att gästen omdirigeras prövas i routing-testet — här är alla inloggade medlemmar.
   setAccessToken('test-token')
+  // Spelarkortet bor på enheten; nolla det mellan tester så en kvarlämnad rapport inte läcker.
+  localStorage.clear()
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
   clearSession()
+  localStorage.clear()
 })
 
 const MATCH_ID = '11111111-2222-3333-4444-555555555555'
@@ -64,6 +68,58 @@ describe('Matchdetaljsidan — innehåll', () => {
 
     await screen.findByRole('heading', { name: /Hemma mot Motstandare/ })
     expect(screen.queryByText('Meddelande')).not.toBeInTheDocument()
+  })
+
+  it('visar rapportkortet för en trupp-övergripande match även för barn med färg-lag (#474)', async () => {
+    // Barnet har valt färg-laget "gul" i spelarkortet.
+    writeCard({
+      ...emptyCard(),
+      children: [{ id: '1', name: 'Liam', shirtNumber: null, teamSlug: 'gul', seenBadges: [] }],
+    })
+
+    const truppWideMatchId = '77777777-6666-5555-4444-333333333333'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: 'test-token' }))
+        if (url.includes(`/api/v1/events/${truppWideMatchId}`)) {
+          return Promise.resolve(
+            jsonResponse({
+              team: null,
+              truppId: 'trupp-1',
+              truppName: 'P2016',
+              event: {
+                id: truppWideMatchId,
+                type: 'Match',
+                kickoffUtc: '2026-09-20T12:00:00Z',
+                title: null,
+                opponent: 'Torslanda',
+                isHome: true,
+                status: 'Scheduled',
+                address: 'Klarebergsvallen',
+                venue: {
+                  name: 'Klarebergsvallen',
+                  address: 'Klarebergsvallen',
+                  latitude: 57.8,
+                  longitude: 12,
+                },
+                note: null,
+              },
+            }),
+          )
+        }
+        return Promise.resolve(jsonResponse([]))
+      }),
+    )
+
+    renderRoute(`/handelse/${truppWideMatchId}`)
+
+    // Matchen är trupp-vid (team null). Förr föll barnet med färg-lag ur filtret och kortet
+    // försvann; nu matchar en trupp-vid match alla barns kort (#474).
+    expect(await screen.findByRole('heading', { name: 'Efter matchen' })).toBeInTheDocument()
   })
 
   it('skiljer bortamatch från hemmamatch', async () => {
