@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { useApply, useApplyInfo } from './useApplications'
 
@@ -13,6 +14,7 @@ import { useApply, useApplyInfo } from './useApplications'
  * ansökan kräver inloggning. En admin godkänner sedan i kön (`#194`).
  */
 export function ApplyLandingPage() {
+  useDocumentTitle('Gå med')
   const { truppId } = useParams({ from: '/ansok/$truppId' })
   const { status } = useAuth()
   // Trupp-infon kräver inloggning (§KM.3) — hämtas därför först när man är inloggad.

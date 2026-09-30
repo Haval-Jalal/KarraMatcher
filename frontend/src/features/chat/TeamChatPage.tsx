@@ -2,6 +2,7 @@ import { useParams } from '@tanstack/react-router'
 
 import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { ChatView } from './ChatView'
 import { useTeamChatMeta } from './useChat'
@@ -15,6 +16,7 @@ import { useTeamChatMeta } from './useChat'
  * visar sig bara på trupp-kanalen, inuti `ChatView`.
  */
 export function TeamChatPage() {
+  useDocumentTitle('Chatt')
   const auth = useAuth()
   const { slug } = useParams({ from: '/lag/$slug/chatt' })
   const meta = useTeamChatMeta(slug)

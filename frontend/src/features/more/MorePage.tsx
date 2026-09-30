@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 
 import { useAuth } from '@/features/auth'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /**
  * "Mer"-sidan — botten-navbarens overflow.
@@ -22,6 +23,7 @@ import { useAuth } from '@/features/auth'
  * auktoriseringen ligger i backend (§KM.3).
  */
 export function MorePage() {
+  useDocumentTitle('Mer')
   const { status, coachOf, adminOf, isSuperAdmin, signOut } = useAuth()
   const navigate = useNavigate()
 

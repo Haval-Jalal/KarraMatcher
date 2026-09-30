@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth'
 import { BarnOchLag } from '@/features/children'
 import { ClubVenueSettings } from '@/features/clubs'
 import { ApiError } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { AdminOverview } from './AdminOverview'
 import { InvitationsPanel } from './InvitationsPanel'
@@ -52,6 +53,7 @@ const LABEL: Record<SectionKey, string> = {
  * <c>AdminOfTrupp</c>) är den riktiga grinden. Route-grinden kräver bara inloggning.
  */
 export function AdminPage() {
+  useDocumentTitle('Administrera truppen')
   const { status, isSuperAdmin, adminOf } = useAuth()
   const trupper = useMyTrupper()
   const [truppId, setTruppId] = useState<string | null>(null)

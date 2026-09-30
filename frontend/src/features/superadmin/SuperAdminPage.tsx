@@ -1,4 +1,5 @@
 import { useAuth } from '@/features/auth'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { SetupWizard } from './SetupWizard'
 
@@ -17,6 +18,7 @@ import { SetupWizard } from './SetupWizard'
  * nekar — varje anrop härifrån svarar `403` för alla andra.
  */
 export function SuperAdminPage() {
+  useDocumentTitle('Superadmin')
   const { status, isSuperAdmin } = useAuth()
 
   if (status === 'okand') {

@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { useAcceptInvitation, useInvitationPreview } from './useInvitations'
 
@@ -14,6 +15,7 @@ import { useAcceptInvitation, useInvitationPreview } from './useInvitations'
  * sidan säger det innan man ens försöker.
  */
 export function InvitationLandingPage() {
+  useDocumentTitle('Inbjudan')
   const { token } = useParams({ from: '/inbjudan/$token' })
   const { status, email } = useAuth()
   const preview = useInvitationPreview(token)
