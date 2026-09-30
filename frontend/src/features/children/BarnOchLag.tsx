@@ -556,7 +556,8 @@ function ChildDetail({
     setFailure(null)
     setSuccess(null)
     void invite
-      .mutateAsync(email)
+      // Barnet finns redan här med sitt lag; inbjudan behöver inget lag-förslag (#408).
+      .mutateAsync({ email, teamId: null })
       .then(() => {
         setInviteOffer(null)
         setSuccess(

@@ -158,6 +158,63 @@ describe('Trupp-adminvyn', () => {
     })
   })
 
+  it('admin kan föreslå ett färg-lag i inbjudan (#408)', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    const sent = stub(token, (url, method) => {
+      if (url.includes('/my-trupper')) {
+        return [
+          { id: 'trupp-1', clubName: 'Kärra', sportName: 'Fotboll', name: 'P2016', season: '2026' },
+        ]
+      }
+      // Rostern ger lagen till väljaren.
+      if (url.includes('/children')) {
+        return { teams: [{ id: 't-gul', name: 'Gul', colorHex: '#D9A21B' }], children: [] }
+      }
+      if (url.includes('/invitations') && method === 'POST') {
+        return {
+          invitation: {
+            id: 'inv-2',
+            email: 'ny@example.com',
+            status: 'Pending',
+            teamId: 't-gul',
+            teamName: 'Gul',
+            createdUtc: '2026-09-16T10:00:00Z',
+            expiresUtc: '2026-09-30T10:00:00Z',
+          },
+          acceptUrl: 'http://localhost:5173/inbjudan/xyz',
+        }
+      }
+      return []
+    })
+    setAccessToken(token)
+
+    renderRoute('/admin')
+
+    await user.click(await screen.findByRole('tab', { name: 'Inbjudningar' }))
+    const section = (await screen.findByRole('heading', { name: 'Inbjudningar' })).closest(
+      '.admin-subsection',
+    ) as HTMLElement
+
+    await user.type(
+      within(section).getByLabelText('Bjud in en vårdnadshavare (adress)'),
+      'ny@example.com',
+    )
+    await user.selectOptions(within(section).getByLabelText('Föreslå färg-lag (valfritt)'), 't-gul')
+    await user.click(within(section).getByRole('button', { name: 'Skicka inbjudan' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.url.includes('/api/v1/admin/trupper/trupp-1/invitations') &&
+            r.method === 'POST' &&
+            (r.body as { teamId?: string }).teamId === 't-gul',
+        ),
+      ).toBe(true)
+    })
+  })
+
   it('landar på översikt och växlar till en sektion (#279)', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })

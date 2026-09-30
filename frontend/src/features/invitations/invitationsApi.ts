@@ -46,8 +46,16 @@ export const getMyTrupper = (): Promise<AdminTrupp[]> =>
 export const getInvitations = (truppId: string): Promise<Invitation[]> =>
   getJson<Invitation[]>(`/api/v1/admin/trupper/${truppId}/invitations`)
 
-export const createInvitation = (truppId: string, email: string): Promise<InvitationCreated> =>
-  postJson<InvitationCreated>(`/api/v1/admin/trupper/${truppId}/invitations`, { email })
+export const createInvitation = (
+  truppId: string,
+  email: string,
+  teamId: string | null = null,
+): Promise<InvitationCreated> =>
+  postJson<InvitationCreated>(`/api/v1/admin/trupper/${truppId}/invitations`, {
+    email,
+    // Valfritt lag-förslag: barnet knyts till det färg-laget när kopplingen görs (#408).
+    ...(teamId === null ? {} : { teamId }),
+  })
 
 export const revokeInvitation = (truppId: string, id: string): Promise<void> =>
   postJson<void>(`/api/v1/admin/trupper/${truppId}/invitations/${id}`, undefined, {

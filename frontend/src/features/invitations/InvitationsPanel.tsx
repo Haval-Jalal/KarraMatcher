@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { useRoster } from '@/features/children'
 import { ApiError } from '@/lib/api'
 import { formatFullDate } from '@/lib/time'
 
@@ -19,6 +20,8 @@ function messageOf(error: unknown): string {
 
 const schema = z.object({
   email: z.string().trim().email('Adressen ser inte giltig ut.').max(320, 'Adressen är för lång.'),
+  // Valfritt lag-förslag. Tom sträng = inget lag (`#408`).
+  teamId: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -31,17 +34,23 @@ type FormValues = z.infer<typeof schema>
  */
 export function InvitationsPanel({ truppId }: { truppId: string }) {
   const invitations = useInvitations(truppId)
+  const roster = useRoster(truppId)
   const create = useCreateInvitation(truppId)
   const revoke = useRevokeInvitation(truppId)
   const [failure, setFailure] = useState<string | null>(null)
   const [created, setCreated] = useState<InvitationCreated | null>(null)
+
+  const teams = roster.data?.teams ?? []
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '' } })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: '', teamId: '' },
+  })
 
   return (
     <div className="admin-subsection">
@@ -55,6 +64,9 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
             <li key={invitation.id} className="admin-list__row">
               <span>
                 <strong>{invitation.email}</strong>{' '}
+                {invitation.teamName !== null && (
+                  <span className="admin-muted">· föreslaget lag: {invitation.teamName} </span>
+                )}
                 <span className="admin-muted">
                   gäller till {formatFullDate(invitation.expiresUtc)}
                 </span>
@@ -90,7 +102,10 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
         onSubmit={(event) => {
           void handleSubmit(async (values) => {
             try {
-              const result = await create.mutateAsync(values.email.trim())
+              const result = await create.mutateAsync({
+                email: values.email.trim(),
+                teamId: values.teamId === '' ? null : values.teamId,
+              })
               setCreated(result)
               setFailure(null)
               reset()
@@ -111,6 +126,20 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
           />
           {errors.email && <p className="form__error">{errors.email.message}</p>}
         </div>
+
+        {teams.length > 0 && (
+          <div className="form__field">
+            <label htmlFor={`inbjudan-lag-${truppId}`}>Föreslå färg-lag (valfritt)</label>
+            <select id={`inbjudan-lag-${truppId}`} {...register('teamId')}>
+              <option value="">Inget lag</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {failure !== null && (
           <p className="state state--error" role="alert">
