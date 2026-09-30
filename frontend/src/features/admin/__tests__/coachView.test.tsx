@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -373,6 +373,27 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
 
     // Utan detta behåller en öppen händelsesida gammal tid/inställt-läge (#393).
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['event', 'ev1'] }))
+  })
+
+  it('låser händelsetypen vid redigering så motståndaren inte tyst nollas (#466)', async () => {
+    const token = coachToken('gul')
+    seedStub(token, {})
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Ändra Hemma mot Torslanda' }))
+
+    // Motståndaren är förifylld — det är den som servern skulle nolla om typen gick att byta.
+    expect(await screen.findByLabelText('Motståndare')).toHaveValue('Torslanda')
+
+    // Typen visas som läsvärde, inte som en väljare: servern ignorerar ändå ett typbyte, så en
+    // aktiv väljare skulle bara låta tränaren skicka fält för fel typ och tyst nolla motståndaren.
+    const typ = screen.getByRole('group', { name: 'Typ' })
+    expect(within(typ).getByText('Match')).toBeInTheDocument()
+    expect(within(typ).queryByLabelText('Träning')).not.toBeInTheDocument()
+    expect(within(typ).queryByLabelText('Match')).not.toBeInTheDocument()
   })
 })
 

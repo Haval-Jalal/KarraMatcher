@@ -160,24 +160,30 @@ export function EventForm({
     >
       <fieldset className="form__field">
         <legend>Typ</legend>
-        <div className="seg">
-          {(['Match', 'Training', 'Cup', 'Other'] as const).map((value) => (
-            <label key={value} className="seg__option">
-              <input
-                type="radio"
-                name="handelsetyp"
-                className="visually-hidden"
-                checked={type === value}
-                onChange={() => {
-                  setType(value)
-                  setValue('type', value, { shouldValidate: false })
-                  onTypeChange?.(value)
-                }}
-              />
-              <span>{TYPE_LABELS[value]}</span>
-            </label>
-          ))}
-        </div>
+        {existing !== undefined ? (
+          // Typen är oföränderlig vid redigering (servern ignorerar ett byte, `#466`) — visa den
+          // som läsvärde i stället för en väljare som tyst skulle nolla motståndare/rubrik.
+          <p className="state">{TYPE_LABELS[type]}</p>
+        ) : (
+          <div className="seg">
+            {(['Match', 'Training', 'Cup', 'Other'] as const).map((value) => (
+              <label key={value} className="seg__option">
+                <input
+                  type="radio"
+                  name="handelsetyp"
+                  className="visually-hidden"
+                  checked={type === value}
+                  onChange={() => {
+                    setType(value)
+                    setValue('type', value, { shouldValidate: false })
+                    onTypeChange?.(value)
+                  }}
+                />
+                <span>{TYPE_LABELS[value]}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </fieldset>
 
       <div className="form__field">
