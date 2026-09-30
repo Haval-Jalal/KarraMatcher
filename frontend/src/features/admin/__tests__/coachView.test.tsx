@@ -275,6 +275,7 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
       latitude: 57.9,
       longitude: 12.0,
     },
+    note: 'Ta med gula tröjan',
   }
 
   /** Som stubApi, men med en seedad match och styrbara fel på ställ-in/ta-bort. */
@@ -394,6 +395,20 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
     expect(within(typ).getByText('Match')).toBeInTheDocument()
     expect(within(typ).queryByLabelText('Träning')).not.toBeInTheDocument()
     expect(within(typ).queryByLabelText('Match')).not.toBeInTheDocument()
+  })
+
+  it('förifyller notisen vid redigering så den inte nollas (#468)', async () => {
+    const token = coachToken('gul')
+    seedStub(token, {})
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Ändra Hemma mot Torslanda' }))
+
+    // Förr startade fältet tomt och sparade tillbaka null → den lagrade notisen försvann.
+    expect(await screen.findByLabelText(/Notis till föräldrarna/)).toHaveValue('Ta med gula tröjan')
   })
 })
 

@@ -7,8 +7,11 @@ namespace KarraMatcher.Application.Features.Events;
 /// länka tillbaka till schemat utan ett andra anrop.
 ///
 /// <para>
-/// Händelsens notis ingår inte. Den är tränarens fritext, som §KM.1 räknar som potentiell
-/// PII, och exponeras inte i läs-svaret.
+/// Händelsens notis ingår via <see cref="EventDto.Note"/> (`#468`, ägarbeslut). Den är
+/// tränarens fritext till föräldrarna (§KM.7) och räknas som potentiell PII (§KM.1): den visas
+/// bara för medlemmar i händelsen — läs-svaret är grindat av <c>MemberOfEvent</c> — och hamnar
+/// aldrig i loggar (§KM.10). Fältet var tidigare medvetet utelämnat; beslutet att visa det är
+/// dokumenterat i <c>docs/PROJEKT-HANDOFF.md</c>.
 /// </para>
 /// </summary>
 /// <param name="Team">

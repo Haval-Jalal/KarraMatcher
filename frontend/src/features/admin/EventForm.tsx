@@ -103,7 +103,9 @@ export function EventForm({
       isHome: existing?.isHome ?? true,
       address: existing && existing.isHome === false ? existing.address : '',
       title: existing?.title ?? '',
-      note: '',
+      // Förifyll notisen vid redigering (`#468`) — annars skickades ett tomt fält som nollade
+      // den lagrade notisen.
+      note: existing?.note ?? '',
     },
   })
 

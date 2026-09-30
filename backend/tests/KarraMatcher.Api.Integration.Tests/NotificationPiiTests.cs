@@ -28,6 +28,13 @@ namespace KarraMatcher.Api.Integration.Tests;
 /// kallad" eller en inklistrad chatt-rad. Byggarna är neutrala i dag; det här kör flödena med
 /// distinkt känslig data och fäller bygget om den någonsin dyker upp i det som köas.
 /// </para>
+///
+/// <para>
+/// Enda medvetna undantaget (ägarbeslut, `#468`): adminens/tränarens egen notis <em>till</em>
+/// föräldrarna får följa med kallelsenotisen när en sådan skrivits — den ska framföras fullt ut.
+/// Barnets namn och en förälders chatt-fritext förblir förbjudna. Det andra testet nedan vaktar
+/// att notisen faktiskt når fram.
+/// </para>
 /// </summary>
 public sealed class NotificationPiiTests(KarraMatcherApiFactory factory)
     : IClassFixture<KarraMatcherApiFactory>
@@ -100,7 +107,29 @@ public sealed class NotificationPiiTests(KarraMatcherApiFactory factory)
         }
     }
 
-    private async Task<Fixture> SeedAsync(string suffix)
+    [Fact]
+    public async Task Kallelsenotisen_TarMedAdminNotisen_NarEnSkrivits()
+    {
+        const string note = "Ta med gula tröjan";
+        var f = await SeedAsync("note", note);
+        var (app, outbox) = WithRecordingOutbox();
+
+        await SendAsync(
+            app,
+            HttpMethod.Put,
+            $"/api/v1/admin/trupper/{f.TruppId}/events/{f.EventId}/kallelse",
+            AdminToken(f.TruppId),
+            new { childIds = new[] { f.ChildId } });
+
+        // Notisen till föräldrarna ska följa med kallelsen (#468, ägarbeslut) — men aldrig barnets
+        // namn. Standardtexten står kvar; notisen läggs till.
+        var kallelse = outbox.Dispatches.Single(d => d.Category == PushCategory.Kallelse);
+        Assert.Contains(note, kallelse.Message.Body, StringComparison.Ordinal);
+        Assert.Contains("Ditt barn är kallat", kallelse.Message.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain(ChildFirstName, kallelse.Message.Body, StringComparison.Ordinal);
+    }
+
+    private async Task<Fixture> SeedAsync(string suffix, string? note = null)
     {
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
@@ -126,6 +155,7 @@ public sealed class NotificationPiiTests(KarraMatcherApiFactory factory)
             OpponentName = "Torslanda",
             IsHome = true,
             Status = EventStatus.Scheduled,
+            Note = note,
             UpdatedUtc = now,
         };
 

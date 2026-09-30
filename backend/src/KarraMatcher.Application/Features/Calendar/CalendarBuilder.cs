@@ -3,7 +3,15 @@ using System.Text;
 
 namespace KarraMatcher.Application.Features.Calendar;
 
-/// <summary>En händelse på väg in i kalender-feeden. Ren data, ingen barn-PII (§KM.1).</summary>
+/// <summary>
+/// En händelse på väg in i kalender-feeden. Ingen barn-PII (§KM.1).
+///
+/// <para>
+/// <see cref="Description"/> är adminens/tränarens valfria notis till föräldrarna (`#468`) —
+/// vuxen-fritext, som feeden får bära eftersom den är privat per medlem och återkallningsbar
+/// (§KM.4). Tom sträng när ingen notis finns.
+/// </para>
+/// </summary>
 public sealed record CalendarEventEntry(
     string Uid,
     DateTimeOffset StartUtc,
@@ -12,7 +20,8 @@ public sealed record CalendarEventEntry(
     string Location,
     bool Cancelled,
     int Sequence,
-    DateTimeOffset StampUtc);
+    DateTimeOffset StampUtc,
+    string Description = "");
 
 /// <summary>
 /// Bygger en iCalendar-feed (RFC 5545). Ren funktion — ingen databas, ingen tid tas här — så den
@@ -51,6 +60,11 @@ public static class CalendarBuilder
             if (!string.IsNullOrWhiteSpace(entry.Location))
             {
                 Line(builder, $"LOCATION:{Escape(entry.Location)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.Description))
+            {
+                Line(builder, $"DESCRIPTION:{Escape(entry.Description)}");
             }
 
             Line(builder, $"SEQUENCE:{entry.Sequence.ToString(CultureInfo.InvariantCulture)}");

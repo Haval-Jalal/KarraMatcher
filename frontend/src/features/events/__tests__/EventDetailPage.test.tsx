@@ -48,6 +48,24 @@ describe('Matchdetaljsidan — innehåll', () => {
     expect(screen.getByText('Hemmamatch')).toBeInTheDocument()
   })
 
+  it('visar adminens notis till föräldrarna när den finns (#468)', async () => {
+    stubApi({ match: detail({ note: 'Ta med gula tröjan' }) })
+
+    renderRoute(`/handelse/${MATCH_ID}`)
+
+    expect(await screen.findByText('Meddelande')).toBeInTheDocument()
+    expect(screen.getByText('Ta med gula tröjan')).toBeInTheDocument()
+  })
+
+  it('utelämnar meddelanderaden helt när ingen notis finns (#468)', async () => {
+    stubApi({ match: detail({ note: null }) })
+
+    renderRoute(`/handelse/${MATCH_ID}`)
+
+    await screen.findByRole('heading', { name: /Hemma mot Motstandare/ })
+    expect(screen.queryByText('Meddelande')).not.toBeInTheDocument()
+  })
+
   it('skiljer bortamatch från hemmamatch', async () => {
     stubApi({ match: detail({ isHome: false }) })
 

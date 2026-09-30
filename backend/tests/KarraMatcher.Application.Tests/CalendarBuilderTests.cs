@@ -20,7 +20,8 @@ public sealed class CalendarBuilderTests
     private static CalendarEventEntry Entry(
         string summary = "Gul – Hemma mot Torslanda",
         string location = "Karra IP",
-        bool cancelled = false) =>
+        bool cancelled = false,
+        string description = "") =>
         new(
             Uid: "abc@karramatcher",
             StartUtc: Kickoff,
@@ -29,7 +30,8 @@ public sealed class CalendarBuilderTests
             Location: location,
             Cancelled: cancelled,
             Sequence: 0,
-            StampUtc: Kickoff);
+            StampUtc: Kickoff,
+            Description: description);
 
     [Fact]
     public void Build_GerEnGiltigVevent_MedUtcTider()
@@ -71,6 +73,24 @@ public sealed class CalendarBuilderTests
         var ics = CalendarBuilder.Build("Kärra Matcher", [Entry(location: "")]);
 
         Assert.DoesNotContain("LOCATION:", ics, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Build_TarMedNotisenSomDescription()
+    {
+        // Adminens/tränarens notis till föräldrarna följer med feeden som DESCRIPTION (#468).
+        var ics = CalendarBuilder.Build(
+            "Kärra Matcher", [Entry(description: "Ta med gula tröjan")]);
+
+        Assert.Contains("DESCRIPTION:Ta med gula tröjan\r\n", ics, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Build_UtelamnarTomDescription()
+    {
+        var ics = CalendarBuilder.Build("Kärra Matcher", [Entry(description: "")]);
+
+        Assert.DoesNotContain("DESCRIPTION:", ics, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -28,6 +28,7 @@ export function testEvent(
       latitude: 57.8,
       longitude: 12,
     },
+    note: null,
     ...overrides,
   }
 }

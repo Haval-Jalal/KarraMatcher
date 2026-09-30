@@ -258,8 +258,10 @@ public sealed class TeamEndpointTests : IClassFixture<KarraMatcherApiFactory>
         var matchFields = json.GetProperty("events")[0]
             .EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal);
 
+        // "note" är adminens/tränarens notis till föräldrarna (`#468`) — vuxen-fritext, inte
+        // barn-PII, och bara bakom medlemskap. Övriga fält är oförändrade.
         Assert.Equal(
-            ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "title", "type", "venue"],
+            ["address", "id", "isHome", "kickoffUtc", "note", "opponent", "status", "title", "type", "venue"],
             matchFields);
     }
 }
