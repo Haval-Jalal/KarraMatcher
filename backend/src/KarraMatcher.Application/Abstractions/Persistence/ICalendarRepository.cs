@@ -24,11 +24,14 @@ public interface ICalendarRepository
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Händelserna i en uppsättning lag från och med <paramref name="fromUtc"/>, med spelplats och
-    /// klubb laddade så platsen kan lösas som i schemat. Inställda tas med (märks i feeden).
+    /// Händelserna medlemmen ser från och med <paramref name="fromUtc"/>: lag-riktade i något av
+    /// <paramref name="teamIds"/>, plus trupp-övergripande (utan lag) i någon av
+    /// <paramref name="truppIds"/> (`#332`, #475). Spelplats, lag och trupp laddas så platsen och
+    /// etiketten kan lösas som i schemat. Inställda tas med (märks i feeden).
     /// </summary>
     public Task<IReadOnlyList<Event>> EventsForTeamsAsync(
         IReadOnlyCollection<Guid> teamIds,
+        IReadOnlyCollection<Guid> truppIds,
         DateTime fromUtc,
         CancellationToken cancellationToken);
 }

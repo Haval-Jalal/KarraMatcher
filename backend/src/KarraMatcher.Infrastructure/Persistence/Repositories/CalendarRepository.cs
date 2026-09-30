@@ -47,6 +47,7 @@ internal sealed class CalendarRepository(
 
     public async Task<IReadOnlyList<Event>> EventsForTeamsAsync(
         IReadOnlyCollection<Guid> teamIds,
+        IReadOnlyCollection<Guid> truppIds,
         DateTime fromUtc,
         CancellationToken cancellationToken) =>
         await context.Events
@@ -55,7 +56,15 @@ internal sealed class CalendarRepository(
             .Include(e => e.Team!)
             .ThenInclude(team => team!.AgeGroup!)
             .ThenInclude(ageGroup => ageGroup!.Club)
-            .Where(e => e.TeamId != null && teamIds.Contains(e.TeamId.Value) && e.KickoffUtc >= fromUtc)
+            // Trupp-vida händelser (utan lag) har ingen Team-navigering — ladda AgeGroup+klubb direkt
+            // så namn och hemma-plats kan lösas även då (#386/#475).
+            .Include(e => e.AgeGroup!)
+            .ThenInclude(ageGroup => ageGroup!.Club)
+            // Ett lag-riktat event i något av medlemmens lag, ELLER en trupp-övergripande händelse
+            // (TeamId == null) i någon av medlemmens trupper (`#332`, #475) — samma urval som Hem.
+            .Where(e => ((e.TeamId != null && teamIds.Contains(e.TeamId.Value))
+                    || (e.TeamId == null && truppIds.Contains(e.AgeGroupId)))
+                && e.KickoffUtc >= fromUtc)
             .OrderBy(e => e.KickoffUtc)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

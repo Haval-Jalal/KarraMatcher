@@ -59,6 +59,7 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
         var match = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = team.Id,
             Type = EventType.Match,
             KickoffUtc = now.AddDays(3),
@@ -71,6 +72,7 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
         var cancelled = new Event
         {
             Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
             TeamId = team.Id,
             Type = EventType.Match,
             KickoffUtc = now.AddDays(5),
@@ -78,6 +80,20 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
             VenueId = venue.Id,
             IsHome = false,
             Status = EventStatus.Cancelled,
+            UpdatedUtc = now,
+        };
+        // Trupp-övergripande händelse (utan lag, #332): syns på Hem/schema och ska med i feeden (#475).
+        var truppWide = new Event
+        {
+            Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
+            TeamId = null,
+            Type = EventType.Training,
+            KickoffUtc = now.AddDays(4),
+            Title = "Lagfoto",
+            IsHome = false,
+            AddressOverride = "Fotostudion 1, Goteborg",
+            Status = EventStatus.Scheduled,
             UpdatedUtc = now,
         };
         var guardian = new Account
@@ -100,7 +116,7 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
         context.AgeGroups.Add(trupp);
         context.Teams.Add(team);
         context.Venues.Add(venue);
-        context.Events.AddRange(match, cancelled);
+        context.Events.AddRange(match, cancelled, truppWide);
         context.Accounts.Add(guardian);
         context.Children.Add(child);
         context.Guardianships.Add(new Guardianship
@@ -163,6 +179,23 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
         Assert.Contains("Gul – Hemma mot Torslanda", ics, StringComparison.Ordinal);
         Assert.Contains("STATUS:CANCELLED", ics, StringComparison.Ordinal); // den inställda
         Assert.DoesNotContain("Liam", ics, StringComparison.Ordinal); // aldrig barn-PII (§KM.1)
+    }
+
+    [Fact]
+    public async Task Feed_TarMedTruppOvergripandeHandelser_MedTruppnamnSomEtikett()
+    {
+        var f = await SeedAsync("truppvid");
+
+        var token = await MyTokenAsync(f.GuardianId);
+        var response = await FeedAsync(token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var ics = await response.Content.ReadAsStringAsync(CancellationToken.None);
+
+        // En trupp-övergripande händelse (utan lag) syns nu i feeden, etiketterad med truppens
+        // namn i stället för ett lagnamn (#475). Förr filtrerades den bort.
+        Assert.Contains("SUMMARY:P2016 – Lagfoto", ics, StringComparison.Ordinal);
     }
 
     [Fact]

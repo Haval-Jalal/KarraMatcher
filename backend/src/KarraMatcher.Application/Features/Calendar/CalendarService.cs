@@ -65,20 +65,20 @@ public sealed class CalendarService(
             return null;
         }
 
-        var teamIds = await MemberTeamIdsAsync(accountId.Value, cancellationToken).ConfigureAwait(false);
+        var (teamIds, truppIds) = await MemberScopeAsync(accountId.Value, cancellationToken)
+            .ConfigureAwait(false);
         var fromUtc = clock.GetUtcNow().UtcDateTime.AddDays(-FeedHistoryDays);
 
-        var events = teamIds.Count == 0
+        var events = teamIds.Count == 0 && truppIds.Count == 0
             ? []
-            : await repository.EventsForTeamsAsync(teamIds, fromUtc, cancellationToken)
+            : await repository.EventsForTeamsAsync(teamIds, truppIds, fromUtc, cancellationToken)
                 .ConfigureAwait(false);
 
         var stamp = new DateTimeOffset(clock.GetUtcNow().UtcDateTime, TimeSpan.Zero);
 
-        var entries = events
-            .Where(item => item.Team is not null)
-            .Select(item => ToEntry(item, stamp))
-            .ToList();
+        // Trupp-vida händelser (Team == null) tas nu med (#475) — etiketten härleds ur truppnamnet
+        // i ToEntry i stället för att raden filtreras bort.
+        var entries = events.Select(item => ToEntry(item, stamp)).ToList();
 
         return CalendarBuilder.Build("Kärra Matcher", entries);
     }
@@ -107,11 +107,15 @@ public sealed class CalendarService(
 
         var start = new DateTimeOffset(item.KickoffUtc, TimeSpan.Zero);
 
+        // Etiketten bärs av lagets namn, eller truppens för en trupp-övergripande händelse utan
+        // lag (#475) — samma ordning som Hem-vyn.
+        var groupLabel = item.Team?.Name ?? item.AgeGroup?.Name ?? "Truppen";
+
         return new CalendarEventEntry(
             Uid: $"{item.Id:N}@karramatcher",
             StartUtc: start,
             EndUtc: start.AddHours(MatchDurationHours),
-            Summary: $"{item.Team!.Name} – {Label(item)}",
+            Summary: $"{groupLabel} – {Label(item)}",
             Location: place,
             Cancelled: item.Status == EventStatus.Cancelled,
             Sequence: item.IcsSequence,
@@ -127,9 +131,11 @@ public sealed class CalendarService(
         _ => item.Title ?? item.Type.ToString(),
     };
 
-    private async Task<List<Guid>> MemberTeamIdsAsync(Guid accountId, CancellationToken cancellationToken)
+    private async Task<(List<Guid> TeamIds, List<Guid> TruppIds)> MemberScopeAsync(
+        Guid accountId, CancellationToken cancellationToken)
     {
-        // De lag kontot ser — samma uppsättning som Hem-vyn och chatten bygger på.
+        // De trupper och lag kontot ser — samma uppsättning som Hem-vyn och chatten bygger på.
+        // Trupp-id:na behövs för trupp-övergripande händelser (utan lag, #475).
         var trupper = await membership.MemberTrupperAsync(accountId, cancellationToken)
             .ConfigureAwait(false);
 
@@ -147,7 +153,7 @@ public sealed class CalendarService(
             }
         }
 
-        return [.. teamIds];
+        return ([.. teamIds], trupper.Select(trupp => trupp.Id).ToList());
     }
 
     private string UrlFor(string token) =>
