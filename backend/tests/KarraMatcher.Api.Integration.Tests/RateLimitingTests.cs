@@ -134,6 +134,37 @@ public class RateLimitingTests(KarraMatcherApiFactory factory)
         Assert.Contains(sink.Rejections, rejection => rejection.Path == "/health");
     }
 
+    [Fact]
+    public async Task Avslag_RedigerarKalendertoken_ISakerhetsspar()
+    {
+        // Kalender-ICS-feeden är anonym, pollas ofta och lyder rate-limitern. En 429 får inte
+        // lägga dess 256-bitars token i säkerhetsloggen — token är hela behörigheten (§KM.4),
+        // samma klass §KM.10 förbjuder (`#469`).
+        const string token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        var sink = new RecordingSecurityEventSink();
+
+        using var app = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting(RateLimiting.PermitKey, "3");
+            builder.ConfigureTestServices(services =>
+                services.AddSingleton<ISecurityEventSink>(sink));
+        });
+        using var client = app.CreateClient();
+
+        for (var i = 0; i < 20 && sink.Rejections.Count == 0; i++)
+        {
+            using var response = await client.GetAsync(
+                $"/api/v1/kalender/{token}.ics", CancellationToken.None);
+        }
+
+        Assert.NotEmpty(sink.Rejections);
+        Assert.All(sink.Rejections, rejection =>
+        {
+            Assert.DoesNotContain(token, rejection.Path, StringComparison.Ordinal);
+            Assert.Equal("/api/v1/kalender/[redacted].ics", rejection.Path);
+        });
+    }
+
     private sealed class RecordingSecurityEventSink : ISecurityEventSink
     {
         public List<(string Method, string Path)> Rejections { get; } = [];
