@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { ApiError } from '@/lib/api'
 
+import { answeredChildrenBeingDropped } from './attendanceApi'
 import type { AttendanceReply } from './attendanceApi'
 import {
   useCoachKallelseRoster,
@@ -37,6 +38,9 @@ export function CoachKallelse({
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [remindMsg, setRemindMsg] = useState<string | null>(null)
+  // Namnen på svarade barn som urvalet skulle kasta — kräver en bekräftelse innan svaren
+  // raderas (`#472`). Nollas så fort urvalet ändras igen.
+  const [dropWarning, setDropWarning] = useState<string[] | null>(null)
 
   const rosterChildren = roster.data?.children ?? []
   const rosterTeams = roster.data?.teams ?? []
@@ -44,6 +48,7 @@ export function CoachKallelse({
   const ownTeamId = rosterTeams.find((team) => team.name === teamName)?.id ?? null
 
   function toggle(childId: string): void {
+    setDropWarning(null)
     const next = new Set(current)
     if (next.has(childId)) {
       next.delete(childId)
@@ -54,23 +59,38 @@ export function CoachKallelse({
   }
 
   function selectTeam(): void {
+    setDropWarning(null)
     setSelected(
       new Set(rosterChildren.filter((child) => child.teamId === ownTeamId).map((c) => c.id)),
     )
   }
 
   function selectAll(): void {
+    setDropWarning(null)
     setSelected(new Set(rosterChildren.map((child) => child.id)))
   }
 
-  function submit(): void {
-    setFailure(null)
+  function doSend(): void {
+    setDropWarning(null)
     send.mutate([...current], {
       onError: (error) =>
         setFailure(
           error instanceof ApiError ? error.message : 'Kallelsen gick inte att skicka just nu.',
         ),
     })
+  }
+
+  function submit(): void {
+    setFailure(null)
+
+    // Varna en gång innan svarade barn kastas ur kallelsen (full synk, `#472`).
+    const dropped = answeredChildrenBeingDropped(summary.data?.children ?? [], current)
+    if (dropped.length > 0) {
+      setDropWarning(dropped)
+      return
+    }
+
+    doSend()
   }
 
   function nudge(): void {
@@ -167,11 +187,36 @@ export function CoachKallelse({
             </p>
           )}
 
-          <div className="actions">
-            <button type="button" className="button" disabled={send.isPending} onClick={submit}>
-              {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
-            </button>
-          </div>
+          {dropWarning !== null && (
+            <div className="state state--error" role="alert">
+              <p>
+                {dropWarning.length === 1
+                  ? '1 barn som redan svarat tas bort ur kallelsen och förlorar sitt svar:'
+                  : `${String(dropWarning.length)} barn som redan svarat tas bort ur kallelsen och förlorar sina svar:`}{' '}
+                {dropWarning.join(', ')}.
+              </p>
+              <div className="actions">
+                <button type="button" className="button" disabled={send.isPending} onClick={doSend}>
+                  {send.isPending ? 'Skickar…' : 'Skicka ändå'}
+                </button>
+                <button
+                  type="button"
+                  className="button button--small"
+                  onClick={() => setDropWarning(null)}
+                >
+                  Avbryt
+                </button>
+              </div>
+            </div>
+          )}
+
+          {dropWarning === null && (
+            <div className="actions">
+              <button type="button" className="button" disabled={send.isPending} onClick={submit}>
+                {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
+              </button>
+            </div>
+          )}
         </>
       )}
 

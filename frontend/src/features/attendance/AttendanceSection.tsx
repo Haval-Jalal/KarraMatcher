@@ -5,6 +5,7 @@ import { useRoster } from '@/features/children'
 import { ApiError } from '@/lib/api'
 import { hasKickedOff } from '@/lib/time'
 
+import { answeredChildrenBeingDropped } from './attendanceApi'
 import type { AttendanceReply, MyChildInvitation } from './attendanceApi'
 import { CoachKallelse } from './CoachKallelse'
 import {
@@ -188,6 +189,9 @@ function AdminKallelse({
   // skärmläsaranvändare får ingen signal (#394). role="status" annonserar det.
   const [sentMsg, setSentMsg] = useState<string | null>(null)
   const [remindMsg, setRemindMsg] = useState<string | null>(null)
+  // Namnen på svarade barn som urvalet skulle kasta — sätts vid första Skicka och kräver en
+  // bekräftelse innan svaren raderas (`#472`). Nollas så fort urvalet ändras igen.
+  const [dropWarning, setDropWarning] = useState<string[] | null>(null)
 
   const rosterChildren = roster.data?.children ?? []
   const rosterTeams = roster.data?.teams ?? []
@@ -195,6 +199,7 @@ function AdminKallelse({
 
   function toggle(childId: string): void {
     setSentMsg(null)
+    setDropWarning(null)
     const next = new Set(current)
     if (next.has(childId)) {
       next.delete(childId)
@@ -206,6 +211,7 @@ function AdminKallelse({
 
   function selectTeam(): void {
     setSentMsg(null)
+    setDropWarning(null)
     setSelected(
       new Set(rosterChildren.filter((child) => child.teamName === teamName).map((c) => c.id)),
     )
@@ -213,12 +219,12 @@ function AdminKallelse({
 
   function selectAll(): void {
     setSentMsg(null)
+    setDropWarning(null)
     setSelected(new Set(rosterChildren.map((child) => child.id)))
   }
 
-  function submit(): void {
-    setFailure(null)
-    setSentMsg(null)
+  function doSend(): void {
+    setDropWarning(null)
     send.mutate([...current], {
       onSuccess: () => setSentMsg('Kallelsen är skickad.'),
       onError: (error) =>
@@ -226,6 +232,21 @@ function AdminKallelse({
           error instanceof ApiError ? error.message : 'Kallelsen gick inte att skicka just nu.',
         ),
     })
+  }
+
+  function submit(): void {
+    setFailure(null)
+    setSentMsg(null)
+
+    // Varna en gång innan svarade barn kastas ur kallelsen (full synk, `#472`). Andra klicket
+    // (Skicka ändå) går via doSend direkt.
+    const dropped = answeredChildrenBeingDropped(summary.data?.children ?? [], current)
+    if (dropped.length > 0) {
+      setDropWarning(dropped)
+      return
+    }
+
+    doSend()
   }
 
   function nudge(): void {
@@ -341,11 +362,36 @@ function AdminKallelse({
             </p>
           )}
 
-          <div className="actions">
-            <button type="button" className="button" disabled={send.isPending} onClick={submit}>
-              {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
-            </button>
-          </div>
+          {dropWarning !== null && (
+            <div className="state state--error" role="alert">
+              <p>
+                {dropWarning.length === 1
+                  ? '1 barn som redan svarat tas bort ur kallelsen och förlorar sitt svar:'
+                  : `${String(dropWarning.length)} barn som redan svarat tas bort ur kallelsen och förlorar sina svar:`}{' '}
+                {dropWarning.join(', ')}.
+              </p>
+              <div className="actions">
+                <button type="button" className="button" disabled={send.isPending} onClick={doSend}>
+                  {send.isPending ? 'Skickar…' : 'Skicka ändå'}
+                </button>
+                <button
+                  type="button"
+                  className="button button--small"
+                  onClick={() => setDropWarning(null)}
+                >
+                  Avbryt
+                </button>
+              </div>
+            </div>
+          )}
+
+          {dropWarning === null && (
+            <div className="actions">
+              <button type="button" className="button" disabled={send.isPending} onClick={submit}>
+                {send.isPending ? 'Skickar…' : 'Skicka kallelse'}
+              </button>
+            </div>
+          )}
 
           {sentMsg !== null && (
             <p className="state" role="status">
