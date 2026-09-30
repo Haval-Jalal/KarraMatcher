@@ -18,6 +18,11 @@ namespace KarraMatcher.Application.Features.Events;
 /// <param name="Address">
 /// Händelsens adress — spelplatsens, om inte händelsen har en avvikande adress.
 /// </param>
+/// <param name="Note">
+/// Adminens/tränarens valfria notis till föräldrarna (`#468`, §KM.7). Fritext från en vuxen —
+/// visas bara för medlemmar i händelsen (svaret är grindat av <c>MemberOfEvent</c>), aldrig i
+/// loggar (§KM.10). Null när ingen notis skrivits.
+/// </param>
 public sealed record EventDto(
     Guid Id,
     string Type,
@@ -27,4 +32,5 @@ public sealed record EventDto(
     bool? IsHome,
     string Status,
     string Address,
-    VenueDto Venue);
+    VenueDto Venue,
+    string? Note);

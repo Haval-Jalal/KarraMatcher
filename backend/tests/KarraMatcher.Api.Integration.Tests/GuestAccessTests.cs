@@ -279,19 +279,10 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
                 + string.Join(", ", offenders));
     }
 
-    [Fact]
-    public async Task MatchSvar_LamnarAldrigUtNotisen()
-    {
-        // Notisen är tränarens fritext och räknas som potentiell PII (ADR 2026-08-30) — den
-        // får inte finnas i svaret, inte ens för en inloggad medlem.
-        using var client = _factory.CreateSuperAdminClient();
-
-        var response = await client.GetAsync($"/api/v1/events/{_matchId}", CancellationToken.None);
-        var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
-
-        Assert.DoesNotContain("Elias", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(SecretNote, body, StringComparison.OrdinalIgnoreCase);
-    }
+    // Notisen till föräldrarna lämnar numera ut svaret bakom medlemskap (`#468`, ägarbeslut) —
+    // det tidigare "notisen läcker aldrig"-testet är därmed borttaget. En gäst utan token nekas
+    // ändå hela innehållsytan (Gast_UtanToken_Nekas, inkl. /events/{id}), så notisen når aldrig
+    // en utomstående. Att den når en medlem prövas i MatchEndpointTests.
 
     /// <summary>
     /// Fältnamn som inte får förekomma i ett svar.
@@ -314,7 +305,9 @@ public sealed class GuestAccessTests : IClassFixture<KarraMatcherApiFactory>
             "photo", "picture", "foto",
             "health", "halsa",
             "guardian", "vardnadshavare",
-            "note", "notis", "comment",
+            // "note"/"notis" är numera adminens tillåtna notis till föräldrarna (`#468`) — vuxen-
+            // fritext bakom medlemskap, inte barn-PII. "comment" är kvar som vakt.
+            "comment",
             "player", "players", "spelare",
         ];
 

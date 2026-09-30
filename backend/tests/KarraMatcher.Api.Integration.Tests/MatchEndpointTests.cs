@@ -79,9 +79,10 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
             IsHome = false,
             Status = EventStatus.Scheduled,
 
-            // Skrivs med flit: testet längst ned kontrollerar att den inte kommer med i
-            // svaret. En notis är tränarens fritext och räknas som potentiell PII (§KM.1).
-            Note = "Ta med gula tröjor. Kalle spelar inte, han är sjuk.",
+            // Notisen till föräldrarna följer numera med läs-svaret bakom medlemskap (`#468`,
+            // ägarbeslut). Neutral text med flit: den ska framföras — men ett barns namn eller
+            // hälsa hör inte hemma i den (§KM.1), och testet längst ned vaktar att den kommer med.
+            Note = "Ta med gula tröjor.",
             UpdatedUtc = DateTime.UtcNow,
         };
 
@@ -254,11 +255,10 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
     }
 
     [Fact]
-    public async Task GetMatch_SvaretInnehallerIngenNotisOchIngenPii()
+    public async Task GetMatch_TarMedNotisenForMedlem_OchLaserFaltuppsattningen()
     {
-        // §KM.1 och §KM.3. Matchen i testdatan har en notis som innehåller ett barns namn
-        // och en hälsouppgift — precis det en tränare kan råka skriva. Den får inte finnas
-        // i svaret, inte ens för en inloggad medlem.
+        // §KM.1/§KM.3/§KM.7. Notisen till föräldrarna följer med läs-svaret — men bara bakom
+        // medlemskap (svaret grindas av MemberOfEvent). Ägarbeslut `#468`: den ska framföras.
         //
         // Fältuppsättningen låses samtidigt: dyker ett nytt fält upp måste någon ta
         // ställning till det här, inte upptäcka det i produktion.
@@ -268,14 +268,13 @@ public sealed class MatchEndpointTests : IClassFixture<KarraMatcherApiFactory>
         var body = await response.Content.ReadAsStringAsync(CancellationToken.None);
         var json = JsonDocument.Parse(body).RootElement;
 
-        Assert.DoesNotContain("Kalle", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("sjuk", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Ta med gula tröjor.", json.GetProperty("event").GetProperty("note").GetString());
 
         var matchFields = json.GetProperty("event")
             .EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal);
 
         Assert.Equal(
-            ["address", "id", "isHome", "kickoffUtc", "opponent", "status", "title", "type", "venue"],
+            ["address", "id", "isHome", "kickoffUtc", "note", "opponent", "status", "title", "type", "venue"],
             matchFields);
     }
 }

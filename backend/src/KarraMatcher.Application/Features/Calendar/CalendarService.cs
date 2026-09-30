@@ -115,7 +115,10 @@ public sealed class CalendarService(
             Location: place,
             Cancelled: item.Status == EventStatus.Cancelled,
             Sequence: item.IcsSequence,
-            StampUtc: stamp);
+            StampUtc: stamp,
+            // Adminens/tränarens notis till föräldrarna (`#468`) som DESCRIPTION. Feeden är privat
+            // per medlem och återkallningsbar (§KM.4), så mottagarkretsen är densamma som i appen.
+            Description: dto.Note ?? string.Empty);
     }
 
     private static string Label(Event item) => item.Type switch

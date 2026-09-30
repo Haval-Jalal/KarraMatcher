@@ -7,8 +7,15 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 /// Händelsens sammanhang som en kallelse behöver: trupp, lag, avspark och typ (`#199`, `#289`).
 /// Typen låter servern avvisa en kallelse för en övrig händelse (§KM.7) — samma gräns som FE
 /// visar, men här som den riktiga grinden.
+///
+/// <para>
+/// <see cref="Note"/> är adminens/tränarens valfria notis till föräldrarna (`#468`, ägarbeslut):
+/// när den är satt läggs den i kallelsenotisen så det som ska framföras med kallelsen syns fullt
+/// ut. Fritext från en vuxen — aldrig barn-PII (§KM.1), aldrig i loggar (§KM.10).
+/// </para>
 /// </summary>
-public sealed record EventContext(Guid AgeGroupId, Guid? TeamId, DateTime KickoffUtc, EventType Type);
+public sealed record EventContext(
+    Guid AgeGroupId, Guid? TeamId, DateTime KickoffUtc, EventType Type, string? Note);
 
 /// <summary>Ett kallat barn med namn, lag och svar — för tränarens summering (`#199`).</summary>
 public sealed record InvitationRow(

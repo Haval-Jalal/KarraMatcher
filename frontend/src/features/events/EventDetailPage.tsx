@@ -164,6 +164,18 @@ export function EventDetailPage() {
         </div>
 
         {/*
+          Adminens/tränarens notis till föräldrarna (`#468`). Skrivs bara när något särskilt ska
+          fram med kallelsen, och ska då synas fullt ut — därför en egen rad, inte en fotnot.
+          Fritext; React escapar den, och raden försvinner helt när ingen notis finns.
+        */}
+        {event.note != null && event.note.trim() !== '' && (
+          <div className="detail__row">
+            <dt>Meddelande</dt>
+            <dd>{event.note}</dd>
+          </div>
+        )}
+
+        {/*
           Vädret renderar sig självt till ingenting när händelsen ligger för långt fram
           eller anropet misslyckats, så raden försvinner helt i stället för att stå tom.
         */}

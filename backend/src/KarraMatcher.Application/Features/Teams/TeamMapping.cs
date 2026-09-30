@@ -38,7 +38,8 @@ internal static class TeamMapping
             item.IsHome,
             item.Status.ToString(),
             displayAddress,
-            new VenueDto(name, address, latitude, longitude));
+            new VenueDto(name, address, latitude, longitude),
+            item.Note);
     }
 
     /// <summary>

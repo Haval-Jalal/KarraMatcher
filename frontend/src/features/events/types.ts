@@ -20,6 +20,11 @@ export interface TeamEvent {
     latitude: number
     longitude: number
   }
+  /**
+   * Adminens/tränarens valfria notis till föräldrarna (`#468`). Fritext, visas bara för
+   * medlemmar i händelsen. Null när ingen notis skrivits.
+   */
+  note: string | null
 }
 
 interface TeamSummary {
