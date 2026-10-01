@@ -70,8 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isSuperAdmin,
       adminOf,
+      // Per-trupp/lag-scopad, inte global (`#485`): en admin för trupp B ska inte "sköta" trupp A.
+      // Superadmin sköter allt; en trupp-admin sitt truppId; en tränare sitt lags slug. Speglar
+      // serverns per-trupp-grind (§KM.3) — det globala isAdmin gav annars en trasig panel över
+      // trupp-gränser för trupp-vida händelser.
       canManage: (teamSlug: string, truppId?: string) =>
-        isAdmin ||
+        isSuperAdmin ||
         coachOf.includes(teamSlug) ||
         (truppId !== undefined && adminOf.includes(truppId)),
       refresh: read,

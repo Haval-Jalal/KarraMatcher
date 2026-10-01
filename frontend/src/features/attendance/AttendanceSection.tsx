@@ -47,8 +47,10 @@ export function AttendanceSection({
   const isSignedIn = status === 'inloggad'
   const isAdmin = isSuperAdmin || adminOf.includes(truppId)
   // En färg-lag-tränare (inte admin) för just den här händelsens lag får också kalla (`#redesign`).
-  // Servern är grinden (CoachOfTeam); det här styr bara vilken panel som visas.
-  const isCoach = !isAdmin && canManage(teamSlug, truppId)
+  // Servern är grinden (CoachOfTeam); det här styr bara vilken panel som visas. En trupp-vid
+  // händelse saknar lag (teamSlug === ''), och tränar-panelen är lag-scopad — rendera den aldrig
+  // då (annars `/teams//kallelse-roster`, `#485`).
+  const isCoach = teamSlug !== '' && !isAdmin && canManage(teamSlug, truppId)
 
   const my = useMyKallelse(eventId, isSignedIn)
 

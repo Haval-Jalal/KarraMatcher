@@ -452,3 +452,22 @@ describe('färg-lag-tränaren skickar kallelse', () => {
     expect(await screen.findByText('Kallelsen är skickad.')).toBeInTheDocument()
   })
 })
+
+describe('kallelse-panelen scopas per trupp', () => {
+  it('visar ingen (trasig) tränarpanel för en admin av en annan trupp på en trupp-vid händelse (#485)', async () => {
+    const otherAdmin = `x.${btoa(JSON.stringify({ email: 'admin@example.com', 'admin-trupp': 'annan-trupp' }))}.y`
+    setAccessToken(otherAdmin)
+    const sent = stub({ token: otherAdmin, truppWide: true })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    // Händelsen renderas …
+    await screen.findByRole('heading', { name: /Torslanda/ })
+    // … men varken admin- eller tränarpanelen (ingen roll i den här truppen), och framför allt
+    // ingen tränarpanel med tom lag-slug som skulle anropa /teams//kallelse-roster (#485).
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Skicka kallelse' })).not.toBeInTheDocument(),
+    )
+    expect(sent.some((r) => r.url.includes('/teams//'))).toBe(false)
+  })
+})
