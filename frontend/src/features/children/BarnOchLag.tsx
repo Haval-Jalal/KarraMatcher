@@ -640,18 +640,22 @@ function ChildDetail({
           className="child-detail__select"
           value={child.teamId ?? ''}
           disabled={update.isPending}
-          onChange={(event) =>
-            run(
-              update.mutateAsync({
+          onChange={(event) => {
+            // Kvittera lagbytet (`#487`) — select:en är bunden till serverns child.teamId och kan
+            // snäppa tillbaka tills refetchen landar; ett kort besked säger att det gick fram.
+            clearNotices()
+            void update
+              .mutateAsync({
                 id: child.id,
                 data: {
                   firstName: child.firstName,
                   lastInitial: child.lastInitial,
                   teamId: event.target.value === '' ? null : event.target.value,
                 },
-              }),
-            )
-          }
+              })
+              .then(() => setSuccess('Lagbytet sparades.'))
+              .catch((error: unknown) => setFailure(messageOf(error)))
+          }}
         >
           <option value="">Inget lag</option>
           {teams.map((team) => (
@@ -817,6 +821,8 @@ function AddChild({ truppId, teams }: { truppId: string; teams: RosterTeam[] }) 
         setSuccess(`${name} lades till.`)
         setFirstName('')
         setLastInitial('')
+        // Nollställ lag-valet så nästa barn inte tyst ärver föregående lag (`#487`).
+        setTeamId('')
       })
       .catch((error: unknown) => setFailure(messageOf(error)))
   }
