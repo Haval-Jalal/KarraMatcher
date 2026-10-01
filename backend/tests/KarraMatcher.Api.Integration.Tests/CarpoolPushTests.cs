@@ -140,6 +140,10 @@ public sealed class CarpoolPushTests(KarraMatcherApiFactory factory)
                 GrantedUtc = now,
             });
 
+        // Matcher grindas av kallelse (`#514`): kalla båda barnen så vårdnadshavarna når samåkningen.
+        AttendanceSeed.CallChildrenToMatch(
+            context, match.Id, driver.Id, driverChild.Id, requesterChild.Id);
+
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(team.Id, match.Id, driver.Id, requester.Id);

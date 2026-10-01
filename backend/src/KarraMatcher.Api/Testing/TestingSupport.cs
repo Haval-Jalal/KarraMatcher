@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 
 using KarraMatcher.Application.Abstractions.Email;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
 using KarraMatcher.Infrastructure.Persistence;
@@ -69,12 +70,18 @@ public static class TestingSupport
 
             // Stängd app (§KM.3, `#191`): föräldrarna måste vara medlemmar för att se lagets
             // innehåll. Gör dem till vårdnadshavare för ett barn i laget.
-            await EnsureGuardianMemberAsync(db, parentA.Id, team.AgeGroupId, team.Id, clock, ct)
+            var childA = await EnsureGuardianMemberAsync(db, parentA.Id, team.AgeGroupId, team.Id, clock, ct)
                 .ConfigureAwait(false);
-            await EnsureGuardianMemberAsync(db, parentB.Id, team.AgeGroupId, team.Id, clock, ct)
+            var childB = await EnsureGuardianMemberAsync(db, parentB.Id, team.AgeGroupId, team.Id, clock, ct)
                 .ConfigureAwait(false);
 
             var matchId = await EnsureFutureMatchAsync(db, team.Id, clock, ct).ConfigureAwait(false);
+
+            // Matcher grindas av kallelse (§KM.7, `#514`): kalla föräldrarnas barn så de ser matchen
+            // och når dess samåkning. Utan det blir nästa-match-, samåknings- och spelarkortsflödena
+            // tomma (matchen dold). Idempotent.
+            await EnsureCalledToMatchAsync(db, matchId, coach.Id, [childA, childB], clock, ct)
+                .ConfigureAwait(false);
 
             await db.SaveChangesAsync(ct).ConfigureAwait(false);
 
@@ -166,7 +173,7 @@ public static class TestingSupport
             ct).ConfigureAwait(false);
     }
 
-    private static async Task EnsureGuardianMemberAsync(
+    private static async Task<Guid> EnsureGuardianMemberAsync(
         KarraMatcherDbContext db,
         Guid accountId,
         Guid ageGroupId,
@@ -174,13 +181,15 @@ public static class TestingSupport
         TimeProvider clock,
         CancellationToken ct)
     {
-        var alreadyMember = await db.Guardianships
-            .AnyAsync(g => g.AccountId == accountId && g.Child!.TeamId == teamId, ct)
+        var existingChildId = await db.Guardianships
+            .Where(g => g.AccountId == accountId && g.Child!.TeamId == teamId)
+            .Select(g => (Guid?)g.ChildId)
+            .FirstOrDefaultAsync(ct)
             .ConfigureAwait(false);
 
-        if (alreadyMember)
+        if (existingChildId is not null)
         {
-            return;
+            return existingChildId.Value;
         }
 
         var now = clock.GetUtcNow().UtcDateTime;
@@ -205,6 +214,60 @@ public static class TestingSupport
                 GrantedUtc = now,
             },
             ct).ConfigureAwait(false);
+
+        return child.Id;
+    }
+
+    /// <summary>
+    /// Öppnar en kallelse för matchen och bjuder in de angivna barnen, så deras vårdnadshavare ser
+    /// matchen (matcher grindas av kallelse, §KM.7, `#514`). Idempotent: hoppar över en match som
+    /// redan har en kallelse, och ett barn som redan är inbjudet.
+    /// </summary>
+    private static async Task EnsureCalledToMatchAsync(
+        KarraMatcherDbContext db,
+        Guid matchId,
+        Guid openedByAccountId,
+        IReadOnlyList<Guid> childIds,
+        TimeProvider clock,
+        CancellationToken ct)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+
+        var call = await db.AttendanceCalls
+            .FirstOrDefaultAsync(c => c.MatchId == matchId, ct)
+            .ConfigureAwait(false);
+
+        if (call is null)
+        {
+            call = new AttendanceCall
+            {
+                Id = Guid.NewGuid(),
+                MatchId = matchId,
+                OpenedByAccountId = openedByAccountId,
+                OpenedUtc = now,
+            };
+
+            await db.AttendanceCalls.AddAsync(call, ct).ConfigureAwait(false);
+        }
+
+        foreach (var childId in childIds)
+        {
+            var alreadyInvited = await db.AttendanceInvitations
+                .AnyAsync(i => i.CallId == call.Id && i.ChildId == childId, ct)
+                .ConfigureAwait(false);
+
+            if (!alreadyInvited)
+            {
+                await db.AttendanceInvitations.AddAsync(
+                    new AttendanceInvitation
+                    {
+                        Id = Guid.NewGuid(),
+                        CallId = call.Id,
+                        ChildId = childId,
+                    },
+                    ct).ConfigureAwait(false);
+            }
+        }
     }
 
     private static async Task<Guid> EnsureFutureMatchAsync(

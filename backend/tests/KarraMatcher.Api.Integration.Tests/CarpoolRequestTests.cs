@@ -132,6 +132,11 @@ public sealed class CarpoolRequestTests(KarraMatcherApiFactory factory)
         context.Guardianships.AddRange(guardianships);
         context.CarpoolOffers.Add(offer);
 
+        // Matcher grindas av kallelse (`#514`): kalla alla tre barnen så deras vårdnadshavare når
+        // matchens samåkning (annars 403 på MemberOfEvent).
+        AttendanceSeed.CallChildrenToMatch(
+            context, match.Id, driver.Id, [.. children.Select(c => c.Id)]);
+
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(match.Id, offer.Id, driver.Id, asker.Id, third.Id);

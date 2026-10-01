@@ -1,6 +1,7 @@
 using KarraMatcher.Application.Abstractions.Persistence;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Applications;
+using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Invitations;
 
 using Microsoft.EntityFrameworkCore;
@@ -60,19 +61,35 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
     public async Task<bool> IsMemberOfEventAsync(
         Guid accountId, Guid eventId, CancellationToken cancellationToken)
     {
-        var team = await context.Events
+        var ev = await context.Events
             .AsNoTracking()
             .Where(m => m.Id == eventId)
-            .Select(m => new { TeamId = m.TeamId, m.AgeGroupId })
+            .Select(m => new { m.Type, TeamId = m.TeamId, m.AgeGroupId })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        if (team is null)
+        if (ev is null)
         {
             return false;
         }
 
-        if (await IsMemberCoreAsync(accountId, team.TeamId, team.AgeGroupId, cancellationToken)
+        // En match syns bara för den som sköter laget/truppen eller vars barn är *kallat* — inte
+        // för hela truppen (§KM.7, ägarbeslut). Träning/cup/övrigt är fortsatt synligt för alla
+        // trupp-/lag-medlemmar. Kallelsen är planering; en match man inte är kallad på ska inte ens
+        // gå att öppna.
+        if (ev.Type == EventType.Match)
+        {
+            if (await HasManagerRoleAsync(accountId, ev.AgeGroupId, cancellationToken)
+                .ConfigureAwait(false))
+            {
+                return true;
+            }
+
+            return await IsGuardianOfInvitedChildAsync(accountId, eventId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (await IsMemberCoreAsync(accountId, ev.TeamId, ev.AgeGroupId, cancellationToken)
             .ConfigureAwait(false))
         {
             return true;
@@ -449,6 +466,68 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
     /// tränare når sina egna lag via coach-grenen i <see cref="AccessibleTeamChannelsAsync"/>.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// Sköter kontot truppen — superadmin, admin för truppen, eller tränare för något av dess lag?
+    /// Den som sköter laget/truppen ser alla dess matcher (behöver planera innan kallelse), tvärs
+    /// över färg-lagen (rollmodellen: tränare leder truppen). Vårdnadshavare gör det inte (`#514`).
+    /// </summary>
+    private Task<bool> HasManagerRoleAsync(
+        Guid accountId, Guid ageGroupId, CancellationToken cancellationToken) =>
+        context.TeamRoles
+            .AsNoTracking()
+            .AnyAsync(
+                r => r.AccountId == accountId
+                    && (r.Role == RoleKind.SuperAdmin
+                        || (r.Role == RoleKind.Admin && r.AgeGroupId == ageGroupId)
+                        || (r.Role == RoleKind.Coach && r.Team!.AgeGroupId == ageGroupId)),
+                cancellationToken);
+
+    public async Task<MatchVisibility> GetMatchVisibilityAsync(
+        Guid accountId, CancellationToken cancellationToken)
+    {
+        // Rollerna en gång: superadmin (ser allt), och trupperna kontot är admin eller tränare i.
+        var roles = await context.TeamRoles
+            .AsNoTracking()
+            .Where(r => r.AccountId == accountId)
+            .Select(r => new
+            {
+                r.Role,
+                r.AgeGroupId,
+                TeamAgeGroupId = r.Team != null ? (Guid?)r.Team.AgeGroupId : null,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var isSuperAdmin = roles.Any(r => r.Role == RoleKind.SuperAdmin);
+
+        var managerAgeGroupIds = new HashSet<Guid>();
+        foreach (var role in roles)
+        {
+            if (role.Role == RoleKind.Admin && role.AgeGroupId is { } adminAgeGroup)
+            {
+                managerAgeGroupIds.Add(adminAgeGroup);
+            }
+            else if (role.Role == RoleKind.Coach && role.TeamAgeGroupId is { } coachAgeGroup)
+            {
+                managerAgeGroupIds.Add(coachAgeGroup);
+            }
+        }
+
+        // Matcherna kontots barn är kallat till (via kallelse-inbjudan). AttendanceCall.MatchId är
+        // händelse-id:t. Distinkt: ett konto kan ha flera barn kallade till samma match.
+        var calledMatchEventIds = await (
+            from invitation in context.AttendanceInvitations.AsNoTracking()
+            join call in context.AttendanceCalls on invitation.CallId equals call.Id
+            join guardianship in context.Guardianships on invitation.ChildId equals guardianship.ChildId
+            where guardianship.AccountId == accountId
+            select call.MatchId)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new MatchVisibility(isSuperAdmin, managerAgeGroupIds, calledMatchEventIds.ToHashSet());
+    }
+
     private Task<bool> HasTruppWideAccessAsync(
         Guid accountId, Guid ageGroupId, CancellationToken cancellationToken) =>
         context.TeamRoles

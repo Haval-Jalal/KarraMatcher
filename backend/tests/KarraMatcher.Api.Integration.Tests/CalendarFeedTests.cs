@@ -126,6 +126,12 @@ public sealed class CalendarFeedTests(KarraMatcherApiFactory factory)
             ChildId = child.Id,
             GrantedUtc = now,
         });
+
+        // Matcher grindas av kallelse (`#514`): barnet kallas till båda matcherna så de hamnar i
+        // feeden. Den trupp-vida träningen (Lagfoto) syns ändå — bara matcher kräver kallelse.
+        AttendanceSeed.CallChildrenToMatch(context, match.Id, guardian.Id, child.Id);
+        AttendanceSeed.CallChildrenToMatch(context, cancelled.Id, guardian.Id, child.Id);
+
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Fixture(guardian.Id);

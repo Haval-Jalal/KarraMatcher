@@ -3,7 +3,7 @@ using KarraMatcher.Application.Abstractions.Persistence;
 
 namespace KarraMatcher.Application.Features.Teams.GetTeamEvents;
 
-internal sealed class GetTeamEventsQueryHandler(ITeamRepository teams)
+internal sealed class GetTeamEventsQueryHandler(ITeamRepository teams, IMembershipService membership)
     : IQueryHandler<GetTeamEventsQuery, TeamEventsDto?>
 {
     public async Task<TeamEventsDto?> HandleAsync(
@@ -21,7 +21,15 @@ internal sealed class GetTeamEventsQueryHandler(ITeamRepository teams)
 
         var events = await teams.GetEventsAsync(team.Id, cancellationToken).ConfigureAwait(false);
 
+        // Gallra matcher man inte är kallad på (om man inte sköter laget/truppen) — träning/cup/
+        // övrigt är kvar för alla lag-medlemmar (§KM.7, ägarbeslut).
+        var visibility = await membership
+            .GetMatchVisibilityAsync(query.ActorAccountId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var visible = events.Where(item => visibility.CanSee(item.Type, item.AgeGroupId, item.Id));
+
         return new TeamEventsDto(
-            team.ToDto(), [.. events.Select(item => item.ToDto())], team.AgeGroupId);
+            team.ToDto(), [.. visible.Select(item => item.ToDto())], team.AgeGroupId);
     }
 }

@@ -9,14 +9,17 @@ namespace KarraMatcher.Application.Abstractions.Persistence;
 public interface IHomeSummaryRepository
 {
     /// <summary>
-    /// Närmaste kommande, ej inställda händelse i något av <paramref name="teamIds"/> eller en
-    /// trupp-övergripande händelse (utan lag) i någon av <paramref name="truppIds"/> (`#332`, #386).
-    /// Laddar spelplats och klubb så att platsen kan lösas som i schemat.
+    /// Kommande, ej inställda händelser i något av <paramref name="teamIds"/> eller en
+    /// trupp-övergripande händelse (utan lag) i någon av <paramref name="truppIds"/> (`#332`, #386),
+    /// i avsparksordning, högst <paramref name="take"/> st. Laddar spelplats och klubb så att platsen
+    /// kan lösas som i schemat. Anroparen väljer den första <em>synliga</em> (matcher man inte är
+    /// kallad på gallras i handlern, `#514`), därför en liten lista och inte bara den allra första.
     /// </summary>
-    public Task<Event?> NextEventAsync(
+    public Task<IReadOnlyList<Event>> UpcomingEventsAsync(
         IReadOnlyCollection<Guid> teamIds,
         IReadOnlyCollection<Guid> truppIds,
         DateTime nowUtc,
+        int take,
         CancellationToken cancellationToken);
 
     /// <summary>

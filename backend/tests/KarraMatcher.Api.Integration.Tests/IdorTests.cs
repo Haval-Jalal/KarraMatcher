@@ -168,6 +168,12 @@ public sealed class IdorTests(KarraMatcherApiFactory factory)
             GrantedUtc = now,
         });
         context.ChatMessages.Add(message);
+
+        // Matcher grindas av kallelse (`#514`): barnet kallas till matchen så vårdnadshavaren når
+        // sin egen matchdetalj (och lagets schema visar den). IDOR-nekandet mot andra truppen står
+        // kvar oavsett.
+        AttendanceSeed.CallChildrenToMatch(context, match.Id, guardian.Id, child.Id);
+
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Tenant(trupp.Id, team.Slug, match.Id, guardian.Id);

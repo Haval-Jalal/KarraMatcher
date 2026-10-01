@@ -44,6 +44,10 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         services.AddApplication();
         services.AddScoped<ITeamRepository>(_ => new FakeTeamRepository());
+        // GetTeamEventsQueryHandler beror numera även på IMembershipService (match-synlighet, `#514`)
+        // — attrappen med, som för repositoryt, så handlern går att konstruera.
+        services.AddScoped<IMembershipService>(_ => new StubMembershipService(
+            new MatchVisibility(true, new HashSet<Guid>(), new HashSet<Guid>())));
         using var provider = services.BuildServiceProvider(validateScopes: true);
         using var scope = provider.CreateScope();
 

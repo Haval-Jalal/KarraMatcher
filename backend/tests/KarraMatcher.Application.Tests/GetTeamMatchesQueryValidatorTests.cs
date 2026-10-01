@@ -17,7 +17,7 @@ public class GetTeamEventsQueryValidatorTests
     [InlineData("lag-2")]
     public void Validate_GiltigSlug_ArGodkand(string slug)
     {
-        Assert.True(_validator.Validate(new GetTeamEventsQuery(slug)).IsValid);
+        Assert.True(_validator.Validate(new GetTeamEventsQuery(slug, Guid.NewGuid())).IsValid);
     }
 
     [Theory]
@@ -31,12 +31,12 @@ public class GetTeamEventsQueryValidatorTests
     [InlineData("gott-lag-ä")]       // svenska tecken hor inte hemma i en slug (KM.9)
     public void Validate_OgiltigSlug_ArUnderkand(string slug)
     {
-        Assert.False(_validator.Validate(new GetTeamEventsQuery(slug)).IsValid);
+        Assert.False(_validator.Validate(new GetTeamEventsQuery(slug, Guid.NewGuid())).IsValid);
     }
 
     [Fact]
     public void Validate_ForLangSlug_ArUnderkand()
     {
-        Assert.False(_validator.Validate(new GetTeamEventsQuery(new string('a', 81))).IsValid);
+        Assert.False(_validator.Validate(new GetTeamEventsQuery(new string('a', 81), Guid.NewGuid())).IsValid);
     }
 }
