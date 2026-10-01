@@ -135,6 +135,8 @@ describe('cup-lag på händelsesidan', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Byt namn' }))
     const field = screen.getByLabelText('Nytt namn på Lag 1')
+    // Fältet fokuseras när det fälls in (WCAG 2.4.3, #484).
+    await waitFor(() => expect(field).toHaveFocus())
     await user.clear(field)
     await user.type(field, 'Lag Röd')
     await user.click(screen.getByRole('button', { name: 'Spara' }))

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ApiError } from '@/lib/api'
 
@@ -50,6 +50,16 @@ export function CupTeamsBuilder({
   // Vilket cup-lag som byter namn just nu, och den redigerade texten (#408).
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+  // Fokusera namnfältet när "Byt namn" fälls in (WCAG 2.4.3, `#484`). Bara ett fält renderas
+  // åt gången (det cup-lag som byter namn), så en enda ref räcker. Nyckla på id:t så fokus sätts
+  // när ett lag öppnas för namnbyte, inte vid varje tangenttryck.
+  const renameRef = useRef<HTMLInputElement>(null)
+  const renamingId = renaming?.id ?? null
+  useEffect(() => {
+    if (renamingId !== null) {
+      renameRef.current?.focus()
+    }
+  }, [renamingId])
 
   const run = (action: Promise<unknown>) => {
     setFailure(null)
@@ -141,6 +151,7 @@ export function CupTeamsBuilder({
                     Nytt namn på {team.name}
                   </label>
                   <input
+                    ref={renameRef}
                     id={`cup-team-rename-${team.id}`}
                     type="text"
                     autoComplete="off"
