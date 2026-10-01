@@ -457,6 +457,19 @@ export function ChatChannel({
         </div>
       </form>
 
+      {isLeader && scheduled.isError && (
+        <div className="admin-subsection">
+          <h3>Schemalagda meddelanden</h3>
+          {/* Utan den här grenen försvann hela sektionen vid fel/offline, och en ledare kunde
+              dubbelposta ett schemalagt meddelande vars kopia aldrig laddades (#539, §KM.8). */}
+          <p className="state state--error" role="alert">
+            {scheduled.error instanceof ApiError && scheduled.error.offline
+              ? 'Ingen anslutning. De schemalagda meddelandena kunde inte hämtas.'
+              : 'Kunde inte hämta de schemalagda meddelandena.'}
+          </p>
+        </div>
+      )}
+
       {isLeader && scheduled.data && scheduled.data.length > 0 && (
         <div className="admin-subsection">
           <h3>Schemalagda meddelanden</h3>
@@ -478,6 +491,19 @@ export function ChatChannel({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {showReports && reports.isError && (
+        <div className="admin-subsection">
+          <h3>Anmälda meddelanden</h3>
+          {/* Utan detta försvann modereringskön tyst vid fel/offline — admin kunde inte skilja
+              "inget anmält" från "kunde inte hämta" (#539, §KM.8). */}
+          <p className="state state--error" role="alert">
+            {reports.error instanceof ApiError && reports.error.offline
+              ? 'Ingen anslutning. Anmälda meddelanden kunde inte hämtas.'
+              : 'Kunde inte hämta anmälda meddelanden.'}
+          </p>
         </div>
       )}
 

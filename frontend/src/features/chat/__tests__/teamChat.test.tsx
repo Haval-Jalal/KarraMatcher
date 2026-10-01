@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
-import { jsonResponse } from '@/test/apiStub'
+import { emptyResponse, jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -33,7 +33,7 @@ interface Sent {
   body: unknown
 }
 
-function stub(token: string, isLeader: boolean): Sent[] {
+function stub(token: string, isLeader: boolean, opts: { scheduledError?: boolean } = {}): Sent[] {
   const sent: Sent[] = []
 
   vi.stubGlobal(
@@ -68,7 +68,10 @@ function stub(token: string, isLeader: boolean): Sent[] {
         )
       }
       if (url.includes('/report')) return Promise.resolve(jsonResponse({}))
-      if (url.includes('/chat/scheduled')) return Promise.resolve(jsonResponse([]))
+      if (url.includes('/chat/scheduled')) {
+        if (opts.scheduledError) return Promise.resolve(emptyResponse(500))
+        return Promise.resolve(jsonResponse([]))
+      }
       if (url.includes('/chat/messages')) return Promise.resolve(jsonResponse(MESSAGES))
       return Promise.resolve(jsonResponse([]))
     }),
@@ -173,5 +176,19 @@ describe('lag-chatt', () => {
 
     await screen.findByText('Vem tar med bollar?')
     expect(screen.queryByLabelText(/Schemalägg/)).not.toBeInTheDocument()
+  })
+
+  it('visar fel i stället för att dölja schemalagda-listan när den inte kan hämtas (#539)', async () => {
+    // Förr försvann hela sektionen vid fel/offline; en ledare kunde då dubbelposta ett schemalagt
+    // meddelande vars kopia aldrig laddades.
+    const token = tokenWith({ email: 'ledare@example.com', sub: 'lead' })
+    setAccessToken(token)
+    stub(token, true, { scheduledError: true })
+
+    renderRoute('/lag/gul/chatt')
+
+    expect(
+      await screen.findByText('Kunde inte hämta de schemalagda meddelandena.'),
+    ).toBeInTheDocument()
   })
 })
