@@ -77,7 +77,8 @@ describe('Inbjudningens landningssida', () => {
     })
     setAccessToken(token)
 
-    renderRoute(`/inbjudan/${TOKEN}`)
+    const { queryClient } = renderRoute(`/inbjudan/${TOKEN}`)
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
 
     await user.click(await screen.findByRole('button', { name: 'Gå med' }))
 
@@ -87,6 +88,13 @@ describe('Inbjudningens landningssida', () => {
         (r) => r.url.includes(`/api/v1/invitations/${TOKEN}/accept`) && r.method === 'POST',
       ),
     ).toBe(true)
+
+    // Att gå med ändrar medlemskaps-härledda vyer — de ska invalideras (#486).
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['teams'] })
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['home-summary'] })
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['chat', 'mina-trupper'] })
+    })
   })
 
   it('en utloggad ombeds logga in', async () => {
