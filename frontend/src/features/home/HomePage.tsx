@@ -185,7 +185,10 @@ export function HomePage() {
 /** "Hemma mot X" för en match, annars rubriken — samma som schemat beskriver händelsen. */
 function headline(item: HomeEvent | HomePendingKallelse): string {
   if (item.type === 'Match') {
-    return `${item.isHome ? 'Hemma' : 'Borta'} mot ${item.opponent ?? ''}`.trim()
+    const side = item.isHome ? 'Hemma' : 'Borta'
+    const opponent = item.opponent?.trim()
+    // Släpp "mot …" när motståndaren saknas (#490).
+    return opponent ? `${side} mot ${opponent}` : side
   }
 
   return item.title ?? eventTypeLabel(item.type)

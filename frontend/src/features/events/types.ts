@@ -74,7 +74,10 @@ export function eventTypeLabel(type: TeamEvent['type']): string {
  */
 export function eventLabel(event: TeamEvent): string {
   if (event.type === 'Match') {
-    return `${event.isHome ? 'Hemma' : 'Borta'} mot ${event.opponent ?? ''}`.trim()
+    const side = event.isHome ? 'Hemma' : 'Borta'
+    const opponent = event.opponent?.trim()
+    // Släpp "mot …" när motståndaren saknas, annars blir det ett hängande "Hemma mot" (#490).
+    return opponent ? `${side} mot ${opponent}` : side
   }
 
   return event.title ?? eventTypeLabel(event.type)

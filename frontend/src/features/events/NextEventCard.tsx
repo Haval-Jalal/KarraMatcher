@@ -32,10 +32,15 @@ export function NextEventCard({ event, now }: { event: TeamEvent; now?: Date | s
 
       <p className="next-match__opponent">
         {isMatch ? (
-          <>
-            {event.isHome ? 'Hemma mot ' : 'Borta mot '}
-            <strong>{event.opponent}</strong>
-          </>
+          event.opponent?.trim() ? (
+            <>
+              {event.isHome ? 'Hemma mot ' : 'Borta mot '}
+              <strong>{event.opponent}</strong>
+            </>
+          ) : (
+            // Utan motståndare: bara hemma/borta, inget hängande "mot" med tom strong (#490).
+            <strong>{event.isHome ? 'Hemma' : 'Borta'}</strong>
+          )
         ) : (
           <>
             {eventTypeLabel(event.type)}: <strong>{event.title}</strong>
