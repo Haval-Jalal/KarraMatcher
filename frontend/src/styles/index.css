@@ -3097,6 +3097,43 @@ a.match-card:focus-visible .match-card__opponent {
   align-items: flex-start;
 }
 
+/* Vårdnadshavarens Ja/Nej-svar per barn (§KM.7). */
+.attendance__children {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attendance__child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.attendance__reply {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/*
+ * Det valda svaret måste synas för en seende förälder, inte bara för skärmläsaren via
+ * aria-pressed (#532, WCAG 1.4.1). Fylld "intryckt" yta + fetstil skiljer det valda svaret från
+ * det ovalda — skillnaden bärs av fyllning och vikt, inte av färg allena, så den håller även för
+ * den som inte skiljer grönt från rött. Gäller också när händelsen startat (knappen disabled men
+ * fortfarande vald): regeln är mer specifik än .button:disabled och behåller då det valda läget.
+ */
+.attendance__reply .button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--card);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
 /* Notisinställningar (#65). */
 .notif-settings {
   margin-top: 32px;

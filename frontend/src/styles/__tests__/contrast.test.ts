@@ -141,6 +141,20 @@ describe('stilmallen använder rätt ram på rätt ställe', () => {
     expect(withoutAnchor).not.toMatch(/outline:\s*(none|0)/)
   })
 
+  it('ger det valda Ja/Nej-svaret ett synligt valt läge, inte bara aria-pressed (#532)', () => {
+    // En seende förälder måste se vilket svar hen gav. Utan en egen regel för det valda läget ser
+    // Ja- och Nej-knapparna identiska ut och det valet bärs enbart av aria-pressed (WCAG 1.4.1).
+    const block = CSS_SOURCE.slice(
+      CSS_SOURCE.indexOf(".attendance__reply .button[aria-pressed='true']"),
+      CSS_SOURCE.indexOf('/* Notisinställningar'),
+    )
+
+    expect(block).toContain(".attendance__reply .button[aria-pressed='true']")
+    // Skillnaden bärs av fyllning + vikt, inte av färg allena.
+    expect(block).toContain('font-weight')
+    expect(block).toContain('background')
+  })
+
   it('respekterar prefers-reduced-motion', () => {
     expect(CSS_SOURCE).toContain('@media (prefers-reduced-motion: reduce)')
   })
