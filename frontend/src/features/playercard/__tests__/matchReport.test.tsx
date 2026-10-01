@@ -28,12 +28,18 @@ function child(id: string, name: string) {
   return { id, name, shirtNumber: null, teamSlug: null, seenBadges: [] }
 }
 
-function openMatch(options: { cancelled?: boolean } = {}) {
+function openMatch(options: { cancelled?: boolean; postponed?: boolean } = {}) {
+  const status = options.cancelled
+    ? ('Cancelled' as const)
+    : options.postponed
+      ? ('Postponed' as const)
+      : undefined
+
   stubApi({
     match: {
       team: testTeams[0]!,
       match: testEvent(MATCH_ID, '2026-09-20T12:00:00Z', {
-        ...(options.cancelled === true ? { status: 'Cancelled' as const } : {}),
+        ...(status !== undefined ? { status } : {}),
       }),
     },
   })
@@ -130,6 +136,20 @@ describe('inställda matcher', () => {
     writeCard({ ...emptyCard(), children: [child('1', 'Elias')] })
 
     openMatch({ cancelled: true })
+
+    await screen.findByRole('heading', { level: 1 })
+
+    expect(screen.queryByRole('heading', { name: 'Efter matchen' })).not.toBeInTheDocument()
+  })
+
+  it('visar ingen inmatning för en framflyttad match (#534)', async () => {
+    /*
+     * En framflyttad match har inte spelats pa den tid som fortfarande star i schemat (nytt
+     * datum ar inte satt). Ett inmatningsfalt dar hade skrivit en fantom-rad pa enhetens kort.
+     */
+    writeCard({ ...emptyCard(), children: [child('1', 'Elias')] })
+
+    openMatch({ postponed: true })
 
     await screen.findByRole('heading', { level: 1 })
 

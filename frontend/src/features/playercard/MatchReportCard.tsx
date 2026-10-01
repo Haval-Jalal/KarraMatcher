@@ -32,10 +32,12 @@ export function MatchReportCard({ match, children }: { match: TeamEvent; childre
     children.map((child) => child.id),
   )
 
-  if (match.status === 'Cancelled') {
+  if (match.status === 'Cancelled' || match.status === 'Postponed') {
     /*
-     * En instalid match spelades aldrig. Ett inmatningsfalt dar hade bjudit in till att
-     * fylla i nagot som inte hant, och en nolla i statistiken ar samre an ingen rad alls.
+     * En installd match spelades aldrig, och en framflyttad har inte spelats pa den tid som
+     * fortfarande star i schemat (nytt datum ar inte satt). Ett inmatningsfalt dar hade bjudit in
+     * till att fylla i nagot som inte hant, och en nolla i statistiken ar samre an ingen rad alls
+     * -- for en framflyttad match hade det dessutom skrivit en fantom-rad pa enhetens kort (#534).
      */
     return null
   }
