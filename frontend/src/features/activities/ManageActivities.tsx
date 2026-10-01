@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { EventInput } from '@/features/admin/adminApi'
 import { EventForm, SeasonOverview } from '@/features/admin'
@@ -46,6 +46,33 @@ export function ManageActivities({
   const [editing, setEditing] = useState<TeamEvent | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<TeamEvent | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+  // Kvitto efter en lyckad ställ-in/ta-bort. Nonce så samma text annonseras (och tar fokus) igen
+  // vid upprepade åtgärder (#544, WCAG 4.1.3).
+  const [notice, setNotice] = useState<{ text: string; seq: number } | null>(null)
+  const seqRef = useRef(0)
+  const statusRef = useRef<HTMLParagraphElement>(null)
+  const confirmHeadingRef = useRef<HTMLHeadingElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  function announce(text: string): void {
+    seqRef.current += 1
+    setNotice({ text, seq: seqRef.current })
+  }
+
+  // Flytta fokus till kvittot när det annonseras. Vid en borttagning unmontas danger-zonen med den
+  // fokuserade "Ja, ta bort"-knappen, så utan detta faller fokus till <body> (WCAG 2.4.3).
+  useEffect(() => {
+    if (notice !== null) {
+      statusRef.current?.focus()
+    }
+  }, [notice])
+
+  // Flytta fokus till bekräftelsens rubrik när den öppnas (WCAG 2.4.3).
+  useEffect(() => {
+    if (confirmDelete !== null) {
+      confirmHeadingRef.current?.focus()
+    }
+  }, [confirmDelete])
 
   const events = activities.map((item) => item.event)
 
@@ -70,6 +97,7 @@ export function ManageActivities({
     try {
       await cancelTruppEvent(truppId, event.id)
       await refresh(event.id)
+      announce('Aktiviteten ställdes in.')
     } catch (error) {
       setFailure(messageOf(error))
     }
@@ -81,6 +109,7 @@ export function ManageActivities({
       await deleteTruppEvent(truppId, event.id)
       await refresh(event.id)
       setConfirmDelete(null)
+      announce('Aktiviteten togs bort.')
     } catch (error) {
       setFailure(messageOf(error))
     }
@@ -110,24 +139,36 @@ export function ManageActivities({
         </p>
       )}
 
-      <SeasonOverview
-        events={events}
-        onEdit={(event) => {
-          setFailure(null)
-          setEditing(event)
-        }}
-        onCancel={(event) => {
-          void handleCancel(event)
-        }}
-        onDelete={(event) => {
-          setFailure(null)
-          setConfirmDelete(event)
-        }}
-      />
+      {notice !== null && (
+        <p className="state state--ok" role="status" tabIndex={-1} ref={statusRef}>
+          {notice.text}
+        </p>
+      )}
+
+      {/* En stabil, fokuserbar region att landa fokus på när bekräftelsen avbryts — annars faller
+          fokus till <body> när Avbryt-knappen unmontas (WCAG 2.4.3, #544). */}
+      <div ref={listRef} tabIndex={-1}>
+        <SeasonOverview
+          events={events}
+          onEdit={(event) => {
+            setFailure(null)
+            setEditing(event)
+          }}
+          onCancel={(event) => {
+            void handleCancel(event)
+          }}
+          onDelete={(event) => {
+            setFailure(null)
+            setConfirmDelete(event)
+          }}
+        />
+      </div>
 
       {confirmDelete !== null && (
         <section className="danger-zone">
-          <h3>Ta bort {eventLabel(confirmDelete)}?</h3>
+          <h3 tabIndex={-1} ref={confirmHeadingRef}>
+            Ta bort {eventLabel(confirmDelete)}?
+          </h3>
 
           <p className="state" role="alert">
             Händelsen försvinner helt ur schemat.{' '}
@@ -148,6 +189,9 @@ export function ManageActivities({
               onClick={() => {
                 setFailure(null)
                 setConfirmDelete(null)
+                // Danger-zonen (med denna knapp) unmontas — flytta fokus till schemalistan så det
+                // inte faller till <body> (WCAG 2.4.3, #544).
+                listRef.current?.focus()
               }}
             >
               Avbryt
