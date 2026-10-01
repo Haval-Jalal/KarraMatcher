@@ -370,6 +370,26 @@ describe('att lägga upp en skjuts', () => {
       })
     })
   })
+
+  it('invaliderar hela carpool-cachen efter ett erbjudande, så tränarens lagöversikt uppdateras (#495)', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [] })
+
+    const user = userEvent.setup()
+    const { queryClient } = renderRoute('/handelse/m1')
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+    await user.click(await screen.findByRole('button', { name: 'Erbjud skjuts' }))
+    await user.type(await screen.findByLabelText('Var åker ni ifrån?'), 'Kärra centrum')
+    const departure = screen.getByLabelText('Avgång (svensk tid)')
+    await user.clear(departure)
+    await user.type(departure, '2026-09-20T13:15')
+    await user.click(screen.getByRole('button', { name: 'Lägg upp' }))
+
+    // Hela carpool-prefixet invalideras, inte bara den här matchens — annars ser en tränare med
+    // lagöversikten öppen ett inaktuellt platsantal (#495).
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['carpool'] }))
+  })
 })
 
 describe('gästen kommer inte in', () => {
