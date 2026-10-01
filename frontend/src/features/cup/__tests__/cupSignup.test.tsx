@@ -130,4 +130,31 @@ describe('cup-anmälan på händelsesidan', () => {
     expect(await screen.findByText(/Fullt\./)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Anmäl' })).toBeDisabled()
   })
+
+  it('säger "Ingen anslutning" när anmälningsläget inte kan hämtas offline (#488)', async () => {
+    const token = guardianToken()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: token }))
+        if (url.includes(`/events/${CUP_ID}/cup`)) {
+          // Nätet dog mitt i läsningen → fetch kastar; API-klienten gör ett offline-ApiError.
+          return Promise.reject(new TypeError('Failed to fetch'))
+        }
+        if (url.includes(`/api/v1/events/${CUP_ID}`)) {
+          return Promise.resolve(jsonResponse({ event: CUP_EVENT, team: TEAM, truppId: 'trupp-1' }))
+        }
+        return Promise.resolve(jsonResponse({}))
+      }),
+    )
+
+    renderRoute(`/handelse/${CUP_ID}`)
+
+    expect(
+      await screen.findByText('Ingen anslutning. Kontrollera nätet och försök igen.'),
+    ).toBeInTheDocument()
+  })
 })
