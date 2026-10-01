@@ -430,6 +430,38 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
   })
 })
 
+describe('nät-/serverfel är inte samma sak som fel lag (#541)', () => {
+  /** Som stubApi, men schemafrågan svarar med fel i stället för ett lag. */
+  function failingEventsStub(token: string) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: token }))
+        if (url.includes('/club-venue')) return Promise.resolve(jsonResponse({ configured: false }))
+        // Schemat failar — data blir undefined, men det beror på servern, inte på behörighet.
+        if (url.includes('/events')) return Promise.resolve(emptyResponse(500))
+        return Promise.resolve(jsonResponse({}))
+      }),
+    )
+  }
+
+  it('visar fel med försök-igen, inte "du sköter inte det här laget", när schemat failar', async () => {
+    // En legitim tränare som bara är offline/drabbas av 500 ska inte få höra att hen inte sköter
+    // laget — det skickar fel folk till klubben. Förr föll undefined data ner i behörighetsgrenen.
+    const token = coachToken('gul')
+    failingEventsStub(token)
+    setAccessToken(token)
+
+    renderRoute('/lag/gul/tranare')
+
+    expect(await screen.findByRole('button', { name: 'Försök igen' })).toBeInTheDocument()
+    expect(screen.queryByText(/sköter inte det här laget/)).not.toBeInTheDocument()
+  })
+})
+
 describe('vyn visas bara för den som sköter laget', () => {
   it('säger ifrån för en tränare i ett annat lag', async () => {
     /*

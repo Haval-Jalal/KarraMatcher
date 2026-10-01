@@ -46,7 +46,7 @@ export function CoachEventsPage() {
   const { slug } = useParams({ from: '/lag/$slug/tranare' })
   const { canManage } = useAuth()
   const queryClient = useQueryClient()
-  const { data, isPending } = useTeamEvents(slug)
+  const { data, isPending, error, refetch, isFetching } = useTeamEvents(slug)
 
   const [editing, setEditing] = useState<TeamEvent | null>(null)
   const [adding, setAdding] = useState(false)
@@ -105,6 +105,38 @@ export function CoachEventsPage() {
         <p className="state" role="status">
           Hämtar schemat…
         </p>
+      </main>
+    )
+  }
+
+  // Nät-/serverfel är inte samma sak som "fel lag". Utan den här grenen föll en inloggad tränare
+  // som bara är offline (data undefined) ner i behörighetsbeskedet nedan och fick höra att hen
+  // inte sköter laget (#541). Visa fel + försök-igen före behörighetskontrollen, som schemalistan.
+  if (error) {
+    const apiError = error instanceof ApiError ? error : null
+
+    return (
+      <main>
+        <header className="app-header">
+          <h1>Sköt laget</h1>
+        </header>
+        <div className="state state--error" role="alert">
+          <p>
+            {apiError?.offline
+              ? 'Ingen anslutning. Schemat kan inte hämtas just nu.'
+              : 'Kunde inte hämta schemat just nu.'}
+          </p>
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              void refetch()
+            }}
+            disabled={isFetching}
+          >
+            {isFetching ? 'Försöker…' : 'Försök igen'}
+          </button>
+        </div>
       </main>
     )
   }
