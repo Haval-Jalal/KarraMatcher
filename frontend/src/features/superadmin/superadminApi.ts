@@ -26,6 +26,8 @@ export interface Trupp {
   sportId: string
   sportName: string
   name: string
+  /** Säsongen, t.ex. "2026". Speglar `TruppDto.Season` (#494). Sätts server-side vid skapande. */
+  season: string
 }
 
 export interface TruppAdmin {
