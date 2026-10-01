@@ -392,6 +392,12 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
 
     // Utan detta behåller en öppen händelsesida gammal tid/inställt-läge (#393).
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['event', 'ev1'] }))
+
+    // Samma händelse syns i adminens trupp-aktivitetslista — håll den i takt (spegling av #537).
+    // Lagets truppId ('trupp-p2016') kommer med schemat.
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activities', 'trupp-p2016'] }),
+    )
   })
 
   it('låser händelsetypen vid redigering så motståndaren inte tyst nollas (#466)', async () => {

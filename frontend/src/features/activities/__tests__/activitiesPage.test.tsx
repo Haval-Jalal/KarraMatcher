@@ -168,7 +168,8 @@ describe('Aktivitet-fliken', () => {
     )
     const user = userEvent.setup()
 
-    renderRoute('/aktivitet')
+    const { queryClient } = renderRoute('/aktivitet')
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
 
     // Ställ in (ConfirmButton: klick + bekräfta) → POST .../events/m1/cancel.
     await user.click(await screen.findByRole('button', { name: 'Ställ in Borta mot Torslanda' }))
@@ -182,6 +183,13 @@ describe('Aktivitet-fliken', () => {
             r.url.includes(`/api/v1/admin/trupper/${TRUPP}/events/m1/cancel`),
         ),
       ).toBe(true)
+    })
+
+    // En lag-riktad match som ställs in här måste också uppdatera lagets schema och
+    // trupp-cuplistan, annars står den kvar inaktuell där (#537).
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['team-events'] })
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['cup', 'trupp', TRUPP] })
     })
 
     // Ta bort → bekräftelsepanel → DELETE .../events/m1.

@@ -13,6 +13,7 @@ import {
   useTeamEvents,
   type TeamEvent,
 } from '@/features/events'
+import { activitiesKeys } from '@/features/activities/useActivities'
 import { ApiError } from '@/lib/api'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -62,6 +63,12 @@ export function CoachEventsPage() {
     await queryClient.invalidateQueries({ queryKey: teamEventsQueryKey(slug) })
     // Hem-vyn visar nästa händelse — håll den i takt när en händelse skapas/ändras/ställs in (#476).
     await queryClient.invalidateQueries({ queryKey: homeSummaryQueryKey })
+    // Samma händelse syns i adminens trupp-aktivitetslista (['activities',truppId]). Utan detta
+    // står en ändring här kvar inaktuell där tills omladdning — spegling av #537. Lagets truppId
+    // kommer med schemat; finns det inte ännu är det ingen aktivitetslista att uppdatera.
+    if (data?.truppId !== undefined) {
+      await queryClient.invalidateQueries({ queryKey: activitiesKeys.list(data.truppId) })
+    }
     if (eventId !== undefined) {
       await queryClient.invalidateQueries({ queryKey: eventQueryKey(eventId) })
     }
