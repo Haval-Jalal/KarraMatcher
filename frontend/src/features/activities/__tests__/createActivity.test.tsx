@@ -224,6 +224,39 @@ describe('skapa aktivitet med kallelse-målgrupp', () => {
     expect(created(sent)).toBeUndefined()
   })
 
+  it('blockerar en match utan valt lag — ingen tyst händelse som ingen kallas på (#531)', async () => {
+    const sent = stub()
+    await renderWithProviders(<CreateActivity truppId={TRUPP} />)
+
+    // Match är förval → "Valda lag", men inget lag är bockat. Utan guardet skulle submit skapa en
+    // trupp-vid match utan kallelse — osynlig för alla föräldrar (#514) och på inget lags schema.
+    expect(await screen.findByLabelText('Valda lag')).toBeChecked()
+
+    setTime()
+    await userEvent.type(screen.getByLabelText('Motståndare'), 'Torslanda')
+    await userEvent.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
+
+    expect(await screen.findByText(/Välj minst ett färg-lag att kalla/)).toBeInTheDocument()
+    // Varken händelse eller kallelse skickades.
+    expect(created(sent)).toBeUndefined()
+    expect(kallelse(sent)).toBeUndefined()
+  })
+
+  it('blockerar namngivna barn utan bockat barn (#531)', async () => {
+    const sent = stub()
+    await renderWithProviders(<CreateActivity truppId={TRUPP} />)
+
+    await userEvent.click(await screen.findByLabelText('Namngivna barn'))
+
+    setTime()
+    await userEvent.type(screen.getByLabelText('Motståndare'), 'Torslanda')
+    await userEvent.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))
+
+    expect(await screen.findByText(/Välj minst ett barn att kalla/)).toBeInTheDocument()
+    expect(created(sent)).toBeUndefined()
+    expect(kallelse(sent)).toBeUndefined()
+  })
+
   it('cup skapar bara händelsen — ingen kallelse', async () => {
     const sent = stub()
     await renderWithProviders(<CreateActivity truppId={TRUPP} />)
