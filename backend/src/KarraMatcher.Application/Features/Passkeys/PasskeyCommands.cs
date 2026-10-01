@@ -47,6 +47,21 @@ public sealed record BeginPasskeyLoginQuery : IQuery<PasskeyLoginChallenge>;
 public sealed record CompletePasskeyLoginCommand(string ChallengeId, string AssertionJson)
     : ICommand<SessionTokens?>;
 
+/// <summary>
+/// Utan validator hoppar <c>CommandValidationBehavior</c> över kontrollen (auto assembly-scan), så
+/// blank <c>ChallengeId</c>/<c>AssertionJson</c> nådde krypto-verifieringen och gav en sämre felväg
+/// i stället för 400 (`#491`, syskon till `#471`).
+/// </summary>
+internal sealed class CompletePasskeyLoginCommandValidator
+    : AbstractValidator<CompletePasskeyLoginCommand>
+{
+    public CompletePasskeyLoginCommandValidator()
+    {
+        RuleFor(c => c.ChallengeId).NotEmpty();
+        RuleFor(c => c.AssertionJson).NotEmpty();
+    }
+}
+
 // ---- Hantera sina passkeys (inloggad) -----------------------------------------------------
 
 /// <summary>Kontots passkeys.</summary>

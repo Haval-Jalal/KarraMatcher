@@ -140,6 +140,20 @@ public sealed class PasskeyTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Inloggning_MedTomUtmaning_Ger400()
+    {
+        // Utan validatorn nådde en blank utmaning krypto-verifieringen; nu avvisas den som 400
+        // innan dess (`#491`).
+        var response = await SendAsync(
+            HttpMethod.Post,
+            "/api/v1/passkeys/logga-in/klar",
+            token: null,
+            new { challengeId = "", assertion = new { } });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Lista_UtanPasskeys_ArTom()
     {
         var accountId = await SeedAccountAsync("list");
