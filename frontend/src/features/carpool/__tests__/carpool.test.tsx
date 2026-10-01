@@ -83,6 +83,8 @@ function stubApi(
   options: {
     offers?: unknown[] | 'error'
     requests?: unknown[]
+    /** Låter listan över egna förfrågningar hänga, så race:en i #489 kan prövas. */
+    requestsPending?: boolean
     matchDetail?: Record<string, unknown>
   } = {},
 ) {
@@ -115,11 +117,12 @@ function stubApi(
       if (url.includes('/withdraw')) return Promise.resolve(emptyResponse(204))
 
       if (url.includes('/carpool/offers/')) {
-        return Promise.resolve(
-          method === 'POST'
-            ? jsonResponse(request({ id: 'ny', isMine: true }), 201)
-            : jsonResponse(options.requests ?? []),
-        )
+        if (method === 'POST') {
+          return Promise.resolve(jsonResponse(request({ id: 'ny', isMine: true }), 201))
+        }
+        // Hänger med flit: den egna förfrågan är ännu inte hämtad (#489).
+        if (options.requestsPending) return new Promise<Response>(() => {})
+        return Promise.resolve(jsonResponse(options.requests ?? []))
       }
 
       if (url.includes('/carpool/offers')) {
@@ -168,6 +171,18 @@ describe('erbjudandena går att läsa av', () => {
     expect(screen.getByText('12:15')).toBeInTheDocument()
     expect(screen.getByText('Från Kärra centrum')).toBeInTheDocument()
     expect(screen.getByText('Till matchen')).toBeInTheDocument()
+  })
+
+  it('blinkar inte "Fråga om plats" medan den egna förfrågan laddar (#489)', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer()], requestsPending: true })
+
+    renderRoute('/handelse/m1')
+
+    // Erbjudandet renderas …
+    expect(await screen.findByText('Från Kärra centrum')).toBeInTheDocument()
+    // … men fråga-knappen visas inte förrän vi vet om man redan har en levande förfrågan (#489).
+    expect(screen.queryByRole('button', { name: 'Fråga om plats' })).not.toBeInTheDocument()
   })
 
   it('säger ifrån när ingen erbjudit skjuts', async () => {
