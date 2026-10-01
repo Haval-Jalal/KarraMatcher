@@ -153,6 +153,9 @@ describe('skapa aktivitet med kallelse-målgrupp', () => {
     expect(await screen.findByLabelText('Valda lag')).toBeChecked()
     await userEvent.click(await screen.findByLabelText('Gul'))
 
+    // Valt lag bärs av en bock, inte bara färg (WCAG 1.4.1, #483).
+    expect(screen.getByText('✓')).toBeInTheDocument()
+
     setTime()
     await userEvent.type(screen.getByLabelText('Motståndare'), 'Torslanda')
     await userEvent.click(screen.getByRole('button', { name: 'Lägg till händelsen' }))

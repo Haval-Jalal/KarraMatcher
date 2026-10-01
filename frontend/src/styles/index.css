@@ -4276,6 +4276,15 @@ input[type='checkbox']:disabled {
   box-shadow: 0 0 0 1px var(--border-strong);
 }
 
+/* Bock för ett valt lag-pill (`#483`) — en icke-färg-signal (WCAG 1.4.1). Platsen reserveras
+   alltid så pillren inte hoppar när man väljer/avväljer. */
+.tpill__check {
+  display: inline-block;
+  width: 0.85em;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
 /* ---- Rena fieldsets ------------------------------------------------------- */
 .form fieldset,
 fieldset.form__field {
