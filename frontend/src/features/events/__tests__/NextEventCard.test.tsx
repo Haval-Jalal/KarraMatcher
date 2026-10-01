@@ -123,6 +123,18 @@ describe('NextEventCard — visning', () => {
     expect(screen.getByText(/Borta mot/)).toBeInTheDocument()
   })
 
+  it('visar bara hemma/borta utan hängande "mot" när motståndaren saknas (#490)', async () => {
+    await renderWithRouter(
+      <NextEventCard
+        event={testEvent('a', '2026-09-20T12:00:00Z', { opponent: null })}
+        now={now}
+      />,
+    )
+
+    expect(screen.getByText('Hemma')).toBeInTheDocument()
+    expect(screen.queryByText(/mot/)).not.toBeInTheDocument()
+  })
+
   it('räknar relativ dag över månadsskiftet', async () => {
     // 30 september 22:30 UTC är 1 oktober i svensk tid — alltså imorgon, inte idag.
     await renderWithRouter(

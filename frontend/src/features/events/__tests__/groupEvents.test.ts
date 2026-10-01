@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { groupEvents } from '@/features/events'
+import { eventLabel, groupEvents } from '@/features/events'
 import type { TeamEvent } from '@/features/events'
 
 /**
@@ -136,5 +136,29 @@ describe('groupEvents — sommartidsskiftet', () => {
 
     expect(result.upcoming.flatMap((g) => g.events).map((m) => m.id)).toEqual(['a'])
     expect(result.today).toEqual([])
+  })
+})
+
+describe('eventLabel', () => {
+  const base: TeamEvent = {
+    id: 'a',
+    type: 'Match',
+    kickoffUtc: '2026-09-20T12:00:00Z',
+    title: null,
+    opponent: 'Torslanda',
+    isHome: true,
+    status: 'Scheduled',
+    address: 'Klarebergsvallen',
+    venue: { name: 'Klarebergsvallen', address: 'Klarebergsvallen', latitude: 57.8, longitude: 12 },
+    note: null,
+  }
+
+  it('ger "Hemma mot X" för en match med motståndare', () => {
+    expect(eventLabel(base)).toBe('Hemma mot Torslanda')
+  })
+
+  it('släpper "mot …" när motståndaren saknas (#490)', () => {
+    expect(eventLabel({ ...base, opponent: null })).toBe('Hemma')
+    expect(eventLabel({ ...base, opponent: '  ', isHome: false })).toBe('Borta')
   })
 })
