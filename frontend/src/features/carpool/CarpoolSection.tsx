@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/api'
 import { createOffer } from './carpoolApi'
 import { CarpoolOfferCard } from './CarpoolOfferCard'
 import { CarpoolOfferForm } from './CarpoolOfferForm'
-import { carpoolOffersQueryKey, useCarpoolOffers } from './useCarpool'
+import { useCarpoolOffers } from './useCarpool'
 
 /**
  * Samåkningen för en match (`#53`, §KM.12).
@@ -30,7 +30,10 @@ export function CarpoolSection({ match }: { match: TeamEvent }) {
   const { data: offers, isPending, error, refetch, isFetching } = useCarpoolOffers(match.id)
 
   async function reload(): Promise<void> {
-    await queryClient.invalidateQueries({ queryKey: carpoolOffersQueryKey(match.id) })
+    // Bredda till hela carpool-prefixet (`#495`): en ändring här rör både den här matchens
+    // erbjudanden (['carpool', matchId]) och tränarens lagöversikt (['carpool','team',slug]).
+    // Utan det ser en tränare med båda vyerna öppna ett inaktuellt platsantal.
+    await queryClient.invalidateQueries({ queryKey: ['carpool'] })
   }
 
   return (
