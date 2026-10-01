@@ -50,7 +50,34 @@ export function SetupWizard() {
   const selectedClub = clubs.data?.find((c) => c.id === clubId) ?? null
   const selectedTrupp = trupper.data?.find((t) => t.id === truppId) ?? null
 
-  const canAdvance = [sportId, clubId, truppId, null][step] !== null || step === 3
+  // Den valda truppen måste höra till den valda klubben. Annars kunde ett kvarglömt truppId från en
+  // tidigare klubb låta superadmin gå vidare och tilldela en tränare till fel klubbs trupp (#540).
+  const truppMatchesClub = selectedTrupp !== null && selectedTrupp.clubId === clubId
+  const canAdvance =
+    step === 0
+      ? sportId !== null
+      : step === 1
+        ? clubId !== null
+        : step === 2
+          ? truppMatchesClub
+          : true
+
+  // Att byta ett tidigare val nollar det som valts nedströms — annars står ett stale clubId/truppId
+  // kvar och pekar på fel klubb (#540).
+  function selectSport(id: string): void {
+    if (id !== sportId) {
+      setClubId(null)
+      setTruppId(null)
+    }
+    setSportId(id)
+  }
+
+  function selectClub(id: string): void {
+    if (id !== clubId) {
+      setTruppId(null)
+    }
+    setClubId(id)
+  }
 
   function reset(): void {
     setStep(0)
@@ -99,7 +126,7 @@ export function SetupWizard() {
           items={sports.data ?? []}
           isLoading={sports.isLoading}
           selectedId={sportId}
-          onSelect={setSportId}
+          onSelect={selectSport}
           onCreate={createSportAndSelect}
         />
       )}
@@ -111,7 +138,7 @@ export function SetupWizard() {
           items={clubs.data ?? []}
           isLoading={clubs.isLoading}
           selectedId={clubId}
-          onSelect={setClubId}
+          onSelect={selectClub}
           onCreate={createClubAndSelect}
         />
       )}
@@ -175,15 +202,16 @@ export function SetupWizard() {
     </div>
   )
 
-  // Skapar och väljer i ett svep, så nästa steg blir aktiverat direkt.
+  // Skapar och väljer i ett svep, så nästa steg blir aktiverat direkt. Går via select*-hjälparna så
+  // ett nyskapat (alltså annat) id nollar nedströmsvalen (#540).
   async function createSportAndSelect(name: string, slug: string): Promise<void> {
     const created = await createSport.mutateAsync({ name, slug })
-    setSportId(created.id)
+    selectSport(created.id)
   }
 
   async function createClubAndSelect(name: string, slug: string): Promise<void> {
     const created = await createClub.mutateAsync({ name, slug })
-    setClubId(created.id)
+    selectClub(created.id)
   }
 }
 
