@@ -30,7 +30,9 @@ internal sealed class CarpoolOfferDraftValidator : AbstractValidator<CarpoolOffe
          * klockslag.
          */
         RuleFor(d => d.DepartureUtc)
-            .Must(departure => departure.Kind != DateTimeKind.Local)
+            // Kräv UTC, inte bara "inte lokal": en Unspecified-tid passerade annars och 500:ade
+            // sedan i Npgsql i stället för ett rent 400 (§KM.5-härdning, `#492`).
+            .Must(departure => departure.Kind == DateTimeKind.Utc)
             .WithMessage("Avgångstiden måste anges i UTC.");
 
         RuleFor(d => d.Seats)
