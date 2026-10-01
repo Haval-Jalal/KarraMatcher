@@ -83,22 +83,31 @@ export function TargetGroupPicker({
             <p className="admin-muted">Truppen har inga lag ännu.</p>
           ) : (
             <div className="pills">
-              {roster.teams.map((team) => (
-                <label key={team.id} className="tpill">
-                  <input
-                    type="checkbox"
-                    className="visually-hidden"
-                    checked={value.teamIds.includes(team.id)}
-                    onChange={() => toggleTeam(team.id)}
-                  />
-                  <span
-                    className="tpill__dot"
-                    style={{ background: team.colorHex }}
-                    aria-hidden="true"
-                  />
-                  {team.name}
-                </label>
-              ))}
+              {roster.teams.map((team) => {
+                const picked = value.teamIds.includes(team.id)
+
+                return (
+                  <label key={team.id} className="tpill">
+                    <input
+                      type="checkbox"
+                      className="visually-hidden"
+                      checked={picked}
+                      onChange={() => toggleTeam(team.id)}
+                    />
+                    {/* Bock = icke-färg-signal för valt lag (WCAG 1.4.1, `#483`); färgen ensam
+                        räckte inte för lågseende/färgblinda. Platsen reserveras alltid. */}
+                    <span className="tpill__check" aria-hidden="true">
+                      {picked ? '✓' : ''}
+                    </span>
+                    <span
+                      className="tpill__dot"
+                      style={{ background: team.colorHex }}
+                      aria-hidden="true"
+                    />
+                    {team.name}
+                  </label>
+                )
+              })}
             </div>
           )}
         </div>
