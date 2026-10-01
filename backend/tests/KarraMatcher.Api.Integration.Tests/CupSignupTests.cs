@@ -6,6 +6,7 @@ using System.Text.Json;
 using KarraMatcher.Application.Abstractions.Security;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
+using KarraMatcher.Domain.Attendance;
 using KarraMatcher.Domain.Children;
 using KarraMatcher.Domain.Events;
 using KarraMatcher.Domain.Teams;
@@ -323,6 +324,45 @@ public sealed class CupSignupTests(KarraMatcherApiFactory factory)
         // Svart drar tillbaka → platsen frigörs → Gul kommer in.
         Assert.Equal(HttpStatusCode.NoContent, (await WithdrawAsync(f, f.SvartChild, f.SvartGuardian)).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await SignUpAsync(f, f.GulChild, f.GulGuardian)).StatusCode);
+    }
+
+    // ---- Cup-withdraw rör aldrig en icke-cup-händelses kallelse-svar (#548) -----------
+
+    [Fact]
+    public async Task DraTillbaka_ForEventSomInteArCup_ArNoOp_OchRaderarInteKallelsesvar()
+    {
+        var f = await SeedAsync("withdraw-inte-cup");
+        await OpenCupAsync(f, 3);
+
+        // Barnet får en inbjudnings-rad med Reply=Coming — samma rad som en match-/tränings-
+        // kallelse skapar när vårdnadshavaren svarar "Ja".
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await SignUpAsync(f, f.SvartChild, f.SvartGuardian)).StatusCode);
+
+        // Händelsen blir en match. Cup-withdraw får då inte röra kallelse-raden.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var ev = await context.Events.FindAsync([f.CupId], CancellationToken.None);
+            ev!.Type = EventType.Match;
+            await context.SaveChangesAsync(CancellationToken.None);
+        }
+
+        // Cup-withdraw på matchen → no-op som 404 (avslöjar inget).
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await WithdrawAsync(f, f.SvartChild, f.SvartGuardian)).StatusCode);
+
+        // Kallelse-svaret lever kvar: det raderades inte via fel väg, så barnet står kvar som
+        // "Ja" i summeringen och i matchens synlighet (#514) i stället för att försvinna.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var invitation = Assert.Single(
+                context.AttendanceInvitations.Where(i => i.ChildId == f.SvartChild).ToList());
+            Assert.Equal(AttendanceReply.Coming, invitation.Reply);
+        }
     }
 
     // ---- Bara sitt eget barn ----------------------------------------------------------

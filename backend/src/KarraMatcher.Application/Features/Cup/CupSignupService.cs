@@ -269,6 +269,18 @@ public sealed class CupSignupService(
         Guid accountId,
         CancellationToken cancellationToken)
     {
+        // Grinda händelsetypen precis som SignUpAsync. Utan den kunde en vårdnadshavare anropa
+        // cup-withdraw på en match- eller tränings-kallelse och radera sitt barns inbjudnings-rad
+        // helt (i stället för att svara "nej" via RespondToKallelse): barnet föll ur kallelse-
+        // summeringen som "aldrig kallad", det gick även efter avspark, och matchen försvann ur
+        // barnets synlighet (#514). Icke-cup → no-op som 404, avslöjar inget (#548, §KM.7/IDOR).
+        var context = await calls.FindEventContextAsync(eventId, cancellationToken).ConfigureAwait(false);
+
+        if (context is null || context.Type != EventType.Cup)
+        {
+            return CupWithdrawOutcome.NotSignedUp;
+        }
+
         var call = await calls.FindCallByEventAsync(eventId, cancellationToken).ConfigureAwait(false);
 
         if (call is null)
