@@ -192,6 +192,9 @@ describe('Aktivitet-fliken', () => {
       expect(invalidate).toHaveBeenCalledWith({ queryKey: ['cup', 'trupp', TRUPP] })
     })
 
+    // Ett role=status-kvitto annonserar att det gick (#544).
+    expect(await screen.findByText('Aktiviteten ställdes in.')).toBeInTheDocument()
+
     // Ta bort → bekräftelsepanel → DELETE .../events/m1.
     await user.click(screen.getByRole('button', { name: 'Ta bort Borta mot Torslanda' }))
     await user.click(await screen.findByRole('button', { name: 'Ja, ta bort' }))
@@ -204,6 +207,11 @@ describe('Aktivitet-fliken', () => {
         ),
       ).toBe(true)
     })
+
+    // Kvitto efter borttagning, och fokus flyttas dit i stället för att falla till <body> när
+    // danger-zonen (med "Ja, ta bort") unmontas (#544, WCAG 2.4.3).
+    const removed = await screen.findByText('Aktiviteten togs bort.')
+    await waitFor(() => expect(removed).toHaveFocus())
   })
 
   it('visar ett tomläge när truppen saknar aktiviteter', async () => {
