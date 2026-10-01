@@ -42,7 +42,7 @@ export function CarpoolOfferCard({
   const [asking, setAsking] = useState(false)
   const [confirmWithdraw, setConfirmWithdraw] = useState(false)
 
-  const { data: requests } = useCarpoolRequests(matchId, offer.id, true)
+  const { data: requests, isPending } = useCarpoolRequests(matchId, offer.id, true)
 
   const mine = requests ?? []
 
@@ -162,7 +162,10 @@ export function CarpoolOfferCard({
             }}
           />
 
-          {!hasLiveRequest &&
+          {/* Vänta tills den egna förfrågan hämtats innan fråga-knappen visas — annars blinkar
+              "Fråga om plats" förbi medan listan ännu är tom (`#489`). */}
+          {!isPending &&
+            !hasLiveRequest &&
             (asking ? (
               <CarpoolRequestForm
                 offerId={offer.id}
