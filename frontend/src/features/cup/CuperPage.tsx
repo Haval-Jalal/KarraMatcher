@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { TrophyIcon } from '@/components/NavIcons'
 import { useMyTrupper } from '@/features/chat'
+import { ApiError } from '@/lib/api'
 import { formatKickoffTime, formatMatchDate } from '@/lib/time'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -56,7 +57,18 @@ export function CuperPage() {
         <p className="app-header__subtitle">Truppens cuper — anmälan och platser kvar.</p>
       </header>
 
-      {trupper.isLoading && <p className="state">Hämtar…</p>}
+      {trupper.isLoading && (
+        <p className="state" role="status">
+          Hämtar…
+        </p>
+      )}
+      {trupper.isError && (
+        <p className="state state--error" role="alert">
+          {trupper.error instanceof ApiError && trupper.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta dina trupper just nu.'}
+        </p>
+      )}
       {trupper.data && options.length === 0 && (
         <p className="state">Du är inte medlem i någon trupp än.</p>
       )}
@@ -88,7 +100,9 @@ export function CuperPage() {
 
           {cups.isError && (
             <p className="state state--error" role="alert">
-              Kunde inte hämta cuperna.
+              {cups.error instanceof ApiError && cups.error.offline
+                ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+                : 'Kunde inte hämta cuperna.'}
             </p>
           )}
 
