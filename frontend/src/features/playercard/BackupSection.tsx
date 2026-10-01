@@ -32,6 +32,8 @@ export function BackupSection({
   onChanged: () => void
 }) {
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
+  const [showCode, setShowCode] = useState(false)
   const [pasted, setPasted] = useState('')
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null)
 
@@ -64,8 +66,17 @@ export function BackupSection({
               try {
                 await navigator.clipboard.writeText(code)
               } catch {
-                // Urklipp kan vara blockerat. Koden går att markera för hand under "Visa koden".
+                // Urklipp kan vara blockerat/osäker kontext/iOS. Stämpla då INTE kopian som gjord:
+                // en falsk "kopierad" släcker "Ingen kopia än"-varningen och lämnar familjen utan
+                // kopia — raka motsatsen till §KM.2. Öppna i stället koden för manuell kopiering.
+                setCopied(false)
+                setCopyFailed(true)
+                setShowCode(true)
+
+                return
               }
+
+              setCopyFailed(false)
 
               const stamped = { ...card, lastBackupUtc: new Date().toISOString() }
 
@@ -88,8 +99,22 @@ export function BackupSection({
         </p>
       )}
 
-      {/* Koden är lång och rörs sällan — göms tills man vill se eller kopiera den för hand. */}
-      <details className="backup__panel">
+      {copyFailed && (
+        <p className="state state--error" role="alert">
+          Koden kunde inte kopieras automatiskt på den här enheten. Markera koden nedan under{' '}
+          <strong>Visa koden</strong> och kopiera den för hand — annars finns ingen kopia.
+        </p>
+      )}
+
+      {/* Koden är lång och rörs sällan — göms tills man vill se eller kopiera den för hand. Öppnas
+          automatiskt om den automatiska kopieringen misslyckas (#535), men går att stänga igen. */}
+      <details
+        className="backup__panel"
+        open={showCode}
+        onToggle={(event) => {
+          setShowCode(event.currentTarget.open)
+        }}
+      >
         <summary>Visa koden</summary>
         <label className="form__field" htmlFor="backupkod">
           <span className="visually-hidden">Din säkerhetskopieringskod</span>
