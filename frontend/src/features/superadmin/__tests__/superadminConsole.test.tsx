@@ -46,7 +46,7 @@ function stubApi(token: string) {
       if (url.includes('/api/v1/admin/sports')) {
         if (method === 'POST') {
           const parsed = JSON.parse(init?.body as string) as { name: string; slug: string }
-          const created = { id: 'sport-1', name: parsed.name, slug: parsed.slug }
+          const created = { id: `sport-${sports.length + 1}`, name: parsed.name, slug: parsed.slug }
           sports.push(created)
           return Promise.resolve(jsonResponse(created, 201))
         }
@@ -102,6 +102,39 @@ describe('Uppsättningsguiden', () => {
     const choice = await screen.findByRole('radio', { name: /Fotboll/ })
     expect(choice).toBeChecked()
     expect(screen.getByRole('button', { name: 'Nästa' })).toBeEnabled()
+  })
+
+  it('väljer sport med piltangenter och håller roving tabindex (#481)', async () => {
+    const user = userEvent.setup()
+    stubApi(superToken)
+    setAccessToken(superToken)
+
+    renderRoute('/superadmin')
+
+    // Skapa två sporter så radiogruppen har mer än ett alternativ.
+    await user.click(await screen.findByRole('button', { name: 'Skapa ny sport' }))
+    await user.type(screen.getByLabelText('Namn'), 'Fotboll')
+    await user.click(screen.getByRole('button', { name: 'Skapa sport' }))
+    await screen.findByRole('radio', { name: /Fotboll/ })
+
+    await user.click(screen.getByRole('button', { name: 'Skapa ny sport' }))
+    await user.type(screen.getByLabelText('Namn'), 'Innebandy')
+    await user.click(screen.getByRole('button', { name: 'Skapa sport' }))
+
+    // Den sist skapade är vald, och bara den ligger i tabb-sekvensen (roving tabindex).
+    const innebandy = await screen.findByRole('radio', { name: /Innebandy/ })
+    const fotboll = screen.getByRole('radio', { name: /Fotboll/ })
+    expect(innebandy).toBeChecked()
+    expect(innebandy).toHaveAttribute('tabindex', '0')
+    expect(fotboll).toHaveAttribute('tabindex', '-1')
+
+    // Piltangent flyttar valet (WAI-ARIA radio-modell) — upp från Innebandy väljer Fotboll.
+    innebandy.focus()
+    await user.keyboard('{ArrowUp}')
+
+    expect(fotboll).toBeChecked()
+    expect(fotboll).toHaveAttribute('tabindex', '0')
+    expect(innebandy).toHaveAttribute('tabindex', '-1')
   })
 
   it('går vidare till klubb-steget när en sport valts', async () => {

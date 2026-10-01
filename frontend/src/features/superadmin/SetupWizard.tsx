@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -187,6 +187,91 @@ export function SetupWizard() {
   }
 }
 
+/**
+ * En radiogrupp för wizardens val (sport/klubb/trupp). Följer WAI-ARIA:s radio-mönster
+ * (WCAG 2.1.1/4.1.2, `#481`): piltangenter + Home/End flyttar och väljer, och bara den valda
+ * radion ligger i tabb-sekvensen (roving tabindex) — samma modell som appens tablists.
+ */
+function WizardRadioGroup<T extends { id: string }>({
+  items,
+  selectedId,
+  onSelect,
+  ariaLabel,
+  renderLabel,
+}: {
+  items: readonly T[]
+  selectedId: string | null
+  onSelect: (id: string) => void
+  ariaLabel: string
+  renderLabel: (item: T) => ReactNode
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+
+  function move(index: number): void {
+    const target = (index + items.length) % items.length
+    const item = items[target]
+    if (item === undefined) {
+      return
+    }
+
+    onSelect(item.id)
+    refs.current[target]?.focus()
+  }
+
+  function onKeyDown(event: KeyboardEvent, index: number): void {
+    let next: number | null = null
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = index + 1
+    else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = index - 1
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = items.length - 1
+
+    if (next === null) {
+      return
+    }
+
+    event.preventDefault()
+    move(next)
+  }
+
+  // Roving tabindex: den valda radion (eller den första när inget är valt) är tabbar; resten -1.
+  const tabbableIndex = Math.max(
+    0,
+    items.findIndex((item) => item.id === selectedId),
+  )
+
+  return (
+    <ul className="wizard__choices" role="radiogroup" aria-label={ariaLabel}>
+      {items.map((item, index) => {
+        const checked = selectedId === item.id
+
+        return (
+          <li key={item.id}>
+            <button
+              ref={(element) => {
+                refs.current[index] = element
+              }}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              tabIndex={index === tabbableIndex ? 0 : -1}
+              className={checked ? 'wizard__choice wizard__choice--selected' : 'wizard__choice'}
+              onClick={() => {
+                onSelect(item.id)
+              }}
+              onKeyDown={(event) => {
+                onKeyDown(event, index)
+              }}
+            >
+              {renderLabel(item)}
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 const slugSchema = z.object({
   name: z.string().trim().min(1, 'Fyll i namnet.'),
   slug: z
@@ -248,27 +333,17 @@ function PickOrCreate({
       {isLoading && <p className="state">Hämtar…</p>}
 
       {items.length > 0 && (
-        <ul className="wizard__choices" role="radiogroup" aria-label={`Välj ${singular}`}>
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={selectedId === item.id}
-                className={
-                  selectedId === item.id
-                    ? 'wizard__choice wizard__choice--selected'
-                    : 'wizard__choice'
-                }
-                onClick={() => {
-                  onSelect(item.id)
-                }}
-              >
-                <strong>{item.name}</strong> <code>{item.slug}</code>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <WizardRadioGroup
+          items={items}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          ariaLabel={`Välj ${singular}`}
+          renderLabel={(item) => (
+            <>
+              <strong>{item.name}</strong> <code>{item.slug}</code>
+            </>
+          )}
+        />
       )}
 
       {!adding ? (
@@ -415,27 +490,13 @@ function TruppStep({
       {isLoading && <p className="state">Hämtar…</p>}
 
       {trupper.length > 0 && (
-        <ul className="wizard__choices" role="radiogroup" aria-label="Välj trupp">
-          {trupper.map((trupp) => (
-            <li key={trupp.id}>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={selectedId === trupp.id}
-                className={
-                  selectedId === trupp.id
-                    ? 'wizard__choice wizard__choice--selected'
-                    : 'wizard__choice'
-                }
-                onClick={() => {
-                  onSelect(trupp.id)
-                }}
-              >
-                <strong>{trupp.name}</strong>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <WizardRadioGroup
+          items={trupper}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          ariaLabel="Välj trupp"
+          renderLabel={(trupp) => <strong>{trupp.name}</strong>}
+        />
       )}
 
       {!adding ? (
