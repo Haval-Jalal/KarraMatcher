@@ -53,6 +53,8 @@ interface Options {
   mine?: Record<string, unknown> | 'gate-off'
   /** Låter vårdnadshavarens egen kallelse-GET hänga, så laddnings-platshållaren kan prövas (#396). */
   minePending?: boolean
+  /** Låter vårdnadshavarens egen kallelse-GET svara 500, så fel-/retry-grenen kan prövas (#533). */
+  mineError?: boolean
   summary?: unknown
   /** Låter adminens summerings-GET hänga, så racet "roster klar före summering" kan prövas (#392). */
   summaryPending?: boolean
@@ -129,6 +131,7 @@ function stub(options: Options) {
       // Vårdnadshavarens vy: GET /events/{id}/kallelse
       if (url.includes('/kallelse')) {
         if (options.minePending) return new Promise<Response>(() => {})
+        if (options.mineError) return Promise.resolve(emptyResponse(500))
         if (options.mine === 'gate-off') return Promise.resolve(emptyResponse(404))
         return Promise.resolve(
           jsonResponse(options.mine ?? { callOpen: true, kickoffUtc: FUTURE, children: [] }),
@@ -195,6 +198,23 @@ describe('vårdnadshavaren svarar per barn', () => {
     expect(await screen.findByRole('heading', { name: 'Kallelse' })).toBeInTheDocument()
     expect(await screen.findByText('Hämtar kallelsen…')).toBeInTheDocument()
   })
+
+  it('visar fel med försök-igen i stället för att dölja hela sektionen vid 5xx (#533)', async () => {
+    // Förr hanterades bara 404 (kallelsen avslagen). Vid ett nät-/serverfel försvann hela
+    // "Kallelse"-sektionen tyst — en kallad förälder på dåligt nät såg ingenting.
+    // useMyKallelse försöker om två gånger på ett icke-404-fel (backoff), så ge findBy extra tid
+    // innan isError slår till.
+    setAccessToken(PARENT_TOKEN)
+    stub({ mineError: true })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    expect(
+      await screen.findByRole('button', { name: 'Försök igen' }, { timeout: 8000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Kallelse' })).toBeInTheDocument()
+    expect(screen.getByText('Kunde inte hämta kallelsen just nu.')).toBeInTheDocument()
+  }, 12000)
 
   it('ser sina egna kallade barn och svarar Ja', async () => {
     setAccessToken(PARENT_TOKEN)
