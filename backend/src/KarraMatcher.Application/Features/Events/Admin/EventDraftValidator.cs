@@ -29,7 +29,9 @@ internal sealed class EventDraftValidator : AbstractValidator<EventDraft>
          * felet syns forst i foraldrarnas kalendrar.
          */
         RuleFor(d => d.KickoffUtc)
-            .Must(kickoff => kickoff.Kind != DateTimeKind.Local)
+            // Kräv UTC, inte bara "inte lokal": en Unspecified-tid passerade annars valideringen
+            // och 500:ade sedan i Npgsql i stället för ett rent 400 (§KM.5-härdning, `#492`).
+            .Must(kickoff => kickoff.Kind == DateTimeKind.Utc)
             .WithMessage("Starttiden måste anges i UTC.");
 
         RuleFor(d => d.Note)

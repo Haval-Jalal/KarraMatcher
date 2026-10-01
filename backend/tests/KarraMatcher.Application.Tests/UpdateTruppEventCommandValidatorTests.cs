@@ -50,6 +50,21 @@ public class UpdateTruppEventCommandValidatorTests
     }
 
     [Fact]
+    public void OspecificeradStarttid_ArOgiltig()
+    {
+        // §KM.5-härdning (`#492`): en Unspecified-tid passerade förr valideringen och 500:ade
+        // sedan i Npgsql. Nu krävs uttrycklig UTC.
+        var draft = ValidMatch() with
+        {
+            KickoffUtc = new DateTime(2026, 10, 10, 9, 0, 0, DateTimeKind.Unspecified),
+        };
+        var command = new UpdateTruppEventCommand(
+            Guid.NewGuid(), Guid.NewGuid(), draft, Guid.NewGuid());
+
+        Assert.False(_validator.Validate(command).IsValid);
+    }
+
+    [Fact]
     public void MatchUtanMotstandare_ArOgiltig()
     {
         var draft = ValidMatch() with { Opponent = "" };
