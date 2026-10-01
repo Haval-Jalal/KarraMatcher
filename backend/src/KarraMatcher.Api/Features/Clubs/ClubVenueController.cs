@@ -9,9 +9,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace KarraMatcher.Api.Features.Clubs;
 
 /// <summary>
-/// Klubbens hemmaplan (`#307`). Nås via en trupp och vaktas av <c>AdminOfTrupp</c>, så vilken
-/// tränare/admin som helst i klubben kan sätta den — planen bor på klubben och delas av alla
-/// dess truppar. Adressen geokodas server-side så att väder och vägbeskrivning har koordinater.
+/// Truppens hemmaplan (`#307`, flyttad till truppen i `#405`). Nås via en trupp och vaktas av
+/// <c>AdminOfTrupp</c>, så en admin för <em>just den truppen</em> sätter den — och planen gäller
+/// bara den truppen, inte hela klubben. En annan trupp i samma klubb sätter sin egen (ingen
+/// delning mellan truppar, §KM.3). Adressen geokodas server-side så att väder och vägbeskrivning
+/// har koordinater.
+///
+/// <para>
+/// <b>Namnen är historiska.</b> Route (<c>club-venue</c>), DTO:er och <c>…ClubVenue…</c>-namnen
+/// behölls vid flytten för liten diff (se `#405`-beslutet i docs/PROJEKT-HANDOFF.md), men lagras
+/// och läses per trupp (<c>ClubVenueService</c> skriver till <c>AgeGroup</c>). Återinför aldrig
+/// klubb-delning på det här namnet.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/admin/trupper/{truppId:guid}/club-venue")]
@@ -21,7 +30,7 @@ public sealed class ClubVenueController(
     ICommandDispatcher commands,
     IQueryDispatcher queries) : AdminControllerBase
 {
-    /// <summary>Klubbens nuvarande hemmaplan (namn, adress, koordinater), eller "inte satt".</summary>
+    /// <summary>Truppens nuvarande hemmaplan (namn, adress, koordinater), eller "inte satt".</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -34,7 +43,7 @@ public sealed class ClubVenueController(
         return venue is null ? NotFoundTrupp() : Ok(venue);
     }
 
-    /// <summary>Sätter (eller ändrar) klubbens hemmaplan. Geokodar adressen.</summary>
+    /// <summary>Sätter (eller ändrar) truppens hemmaplan. Geokodar adressen.</summary>
     [HttpPut]
     [RequireCsrfToken]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

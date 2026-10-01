@@ -13,7 +13,7 @@ public sealed record ClubVenueDto(
     double? Longitude,
     bool Configured);
 
-/// <summary>Vad ett försök att sätta klubbens hemmaplan slutade med (`#307`).</summary>
+/// <summary>Vad ett försök att sätta truppens hemmaplan slutade med (`#307`).</summary>
 public enum SetClubVenueOutcome
 {
     /// <summary>Hemmaplanen sattes.</summary>
