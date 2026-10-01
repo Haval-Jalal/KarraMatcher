@@ -56,7 +56,18 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
     <div className="admin-subsection">
       <h2>Inbjudningar</h2>
 
-      {invitations.isLoading && <p className="state">Hämtar…</p>}
+      {invitations.isLoading && (
+        <p className="state" role="status">
+          Hämtar…
+        </p>
+      )}
+      {invitations.isError && (
+        <p className="state state--error" role="alert">
+          {invitations.error instanceof ApiError && invitations.error.offline
+            ? 'Ingen anslutning. Inbjudningarna kunde inte hämtas.'
+            : 'Kunde inte hämta inbjudningarna just nu.'}
+        </p>
+      )}
       {invitations.data && (
         <ul className="admin-list">
           {invitations.data.length === 0 && <li className="state">Inga väntande inbjudningar.</li>}
@@ -139,6 +150,16 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
               ))}
             </select>
           </div>
+        )}
+
+        {/* Lag-förslaget är valfritt — failar lag-hämtningen går inbjudan ändå, bara utan väljaren.
+            Säg det i stället för att låta väljaren tyst saknas (#543). */}
+        {roster.isError && (
+          <p className="admin-muted" role="status">
+            {roster.error instanceof ApiError && roster.error.offline
+              ? 'Ingen anslutning, så färg-lagen kunde inte hämtas. Du kan ändå skicka inbjudan utan lag-förslag.'
+              : 'Färg-lagen kunde inte hämtas, så du kan inte föreslå ett lag just nu. Inbjudan går ändå att skicka.'}
+          </p>
         )}
 
         {failure !== null && (
