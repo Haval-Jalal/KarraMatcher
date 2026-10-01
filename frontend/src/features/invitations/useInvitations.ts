@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { chatKeys } from '@/features/chat/useChat'
+import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
+import { teamsQueryKey } from '@/features/teams/useTeams'
+
 import {
   acceptInvitation,
   createInvitation,
@@ -55,5 +59,17 @@ export function useInvitationPreview(token: string) {
 }
 
 export function useAcceptInvitation(token: string) {
-  return useMutation({ mutationFn: () => acceptInvitation(token) })
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => acceptInvitation(token),
+    // Att gå med i en trupp ändrar medlemskaps-härledda vyer — lagväljaren, Hem-sammanställningen
+    // och chattens trupplista. Utan detta visar Hem gammal data i upp till 60 s (`#486`).
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: teamsQueryKey }),
+        client.invalidateQueries({ queryKey: homeSummaryQueryKey }),
+        client.invalidateQueries({ queryKey: chatKeys.myTrupper }),
+        client.invalidateQueries({ queryKey: invitationKeys.myTrupper }),
+      ]),
+  })
 }
