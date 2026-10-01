@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
-import { jsonResponse } from '@/test/apiStub'
+import { emptyResponse, jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -156,5 +156,77 @@ describe('cup-anmälan på händelsesidan', () => {
     expect(
       await screen.findByText('Ingen anslutning. Kontrollera nätet och försök igen.'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('admin placerar anmälda barn i cup-lag (#538)', () => {
+  function adminToken(): string {
+    return `x.${btoa(JSON.stringify({ email: 'admin@example.com', 'admin-trupp': 'trupp-1', sub: 'admin' }))}.y`
+  }
+
+  const SUMMARY = {
+    open: true,
+    capacity: 10,
+    spotsTaken: 1,
+    spotsLeft: 9,
+    isFull: false,
+    signedUp: [{ childId: 'c1', displayName: 'Noah K', teamName: null, colorHex: null }],
+    mine: [],
+    teams: [{ id: 'team-a', name: 'Lag 1', members: [] }],
+  }
+
+  function adminStub(options: { hangAssign?: boolean } = {}): void {
+    const token = adminToken()
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown, init?: RequestInit) => {
+        const url = String(input)
+        const method = init?.method ?? 'GET'
+
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: token }))
+        // Placeringen (PUT på cup/teams/.../children/...) måste matchas före summerings-URL:en,
+        // som den annars delar prefix med.
+        if (url.includes('/cup/teams/') && method === 'PUT') {
+          if (options.hangAssign) return new Promise<Response>(() => {})
+          return Promise.resolve(emptyResponse(204))
+        }
+        if (url.includes(`/events/${CUP_ID}/cup`)) {
+          return Promise.resolve(jsonResponse(SUMMARY))
+        }
+        if (url.includes(`/api/v1/events/${CUP_ID}`)) {
+          return Promise.resolve(jsonResponse({ event: CUP_EVENT, team: TEAM, truppId: 'trupp-1' }))
+        }
+        return Promise.resolve(jsonResponse({}))
+      }),
+    )
+  }
+
+  it('kvitterar en lyckad placering', async () => {
+    adminStub()
+    setAccessToken(adminToken())
+    const user = userEvent.setup()
+
+    renderRoute(`/handelse/${CUP_ID}`)
+
+    const select = await screen.findByLabelText('Noah K')
+    await user.selectOptions(select, 'team-a')
+
+    expect(await screen.findByText('Placeringen sparades.')).toBeInTheDocument()
+  })
+
+  it('låser lagväljaren medan placeringen sparas så den inte snäpper tillbaka', async () => {
+    adminStub({ hangAssign: true })
+    setAccessToken(adminToken())
+    const user = userEvent.setup()
+
+    renderRoute(`/handelse/${CUP_ID}`)
+
+    const select = await screen.findByLabelText('Noah K')
+    await user.selectOptions(select, 'team-a')
+
+    await waitFor(() => expect(select).toBeDisabled())
   })
 })

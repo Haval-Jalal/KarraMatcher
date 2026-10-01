@@ -50,6 +50,9 @@ export function CupTeamsBuilder({
   // Vilket cup-lag som byter namn just nu, och den redigerade texten (#408).
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+  // Kort kvitto efter en lagplacering (#538): select:en är bunden till server-state och snäpper
+  // tillbaka till gamla värdet tills refetchen landar (upp till ~50 s vid Render-kallstart, §KM.11).
+  const [notice, setNotice] = useState<string | null>(null)
   // Fokusera namnfältet när "Byt namn" fälls in (WCAG 2.4.3, `#484`). Bara ett fält renderas
   // åt gången (det cup-lag som byter namn), så en enda ref räcker. Nyckla på id:t så fokus sätts
   // när ett lag öppnas för namnbyte, inte vid varje tangenttryck.
@@ -63,8 +66,13 @@ export function CupTeamsBuilder({
 
   const run = (action: Promise<unknown>) => {
     setFailure(null)
+    setNotice(null)
     void action.catch((error: unknown) => setFailure(messageOf(error)))
   }
+
+  // Någon placering pågår: lås lagväljarna tills servern svarat, så select:en inte snäpper tillbaka
+  // mitt i och så två placeringar inte racar (jfr ChildDetails lag-select, `#487`/#538).
+  const placing = assign.isPending || unassign.isPending
 
   // Barnets nuvarande cup-lag, härlett ur lagens medlemslistor.
   const teamOf = new Map<string, string>()
@@ -80,17 +88,27 @@ export function CupTeamsBuilder({
   }
 
   function onPick(childId: string, nextTeamId: string): void {
+    setFailure(null)
+    setNotice(null)
+
     const current = teamOf.get(childId)
 
-    if (nextTeamId === '') {
-      if (current !== undefined) {
-        run(unassign.mutateAsync({ cupTeamId: current, childId }))
-      }
+    const action =
+      nextTeamId === ''
+        ? current !== undefined
+          ? unassign.mutateAsync({ cupTeamId: current, childId })
+          : null
+        : assign.mutateAsync({ cupTeamId: nextTeamId, childId })
 
+    if (action === null) {
       return
     }
 
-    run(assign.mutateAsync({ cupTeamId: nextTeamId, childId }))
+    // Kvittera placeringen: select:en kan snäppa tillbaka tills refetchen landar, ett kort besked
+    // säger att det gick fram (#538).
+    void action
+      .then(() => setNotice('Placeringen sparades.'))
+      .catch((error: unknown) => setFailure(messageOf(error)))
   }
 
   return (
@@ -226,6 +244,7 @@ export function CupTeamsBuilder({
                 <select
                   id={`cup-team-pick-${child.childId}`}
                   value={teamOf.get(child.childId) ?? ''}
+                  disabled={placing}
                   onChange={(event) => onPick(child.childId, event.target.value)}
                 >
                   <option value="">Inget lag</option>
@@ -239,6 +258,12 @@ export function CupTeamsBuilder({
             ))}
           </ul>
         </div>
+      )}
+
+      {notice !== null && (
+        <p className="state" role="status">
+          {notice}
+        </p>
       )}
 
       {failure !== null && (
