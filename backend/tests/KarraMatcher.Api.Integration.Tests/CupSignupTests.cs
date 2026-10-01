@@ -243,6 +243,46 @@ public sealed class CupSignupTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task TruppCups_TruppVidCup_FallerTillbakaPaTruppnamnOchFarEnFarg()
+    {
+        // En trupp-vid cup (TeamId == null, #332) saknar lag. Utan AgeGroup-fallbacken läckte
+        // LEFT JOIN null in i de icke-nullbara teamName/colorHex-fälten (#552).
+        var f = await SeedAsync("truppvid-cup");
+
+        Guid truppWideCupId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var cup = new Event
+            {
+                Id = Guid.NewGuid(),
+                AgeGroupId = f.TruppId,
+                TeamId = null,
+                Type = EventType.Cup,
+                KickoffUtc = DateTime.UtcNow.AddDays(14),
+                Title = "Trupp-cup",
+                Status = EventStatus.Scheduled,
+                UpdatedUtc = DateTime.UtcNow,
+            };
+            context.Events.Add(cup);
+            await context.SaveChangesAsync(CancellationToken.None);
+            truppWideCupId = cup.Id;
+        }
+
+        var response = await GetAsync(
+            $"/api/v1/trupper/{f.TruppId}/cups", GuardianToken(f.SvartGuardian));
+        response.EnsureSuccessStatusCode();
+        var cups = (await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None))
+            .EnumerateArray()
+            .ToArray();
+
+        var truppWide = cups.Single(c => c.GetProperty("eventId").GetGuid() == truppWideCupId);
+        // Truppens namn i stället för tomt, och en icke-tom färg i stället för null.
+        Assert.Equal("P2016", truppWide.GetProperty("teamName").GetString());
+        Assert.False(string.IsNullOrEmpty(truppWide.GetProperty("colorHex").GetString()));
+    }
+
+    [Fact]
     public async Task TruppCups_ForIckeMedlem_Nekas()
     {
         var f = await SeedAsync("lista-nekas");
