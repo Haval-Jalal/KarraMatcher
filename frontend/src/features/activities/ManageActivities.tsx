@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import type { EventInput } from '@/features/admin/adminApi'
 import { EventForm, SeasonOverview } from '@/features/admin'
+import { cupKeys } from '@/features/cup/useCup'
 import { eventLabel, eventQueryKey, type TeamEvent } from '@/features/events'
 import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
 import { ApiError } from '@/lib/api'
@@ -54,6 +55,11 @@ export function ManageActivities({
     await queryClient.invalidateQueries({ queryKey: activitiesKeys.list(truppId) })
     // Hem-vyn visar nästa händelse — håll den i takt när en händelse skapas/ändras/ställs in (#476).
     await queryClient.invalidateQueries({ queryKey: homeSummaryQueryKey })
+    // En lag-riktad händelse som ändras/ställs in/tas bort här syns också i tränarens och
+    // föräldrarnas lag-schema (['team-events',slug]) och, för en cup, i trupp-cuplistan. Utan
+    // detta står den kvar inaktuell där tills omladdning (#537). Slugen är okänd här → prefixet.
+    await queryClient.invalidateQueries({ queryKey: ['team-events'] })
+    await queryClient.invalidateQueries({ queryKey: cupKeys.truppCups(truppId) })
     if (eventId !== undefined) {
       await queryClient.invalidateQueries({ queryKey: eventQueryKey(eventId) })
     }
