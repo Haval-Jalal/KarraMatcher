@@ -7,7 +7,7 @@ namespace KarraMatcher.Application.Features.Clubs;
 /// <summary>Klubbens hemmaplan för en trupp (`#307`).</summary>
 public sealed record GetClubVenueQuery(Guid TruppId) : IQuery<ClubVenueDto?>;
 
-/// <summary>Sätter (eller ändrar) klubbens hemmaplan via en av dess truppar (`#307`).</summary>
+/// <summary>Sätter (eller ändrar) truppens hemmaplan (`#307`; per trupp sedan `#405`).</summary>
 public sealed record SetClubVenueCommand(Guid TruppId, string Name, string Address, Guid ActorAccountId)
     : ICommand<SetClubVenueResult>;
 
