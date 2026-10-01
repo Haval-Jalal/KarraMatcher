@@ -62,7 +62,9 @@ export function CupSignupSection({
 
       {summary.isError && (
         <p className="state state--error" role="alert">
-          Kunde inte hämta anmälningsläget.
+          {summary.error instanceof ApiError && summary.error.offline
+            ? 'Ingen anslutning. Kontrollera nätet och försök igen.'
+            : 'Kunde inte hämta anmälningsläget.'}
         </p>
       )}
 
