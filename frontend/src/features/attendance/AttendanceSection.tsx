@@ -68,8 +68,13 @@ export function AttendanceSection({
   // en 404 (kallelsen avslagen för laget) är inte "pending" och ska fortsatt ge tomt.
   const guardianPending = !isAdmin && !isCoach && !gateOff && my.isPending
 
+  // Ett nät-/5xx-fel (inte 404-grinden) på den egna kallelsen. Utan den här grenen blev både
+  // guardianVisible och guardianPending false och hela "Kallelse"-sektionen försvann tyst — en
+  // kallad förälder på dåligt nät såg ingenting (#533). Visa fel + försök igen i stället.
+  const guardianError = !isAdmin && !isCoach && !gateOff && my.isError
+
   // Gäst, inga egna kallade barn — och varken admin eller tränare: ingenting.
-  if (!isAdmin && !isCoach && !guardianVisible && !guardianPending) {
+  if (!isAdmin && !isCoach && !guardianVisible && !guardianPending && !guardianError) {
     return null
   }
 
@@ -85,6 +90,26 @@ export function AttendanceSection({
         <p className="state" role="status">
           Hämtar kallelsen…
         </p>
+      )}
+
+      {guardianError && (
+        <div className="state state--error" role="alert">
+          <p>
+            {my.error instanceof ApiError && my.error.offline
+              ? 'Ingen anslutning. Kallelsen kan inte hämtas just nu.'
+              : 'Kunde inte hämta kallelsen just nu.'}
+          </p>
+          <button
+            type="button"
+            className="button"
+            disabled={my.isFetching}
+            onClick={() => {
+              void my.refetch()
+            }}
+          >
+            {my.isFetching ? 'Försöker…' : 'Försök igen'}
+          </button>
+        </div>
       )}
 
       {guardianVisible && (
