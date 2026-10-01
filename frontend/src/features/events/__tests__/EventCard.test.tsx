@@ -90,10 +90,28 @@ describe('hemma och borta går att skilja åt utan att läsa', () => {
 
   it('säger det i text också', async () => {
     await renderWithRouter(
-      <EventList events={[testEvent('b', '2026-09-20T12:00:00Z', { isHome: false })]} now={now} />,
+      <EventList
+        events={[testEvent('b', '2026-09-20T12:00:00Z', { isHome: false, opponent: 'Torslanda' })]}
+        now={now}
+      />,
     )
 
     expect(screen.getByText(/Borta mot/)).toBeInTheDocument()
+  })
+
+  it('utan motståndare visar bara hemma/borta, inget hängande "mot" (#547)', async () => {
+    await renderWithRouter(
+      <EventList
+        events={[testEvent('c', '2026-09-20T12:00:00Z', { isHome: true, opponent: null })]}
+        now={now}
+      />,
+    )
+
+    const link = screen.getByRole('link', { name: /Hemma/ })
+    expect(link).toHaveAccessibleName(/Hemma/)
+    // Inget hängande "Hemma mot " med en tom motståndare.
+    expect(link).not.toHaveAccessibleName(/mot/)
+    expect(screen.queryByText(/mot/)).not.toBeInTheDocument()
   })
 })
 

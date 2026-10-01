@@ -46,10 +46,15 @@ export function EventCard({ event }: { event: TeamEvent }) {
           {isCancelled && <span className="event-badge event-badge--cancelled">Inställd</span>}
           {isPostponed && <span className="event-badge">Framflyttad</span>}
           {isMatch ? (
-            <>
-              <span>{event.isHome ? 'Hemma mot' : 'Borta mot'} </span>
-              <strong>{event.opponent}</strong>
-            </>
+            event.opponent?.trim() ? (
+              <>
+                <span>{event.isHome ? 'Hemma mot' : 'Borta mot'} </span>
+                <strong>{event.opponent}</strong>
+              </>
+            ) : (
+              // Utan motståndare: bara hemma/borta, inget hängande "mot" med tom strong (#490/#547).
+              <strong>{event.isHome ? 'Hemma' : 'Borta'}</strong>
+            )
           ) : (
             <>
               <span>{eventTypeLabel(event.type)}: </span>
