@@ -60,6 +60,23 @@ export function CreateActivity({ truppId }: { truppId: string }) {
         ? resolveTarget(target, rosterData)
         : { eventTeamId: null, childIds: [] }
 
+    // En match/träning som inte kallar någon är inte en färdig aktivitet — den skulle skapas tyst
+    // utan att nå en enda förälder (och en match blir osynlig för alla, #514). Blockera i stället
+    // för att visa "Ingen kallelse skickades" som om allt gått bra (#531).
+    if (typeHasTarget(input.type) && childIds.length === 0) {
+      setFailure(
+        target.mode === 'lag'
+          ? target.teamIds.length === 0
+            ? 'Välj minst ett färg-lag att kalla, eller byt målgrupp.'
+            : 'Det valda laget har inga barn att kalla. Välj ett annat lag eller en annan målgrupp.'
+          : target.mode === 'children'
+            ? 'Välj minst ett barn att kalla.'
+            : 'Det finns inga barn i truppen att kalla än.',
+      )
+
+      return
+    }
+
     // Händelsen först — dess id behövs för att sätta kallelsen. Ett fel här kastar vidare till
     // EventForm, som visar det; ingen kallelse skickas då.
     const created = await createTruppEvent(truppId, { ...input, teamId: eventTeamId })
