@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
-import { jsonResponse } from '@/test/apiStub'
+import { emptyResponse, jsonResponse } from '@/test/apiStub'
 import { renderRoute } from '@/test/renderRoute'
 
 /**
@@ -328,5 +328,44 @@ describe('Trupp-adminvyn', () => {
     await user.selectOptions(screen.getByLabelText('Trupp'), 'trupp-2')
 
     expect(await screen.findByRole('tablist')).toBeInTheDocument()
+  })
+
+  it('visar ett fel när inbjudningslistan inte kan hämtas, inte en tom lista (#543)', async () => {
+    // Läsningen hanterade inte fel — offline försvann listan tyst och admin fick inget besked.
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/auth/refresh'))
+          return Promise.resolve(jsonResponse({ accessToken: token }))
+        if (url.includes('/my-trupper')) {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                id: 'trupp-1',
+                clubName: 'Kärra',
+                sportName: 'Fotboll',
+                name: 'P2016',
+                season: '2026',
+              },
+            ]),
+          )
+        }
+        // Inbjudningslistan failar.
+        if (url.includes('/invitations')) return Promise.resolve(emptyResponse(500))
+        return Promise.resolve(jsonResponse([]))
+      }),
+    )
+    setAccessToken(token)
+
+    renderRoute('/admin')
+
+    await user.click(await screen.findByRole('tab', { name: 'Inbjudningar' }))
+
+    expect(await screen.findByText('Kunde inte hämta inbjudningarna just nu.')).toBeInTheDocument()
   })
 })
