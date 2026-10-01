@@ -9,6 +9,14 @@ namespace KarraMatcher.Infrastructure.Persistence.Repositories;
 internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     : IAttendanceCallRepository
 {
+    /// <summary>
+    /// Neutral färg för en trupp-vid händelse (TeamId == null, `#332`) som saknar lagfärg. FE
+    /// renderar inte cup-kortets färg i dag, men DTO-kontraktet är icke-nullbart, så en lag-lös cup
+    /// måste få ett värde i stället för den null som annars läckt in (#552).
+    /// </summary>
+    private const string TruppColorHex = "#6B6B6B";
+
+
     public async Task<EventContext?> FindEventContextAsync(
         Guid eventId, CancellationToken cancellationToken) =>
         await context.Events
@@ -122,17 +130,24 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     public async Task<IReadOnlyList<TruppCupRow>> ListTruppCupsAsync(
         Guid ageGroupId, CancellationToken cancellationToken)
     {
-        var cups = await context.Events
-            .AsNoTracking()
-            .Where(e => e.Type == EventType.Cup && e.AgeGroupId == ageGroupId)
-            .OrderBy(e => e.KickoffUtc)
-            .Select(e => new
+        // Vänster-joina laget: en trupp-vid cup (TeamId == null, `#332`) saknar lag. `e.Team!.Name`
+        // gav en LEFT JOIN vars null matades rakt in i de icke-nullbara TeamName/ColorHex-fälten
+        // (#552). Fall tillbaka på truppens namn + en neutral färg, som PendingKallelserAsync gör.
+        var cups = await (
+            from e in context.Events.AsNoTracking()
+            join ageGroup in context.AgeGroups.AsNoTracking() on e.AgeGroupId equals ageGroup.Id
+            join teamCandidate in context.Teams.AsNoTracking() on e.TeamId equals teamCandidate.Id
+                into teamMatch
+            from team in teamMatch.DefaultIfEmpty()
+            where e.Type == EventType.Cup && e.AgeGroupId == ageGroupId
+            orderby e.KickoffUtc
+            select new
             {
                 e.Id,
                 e.Title,
                 e.KickoffUtc,
-                TeamName = e.Team!.Name,
-                e.Team!.ColorHex,
+                TeamName = team != null ? team.Name : ageGroup.Name,
+                ColorHex = team != null ? team.ColorHex : TruppColorHex,
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
