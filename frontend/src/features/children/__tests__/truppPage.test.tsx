@@ -95,6 +95,19 @@ describe('TruppPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Truppen' })).toHaveFocus())
   })
 
+  it('fokuserar första fältet när "Lägg till barn" fälls in (#484)', async () => {
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token)
+    setAccessToken(token)
+    const user = userEvent.setup()
+
+    renderRoute('/trupp/trupp-1')
+
+    await user.click(await screen.findByRole('button', { name: 'Lägg till barn' }))
+
+    await waitFor(() => expect(screen.getByLabelText('Förnamn')).toHaveFocus())
+  })
+
   it('göms för den som inte är admin för truppen', async () => {
     const token = tokenWith({ email: 'foralder@example.com' })
     stub(token)

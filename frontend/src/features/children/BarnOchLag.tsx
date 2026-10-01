@@ -270,6 +270,13 @@ function AddLag({ truppId }: { truppId: string }) {
   const [colorHex, setColorHex] = useState('#1e3f8a')
   const [failure, setFailure] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  // Flytta fokus till första fältet när formuläret fälls in (WCAG 2.4.3, `#484`).
+  const nameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (open) {
+      nameRef.current?.focus()
+    }
+  }, [open])
 
   if (!open) {
     return (
@@ -308,6 +315,7 @@ function AddLag({ truppId }: { truppId: string }) {
       <div className="form__field">
         <label htmlFor="nytt-lag-namn">Färgens namn</label>
         <input
+          ref={nameRef}
           id="nytt-lag-namn"
           type="text"
           value={name}
@@ -438,6 +446,11 @@ function EditLag({
   const [colorHex, setColorHex] = useState(team.colorHex)
   const [failure, setFailure] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  // Fälls in via kugghjulet — fokusera namnfältet direkt (WCAG 2.4.3, `#484`).
+  const nameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    nameRef.current?.focus()
+  }, [])
 
   function save(): void {
     setFailure(null)
@@ -467,6 +480,7 @@ function EditLag({
       <div className="form__field">
         <label htmlFor={`lag-namn-${team.id}`}>Lagets namn</label>
         <input
+          ref={nameRef}
           id={`lag-namn-${team.id}`}
           type="text"
           value={name}
@@ -771,6 +785,13 @@ function AddChild({ truppId, teams }: { truppId: string; teams: RosterTeam[] }) 
   const [teamId, setTeamId] = useState('')
   const [failure, setFailure] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  // Flytta fokus till förnamnsfältet när formuläret fälls in (WCAG 2.4.3, `#484`).
+  const firstNameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (open) {
+      firstNameRef.current?.focus()
+    }
+  }, [open])
 
   const canSave = firstName.trim() !== '' && lastInitial.trim() !== ''
 
@@ -814,6 +835,7 @@ function AddChild({ truppId, teams }: { truppId: string; teams: RosterTeam[] }) 
       <div className="form__field">
         <label htmlFor="nytt-barn-fornamn">Förnamn</label>
         <input
+          ref={firstNameRef}
           id="nytt-barn-fornamn"
           type="text"
           maxLength={50}
