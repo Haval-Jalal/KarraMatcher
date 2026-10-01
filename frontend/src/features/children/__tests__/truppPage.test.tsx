@@ -108,6 +108,38 @@ describe('TruppPage', () => {
     await waitFor(() => expect(screen.getByLabelText('Förnamn')).toHaveFocus())
   })
 
+  it('kvitterar ett lagbyte på ett barn (#487)', async () => {
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token)
+    setAccessToken(token)
+    const user = userEvent.setup()
+
+    renderRoute('/trupp/trupp-1')
+
+    await user.click(await screen.findByRole('button', { name: /Liam J/ }))
+    await user.selectOptions(await screen.findByLabelText(/Byt lag/), '')
+
+    expect(await screen.findByText('Lagbytet sparades.')).toBeInTheDocument()
+  })
+
+  it('nollställer lag-valet efter att ett barn lagts till (#487)', async () => {
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token)
+    setAccessToken(token)
+    const user = userEvent.setup()
+
+    renderRoute('/trupp/trupp-1')
+
+    await user.click(await screen.findByRole('button', { name: 'Lägg till barn' }))
+    await user.type(screen.getByLabelText('Förnamn'), 'Nora')
+    await user.type(screen.getByLabelText('Efternamnets initial'), 'K')
+    await user.selectOptions(screen.getByLabelText('Lag (valfritt)'), 't1')
+    await user.click(screen.getByRole('button', { name: 'Lägg till barn' }))
+
+    // Efter lyckad tilläggning ska lag-valet vara tillbaka på "Inget lag" (#487).
+    await waitFor(() => expect(screen.getByLabelText('Lag (valfritt)')).toHaveValue(''))
+  })
+
   it('göms för den som inte är admin för truppen', async () => {
     const token = tokenWith({ email: 'foralder@example.com' })
     stub(token)
