@@ -456,7 +456,7 @@ function TruppStep({
   clubName: string
   sportId: string
   sportName: string
-  trupper: { id: string; name: string }[]
+  trupper: { id: string; name: string; season: string }[]
   isLoading: boolean
   selectedId: string | null
   onSelect: (id: string) => void
@@ -495,7 +495,12 @@ function TruppStep({
           selectedId={selectedId}
           onSelect={onSelect}
           ariaLabel="Välj trupp"
-          renderLabel={(trupp) => <strong>{trupp.name}</strong>}
+          renderLabel={(trupp) => (
+            <>
+              <strong>{trupp.name}</strong>{' '}
+              <span className="wizard__choice-season">{trupp.season}</span>
+            </>
+          )}
         />
       )}
 

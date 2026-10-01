@@ -3260,6 +3260,12 @@ a.match-card:focus-visible .match-card__opponent {
   box-shadow: inset 0 0 0 1px var(--focus);
 }
 
+/* Säsongen bredvid truppnamnet i väljaren (#494) — dämpad, så namnet bär. */
+.wizard__choice-season {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
 .wizard__choice:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
