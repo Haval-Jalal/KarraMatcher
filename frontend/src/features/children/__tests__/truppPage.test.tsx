@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
@@ -74,6 +75,24 @@ describe('TruppPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Truppen' })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /Liam J/ })).toBeInTheDocument()
+  })
+
+  it('flyttar fokus till rubriken vid borra-in och till fliken vid tillbaka (#482)', async () => {
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token)
+    setAccessToken(token)
+    const user = userEvent.setup()
+
+    renderRoute('/trupp/trupp-1')
+
+    // Borra in i ett barn → fokus ska landa på barnets rubrik, inte falla till <body>.
+    await user.click(await screen.findByRole('button', { name: /Liam J/ }))
+    const heading = await screen.findByRole('heading', { level: 3, name: 'Liam J' })
+    await waitFor(() => expect(heading).toHaveFocus())
+
+    // Tillbaka → fokus ska landa på Truppen-fliken, inte på <body>.
+    await user.click(screen.getByRole('button', { name: '‹ Tillbaka' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Truppen' })).toHaveFocus())
   })
 
   it('göms för den som inte är admin för truppen', async () => {

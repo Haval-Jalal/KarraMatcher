@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Djupimport (inte via feature-barreln): invitations/index re-exporterar AdminPage som i sin tur
 // importerar BarnOchLag härifrån — en barrel-import hade blivit en cirkel mellan featurarna.
@@ -47,6 +47,31 @@ export function BarnOchLag({ truppId }: { truppId: string }) {
   const roster = useRoster(truppId)
   const [view, setView] = useState<View>({ kind: 'truppen' })
 
+  // Borra in/ut byter hela panelinnehållet via setView, men utan detta faller fokus till <body>
+  // när den klickade knappen avmonteras — en tangentbords-/skärmläsaranvändare släpps till toppen
+  // utan besked (WCAG 2.4.3, `#482`). Flytta fokus till den nya vyns naturliga start: flik-knappen
+  // för trupp/lag-listan, annars borra-vyns rubrik. Inte vid första renderingen (RootLayout har
+  // redan satt fokus då).
+  const firstRender = useRef(true)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const truppenTabRef = useRef<HTMLButtonElement>(null)
+  const lagTabRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+
+    if (view.kind === 'truppen') {
+      truppenTabRef.current?.focus()
+    } else if (view.kind === 'lag') {
+      lagTabRef.current?.focus()
+    } else {
+      panelRef.current?.querySelector<HTMLElement>('[data-view-focus]')?.focus()
+    }
+  }, [view])
+
   if (roster.isLoading) {
     return <p className="state">Hämtar…</p>
   }
@@ -66,9 +91,10 @@ export function BarnOchLag({ truppId }: { truppId: string }) {
     (view.kind === 'child' && view.backTo !== 'truppen')
 
   return (
-    <div className="barn-lag">
+    <div className="barn-lag" ref={panelRef}>
       <div className="subtabs" role="group" aria-label="Barn och lag">
         <button
+          ref={truppenTabRef}
           type="button"
           className={rootIsLag ? 'subtabs__tab' : 'subtabs__tab subtabs__tab--active'}
           aria-pressed={!rootIsLag}
@@ -77,6 +103,7 @@ export function BarnOchLag({ truppId }: { truppId: string }) {
           Truppen
         </button>
         <button
+          ref={lagTabRef}
           type="button"
           className={rootIsLag ? 'subtabs__tab subtabs__tab--active' : 'subtabs__tab'}
           aria-pressed={rootIsLag}
@@ -351,7 +378,7 @@ function TeamChildren({
       </button>
 
       <div className="drill-title-row">
-        <h3 className="drill-title">
+        <h3 className="drill-title" tabIndex={-1} data-view-focus>
           <TeamTag team={team} />
         </h3>
         {team !== null && (
@@ -585,7 +612,9 @@ function ChildDetail({
         ‹ Tillbaka
       </button>
 
-      <h3 className="drill-title">{child.displayName}</h3>
+      <h3 className="drill-title" tabIndex={-1} data-view-focus>
+        {child.displayName}
+      </h3>
 
       <section className="child-detail__block">
         <h4>Lag</h4>
