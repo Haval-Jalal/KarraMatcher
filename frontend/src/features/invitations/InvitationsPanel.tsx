@@ -133,9 +133,14 @@ export function InvitationsPanel({ truppId }: { truppId: string }) {
             type="email"
             autoComplete="off"
             aria-invalid={errors.email ? true : undefined}
+            aria-describedby={errors.email ? `inbjudan-epost-fel-${truppId}` : undefined}
             {...register('email')}
           />
-          {errors.email && <p className="form__error">{errors.email.message}</p>}
+          {errors.email && (
+            <p id={`inbjudan-epost-fel-${truppId}`} className="form__error">
+              {errors.email.message}
+            </p>
+          )}
         </div>
 
         {teams.length > 0 && (

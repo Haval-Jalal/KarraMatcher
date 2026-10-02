@@ -83,4 +83,17 @@ describe('SetupWizard nollar nedströmsval när klubben byts (#540)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Nästa' })).toBeDisabled())
     expect(screen.queryByRole('radio', { name: /P2016/ })).not.toBeInTheDocument()
   })
+
+  it('kopplar "skapa"-formulärets valideringsfel till fältet (#600)', async () => {
+    const user = userEvent.setup()
+    await renderWithProviders(<SetupWizard />)
+
+    await user.click(await screen.findByRole('button', { name: 'Skapa ny sport' }))
+    // Submit med tomt namn → zod-fel. Felet ska vara kopplat till Namn-fältet, inte bara stå löst.
+    await user.click(screen.getByRole('button', { name: 'Skapa sport' }))
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Namn')).toHaveAccessibleDescription(/Fyll i namnet/),
+    )
+  })
 })

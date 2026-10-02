@@ -112,6 +112,31 @@ describe('Inbjudningens landningssida', () => {
 })
 
 describe('Trupp-adminvyn', () => {
+  it('kopplar valideringsfelet till adressfältet för skärmläsare (#600)', async () => {
+    const user = userEvent.setup()
+    const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })
+    stub(token, (url) => {
+      if (url.includes('/my-trupper')) {
+        return [
+          { id: 'trupp-1', clubName: 'Kärra', sportName: 'Fotboll', name: 'P2016', season: '2026' },
+        ]
+      }
+      return []
+    })
+    setAccessToken(token)
+
+    renderRoute('/admin')
+
+    await user.click(await screen.findByRole('tab', { name: 'Inbjudningar' }))
+    const input = await screen.findByLabelText('Bjud in en vårdnadshavare (adress)')
+
+    await user.type(input, 'inte-en-epost')
+    await user.click(screen.getByRole('button', { name: 'Skicka inbjudan' }))
+
+    // Felet ska vara kopplat via aria-describedby, inte bara stå någonstans på sidan.
+    await waitFor(() => expect(input).toHaveAccessibleDescription(/giltig/))
+  })
+
   it('admin kan skicka en inbjudan, och anropet bär adressen', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'admin@example.com', 'admin-trupp': 'trupp-1' })

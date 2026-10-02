@@ -93,13 +93,19 @@ export function AdminStep({ truppId }: { truppId: string }) {
             id="admin-epost"
             type="email"
             autoComplete="off"
+            aria-invalid={errors.email ? true : undefined}
+            aria-describedby={errors.email ? 'admin-epost-fel' : undefined}
             {...emailField}
             onChange={(event) => {
               void emailField.onChange(event)
               setSuccess(null)
             }}
           />
-          {errors.email && <p className="form__error">{errors.email.message}</p>}
+          {errors.email && (
+            <p id="admin-epost-fel" className="form__error">
+              {errors.email.message}
+            </p>
+          )}
         </div>
 
         {success !== null && (
