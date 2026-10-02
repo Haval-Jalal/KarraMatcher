@@ -10,11 +10,14 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
     : IAttendanceCallRepository
 {
     /// <summary>
-    /// Neutral färg för en trupp-vid händelse (TeamId == null, `#332`) som saknar lagfärg. FE
-    /// renderar inte cup-kortets färg i dag, men DTO-kontraktet är icke-nullbart, så en lag-lös cup
-    /// måste få ett värde i stället för den null som annars läckt in (#552).
+    /// Neutral färg när det saknas ett lag att ta färgen ifrån: en trupp-vid cup (TeamId == null,
+    /// `#332`/#552) eller ett otilldelat barn i en kallelse (Child.TeamId == null, #553). Ett värde
+    /// i stället för den null som annars läckt in i de icke-nullbara/visade fälten.
     /// </summary>
-    private const string TruppColorHex = "#6B6B6B";
+    private const string NoTeamColorHex = "#6B6B6B";
+
+    /// <summary>Gruppnamn för ett barn som ännu inte lagts i ett färg-lag (#553).</summary>
+    private const string NoTeamName = "(inget lag)";
 
 
     public async Task<EventContext?> FindEventContextAsync(
@@ -90,8 +93,16 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
                 context.Children.AsNoTracking(),
                 i => i.ChildId,
                 c => c.Id,
+                // Child.TeamId är legitimt null (otilldelat barn). c.Team!.Name hade gett null via
+                // LEFT JOIN rakt in i summeringen → en tom grupp utan färg hos tränaren (#553).
+                // Fall tillbaka på en namngiven sentinel-grupp + neutral färg i stället.
                 (i, c) => new InvitationRow(
-                    c.Id, c.FirstName, c.LastInitial, c.Team!.Name, c.Team!.ColorHex, i.Reply))
+                    c.Id,
+                    c.FirstName,
+                    c.LastInitial,
+                    c.Team != null ? c.Team.Name : NoTeamName,
+                    c.Team != null ? c.Team.ColorHex : NoTeamColorHex,
+                    i.Reply))
             .OrderBy(r => r.TeamName).ThenBy(r => r.FirstName)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -147,7 +158,7 @@ internal sealed class AttendanceCallRepository(KarraMatcherDbContext context)
                 e.Title,
                 e.KickoffUtc,
                 TeamName = team != null ? team.Name : ageGroup.Name,
-                ColorHex = team != null ? team.ColorHex : TruppColorHex,
+                ColorHex = team != null ? team.ColorHex : NoTeamColorHex,
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

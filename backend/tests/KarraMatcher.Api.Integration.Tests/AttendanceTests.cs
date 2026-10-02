@@ -253,6 +253,59 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
         Assert.Equal(3, summary.GetProperty("notAnswered").GetInt32());
     }
 
+    [Fact]
+    public async Task Summering_OtilldelatBarn_FarSentinelGruppOchFarg()
+    {
+        // Ett barn utan färg-lag (Child.TeamId == null) är legitimt. Utan fallback gav c.Team!.Name
+        // null rakt in i summeringen → en tom grupp utan färg hos tränaren (#553).
+        var f = await SeedAsync("unassigned");
+
+        Guid unassignedChild;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+            var now = DateTime.UtcNow;
+            var guardian = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "vh-unassigned@example.com",
+                CreatedUtc = now,
+            };
+            var child = new Child
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Noa",
+                LastInitial = "K",
+                AgeGroupId = f.TruppId,
+                TeamId = null,
+                CreatedUtc = now,
+            };
+            context.Accounts.Add(guardian);
+            context.Children.Add(child);
+            context.Guardianships.Add(new Guardianship
+            {
+                Id = Guid.NewGuid(),
+                AccountId = guardian.Id,
+                ChildId = child.Id,
+                GrantedUtc = now,
+            });
+            await context.SaveChangesAsync(CancellationToken.None);
+            unassignedChild = child.Id;
+        }
+
+        Assert.Equal(HttpStatusCode.NoContent, (await SetKallelseAsync(f, unassignedChild)).StatusCode);
+
+        var summary = await SummaryAsync(f);
+        var row = summary
+            .GetProperty("children")
+            .EnumerateArray()
+            .Single(c => c.GetProperty("childId").GetGuid() == unassignedChild);
+
+        // Namngiven sentinel-grupp i stället för tomt, och en icke-tom färg i stället för null.
+        Assert.Equal("(inget lag)", row.GetProperty("teamName").GetString());
+        Assert.False(string.IsNullOrEmpty(row.GetProperty("colorHex").GetString()));
+    }
+
     // ---- Ändra en redan skickad kallelse (mobil-självständighet, §KM.7 / #597) --------
     //
     // Poängen med den app-only PWA:n är att en tränare aldrig ska tvingas till en dator.
