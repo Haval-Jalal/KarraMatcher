@@ -95,14 +95,23 @@ public sealed class PushController(
     [HttpDelete("push")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Unsubscribe(
         PushUnsubscribeRequest request,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        var actor = ActorId();
+
+        if (actor is null)
+        {
+            return Unauthenticated();
+        }
+
         await commands
-            .SendAsync(new UnsubscribeFromPushCommand(request.Endpoint), cancellationToken)
+            .SendAsync(
+                new UnsubscribeFromPushCommand(request.Endpoint, actor.Value), cancellationToken)
             .ConfigureAwait(false);
 
         return NoContent();

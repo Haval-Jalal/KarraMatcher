@@ -188,6 +188,35 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Avregistrering_AvEnAnnansAdress_RorInteRaden()
+    {
+        // Objektnivå (§KM.3, #550): push-adressen är en webbläsarhemlighet, men skulle någon få tag
+        // i en annans adress får hen inte avregistrera den. Raderingen scope:as till eget konto.
+        var ownerId = await SeedAccountAsync("owner");
+        var attackerId = await SeedAccountAsync("attacker");
+        var endpoint = EndpointFor("owned");
+
+        using (var owner = AccountClient(ownerId))
+        {
+            await owner.PostAsJsonAsync(
+                "/api/v1/push", Subscription(endpoint), CancellationToken.None);
+        }
+
+        // En annan inloggad försöker avregistrera ägarens adress → 204 (avslöjar inget), men raden
+        // står kvar.
+        using var attacker = AccountClient(attackerId);
+        var request = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/push")
+        {
+            Content = JsonContent.Create(new { endpoint }),
+        };
+        var response = await attacker.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(1, await CountAsync(endpoint));
+        Assert.Equal(ownerId, await AccountIdOfAsync(endpoint));
+    }
+
+    [Fact]
     public async Task Adressen_KommerAldrigTillbakaISvaret()
     {
         // §KM.10: adressen identifierar en enhet lika bra som ett telefonnummer.
