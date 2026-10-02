@@ -119,7 +119,15 @@ export function ChatChannel({
       return
     }
 
-    pressTimer.current = window.setTimeout(() => setMenuFor(messageId), 500)
+    // Fånga bubblan nu, så closeMenu kan återföra fokus hit — precis som höger­klicks- och
+    // tangentbordsvägarna gör. Utan det var triggerRef null/inaktuell efter ett långtryck och fokus
+    // hamnade ingenstans eller på fel meddelande (#599, WCAG 2.4.3). currentTarget nollställs när
+    // handlern återvänt, så den läses av innan timeouten.
+    const trigger = event.currentTarget as HTMLDivElement
+    pressTimer.current = window.setTimeout(() => {
+      triggerRef.current = trigger
+      setMenuFor(messageId)
+    }, 500)
   }
 
   const run = (action: Promise<unknown>) => {
