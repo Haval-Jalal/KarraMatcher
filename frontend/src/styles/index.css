@@ -4475,7 +4475,10 @@ select.input {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: var(--text-sm);
-  color: color-mix(in srgb, var(--pc-accent) 35%, var(--text-muted));
+  /* Inte en inblandning av den råa lagfärgen: för ljusa lag (Gul, Vit) blev texten då under 4.5:1
+     mot kortets ljusa yta, och den dynamiska mixen fångas aldrig av kontrast-testet (#601). Lagets
+     identitet bärs ändå av gradienten och numret. --text-muted är kontrast-testad mot ytan. */
+  color: var(--text-muted);
 }
 .pcard__name {
   font-family: var(--display);
