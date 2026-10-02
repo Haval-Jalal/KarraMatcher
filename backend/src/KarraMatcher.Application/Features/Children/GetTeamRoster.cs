@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Abstractions.Persistence;
 
@@ -13,6 +15,20 @@ namespace KarraMatcher.Application.Features.Children;
 /// </para>
 /// </summary>
 public sealed record GetTeamRosterQuery(string Slug) : IQuery<TeamRosterDto?>;
+
+// Slugen kommer från URL:en. Utan validator hoppas kontrollen tyst över (samma mönster som #551);
+// samma grammatik + längdtak som GetTeamEventsQueryValidator (#586).
+internal sealed class GetTeamRosterQueryValidator : AbstractValidator<GetTeamRosterQuery>
+{
+    public GetTeamRosterQueryValidator()
+    {
+        RuleFor(query => query.Slug)
+            .NotEmpty().WithMessage("Laget måste anges.")
+            .MaximumLength(80).WithMessage("Lagnamnet är för långt.")
+            .Matches("^[a-z0-9-]+$")
+            .WithMessage("Laget kan bara innehålla små bokstäver, siffror och bindestreck.");
+    }
+}
 
 internal sealed class GetTeamRosterQueryHandler(IChildRepository children)
     : IQueryHandler<GetTeamRosterQuery, TeamRosterDto?>
