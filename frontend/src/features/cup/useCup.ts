@@ -24,6 +24,10 @@ export function useCupSummary(eventId: string) {
   return useQuery({
     queryKey: cupKeys.summary(eventId),
     queryFn: ({ signal }) => getCupSummary(eventId, signal),
+    // Först-till-kvarn med hårt platstak, och lagplaceringen läses härifrån: en plats som redan är
+    // tagen (eller ett nytt lagval) ska inte se inaktuell ut för en samtidig användare (#588). Samma
+    // färskhet som samåkningen och kallelse-summeringarna, inte den globala 60s-cachen.
+    staleTime: 0,
   })
 }
 
@@ -32,6 +36,8 @@ export function useTruppCups(truppId: string | null) {
     queryKey: cupKeys.truppCups(truppId ?? ''),
     queryFn: ({ signal }) => getTruppCups(truppId as string, signal),
     enabled: truppId !== null,
+    // Listan visar "platser kvar"/"Fullt" per cup — håll den live av samma skäl (#588).
+    staleTime: 0,
   })
 }
 
