@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { useAutoFocus } from '@/hooks/useAutoFocus'
+import { ApiError } from '@/lib/api'
 import { formatDayAndMonth, formatKickoffTime } from '@/lib/time'
 
 import {
@@ -45,7 +46,13 @@ export function CarpoolOfferCard({
   // "Dra tillbaka"-knappen ersätts av bekräftelsen; flytta fokus dit (WCAG 2.4.3, #598).
   const withdrawRef = useAutoFocus<HTMLParagraphElement>(confirmWithdraw)
 
-  const { data: requests, isPending } = useCarpoolRequests(matchId, offer.id, true)
+  const {
+    data: requests,
+    isPending,
+    error,
+    refetch,
+    isFetching,
+  } = useCarpoolRequests(matchId, offer.id, true)
 
   const mine = requests ?? []
 
@@ -56,6 +63,30 @@ export function CarpoolOfferCard({
   const hasLiveRequest = mine.some(
     (request) => request.isMine && (request.status === 'Pending' || request.status === 'Accepted'),
   )
+
+  // Förfrågningarna kunde inte hämtas: visa fel + försök igen i stället för att tyst visa "ingen har
+  // frågat" (föraren missar väntande förfrågningar) eller felaktigt erbjuda "Fråga om plats" fast en
+  // egen förfrågan redan finns (#589).
+  const requestsError =
+    error !== null ? (
+      <div className="state state--error" role="alert">
+        <p>
+          {error instanceof ApiError && error.offline
+            ? 'Ingen anslutning. Förfrågningarna kan inte hämtas just nu.'
+            : 'Kunde inte hämta förfrågningarna just nu.'}
+        </p>
+        <button
+          type="button"
+          className="button"
+          disabled={isFetching}
+          onClick={() => {
+            void refetch()
+          }}
+        >
+          {isFetching ? 'Försöker…' : 'Försök igen'}
+        </button>
+      </div>
+    ) : null
 
   return (
     <li className={offer.isFull ? 'carpool-card carpool-card--full' : 'carpool-card'}>
@@ -95,22 +126,24 @@ export function CarpoolOfferCard({
         <>
           <h3 className="carpool__subheading">Förfrågningar</h3>
 
-          <CarpoolRequestList
-            requests={mine}
-            isDriver
-            onAccept={async (request) => {
-              await acceptRequest(matchId, request.id, null)
-              await onChanged()
-            }}
-            onDeny={async (request, message) => {
-              await denyRequest(matchId, request.id, message)
-              await onChanged()
-            }}
-            onRetract={async (request) => {
-              await retractRequest(matchId, request.id)
-              await onChanged()
-            }}
-          />
+          {requestsError ?? (
+            <CarpoolRequestList
+              requests={mine}
+              isDriver
+              onAccept={async (request) => {
+                await acceptRequest(matchId, request.id, null)
+                await onChanged()
+              }}
+              onDeny={async (request, message) => {
+                await denyRequest(matchId, request.id, message)
+                await onChanged()
+              }}
+              onRetract={async (request) => {
+                await retractRequest(matchId, request.id)
+                await onChanged()
+              }}
+            />
+          )}
 
           {confirmWithdraw ? (
             <div className="actions">
@@ -158,18 +191,22 @@ export function CarpoolOfferCard({
 
       {!offer.isMine && (
         <>
-          <CarpoolRequestList
-            requests={mine}
-            isDriver={false}
-            onRetract={async (request) => {
-              await retractRequest(matchId, request.id)
-              await onChanged()
-            }}
-          />
+          {requestsError ?? (
+            <CarpoolRequestList
+              requests={mine}
+              isDriver={false}
+              onRetract={async (request) => {
+                await retractRequest(matchId, request.id)
+                await onChanged()
+              }}
+            />
+          )}
 
           {/* Vänta tills den egna förfrågan hämtats innan fråga-knappen visas — annars blinkar
-              "Fråga om plats" förbi medan listan ännu är tom (`#489`). */}
-          {!isPending &&
+              "Fråga om plats" förbi medan listan ännu är tom (`#489`). Vid fel visas felrutan ovan
+              i stället för en fråga-knapp vi inte kan lita på (#589). */}
+          {error === null &&
+            !isPending &&
             !hasLiveRequest &&
             (asking ? (
               <CarpoolRequestForm
