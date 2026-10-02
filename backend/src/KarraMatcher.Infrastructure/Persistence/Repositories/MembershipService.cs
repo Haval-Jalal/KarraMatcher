@@ -148,26 +148,11 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Accepterade inbjudningar ger medlemskap i truppen (v2, `#193`), alltså i alla dess lag.
-        var invitedAgeGroupIds = await context.Invitations
-            .AsNoTracking()
-            .Where(i => i.AcceptedByAccountId == accountId && i.Status == InvitationStatus.Accepted)
-            .Select(i => i.AgeGroupId)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        ageGroupIds.UnionWith(invitedAgeGroupIds);
-
-        // Godkända ansökningar likaså (v2, `#194`).
-        var approvedAgeGroupIds = await context.MembershipApplications
-            .AsNoTracking()
-            .Where(a => a.AccountId == accountId && a.Status == ApplicationStatus.Approved)
-            .Select(a => a.AgeGroupId)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        ageGroupIds.UnionWith(approvedAgeGroupIds);
-
+        // En accepterad inbjudan / godkänd ansökan ger medlemskap i *truppen*, inte i ett bestämt
+        // färg-lag — så den ger inga lag i lagväljaren här. Lagen dyker upp när barnet placerats
+        // (guardianTeamIds). Att unionera invited/approved på AgeGroup listade förr alla färg-lag
+        // för en inbjuden förälder, vilket (ihop med gate-buggen) gav åtkomst till andra lags
+        // schema/chatt (#579, §KM.3). Admin-rollen (ageGroupIds ovan) ser fortsatt alla trupps lag.
         var teamIds = coachTeamIds.Concat(guardianTeamIds).ToHashSet();
 
         return await context.Teams
@@ -572,30 +557,39 @@ internal sealed class MembershipService(KarraMatcherDbContext context) : IMember
             return true;
         }
 
-        // En accepterad inbjudan till truppen är också ett medlemskap (v2, `#193`) — en
-        // förälder ser sitt lags trupp redan innan barnet kopplats (§KM.1, `#196`).
-        var invited = await context.Invitations
-            .AsNoTracking()
-            .AnyAsync(
-                i => i.AcceptedByAccountId == accountId
-                    && i.AgeGroupId == ageGroupId
-                    && i.Status == InvitationStatus.Accepted,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        if (invited)
+        // En accepterad inbjudan / godkänd ansökan ger medlemskap i *truppen* (v2, `#193`/`#194`) —
+        // inte i ett bestämt färg-lag. De grinderna gäller därför bara trupp-nivå-anrop (teamId ==
+        // null). För ett lag-scopat anrop (teamId != null) avgör roll eller vårdnadshavarskap för
+        // just det laget; annars fick en inbjuden/godkänd förälder åtkomst till *alla* färg-lags
+        // chatt och schema i truppen (#579, §KM.3). Lag-medlemskapet kommer när barnet placerats i
+        // laget och ger vårdnadshavar-grenen ovan. Trupp-chatt/aktivitetslista går via
+        // IsMemberOfTruppAsync, som fortsatt räknar inbjudna/godkända.
+        if (teamId == null)
         {
-            return true;
+            var invited = await context.Invitations
+                .AsNoTracking()
+                .AnyAsync(
+                    i => i.AcceptedByAccountId == accountId
+                        && i.AgeGroupId == ageGroupId
+                        && i.Status == InvitationStatus.Accepted,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (invited)
+            {
+                return true;
+            }
+
+            return await context.MembershipApplications
+                .AsNoTracking()
+                .AnyAsync(
+                    a => a.AccountId == accountId
+                        && a.AgeGroupId == ageGroupId
+                        && a.Status == ApplicationStatus.Approved,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        // En godkänd ansökan är samma sorts medlemskap som en accepterad inbjudan (v2, `#194`).
-        return await context.MembershipApplications
-            .AsNoTracking()
-            .AnyAsync(
-                a => a.AccountId == accountId
-                    && a.AgeGroupId == ageGroupId
-                    && a.Status == ApplicationStatus.Approved,
-                cancellationToken)
-            .ConfigureAwait(false);
+        return false;
     }
 }

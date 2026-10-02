@@ -102,9 +102,9 @@ public sealed class InvitationTests(KarraMatcherApiFactory factory)
 
         var token = await CreateInvitationAsync(trupp.AgeGroupId, email);
 
-        // Före accept: inte medlem — lagets schema nekas.
+        // Före accept: inte trupp-medlem — cup-listan (kräver trupp-medlemskap) nekas.
         var before = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/trupper/{trupp.AgeGroupId}/cups", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.Forbidden, before.StatusCode);
 
         var accept = await SendAsync(
@@ -112,10 +112,16 @@ public sealed class InvitationTests(KarraMatcherApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, accept.StatusCode);
         await AssertAuditedAsync(AuditActions.InvitationAccepted, subjectByAccount: accountId);
 
-        // Efter accept: medlem — schemat går att läsa.
+        // Efter accept: trupp-medlem — cup-listan går att läsa.
         var after = await SendAsync(
-            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
+            HttpMethod.Get, $"/api/v1/trupper/{trupp.AgeGroupId}/cups", PlainToken(email, accountId));
         Assert.Equal(HttpStatusCode.OK, after.StatusCode);
+
+        // Men en accepterad inbjudan ger medlemskap i *truppen*, inte i ett bestämt färg-lag: utan
+        // ett placerat barn är lagets schema fortfarande stängt (#579, §KM.3).
+        var teamSchedule = await SendAsync(
+            HttpMethod.Get, $"/api/v1/teams/{trupp.TeamSlug}/events", PlainToken(email, accountId));
+        Assert.Equal(HttpStatusCode.Forbidden, teamSchedule.StatusCode);
     }
 
     [Fact]
