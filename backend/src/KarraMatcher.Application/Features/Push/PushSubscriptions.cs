@@ -46,14 +46,16 @@ internal sealed class PushSubscriptionDraftValidator : AbstractValidator<PushSub
     public PushSubscriptionDraftValidator()
     {
         /*
-         * Adressen maste vara en absolut https-adress. Kontrollen ar inte formalia: varden
-         * kommer fran en klient, och en relativ eller http-adress ar antingen ett trasigt
-         * anrop eller nagon som provar vad servern accepterar.
+         * Adressen maste vara en absolut https-adress till en KAND pushtjanst. Kontrollen ar inte
+         * formalia: varden kommer fran en klient, och en adress till en annan host ar antingen ett
+         * trasigt anrop eller nagon som provar att fa servern att POST:a mot en godtycklig host
+         * (SSRF, #581). Allowlistan stanger aven interna/IP-adresser, som aldrig matchar suffixen.
          */
         RuleFor(d => d.Endpoint)
             .NotEmpty().WithMessage("Prenumerationen saknar adress.")
             .MaximumLength(MaxEndpointLength).WithMessage("Adressen är för lång.")
-            .Must(BeHttpsUrl).WithMessage("Adressen måste vara en https-adress.");
+            .Must(PushEndpointPolicy.IsAllowedEndpoint)
+            .WithMessage("Adressen är inte en känd pushtjänst.");
 
         RuleFor(d => d.P256dh)
             .NotEmpty().WithMessage("Prenumerationen saknar nyckel.")
@@ -63,10 +65,6 @@ internal sealed class PushSubscriptionDraftValidator : AbstractValidator<PushSub
             .NotEmpty().WithMessage("Prenumerationen saknar hemlighet.")
             .MaximumLength(128).WithMessage("Hemligheten är för lång.");
     }
-
-    private static bool BeHttpsUrl(string? value) =>
-        Uri.TryCreate(value, UriKind.Absolute, out var uri)
-        && uri.Scheme == Uri.UriSchemeHttps;
 }
 
 internal sealed class SubscribeToPushCommandValidator : AbstractValidator<SubscribeToPushCommand>

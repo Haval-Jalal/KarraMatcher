@@ -141,6 +141,8 @@ public sealed class PushSubscriptionTests(KarraMatcherApiFactory factory)
     [InlineData("http://fcm.googleapis.com/inte-https")]
     [InlineData("/relativ/adress")]
     [InlineData("")]
+    [InlineData("https://evil.example.com/steal")] // godtycklig host (SSRF, #581)
+    [InlineData("https://169.254.169.254/latest/meta-data")] // metadata-IP (SSRF, #581)
     public async Task Prenumeration_MedOrimligAdress_Avvisas(string endpoint)
     {
         var accountId = await SeedAccountAsync($"adress-{endpoint.Length}");
