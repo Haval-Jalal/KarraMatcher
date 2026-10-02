@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { formatDayAndMonth, formatKickoffTime } from '@/lib/time'
 
 import {
@@ -41,6 +42,8 @@ export function CarpoolOfferCard({
 }) {
   const [asking, setAsking] = useState(false)
   const [confirmWithdraw, setConfirmWithdraw] = useState(false)
+  // "Dra tillbaka"-knappen ersätts av bekräftelsen; flytta fokus dit (WCAG 2.4.3, #598).
+  const withdrawRef = useAutoFocus<HTMLParagraphElement>(confirmWithdraw)
 
   const { data: requests, isPending } = useCarpoolRequests(matchId, offer.id, true)
 
@@ -111,7 +114,9 @@ export function CarpoolOfferCard({
 
           {confirmWithdraw ? (
             <div className="actions">
-              <p className="carpool__confirm">Dra tillbaka erbjudandet?</p>
+              <p className="carpool__confirm" tabIndex={-1} ref={withdrawRef}>
+                Dra tillbaka erbjudandet?
+              </p>
               <button
                 type="button"
                 className="button button--danger"

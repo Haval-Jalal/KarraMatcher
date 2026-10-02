@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 
 import { ConfirmButton } from '@/components/ConfirmButton'
+import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 import {
   formatKickoffTime,
@@ -84,6 +85,9 @@ export function ChatChannel({
 
   // Anmälan: vilket meddelande formuläret är öppet för, motiveringstexten, och senast kvitterade.
   const [reportingId, setReportingId] = useState<string | null>(null)
+  // Anmälnings-formuläret öppnas ur meddelandemenyn (som stängs); flytta fokus till dess fält så
+  // det inte faller till <body> (WCAG 2.4.3, #598). Bara ett formulär är öppet i taget.
+  const reportRef = useAutoFocus<HTMLTextAreaElement>(reportingId)
   const [reportText, setReportText] = useState('')
   const [reportedId, setReportedId] = useState<string | null>(null)
 
@@ -337,6 +341,7 @@ export function ChatChannel({
                     <label htmlFor={`report-${message.id}`}>Varför anmäler du meddelandet?</label>
                     <textarea
                       id={`report-${message.id}`}
+                      ref={reportRef}
                       rows={2}
                       maxLength={500}
                       value={reportText}

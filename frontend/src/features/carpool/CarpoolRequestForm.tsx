@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -40,11 +40,17 @@ export function CarpoolRequestForm({
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { seats: 1, message: '' },
   })
+
+  // Formuläret ersätter "Fråga om plats"-knappen; flytta fokus hit (WCAG 2.4.3, #598).
+  useEffect(() => {
+    setFocus('seats')
+  }, [setFocus])
 
   // Id:na måste vara unika på sidan: flera erbjudanden kan ha varsitt öppet formulär.
   const seatsId = `platser-${offerId}`

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 // importerar BarnOchLag härifrån — en barrel-import hade blivit en cirkel mellan featurarna.
 import { useCreateInvitation } from '@/features/invitations/useInvitations'
 import { useCreateLag, useUpdateLag } from '@/features/lag'
+import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 import { slugify } from '@/lib/slugify'
 
@@ -553,6 +554,9 @@ function ChildDetail({
 
   const [guardianEmail, setGuardianEmail] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // "Ta bort barn"-knappen ersätts av bekräftelsen; flytta fokus till det säkra "Avbryt" så det
+  // inte faller till <body> och inte landar på den destruktiva knappen (WCAG 2.4.3, #598).
+  const cancelDeleteRef = useAutoFocus<HTMLButtonElement>(confirmDelete)
   const [failure, setFailure] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   // Adressen vi kan erbjuda en inbjudan för, satt när en koppling faller på att föräldern inte
@@ -761,6 +765,7 @@ function ChildDetail({
             <button
               type="button"
               className="button button--small"
+              ref={cancelDeleteRef}
               onClick={() => setConfirmDelete(false)}
             >
               Avbryt

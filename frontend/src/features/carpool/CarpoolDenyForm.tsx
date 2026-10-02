@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -44,11 +44,17 @@ export function CarpoolDenyForm({
     register,
     handleSubmit,
     setValue,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { message: '' },
   })
+
+  // Formuläret ersätter "Neka"-knappen; flytta fokus hit (WCAG 2.4.3, #598).
+  useEffect(() => {
+    setFocus('message')
+  }, [setFocus])
 
   const messageId = `nekande-${requestId}`
 

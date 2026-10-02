@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -74,6 +74,7 @@ export function CarpoolOfferForm({
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -85,6 +86,12 @@ export function CarpoolOfferForm({
       note: '',
     },
   })
+
+  // Formuläret ersätter "Erbjud skjuts"-knappen; flytta fokus hit så det inte faller till <body>
+  // (WCAG 2.4.3, #598).
+  useEffect(() => {
+    setFocus('direction')
+  }, [setFocus])
 
   return (
     <form
