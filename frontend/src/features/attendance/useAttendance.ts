@@ -18,8 +18,20 @@ import {
 
 export const myKallelseQueryKey = (eventId: string) => ['kallelse', eventId, 'mine'] as const
 
+/**
+ * Prefix för en händelses kallelse-summering. Admin- och tränar-vyerna hämtar från olika
+ * endpoints och får därför egna, åtskilda nycklar nedan (#554) — annars kunde en användare som
+ * är både trupp-admin och tränare för händelsens lag få en endpoints svar serverat till båda
+ * observers. Det här prefixet används bara för att invalidera båda på en gång (prefix-match).
+ */
 export const kallelseSummaryQueryKey = (eventId: string) =>
   ['kallelse', eventId, 'summary'] as const
+
+const adminKallelseSummaryQueryKey = (eventId: string) =>
+  [...kallelseSummaryQueryKey(eventId), 'admin'] as const
+
+const teamKallelseSummaryQueryKey = (slug: string, eventId: string) =>
+  [...kallelseSummaryQueryKey(eventId), 'team', slug] as const
 
 /**
  * Mina egna kallade barn för en händelse.
@@ -50,7 +62,7 @@ export function useMyKallelse(eventId: string, enabled: boolean) {
  */
 export function useKallelseSummary(truppId: string, eventId: string, enabled: boolean) {
   return useQuery({
-    queryKey: kallelseSummaryQueryKey(eventId),
+    queryKey: adminKallelseSummaryQueryKey(eventId),
     queryFn: ({ signal }) => getKallelseSummary(truppId, eventId, signal),
     enabled,
     staleTime: 0,
@@ -98,10 +110,10 @@ export function useCoachKallelseRoster(slug: string, enabled: boolean) {
   })
 }
 
-/** Tränarens sammanställning för sitt lags händelse. Samma cache-nyckel som adminens (per händelse). */
+/** Tränarens sammanställning för sitt lags händelse. Egen nyckel, skild från adminens (#554). */
 export function useTeamKallelseSummary(slug: string, eventId: string, enabled: boolean) {
   return useQuery({
-    queryKey: kallelseSummaryQueryKey(eventId),
+    queryKey: teamKallelseSummaryQueryKey(slug, eventId),
     queryFn: ({ signal }) => getTeamKallelseSummary(slug, eventId, signal),
     enabled,
     staleTime: 0,
