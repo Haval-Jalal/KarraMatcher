@@ -144,6 +144,16 @@ internal sealed class GetTeamChannelQueryValidator : AbstractValidator<GetTeamCh
     }
 }
 
+internal sealed class GetTeamChatMetaQueryValidator : AbstractValidator<GetTeamChatMetaQuery>
+{
+    // Samma mönster som GetTeamChannelQuery — annars hoppas valideringen tyst över (#551).
+    public GetTeamChatMetaQueryValidator()
+    {
+        RuleFor(q => q.Slug).NotEmpty();
+        RuleFor(q => q.AccountId).NotEmpty();
+    }
+}
+
 internal sealed class PostChatMessageCommandHandler(ChatService service)
     : ICommandHandler<PostChatMessageCommand, ChatPostOutcome>
 {
