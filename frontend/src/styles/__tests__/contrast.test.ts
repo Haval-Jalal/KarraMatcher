@@ -121,6 +121,18 @@ describe('stilmallen använder rätt ram på rätt ställe', () => {
     expect(block).toContain('var(--border-strong)')
   })
 
+  it('blandar aldrig in den råa lagfärgen i spelarkortets eyebrow-text (#601)', () => {
+    // Textfärgen får inte bero på --pc-accent: för ljusa lag föll den under 4.5:1 mot kortets ljusa
+    // yta, och en dynamisk color-mix fångas inte av tokenkontroll ovan. Den ska vara en läsbar token.
+    const block = CSS_SOURCE.slice(
+      CSS_SOURCE.indexOf('.pcard__eyebrow {'),
+      CSS_SOURCE.indexOf('.pcard__name'),
+    )
+
+    const colorLine = /color:\s*([^;]+);/.exec(block)?.[1] ?? ''
+    expect(colorLine).not.toContain('--pc-accent')
+  })
+
   it('tar aldrig bort fokusmarkeringen från en manövrerbar kontroll', () => {
     // outline: none utan ersättning är det enskilt vanligaste tillgänglighetsfelet i en
     // webbapp, och det märks inte förrän någon försöker använda tangentbord.
