@@ -219,9 +219,13 @@ egna siffror och skoj* och delas med ingen.
   och mot ett barn är `Cascade` — raderas det principala försvinner raderna med det. Två
   arkitekturtester (`AlltSomPekarPaEttKonto_ForsvinnerMedDet`, `AlltSomPekarPaEttBarn_ForsvinnerMedDet`)
   räknar upp nycklarna och fäller bygget om någon lägger till en tabell som pekar på ett konto
-  eller ett barn utan att den kaskaderar. **Namngivna undantag:** en audit-not (t.ex.
+  eller ett barn utan att den kaskaderar. Ett tredje test (`PlainGuidReferenceGuardTests`, `#583`)
+  täpper till blinda fläcken: en referens lagrad som bar `Guid` *utan* FK syns inte i de två första,
+  så det testet kräver att varje `*AccountId`/`*ChildId`-egenskap utan backande FK står på en
+  uttrycklig sanktionerad lista. **Namngivna undantag (id-utan-FK, audit-noter):** `AuditEntry.ActorAccountId`,
   `AttendanceCall.OpenedByAccountId`, `AttendanceInvitation.RespondedByAccountId`,
-  `ChatMessage.DeletedByAccountId`) har med flit *ingen* främmande nyckel — den överlever
+  `ChatMessage.DeletedByAccountId`, `MembershipApplication.ResolvedByAccountId` (`#583`) och
+  `Invitation.CreatedByAccountId` (`#583`) har med flit *ingen* främmande nyckel — de överlever
   raderingen som ett id utan namn eller e-post (§KM.10), och push-prenumerationens kontokoppling
   är `SetNull` (#63), inte kaskad.
 - **Gallring — automatisk och tidsbestämd, körs i processen (inte cron):** samåkning för en match
