@@ -18,9 +18,13 @@ namespace KarraMatcher.Application.Features.Push;
 /// </para>
 /// </summary>
 /// <param name="Title">Kort rubrik. Det enda som säkert syns på en låsskärm.</param>
-/// <param name="Body">En rad till. Får vara tom.</param>
+/// <param name="Body">En rad till. Får vara tom. Bärs av BÅDE pushen och e-postfallbacken, så den
+/// ska vara neutral — aldrig barn-PII eller fritext (§KM.1/§KM.10).</param>
 /// <param name="Url">Relativ adress i appen som notisen öppnar, t.ex. <c>/handelse/{id}</c>.</param>
-public sealed record PushMessage(string Title, string Body, string Url);
+/// <param name="Detail">Extra rad som läggs till <b>enbart i pushen</b>, aldrig i e-postfallbacken.
+/// Hit hör sådant ägaren valt att framföra i pushen men som inte ska ut i klartext till en
+/// tredjeparts-e-posttjänst, t.ex. adminens kallelse-notis (`#468`/#582). Null = ingen extra rad.</param>
+public sealed record PushMessage(string Title, string Body, string Url, string? Detail = null);
 
 /// <summary>
 /// En notis på väg ut: vad som ska sägas, och till vem.

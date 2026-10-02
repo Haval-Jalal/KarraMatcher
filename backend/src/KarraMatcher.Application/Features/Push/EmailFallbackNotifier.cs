@@ -83,6 +83,8 @@ public sealed class EmailFallbackNotifier(
 
     private string BuildBody(PushMessage message)
     {
+        // Bara den neutrala Body-raden + länken. Message.Detail (t.ex. kallelse-notens fritext) bärs
+        // med flit ENBART av pushen — e-posten går via en tredjeparts-tjänst i klartext (§KM.1, #582).
         var link = $"{options.Value.AppBaseUrl.TrimEnd('/')}{message.Url}";
 
         return string.IsNullOrEmpty(message.Body)

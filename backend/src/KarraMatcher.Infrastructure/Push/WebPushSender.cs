@@ -77,10 +77,16 @@ internal sealed class WebPushSender(
 
         try
         {
+            // Detail bärs bara av pushen (aldrig e-postfallbacken, #582). Läggs till på en egen rad
+            // efter den neutrala body-raden när det finns.
+            var pushBody = string.IsNullOrWhiteSpace(message.Detail)
+                ? message.Body
+                : $"{message.Body}\n{message.Detail}";
+
             var payload = JsonSerializer.SerializeToUtf8Bytes(new
             {
                 title = message.Title,
-                body = message.Body,
+                body = pushBody,
                 url = message.Url,
             });
 
