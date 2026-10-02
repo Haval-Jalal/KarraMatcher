@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { decodeBackup, encodeBackup } from './backup/backupCode'
 import { describeMerge, mergeCards } from './backup/mergeCards'
 import { readCard, writeCard } from './storage/playerCardStore'
-import type { PlayerCardData } from './storage/schema'
+import { backupSignature, type PlayerCardData } from './storage/schema'
 
 /**
  * Säkerhetskopiering av spelarkortet.
@@ -39,6 +39,13 @@ export function BackupSection({
 
   const hasContent = card.children.length > 0 || card.reports.length > 0
   const neverBackedUp = hasContent && card.lastBackupUtc === null
+  // Nya resultat sedan den senaste kopian: innehållet skiljer sig från det som kopierades. Kräver en
+  // sparad signatur (äldre kort saknar den — då vet vi inte, och varnar inte falskt) (#596).
+  const stale =
+    hasContent &&
+    card.lastBackupUtc !== null &&
+    card.lastBackupSignature != null &&
+    card.lastBackupSignature !== backupSignature(card)
 
   const code = encodeBackup(card)
 
@@ -46,10 +53,19 @@ export function BackupSection({
     <section className="backup">
       <h2>Säkerhetskopia</h2>
 
-      {neverBackedUp ? (
+      {!hasContent ? (
+        <p className="state" role="status">
+          Inget att säkerhetskopiera än. När du fyllt i matcher kan du spara en kopia här.
+        </p>
+      ) : neverBackedUp ? (
         <p className="state state--error" role="status">
           <strong>Ingen kopia än.</strong> Byter du telefon eller rensar webbläsaren är statistiken
           borta — det finns ingen kopia någon annanstans.
+        </p>
+      ) : stale ? (
+        <p className="state state--error" role="status">
+          <strong>Nya resultat sedan din senaste kopia.</strong> Kopiera koden igen så är allt med —
+          annars saknas det nya om du byter telefon.
         </p>
       ) : (
         <p className="state" role="status">
@@ -78,7 +94,13 @@ export function BackupSection({
 
               setCopyFailed(false)
 
-              const stamped = { ...card, lastBackupUtc: new Date().toISOString() }
+              // Stämpla tid OCH innehålls-signatur: signaturen låter vyn senare säga att nya
+              // resultat tillkommit sedan den här kopian (#596).
+              const stamped = {
+                ...card,
+                lastBackupUtc: new Date().toISOString(),
+                lastBackupSignature: backupSignature(card),
+              }
 
               writeCard(stamped)
               setCopied(true)

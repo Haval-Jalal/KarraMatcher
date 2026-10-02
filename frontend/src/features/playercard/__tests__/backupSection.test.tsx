@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BackupSection } from '../BackupSection'
-import { emptyCard, type PlayerCardData } from '../storage/schema'
+import { backupSignature, emptyCard, type PlayerCardData } from '../storage/schema'
 
 /**
  * Säkerhetskopian (§KM.2, `#535`). Kortet finns bara på telefonen, så "kopierad" måste vara sant:
@@ -69,5 +69,58 @@ describe('kopiera säkerhetskopieringskoden', () => {
         screen.getByText('Visa koden', { selector: 'summary' }).closest('details'),
       ).toHaveAttribute('open'),
     )
+  })
+})
+
+describe('säkerhetskopians färskhet (#596)', () => {
+  it('visar ett neutralt läge för ett tomt kort, inte "säkerhetskopierad"', () => {
+    render(<BackupSection card={emptyCard()} onChanged={vi.fn()} />)
+
+    expect(screen.getByText(/Inget att säkerhetskopiera än/)).toBeInTheDocument()
+    expect(screen.queryByText(/Säkerhetskopierad/)).not.toBeInTheDocument()
+  })
+
+  it('säger "Säkerhetskopierad" när signaturen matchar innehållet', () => {
+    const card = cardWithContent()
+    const backed: PlayerCardData = {
+      ...card,
+      lastBackupUtc: '2026-10-01T10:00:00.000Z',
+      lastBackupSignature: backupSignature(card),
+    }
+
+    render(<BackupSection card={backed} onChanged={vi.fn()} />)
+
+    expect(screen.getByText(/Säkerhetskopierad/)).toBeInTheDocument()
+    expect(screen.queryByText(/Nya resultat sedan din senaste kopia/)).not.toBeInTheDocument()
+  })
+
+  it('varnar för nya resultat när innehållet ändrats sedan kopian', () => {
+    const card = cardWithContent()
+    const changed: PlayerCardData = {
+      ...card,
+      lastBackupUtc: '2026-10-01T10:00:00.000Z',
+      // Signatur från ett annat innehåll → kortet har ändrats sedan dess.
+      lastBackupSignature: backupSignature({ ...card, children: [] }),
+    }
+
+    render(<BackupSection card={changed} onChanged={vi.fn()} />)
+
+    expect(screen.getByText(/Nya resultat sedan din senaste kopia/)).toBeInTheDocument()
+  })
+
+  it('varnar inte falskt för ett äldre kort utan sparad signatur', () => {
+    // Ett kort säkerhetskopierat innan signaturen fanns (lastBackupSignature saknas) ska visa
+    // "Säkerhetskopierad", inte en falsk "nya resultat"-varning, tills nästa kopia stämplat en.
+    const card = cardWithContent()
+    const legacy: PlayerCardData = {
+      ...card,
+      lastBackupUtc: '2026-10-01T10:00:00.000Z',
+      lastBackupSignature: null,
+    }
+
+    render(<BackupSection card={legacy} onChanged={vi.fn()} />)
+
+    expect(screen.getByText(/Säkerhetskopierad/)).toBeInTheDocument()
+    expect(screen.queryByText(/Nya resultat sedan din senaste kopia/)).not.toBeInTheDocument()
   })
 })

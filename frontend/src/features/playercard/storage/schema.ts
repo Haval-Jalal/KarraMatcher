@@ -90,6 +90,13 @@ export interface PlayerCardData {
   reports: MatchReport[]
   /** När kortet senast säkerhetskopierades. Driver påminnelsen i `#47`. */
   lastBackupUtc: string | null
+  /**
+   * Innehålls-signaturen (se {@link backupSignature}) vid den senaste kopian. Låter vyn säga att
+   * det finns <em>nya</em> resultat sedan dess, i stället för att visa "Säkerhetskopierad" för
+   * alltid efter en enda tidig kopia (#596). Valfri: äldre kort saknar den, och tolkas då som att
+   * vi inte vet — ingen falsk "nya resultat"-varning förrän nästa kopia stämplat en signatur.
+   */
+  lastBackupSignature?: string | null
 }
 
 export function emptyCard(): PlayerCardData {
@@ -98,5 +105,33 @@ export function emptyCard(): PlayerCardData {
     children: [],
     reports: [],
     lastBackupUtc: null,
+    lastBackupSignature: null,
   }
+}
+
+/**
+ * En stabil signatur över det <em>säkerhetskopieringsvärda</em> innehållet — barnens kärnfält och
+ * matchrapporterna. Märkens "sedd"-status (<c>seenBadges</c>) räknas inte: att titta på ett firande
+ * ska inte se ut som nya resultat att kopiera. Används för att upptäcka om kortet ändrats sedan den
+ * senaste kopian (#596). Kollision ger på sin höjd en utebliven påminnelse — kopian fungerar ändå.
+ */
+export function backupSignature(card: PlayerCardData): string {
+  const content = JSON.stringify({
+    children: card.children.map((child) => ({
+      id: child.id,
+      name: child.name,
+      shirtNumber: child.shirtNumber,
+      teamSlug: child.teamSlug,
+    })),
+    reports: card.reports,
+  })
+
+  // FNV-1a: liten, beroendefri och deterministisk. Räcker gott för att skilja två kort-tillstånd åt.
+  let hash = 0x811c9dc5
+  for (let i = 0; i < content.length; i += 1) {
+    hash ^= content.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+
+  return (hash >>> 0).toString(16)
 }
