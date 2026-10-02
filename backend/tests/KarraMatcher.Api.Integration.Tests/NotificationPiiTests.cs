@@ -122,11 +122,14 @@ public sealed class NotificationPiiTests(KarraMatcherApiFactory factory)
             new { childIds = new[] { f.ChildId } });
 
         // Notisen till föräldrarna ska följa med kallelsen (#468, ägarbeslut) — men aldrig barnets
-        // namn. Standardtexten står kvar; notisen läggs till.
+        // namn. Fritexten bärs som Detail (push-only, #582): Body förblir den neutrala raden, så
+        // e-postfallbacken aldrig läcker fritexten i klartext.
         var kallelse = outbox.Dispatches.Single(d => d.Category == PushCategory.Kallelse);
-        Assert.Contains(note, kallelse.Message.Body, StringComparison.Ordinal);
+        Assert.Equal(note, kallelse.Message.Detail);
         Assert.Contains("Ditt barn är kallat", kallelse.Message.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain(note, kallelse.Message.Body, StringComparison.Ordinal);
         Assert.DoesNotContain(ChildFirstName, kallelse.Message.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain(ChildFirstName, kallelse.Message.Detail ?? string.Empty, StringComparison.Ordinal);
     }
 
     private async Task<Fixture> SeedAsync(string suffix, string? note = null)

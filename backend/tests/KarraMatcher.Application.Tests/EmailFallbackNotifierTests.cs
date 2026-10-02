@@ -51,6 +51,38 @@ public sealed class EmailFallbackNotifierTests
     }
 
     [Fact]
+    public async Task KallelseMedNotis_SlapperAldrigFritextenInIMejlet()
+    {
+        // #582: kallelse-notens fritext bärs av PushMessage.Detail (push-only). E-postfallbacken går
+        // via en tredjeparts-tjänst i klartext och får bara den neutrala raden + länken (§KM.1/§KM.10).
+        var repository = new FakeRepository(TwoRecipients);
+        var email = new RecordingEmailSender();
+
+        const string note = "Ta med gula tröjan och var här 18:15";
+        var dispatch = PushDispatch.ToAccounts(
+            [Guid.NewGuid()],
+            PushCategory.Kallelse,
+            new PushMessage(
+                "Ny kallelse",
+                "Ditt barn är kallat. Öppna för att svara Ja eller Nej.",
+                "/handelse/abc",
+                note));
+
+        await Notifier(repository, email).SendAsync(dispatch, CancellationToken.None);
+
+        Assert.Equal(2, email.Sent.Count);
+        foreach (var sent in email.Sent)
+        {
+            Assert.DoesNotContain(note, sent.Body, StringComparison.Ordinal);
+            Assert.Contains(
+                "Ditt barn är kallat. Öppna för att svara Ja eller Nej.",
+                sent.Body,
+                StringComparison.Ordinal);
+            Assert.Contains("https://app.example/handelse/abc", sent.Body, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public async Task IckeKritisk_Samakning_MejlarInte()
     {
         // Samåkning är inte ett besked man inte får missa — ingen fallback, repositoryt frågas inte.

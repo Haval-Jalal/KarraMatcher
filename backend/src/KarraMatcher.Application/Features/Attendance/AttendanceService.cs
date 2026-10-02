@@ -170,17 +170,20 @@ public sealed class AttendanceService(
             if (guardians.Count > 0)
             {
                 // Notisen till föräldrarna följer med kallelsen när adminen/tränaren skrivit en
-                // (`#468`, ägarbeslut): den ska framföras fullt ut, inte döljas bakom en extra
-                // knapp. Utan notis står bara standardtexten. Fritext från en vuxen — aldrig
-                // barn-PII (§KM.1), aldrig i loggar (§KM.10).
-                var body = string.IsNullOrWhiteSpace(context.Note)
-                    ? "Ditt barn är kallat. Öppna för att svara Ja eller Nej."
-                    : $"Ditt barn är kallat. Öppna för att svara Ja eller Nej.\n{context.Note.Trim()}";
+                // (`#468`, ägarbeslut): den ska framföras fullt ut i pushen, inte döljas bakom en
+                // extra knapp. Fritext från en vuxen — aldrig barn-PII (§KM.1), aldrig i loggar
+                // (§KM.10). Den bärs som Detail (push-only): e-postfallbacken går via en tredjeparts-
+                // tjänst i klartext och får bara den neutrala raden (§KM.1, #582).
+                var note = string.IsNullOrWhiteSpace(context.Note) ? null : context.Note.Trim();
 
                 push.Enqueue(PushDispatch.ToAccounts(
                     guardians,
                     PushCategory.Kallelse,
-                    new PushMessage("Ny kallelse", body, $"/handelse/{eventId}")));
+                    new PushMessage(
+                        "Ny kallelse",
+                        "Ditt barn är kallat. Öppna för att svara Ja eller Nej.",
+                        $"/handelse/{eventId}",
+                        note)));
             }
         }
 
