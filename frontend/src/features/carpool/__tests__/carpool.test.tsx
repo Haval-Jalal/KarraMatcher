@@ -85,6 +85,8 @@ function stubApi(
     requests?: unknown[]
     /** Låter listan över egna förfrågningar hänga, så race:en i #489 kan prövas. */
     requestsPending?: boolean
+    /** Låter förfrågnings-hämtningen falla (offline), så fel-/retry-grenen kan prövas (#589). */
+    requestsError?: boolean
     matchDetail?: Record<string, unknown>
   } = {},
 ) {
@@ -122,6 +124,8 @@ function stubApi(
         }
         // Hänger med flit: den egna förfrågan är ännu inte hämtad (#489).
         if (options.requestsPending) return new Promise<Response>(() => {})
+        // Nätet dog mitt i läsningen → offline-ApiError (#589).
+        if (options.requestsError) return Promise.reject(new TypeError('Failed to fetch'))
         return Promise.resolve(jsonResponse(options.requests ?? []))
       }
 
@@ -329,6 +333,32 @@ describe('ett nekande kan inte bli tyst', () => {
 
     expect(await screen.findByText('Nekad')).toBeInTheDocument()
     expect(screen.getByText(/Bilen är tyvärr full/)).toBeInTheDocument()
+  })
+})
+
+describe('förfrågningarna hanterar fel i stället för att svälja dem (#589)', () => {
+  it('föraren ser fel + försök igen, inte "ingen har frågat", när förfrågningarna inte kan hämtas', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer({ isMine: true })], requestsError: true })
+
+    renderRoute('/handelse/m1')
+
+    expect(
+      await screen.findByText('Ingen anslutning. Förfrågningarna kan inte hämtas just nu.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Försök igen' })).toBeInTheDocument()
+  })
+
+  it('en besökare erbjuds inte "Fråga om plats" när läget inte kunde hämtas', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [offer()], requestsError: true })
+
+    renderRoute('/handelse/m1')
+
+    expect(
+      await screen.findByText('Ingen anslutning. Förfrågningarna kan inte hämtas just nu.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Fråga om plats' })).not.toBeInTheDocument()
   })
 })
 
