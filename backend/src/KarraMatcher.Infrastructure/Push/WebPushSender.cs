@@ -73,6 +73,14 @@ internal sealed class WebPushSender(
             return PushOutcome.Failed;
         }
 
+        // Försvar i djupet mot SSRF (#581): skicka aldrig mot en host utanför allowlistan, ens om en
+        // äldre rad på något sätt lagrats med en annan adress. Subscribe-valideringen är första
+        // grinden; den här är sista.
+        if (!PushEndpointPolicy.IsAllowedEndpoint(endpoint))
+        {
+            return PushOutcome.Failed;
+        }
+
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
 
         try
