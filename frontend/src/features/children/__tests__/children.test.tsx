@@ -278,7 +278,11 @@ describe('Barn & lag', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Koppla vårdnadshavare' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Samtycke saknas')
+    // Actionabelt besked, inte en återvändsgränd: säg att föräldern måste godkänna på Mitt konto
+    // (där hen numera också nudgas), och be adminen koppla igen efteråt (#597).
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/inte godkänt hanteringen av barnets uppgifter/)
+    expect(alert).toHaveTextContent(/Mitt konto/)
 
     // 409 hjälps inte av en inbjudan → inget inbjudningserbjudande.
     expect(screen.queryByRole('button', { name: /Bjud in/ })).not.toBeInTheDocument()

@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearSession, setAccessToken } from '@/lib/session'
@@ -21,7 +22,7 @@ const TOKEN = `x.${btoa(JSON.stringify({ email: 'foralder@example.com' }))}.y`
 
 const teams = [{ slug: 'gul', name: 'Gul', ageGroup: 'P2016', colorHex: '#D9A21B' }]
 
-function stub(summary: HomeSummary) {
+function stub(summary: HomeSummary, options: { consented?: boolean } = {}) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: unknown) => {
@@ -32,6 +33,16 @@ function stub(summary: HomeSummary) {
         return Promise.resolve(jsonResponse({ accessToken: TOKEN }))
       }
       if (url.includes('/api/v1/hem')) return Promise.resolve(jsonResponse(summary))
+      if (url.includes('/consent/me')) {
+        return Promise.resolve(
+          jsonResponse({
+            hasConsentedToCurrent: options.consented ?? true,
+            version: '1',
+            grantedUtc: null,
+            text: null,
+          }),
+        )
+      }
 
       return Promise.resolve(jsonResponse(teams))
     }),
@@ -109,6 +120,30 @@ describe('hem-vyn visar det som är på gång', () => {
     // Lagen finns kvar som väg in i hela schemat.
     expect(screen.getByRole('heading', { name: 'Dina lag' })).toBeInTheDocument()
     expect(await screen.findByRole('link', { name: /Gul/ })).toHaveAttribute('href', '/lag/gul')
+  })
+
+  it('nudgar om samtycke när föräldern inte godkänt, och går att avfärda (#597)', async () => {
+    const user = userEvent.setup()
+    stub({ nextEvent: null, pendingKallelser: [], latestChat: null }, { consented: false })
+
+    renderRoute('/')
+
+    const nudge = await screen.findByText(/Innan ditt barn kan läggas till i truppen/)
+    expect(nudge).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Till samtycke' })).toHaveAttribute('href', '/konto')
+
+    await user.click(screen.getByRole('button', { name: 'Inte nu' }))
+
+    expect(screen.queryByText(/Innan ditt barn kan läggas till i truppen/)).not.toBeInTheDocument()
+  })
+
+  it('visar ingen samtyckes-nudge när föräldern redan godkänt', async () => {
+    stub({ nextEvent: null, pendingKallelser: [], latestChat: null }, { consented: true })
+
+    renderRoute('/')
+
+    await screen.findByRole('heading', { name: 'Dina lag' })
+    expect(screen.queryByText(/Innan ditt barn kan läggas till i truppen/)).not.toBeInTheDocument()
   })
 
   it('visar inte Truppen-ingången för en förälder utan admin-roll', async () => {
