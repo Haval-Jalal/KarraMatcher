@@ -1,7 +1,9 @@
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import { LoadingState } from '@/components/LoadingState'
 import { useAuth } from '@/features/auth'
+import { useMyConsent } from '@/features/consent'
 import { eventTypeLabel } from '@/features/events'
 import { TeamPicker, useTeams } from '@/features/teams'
 import { ApiError } from '@/lib/api'
@@ -31,10 +33,16 @@ export function HomePage() {
 
   const summary = useHomeSummary()
   const teams = useTeams()
+  const consent = useMyConsent()
   const { adminOf } = useAuth()
+  const [consentDismissed, setConsentDismissed] = useState(false)
 
   const nextEvent = summary.data?.nextEvent ?? null
   const pending = summary.data?.pendingKallelser ?? []
+  // Samtycket (§KM.6) krävs innan en admin kan koppla ett barn till föräldern. Utan en nudge här
+  // har en nyinbjuden förälder ingen anledning att gå till Mitt konto, och kopplingen fastnar på
+  // bådas sida (#597). Avfärdbar för sessionen; dyker upp igen tills man samtyckt.
+  const needsConsent = consent.data?.hasConsentedToCurrent === false && !consentDismissed
 
   return (
     <main>
@@ -42,6 +50,29 @@ export function HomePage() {
         <h1>Hem</h1>
         <p className="app-header__subtitle">Allt som är på gång för dina lag.</p>
       </header>
+
+      {needsConsent && (
+        <div className="state hem-consent" role="status">
+          <p>
+            Innan ditt barn kan läggas till i truppen behöver du godkänna hur barnets uppgifter
+            hanteras.
+          </p>
+          <div className="actions">
+            <Link to="/konto" className="button button--action">
+              Till samtycke
+            </Link>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setConsentDismissed(true)
+              }}
+            >
+              Inte nu
+            </button>
+          </div>
+        </div>
+      )}
 
       {summary.isPending && <LoadingState label="Hämtar din översikt…" />}
 

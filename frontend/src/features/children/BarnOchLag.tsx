@@ -584,6 +584,17 @@ function ChildDetail({
         setSuccess('Vårdnadshavaren kopplades.')
       })
       .catch((error: unknown) => {
+        // 409 pga saknat samtycke (§KM.6) är inte en återvändsgränd: säg vad som behöver hända.
+        // Föräldern nudgas numera på Hem att samtycka (#597), så peka adminen dit.
+        if (error instanceof ApiError && error.status === 409 && /samtycke/i.test(error.message)) {
+          setFailure(
+            'Vårdnadshavaren har inte godkänt hanteringen av barnets uppgifter än (§KM.6). Be hen ' +
+              'logga in och godkänna på Mitt konto — appen påminner dem också. Koppla sedan igen.',
+          )
+
+          return
+        }
+
         setFailure(messageOf(error))
         // 400 = kontot finns inte, eller föräldern har inte gått med i truppen än. Då hjälper en
         // inbjudan; 409 (samtycke saknas / redan kopplad) gör den inte, så erbjud den inte då.
