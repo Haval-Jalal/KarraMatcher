@@ -48,8 +48,30 @@ export function PrivacyPage() {
         <h2 id="kontot">Kontot</h2>
         <p>
           Loggar du in sparar vi din <strong>mejladress</strong>, och ditt namn om du väljer att
-          fylla i det. Inget mer — inga uppgifter om barn, inget telefonnummer. Namnet visas bara
-          för inloggade i laget, i samåkningen.
+          fylla i det. Inget telefonnummer. Namnet visas bara för inloggade i laget, i samåkningen.
+          Vad vi sparar om ett barn står i nästa avsnitt.
+        </p>
+      </section>
+
+      <section aria-labelledby="barnet">
+        <h2 id="barnet">Barnet i truppen</h2>
+        <p>
+          För att en tränare ska kunna dela in truppen i lag och kalla rätt barn sparar vi en liten
+          profil om barnet på servern — men först när du som vårdnadshavare har{' '}
+          <strong>godkänt det</strong>. Vi sparar barnets <strong>förnamn</strong>,{' '}
+          <strong>efternamnets första bokstav</strong> (det visas som t.ex. ”Liam J”, aldrig hela
+          efternamnet), vilket <strong>lag och trupp</strong> barnet hör till, kopplingen till dig
+          som vårdnadshavare, och ett eventuellt <strong>tröjnummer</strong>.
+        </p>
+        <p>
+          Inget mer. Inga personnummer, inga födelsedatum, ingen adress, inget telefonnummer, inga
+          foton och inga hälsouppgifter. Barnets matchstatistik hör inte hit — den stannar i
+          telefonen (se ovan).
+        </p>
+        <p>
+          Ditt samtycke sparas med version och tidpunkt så vi vet vad du godkänt. Tas barnet bort ur
+          truppen försvinner profilen och kopplingarna <strong>direkt</strong>, och barnet tas ur
+          kallelser och chattar.
         </p>
       </section>
 
@@ -108,6 +130,10 @@ export function PrivacyPage() {
             <strong>Kontot:</strong> tills du raderar det.
           </li>
           <li>
+            <strong>Barnets profil i truppen:</strong> tills barnet tas bort ur truppen eller kontot
+            raderas.
+          </li>
+          <li>
             <strong>Samåkning:</strong> 30 dagar efter matchen.
           </li>
           <li>
@@ -120,8 +146,9 @@ export function PrivacyPage() {
         <h2 id="radera">Så raderar du</h2>
         <p>
           Spelarkortet raderar du på spelarkortssidan — det ligger bara i telefonen. Kontot och allt
-          som hör till det (samåkning, notisinställningar) raderar du på{' '}
-          <Link to="/konto">Mitt konto</Link>. Det sker direkt och går inte att ångra.
+          som hör till det (samåkning, notisinställningar, och barnets profil i truppen) raderar du
+          på <Link to="/konto">Mitt konto</Link>. Det sker direkt och går inte att ångra. Ett barn
+          kan också tas bort ur truppen av en admin — då försvinner barnets profil med en gång.
         </p>
       </section>
     </main>
