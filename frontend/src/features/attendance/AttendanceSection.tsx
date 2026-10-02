@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { useAuth } from '@/features/auth'
 import { useRoster } from '@/features/children'
+import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 import { hasKickedOff } from '@/lib/time'
 
@@ -233,6 +234,8 @@ function AdminKallelse({
   // Namnen på svarade barn som urvalet skulle kasta — sätts vid första Skicka och kräver en
   // bekräftelse innan svaren raderas (`#472`). Nollas så fort urvalet ändras igen.
   const [dropWarning, setDropWarning] = useState<string[] | null>(null)
+  // Varningen ersätter "Skicka kallelse"-knappen; flytta fokus dit (WCAG 2.4.3, #598).
+  const dropWarningRef = useAutoFocus<HTMLParagraphElement>(dropWarning !== null)
 
   const rosterChildren = roster.data?.children ?? []
   const rosterTeams = roster.data?.teams ?? []
@@ -408,7 +411,7 @@ function AdminKallelse({
 
           {dropWarning !== null && (
             <div className="state state--error" role="alert">
-              <p>
+              <p tabIndex={-1} ref={dropWarningRef}>
                 {dropWarning.length === 1
                   ? '1 barn som redan svarat tas bort ur kallelsen och förlorar sitt svar:'
                   : `${String(dropWarning.length)} barn som redan svarat tas bort ur kallelsen och förlorar sina svar:`}{' '}

@@ -333,6 +333,23 @@ describe('ett nekande kan inte bli tyst', () => {
 })
 
 describe('att lägga upp en skjuts', () => {
+  it('flyttar fokus in i formuläret när det öppnas, inte till <body> (#598)', async () => {
+    setAccessToken(SIGNED_IN_TOKEN)
+    stubApi({ offers: [], matchDetail: { team, event: match } })
+
+    const user = userEvent.setup()
+    renderRoute('/handelse/m1')
+
+    await user.click(await screen.findByRole('button', { name: 'Erbjud skjuts' }))
+
+    // Första fältet (riktning) får fokus — "Erbjud skjuts"-knappen som nyss klickades finns inte kvar.
+    await waitFor(() => {
+      const focused = document.activeElement as HTMLElement | null
+      expect(focused?.tagName).toBe('INPUT')
+      expect(focused).toHaveAttribute('name', 'direction')
+    })
+  })
+
   it('skickar svensk tid som UTC, även efter sommartidsskiftet', async () => {
     /*
      * Säsongen sträcker sig förbi skiftet i oktober (§KM.5). Efter det ligger Sverige en

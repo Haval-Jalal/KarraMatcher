@@ -171,6 +171,7 @@ export function CoachEventsPage() {
       {adding || editing !== null ? (
         <EventForm
           truppId={data.truppId}
+          autoFocus
           {...(editing !== null ? { existing: editing } : {})}
           onSubmit={async (input) => {
             // EventForm fångar och visar ett fel som kastas här; vid succé stänger vi formuläret.

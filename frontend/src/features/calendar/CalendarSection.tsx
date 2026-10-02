@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { LoadingState } from '@/components/LoadingState'
+import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 
 import { useCalendarLink, useRegenerateCalendarLink } from './useCalendar'
@@ -22,6 +23,8 @@ export function CalendarSection() {
 
   const [copied, setCopied] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  // "Skapa ny länk…"-knappen ersätts av bekräftelsen; flytta fokus dit (WCAG 2.4.3, #598).
+  const confirmRef = useAutoFocus<HTMLParagraphElement>(confirming)
 
   async function copy(url: string): Promise<void> {
     try {
@@ -115,7 +118,7 @@ export function CalendarSection() {
             </button>
           ) : (
             <div className="state" role="alert">
-              <p>
+              <p tabIndex={-1} ref={confirmRef}>
                 En ny länk gör att den <strong>gamla slutar fungera</strong>. Du behöver då
                 prenumerera på nytt i din kalender.
               </p>

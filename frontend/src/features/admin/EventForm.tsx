@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -73,11 +73,18 @@ export function EventForm({
   onCancel,
   onTypeChange,
   targetSlot,
+  autoFocus = false,
 }: {
   truppId: string
   existing?: TeamEvent
   onSubmit: (input: EventInput) => Promise<void>
   onCancel: () => void
+  /**
+   * Flytta fokus till första fältet när formuläret monteras. Sätts där formuläret fälls in i
+   * stället för en knapp (tränarens/adminens "Lägg till händelse"), så fokus inte faller till
+   * <body> (WCAG 2.4.3, #598). Utelämnas där formuläret alltid visas (CreateActivity).
+   */
+  autoFocus?: boolean
   /**
    * Meddelar föräldern när typen ändras (`#333`), så en admin-vy kan byta kallelsens förval per
    * typ. Utelämnas i tränarens lag-väg — där finns ingen målgrupp.
@@ -123,8 +130,17 @@ export function EventForm({
   const addressField = register('address')
   const addressSuggestions = useAddressSuggestions(isHome ? '' : addressText)
 
+  // Fälls formuläret in i stället för en knapp flyttas fokus till dess första kontroll (#598).
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => {
+    if (autoFocus) {
+      formRef.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus()
+    }
+  }, [autoFocus])
+
   return (
     <form
+      ref={formRef}
       className="form"
       noValidate
       onSubmit={(event) => {

@@ -119,6 +119,7 @@ export function ManageActivities({
     return (
       <EventForm
         truppId={truppId}
+        autoFocus
         existing={editing}
         onSubmit={async (input: EventInput) => {
           // EventForm fångar och visar ett fel som kastas här; vid succé stänger vi formuläret.

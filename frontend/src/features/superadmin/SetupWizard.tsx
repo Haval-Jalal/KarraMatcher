@@ -50,6 +50,20 @@ export function SetupWizard() {
   const selectedClub = clubs.data?.find((c) => c.id === clubId) ?? null
   const selectedTrupp = trupper.data?.find((t) => t.id === truppId) ?? null
 
+  // Vid stegbyte: flytta fokus till det nya stegets panel, så en skärmläsaranvändare orienteras om
+  // till det nya innehållet i stället för att lämnas kvar på Nästa-knappen (WCAG 2.4.3, #598). Inte
+  // vid första renderingen (RootLayout har redan satt fokus då).
+  const panelRef = useRef<HTMLDivElement>(null)
+  const firstStepRender = useRef(true)
+  useEffect(() => {
+    if (firstStepRender.current) {
+      firstStepRender.current = false
+      return
+    }
+
+    panelRef.current?.focus()
+  }, [step])
+
   // Den valda truppen måste höra till den valda klubben. Annars kunde ett kvarglömt truppId från en
   // tidigare klubb låta superadmin gå vidare och tilldela en tränare till fel klubbs trupp (#540).
   const truppMatchesClub = selectedTrupp !== null && selectedTrupp.clubId === clubId
@@ -119,56 +133,58 @@ export function SetupWizard() {
         ))}
       </ol>
 
-      {step === 0 && (
-        <PickOrCreate
-          heading="Steg 1 av 4 — Sport"
-          singular="sport"
-          items={sports.data ?? []}
-          isLoading={sports.isLoading}
-          selectedId={sportId}
-          onSelect={selectSport}
-          onCreate={createSportAndSelect}
-        />
-      )}
+      <div ref={panelRef} tabIndex={-1} className="wizard__step-panel">
+        {step === 0 && (
+          <PickOrCreate
+            heading="Steg 1 av 4 — Sport"
+            singular="sport"
+            items={sports.data ?? []}
+            isLoading={sports.isLoading}
+            selectedId={sportId}
+            onSelect={selectSport}
+            onCreate={createSportAndSelect}
+          />
+        )}
 
-      {step === 1 && (
-        <PickOrCreate
-          heading="Steg 2 av 4 — Klubb"
-          singular="klubb"
-          items={clubs.data ?? []}
-          isLoading={clubs.isLoading}
-          selectedId={clubId}
-          onSelect={selectClub}
-          onCreate={createClubAndSelect}
-        />
-      )}
+        {step === 1 && (
+          <PickOrCreate
+            heading="Steg 2 av 4 — Klubb"
+            singular="klubb"
+            items={clubs.data ?? []}
+            isLoading={clubs.isLoading}
+            selectedId={clubId}
+            onSelect={selectClub}
+            onCreate={createClubAndSelect}
+          />
+        )}
 
-      {step === 2 && selectedClub !== null && selectedSport !== null && (
-        <TruppStep
-          clubId={selectedClub.id}
-          clubName={selectedClub.name}
-          sportId={selectedSport.id}
-          sportName={selectedSport.name}
-          trupper={(trupper.data ?? []).filter((t) => t.clubId === selectedClub.id)}
-          isLoading={trupper.isLoading}
-          selectedId={truppId}
-          onSelect={setTruppId}
-        />
-      )}
+        {step === 2 && selectedClub !== null && selectedSport !== null && (
+          <TruppStep
+            clubId={selectedClub.id}
+            clubName={selectedClub.name}
+            sportId={selectedSport.id}
+            sportName={selectedSport.name}
+            trupper={(trupper.data ?? []).filter((t) => t.clubId === selectedClub.id)}
+            isLoading={trupper.isLoading}
+            selectedId={truppId}
+            onSelect={setTruppId}
+          />
+        )}
 
-      {step === 3 && selectedTrupp !== null && (
-        <div className="wizard__panel">
-          <h3>Steg 4 av 4 — Tilldela tränare</h3>
-          <p className="wizard__context">
-            {selectedTrupp.clubName} · {selectedTrupp.name}
-          </p>
-          <p className="state">
-            Tilldela en eller flera tränare. Sedan sköter de färg-lagen, barnen och inbjudningarna i
-            truppen — du är klar här.
-          </p>
-          <AdminStep truppId={selectedTrupp.id} />
-        </div>
-      )}
+        {step === 3 && selectedTrupp !== null && (
+          <div className="wizard__panel">
+            <h3>Steg 4 av 4 — Tilldela tränare</h3>
+            <p className="wizard__context">
+              {selectedTrupp.clubName} · {selectedTrupp.name}
+            </p>
+            <p className="state">
+              Tilldela en eller flera tränare. Sedan sköter de färg-lagen, barnen och inbjudningarna
+              i truppen — du är klar här.
+            </p>
+            <AdminStep truppId={selectedTrupp.id} />
+          </div>
+        )}
+      </div>
 
       <div className="wizard__nav">
         <button

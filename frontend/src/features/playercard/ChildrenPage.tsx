@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { useTeams } from '@/features/teams'
+import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 import { BADGES, earnedBadges, totalsFor } from './badges/badges'
@@ -50,6 +51,9 @@ export function ChildrenPage() {
   const { data: teams } = useTeams()
   const [editing, setEditing] = useState<Child | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<Child | null>(null)
+  // Danger-zonen renderas längst ned, flera komponenter från "Ta bort"-knappen; flytta fokus till
+  // dess rubrik så en tangentbordsanvändare inte lämnas kvar högt upp utan besked (WCAG 2.4.3, #598).
+  const confirmRemoveRef = useAutoFocus<HTMLHeadingElement>(confirmRemove?.id)
   const [failure, setFailure] = useState<string | null>(null)
 
   useDocumentTitle('Spelarkortet')
@@ -179,7 +183,7 @@ export function ChildrenPage() {
 
       {confirmRemove !== null && (
         <section className="danger-zone">
-          <h2>{`Ta bort ${confirmRemove.name}?`}</h2>
+          <h2 tabIndex={-1} ref={confirmRemoveRef}>{`Ta bort ${confirmRemove.name}?`}</h2>
 
           <p className="state" role="alert">
             <strong>Barnets matchrapporter tas bort med.</strong> Det går inte att ångra, och finns
