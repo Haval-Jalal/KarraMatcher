@@ -102,6 +102,7 @@ export function PasskeysSection() {
               </span>
               <ConfirmButton
                 label="Ta bort"
+                ariaLabel={`Ta bort ${passkey.deviceLabel ?? 'Passkey'}`}
                 className="button button--small"
                 confirmClassName="button button--small button--danger"
                 disabled={removingId === passkey.id}

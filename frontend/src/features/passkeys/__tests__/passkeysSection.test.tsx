@@ -64,6 +64,14 @@ describe('passkey-sektionen', () => {
     expect(screen.getByRole('button', { name: 'Lägg till passkey' })).toBeInTheDocument()
   })
 
+  it('ger ta bort-knappen ett identifierande namn per passkey (#602)', async () => {
+    // Med flera passkeys måste en skärmläsaranvändare kunna skilja knapparna åt — den vilande
+    // knappen visar "Ta bort" men har enhetens namn i sitt tillgängliga namn.
+    await renderWithProviders(<PasskeysSection />)
+
+    expect(await screen.findByRole('button', { name: 'Ta bort iPhone' })).toBeInTheDocument()
+  })
+
   it('lägger till en passkey', async () => {
     const user = userEvent.setup()
     await renderWithProviders(<PasskeysSection />)
@@ -103,7 +111,7 @@ describe('passkey-sektionen', () => {
 
     await renderWithProviders(<PasskeysSection />)
 
-    await user.click(await screen.findByRole('button', { name: 'Ta bort' }))
+    await user.click(await screen.findByRole('button', { name: 'Ta bort iPhone' }))
     await user.click(await screen.findByRole('button', { name: 'Bekräfta' }))
 
     expect(await screen.findByText(/Det gick inte att ta bort passkeyn/)).toBeInTheDocument()
