@@ -101,6 +101,19 @@ describe('lag-chatt', () => {
     expect(await screen.findByText('Vem tar med bollar?')).toBeInTheDocument()
   })
 
+  it('bubblan annonserar en dialog-popup, inte en meny (#545)', async () => {
+    // Popupen är en role="dialog" med Tab-navigerade knappar — aria-haspopup måste matcha, annars
+    // lovar skärmläsaren en meny med piltangenter som inte finns.
+    const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+    setAccessToken(token)
+    stub(token, false)
+
+    renderRoute('/lag/gul/chatt')
+
+    const bubble = await screen.findByRole('button', { name: /Vem tar med bollar/ })
+    expect(bubble).toHaveAttribute('aria-haspopup', 'dialog')
+  })
+
   it('en medlem kan skriva — anropet går till lagets kanal', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'm@example.com', sub: 'me' })
