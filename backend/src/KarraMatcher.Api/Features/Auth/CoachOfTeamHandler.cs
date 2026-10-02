@@ -41,8 +41,12 @@ internal sealed class CoachOfTeamHandler(
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        // Superadmin först: gäller allt, och behöver ingen databasfråga.
-        if (AuthorizationPolicies.IsAdmin(context.User))
+        // Superadmin först: gäller allt, och behöver ingen databasfråga. Kortslut på det
+        // superadmin-specifika anspråket (som övriga objektnivå-handlers), INTE på role=admin:
+        // role=admin utfärdas i dag bara till superadmin, men den dagen en riktig trupp-admin får
+        // det anspråket skulle en role-baserad kortslutning tyst göra CoachOfTeam global över alla
+        // trupper/klubbar (#580, §KM.3).
+        if (Membership.IsSuperAdmin(context.User))
         {
             context.Succeed(requirement);
             return;
