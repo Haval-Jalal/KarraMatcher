@@ -67,6 +67,20 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/Data Privacy Framework/)).toBeInTheDocument()
   })
 
+  it('beskriver barnets minimala profil på servern och inte det gamla "inga uppgifter om barn" (#595)', async () => {
+    // Efter v2 (`#189`) lagrar servern en minimal barn-profil (§KM.1). Sidan måste säga det rakt
+    // ut, inte påstå motsatsen.
+    stubNoSession()
+    renderRoute('/integritet')
+
+    await screen.findByRole('heading', { level: 2, name: 'Barnet i truppen' })
+
+    expect(screen.getByText(/efternamnets första bokstav/i)).toBeInTheDocument()
+    expect(screen.getByText(/godkänt det/i)).toBeInTheDocument()
+    // Det gamla, falska påståendet får inte stå kvar någonstans.
+    expect(screen.queryByText(/inga uppgifter om barn/i)).not.toBeInTheDocument()
+  })
+
   it('säger att appen inte spårar', async () => {
     stubNoSession()
     renderRoute('/integritet')
