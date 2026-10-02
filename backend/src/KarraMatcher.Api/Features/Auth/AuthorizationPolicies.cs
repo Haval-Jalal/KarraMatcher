@@ -87,9 +87,12 @@ public static class AuthorizationPolicies
             .RequireAuthenticatedUser()
             .RequireRole(AuthClaims.AdminRole));
 
+        // Superadmin-kortslutningen är det superadmin-specifika anspråket, inte role=admin: samma
+        // skäl som i CoachOfTeamHandler (#580) — role=admin ska inte tyst kunna bli global coach.
         options.AddPolicy(AnyCoach, policy => policy
             .RequireAuthenticatedUser()
-            .RequireAssertion(context => IsAdmin(context.User) || IsCoachOfSomething(context.User)));
+            .RequireAssertion(context =>
+                Membership.IsSuperAdmin(context.User) || IsCoachOfSomething(context.User)));
 
         options.AddPolicy(CoachOfTeam, policy => policy
             .RequireAuthenticatedUser()
@@ -113,9 +116,6 @@ public static class AuthorizationPolicies
 
         return options;
     }
-
-    internal static bool IsAdmin(ClaimsPrincipal user) =>
-        user.IsInRole(AuthClaims.AdminRole);
 
     internal static bool IsCoachOfSomething(ClaimsPrincipal user) =>
         user.HasClaim(claim => claim.Type == AuthClaims.Coach);
