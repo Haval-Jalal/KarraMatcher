@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -112,6 +112,33 @@ describe('lag-chatt', () => {
 
     const bubble = await screen.findByRole('button', { name: /Vem tar med bollar/ })
     expect(bubble).toHaveAttribute('aria-haspopup', 'dialog')
+  })
+
+  it('återför fokus till bubblan efter att menyn öppnats med långtryck (#599)', async () => {
+    const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+    setAccessToken(token)
+    stub(token, false)
+
+    renderRoute('/lag/gul/chatt')
+
+    const bubble = await screen.findByRole('button', { name: /Vem tar med bollar/ })
+
+    // Touch-långtryck: pointerdown + att 500 ms-timern löper ut öppnar menyn.
+    vi.useFakeTimers()
+    try {
+      fireEvent.pointerDown(bubble, { pointerType: 'touch' })
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+
+    // Menyn är öppen; Escape stänger den → fokus ska tillbaka till bubblan (inte falla bort).
+    await screen.findByRole('dialog')
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(bubble).toHaveFocus())
   })
 
   it('en medlem kan skriva — anropet går till lagets kanal', async () => {
