@@ -388,6 +388,39 @@ public sealed class AttendanceTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Mine_Utomstaende_Ger404_IstalletForAttLackaAvsparkstid()
+    {
+        // En inloggad helt utan koppling till truppen (inget kallat barn, ingen roll, ingen
+        // vårdnadshavarkoppling) ska inte kunna prova event-GUID:n och läsa av avsparkstid + om
+        // kallelse är öppen för händelser i vilken trupp/klubb som helst (#549, §KM.3).
+        var f = await SeedAsync("mine-outsider");
+        await SetKallelseAsync(f, f.SvartChild);
+
+        var response = await GetAsync(
+            $"/api/v1/events/{f.EventId}/kallelse", PlainToken(Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Mine_TruppMedlemUtanKallatBarn_SerVynUtanBarn()
+    {
+        // En trupp-medlem (här: vårdnadshavare för ett annat barn i truppen) vars barn inte är
+        // kallat ska fortfarande se vyn — callOpen med en tom barnlista — så grinden i #549 inte
+        // låser ute legitima medlemmar.
+        var f = await SeedAsync("mine-member");
+        await SetKallelseAsync(f, f.SvartChild); // SvartChild2 kallas inte
+
+        var response = await GetAsync(
+            $"/api/v1/events/{f.EventId}/kallelse", PlainToken(f.SvartGuardian2));
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+
+        Assert.True(body.GetProperty("callOpen").GetBoolean());
+        Assert.Empty(body.GetProperty("children").EnumerateArray());
+    }
+
+    [Fact]
     public async Task IckeVardnadshavare_KanInteSvara_Ger404()
     {
         var f = await SeedAsync("not-guardian");

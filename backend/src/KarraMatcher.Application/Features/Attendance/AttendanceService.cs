@@ -65,6 +65,7 @@ public enum RespondOutcome
 /// </summary>
 public sealed class AttendanceService(
     IAttendanceCallRepository calls,
+    IMembershipService membership,
     IAuditLog audit,
     IPushOutbox push)
 {
@@ -236,11 +237,11 @@ public sealed class AttendanceService(
         Guid accountId,
         CancellationToken cancellationToken)
     {
-        var kickoff = await calls.FindKickoffUtcAsync(eventId, cancellationToken).ConfigureAwait(false);
+        var context = await calls.FindEventContextAsync(eventId, cancellationToken).ConfigureAwait(false);
 
         // Bara okänd händelse ger null → 404. Finns händelsen men ingen kallelse öppnats svarar vi
         // med callOpen=false och inga barn; FE visar då ingen kallelse-sektion för föräldern.
-        if (kickoff is null)
+        if (context is null)
         {
             return null;
         }
@@ -250,9 +251,22 @@ public sealed class AttendanceService(
             ? []
             : await calls.ListMineAsync(eventId, accountId, cancellationToken).ConfigureAwait(false);
 
+        // Den här vyn är medvetet inte MemberOfEvent — en vårdnadshavare vars barn kallats in från
+        // ett annat lag ska nå den (se controllern). Men utan någon koppling alls skulle vilken
+        // inloggad som helst kunna prova event-GUID:n och läsa av avsparkstid + om kallelse är öppen
+        // för händelser i vilken trupp/klubb som helst (#549, §KM.3). Släpp bara igenom den som har
+        // kallade barn här, eller är medlem av händelsens trupp; annars 404 som för okänd händelse.
+        if (mine.Count == 0
+            && !await membership
+                .IsMemberOfTruppAsync(accountId, context.AgeGroupId, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return null;
+        }
+
         return new MyKallelseDto(
             call is not null,
-            new DateTimeOffset(kickoff.Value, TimeSpan.Zero),
+            new DateTimeOffset(context.KickoffUtc, TimeSpan.Zero),
             [.. mine.Select(m => new MyChildInvitationDto(
                 m.ChildId, DisplayName(m.FirstName, m.LastInitial), m.Reply?.ToString()))]);
     }
