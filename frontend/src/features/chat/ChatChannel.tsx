@@ -256,7 +256,10 @@ export function ChatChannel({
                   className="chat-msg__bubble"
                   role={message.deleted ? undefined : 'button'}
                   tabIndex={message.deleted ? undefined : 0}
-                  aria-haspopup={message.deleted ? undefined : 'menu'}
+                  // Popupen är en role="dialog" med Tab-navigerade knappar, inte en role="menu"
+                  // med pilnavigering — annonsera rätt sort så skärmläsaren inte lovar piltangenter
+                  // som inte gäller (#545, WCAG 4.1.2).
+                  aria-haspopup={message.deleted ? undefined : 'dialog'}
                   aria-expanded={message.deleted ? undefined : menuFor === message.id}
                   onPointerDown={
                     message.deleted ? undefined : (event) => startPress(event, message.id)
