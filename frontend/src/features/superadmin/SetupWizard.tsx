@@ -427,6 +427,7 @@ function PickOrCreate({
               type="text"
               autoComplete="off"
               aria-invalid={errors.name ? true : undefined}
+              aria-describedby={errors.name ? `ny-${singular}-namn-fel` : undefined}
               {...nameField}
               onChange={(event) => {
                 void nameField.onChange(event)
@@ -435,7 +436,11 @@ function PickOrCreate({
                 }
               }}
             />
-            {errors.name && <p className="form__error">{errors.name.message}</p>}
+            {errors.name && (
+              <p id={`ny-${singular}-namn-fel`} className="form__error">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div className="form__field">
@@ -445,13 +450,18 @@ function PickOrCreate({
               type="text"
               autoComplete="off"
               aria-invalid={errors.slug ? true : undefined}
+              aria-describedby={errors.slug ? `ny-${singular}-slug-fel` : undefined}
               {...slugField}
               onChange={(event) => {
                 void slugField.onChange(event)
                 setSlugEdited(true)
               }}
             />
-            {errors.slug && <p className="form__error">{errors.slug.message}</p>}
+            {errors.slug && (
+              <p id={`ny-${singular}-slug-fel`} className="form__error">
+                {errors.slug.message}
+              </p>
+            )}
           </div>
 
           {failure !== null && (
@@ -584,8 +594,19 @@ function TruppStep({
         >
           <div className="form__field">
             <label htmlFor="ny-trupp-namn">Namn (t.ex. P2016)</label>
-            <input id="ny-trupp-namn" type="text" autoComplete="off" {...register('name')} />
-            {errors.name && <p className="form__error">{errors.name.message}</p>}
+            <input
+              id="ny-trupp-namn"
+              type="text"
+              autoComplete="off"
+              aria-invalid={errors.name ? true : undefined}
+              aria-describedby={errors.name ? 'ny-trupp-namn-fel' : undefined}
+              {...register('name')}
+            />
+            {errors.name && (
+              <p id="ny-trupp-namn-fel" className="form__error">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           {failure !== null && (
