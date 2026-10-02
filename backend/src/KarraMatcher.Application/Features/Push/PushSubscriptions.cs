@@ -28,8 +28,12 @@ namespace KarraMatcher.Application.Features.Push;
 public sealed record SubscribeToPushCommand(PushSubscriptionDraft Draft, Guid AccountId)
     : ICommand<bool>;
 
-/// <summary>Slutar prenumerera. Adressen är den enda nyckel webbläsaren har.</summary>
-public sealed record UnsubscribeFromPushCommand(string Endpoint) : ICommand<bool>;
+/// <summary>
+/// Slutar prenumerera. Adressen är den enda nyckel webbläsaren har, men raderingen scope:as till
+/// anroparens konto (§KM.3, objektnivå): utan det kunde den som får tag i en annan enhets
+/// push-adress avregistrera den (#550).
+/// </summary>
+public sealed record UnsubscribeFromPushCommand(string Endpoint, Guid AccountId) : ICommand<bool>;
 
 /// <summary>Det webbläsaren lämnar ifrån sig när användaren tillåter notiser.</summary>
 public sealed record PushSubscriptionDraft(string Endpoint, string P256dh, string Auth);
@@ -108,6 +112,7 @@ internal sealed class UnsubscribeFromPushCommandHandler(IPushSubscriptionReposit
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return subscriptions.UnsubscribeAsync(command.Endpoint, cancellationToken);
+        return subscriptions.UnsubscribeAsync(
+            command.Endpoint, command.AccountId, cancellationToken);
     }
 }

@@ -33,5 +33,6 @@ public interface IPushSubscriptionRepository
     /// Anroparen får samma svar oavsett — att avregistrera något som inte finns är inte ett
     /// fel, och skillnaden hade avslöjat om en adress är känd hos oss.
     /// </remarks>
-    public Task<bool> UnsubscribeAsync(string endpoint, CancellationToken cancellationToken);
+    public Task<bool> UnsubscribeAsync(
+        string endpoint, Guid accountId, CancellationToken cancellationToken);
 }

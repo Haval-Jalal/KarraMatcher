@@ -50,12 +50,14 @@ internal sealed class PushSubscriptionRepository(KarraMatcherDbContext context, 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<bool> UnsubscribeAsync(string endpoint, CancellationToken cancellationToken)
+    public async Task<bool> UnsubscribeAsync(
+        string endpoint, Guid accountId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
+        // Objektnivå: bara anroparens egen prenumeration raderas, inte vem som helsts adress (#550).
         var found = await context.PushSubscriptions
-            .Where(s => s.Endpoint == endpoint)
+            .Where(s => s.Endpoint == endpoint && s.AccountId == accountId)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
