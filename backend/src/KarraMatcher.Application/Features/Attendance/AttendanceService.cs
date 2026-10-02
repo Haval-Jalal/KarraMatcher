@@ -67,7 +67,8 @@ public sealed class AttendanceService(
     IAttendanceCallRepository calls,
     IMembershipService membership,
     IAuditLog audit,
-    IPushOutbox push)
+    IPushOutbox push,
+    TimeProvider clock)
 {
     /// <summary>Skickar eller uppdaterar kallelsen: vilka barn som är kallade till händelsen.</summary>
     public async Task<SetKallelseOutcome> SetKallelseAsync(
@@ -120,7 +121,7 @@ public sealed class AttendanceService(
                 Id = Guid.NewGuid(),
                 MatchId = eventId,
                 OpenedByAccountId = actorAccountId,
-                OpenedUtc = DateTime.UtcNow,
+                OpenedUtc = clock.GetUtcNow().UtcDateTime,
             };
 
             await calls.AddCallAsync(call, cancellationToken).ConfigureAwait(false);
@@ -220,14 +221,16 @@ public sealed class AttendanceService(
             return RespondOutcome.NotInvited;
         }
 
-        if (kickoff.Value <= DateTime.UtcNow)
+        // Avspark-deadlinen avgörs mot en injicerad klocka (inte DateTime.UtcNow) så den går att
+        // testa deterministiskt (#587). Ren UTC-jämförelse — DST-säker (§KM.5).
+        if (kickoff.Value <= clock.GetUtcNow().UtcDateTime)
         {
             return RespondOutcome.Closed;
         }
 
         invitation.Reply = reply;
         invitation.RespondedByAccountId = accountId;
-        invitation.RespondedUtc = DateTime.UtcNow;
+        invitation.RespondedUtc = clock.GetUtcNow().UtcDateTime;
 
         await calls.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
