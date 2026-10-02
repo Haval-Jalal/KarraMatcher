@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using KarraMatcher.Application.Abstractions.Messaging;
 using KarraMatcher.Application.Abstractions.Persistence;
 
@@ -11,6 +13,20 @@ public sealed record TeamRefDto(Guid TeamId, Guid TruppId);
 /// kallelse-endpoints för att gå från adressens slug till (lag, trupp) innan kallelsen ställs.
 /// </summary>
 public sealed record GetTeamRefBySlugQuery(string Slug) : IQuery<TeamRefDto?>;
+
+// Slugen kommer från URL:en. Utan validator hoppas kontrollen tyst över (samma mönster som #551);
+// samma grammatik + längdtak som GetTeamEventsQueryValidator (#586).
+internal sealed class GetTeamRefBySlugQueryValidator : AbstractValidator<GetTeamRefBySlugQuery>
+{
+    public GetTeamRefBySlugQueryValidator()
+    {
+        RuleFor(query => query.Slug)
+            .NotEmpty().WithMessage("Laget måste anges.")
+            .MaximumLength(80).WithMessage("Lagnamnet är för långt.")
+            .Matches("^[a-z0-9-]+$")
+            .WithMessage("Laget kan bara innehålla små bokstäver, siffror och bindestreck.");
+    }
+}
 
 internal sealed class GetTeamRefBySlugQueryHandler(IChildRepository children)
     : IQueryHandler<GetTeamRefBySlugQuery, TeamRefDto?>
