@@ -137,4 +137,26 @@ describe('DataExportSection', () => {
       expect(screen.getByRole('alert')).toBeInTheDocument()
     })
   })
+
+  it('lägger inte hela utdraget i live-regionen (#546)', async () => {
+    // Låg ExportView i aria-live läste skärmläsaren upp varje konto-/samåknings-/kallelse-rad vid
+    // hämtning. Utdraget ska ligga utanför live-regionen.
+    stubExport(EXPORT)
+    render(<DataExportSection />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hämta mina uppgifter' }))
+
+    const heading = await screen.findByText('Ditt konto')
+    expect(heading.closest('[aria-live]')).toBeNull()
+  })
+
+  it('nästlar inte felet (role=alert) i en polite live-region → ingen dubbelannonsering (#546)', async () => {
+    stubExport('error')
+    render(<DataExportSection />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hämta mina uppgifter' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.closest('[aria-live]')).toBeNull()
+  })
 })

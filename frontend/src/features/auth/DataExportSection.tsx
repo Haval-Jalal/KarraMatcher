@@ -72,15 +72,23 @@ export function DataExportSection() {
         {data !== null ? <DownloadButton data={data} /> : null}
       </div>
 
+      {/*
+        Bara den korta statusen bor i live-regionen. Låg hela ExportView här förr läste
+        skärmläsaren upp varje konto-, samåknings- och kallelse-rad vid varje hämtning. Felet har
+        redan sin egen assertiva live-region (role="alert") och låg det nästlat här annonserades det
+        två gånger — så det ligger utanför, och ExportView helt utanför (#546, WCAG 4.1.3).
+      */}
       <div aria-live="polite">
         {loading ? <p className="state">Hämtar dina uppgifter …</p> : null}
-        {error !== null ? (
-          <p className="state" role="alert">
-            {error}
-          </p>
-        ) : null}
-        {data !== null && !loading ? <ExportView data={data} /> : null}
       </div>
+
+      {error !== null ? (
+        <p className="state" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {data !== null && !loading ? <ExportView data={data} /> : null}
     </section>
   )
 }
