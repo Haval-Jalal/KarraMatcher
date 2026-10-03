@@ -2799,6 +2799,24 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 16px 0 6px;
 }
 
+/* Två håll i samma sektion (`#63`): erbjuden skjuts och behövd skjuts, tydligt åtskilda. */
+.carpool__group {
+  margin-top: 24px;
+}
+
+.carpool__group:first-of-type {
+  margin-top: 0;
+}
+
+.carpool__group-heading {
+  font-family: var(--display);
+  font-size: var(--text-lg);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-strong);
+  margin: 0 0 10px;
+}
+
 .carpool__empty {
   color: var(--text-muted);
   margin: 0 0 12px;
@@ -2825,6 +2843,12 @@ a.match-card:focus-visible .match-card__opponent {
 /* Ett fullt erbjudande står kvar och går att fråga om — kanten dämpas, den försvinner inte. */
 .carpool-card--full {
   border-left-style: dashed;
+}
+
+/* En skjutsförfrågan är spegelbilden av ett erbjudande (`#63`) — en egen, dämpad ton skiljer den
+   från en förare som kör, utan att den tävlar om uppmärksamheten. */
+.carpool-card--request {
+  border-left-color: var(--text-muted);
 }
 
 .carpool-card__lead {
