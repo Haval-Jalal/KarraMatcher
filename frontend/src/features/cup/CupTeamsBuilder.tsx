@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { ApiError } from '@/lib/api'
 
 import type { CupSummary } from './cupApi'
@@ -207,14 +208,17 @@ export function CupTeamsBuilder({
                       >
                         Byt namn
                       </button>
-                      <button
-                        type="button"
+                      <ConfirmButton
+                        label="Ta bort laget"
                         className="button button--small"
+                        confirmClassName="button button--small button--danger"
+                        confirmLabel="Ja, ta bort"
+                        confirmHint={
+                          team.members.length > 0 ? 'Barnen blir oplacerade igen.' : undefined
+                        }
                         disabled={remove.isPending}
-                        onClick={() => run(remove.mutateAsync(team.id))}
-                      >
-                        Ta bort laget
-                      </button>
+                        onConfirm={() => run(remove.mutateAsync(team.id))}
+                      />
                     </span>
                   )}
                 </div>
