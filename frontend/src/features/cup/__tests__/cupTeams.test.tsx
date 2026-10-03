@@ -153,6 +153,34 @@ describe('cup-lag på händelsesidan', () => {
     })
   })
 
+  it('en admin tar bort ett cup-lag först efter bekräftelse (#608)', async () => {
+    const user = userEvent.setup()
+    setAccessToken(ADMIN_TOKEN)
+    const sent = stub(ADMIN_TOKEN, {
+      ...openCup,
+      teams: [{ id: 't1', name: 'Lag 1', members: [{ childId: 'c1', displayName: 'Noah K' }] }],
+    })
+
+    renderRoute(`/handelse/${CUP_ID}`)
+
+    // Första klicket beväpnar och visar konsekvensen — ingen radering än.
+    await user.click(await screen.findByRole('button', { name: 'Ta bort laget' }))
+    expect(screen.getByText('Barnen blir oplacerade igen.')).toBeInTheDocument()
+    expect(sent.some((r) => r.method === 'DELETE')).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Ja, ta bort' }))
+
+    await waitFor(() => {
+      expect(
+        sent.some(
+          (r) =>
+            r.method === 'DELETE' &&
+            r.url.includes(`/admin/trupper/${TRUPP}/events/${CUP_ID}/cup/teams/t1`),
+        ),
+      ).toBe(true)
+    })
+  })
+
   it('en vårdnadshavare ser cup-lagen i läsläge utan skapa-knapp', async () => {
     setAccessToken(GUARDIAN_TOKEN)
     stub(GUARDIAN_TOKEN, {
