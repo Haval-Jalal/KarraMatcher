@@ -42,7 +42,11 @@ export function CarpoolSection({ match }: { match: TeamEvent }) {
         Samåkning
       </h2>
 
-      {isPending && <p className="carpool__empty">Hämtar samåkningen…</p>}
+      {isPending && (
+        <p className="carpool__empty" role="status">
+          Hämtar samåkningen…
+        </p>
+      )}
 
       {error !== null && !isPending && (
         <div className="state state--error" role="alert">
