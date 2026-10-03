@@ -1,4 +1,9 @@
-import type { CarpoolDirection, CarpoolOffer, CarpoolRequestStatus } from './carpoolApi'
+import type {
+  CarpoolDirection,
+  CarpoolOffer,
+  CarpoolRequestStatus,
+  CarpoolRideRequestStatus,
+} from './carpoolApi'
 
 /**
  * Orden samåkningen använder.
@@ -52,6 +57,33 @@ export function requestStatusLabel(status: CarpoolRequestStatus): string {
       return 'Återtagen'
     default:
       return 'Väntar på svar'
+  }
+}
+
+/** Vad som hänt med en skjutsförfrågan. */
+export function rideRequestStatusLabel(status: CarpoolRideRequestStatus): string {
+  switch (status) {
+    case 'Fulfilled':
+      return 'Löst'
+    case 'Withdrawn':
+      return 'Tillbakadragen'
+    default:
+      return 'Söker förare'
+  }
+}
+
+/**
+ * Vilket håll den som frågar behöver skjuts — spegelbilden av {@link directionLabel}, sett från
+ * den som ber om plats i stället för den som kör.
+ */
+export function rideDirectionLabel(direction: CarpoolDirection): string {
+  switch (direction) {
+    case 'ToMatch':
+      return 'Till matchen'
+    case 'FromMatch':
+      return 'Hem från matchen'
+    default:
+      return 'Både till och hem'
   }
 }
 

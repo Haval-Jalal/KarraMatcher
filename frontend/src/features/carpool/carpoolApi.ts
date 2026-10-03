@@ -17,6 +17,9 @@ export type CarpoolDirection = 'ToMatch' | 'FromMatch' | 'Both'
 /** Förfrågans tillstånd. Speglar `CarpoolRequestStatus` i backend. */
 export type CarpoolRequestStatus = 'Pending' | 'Accepted' | 'Denied' | 'Retracted'
 
+/** Skjutsförfrågans tillstånd. Speglar `CarpoolRideRequestStatus` i backend. */
+export type CarpoolRideRequestStatus = 'Open' | 'Fulfilled' | 'Withdrawn'
+
 /** Taket för hur många som får plats utöver föraren och det egna barnet. */
 export const MAX_SEATS = 4
 
@@ -64,6 +67,61 @@ export interface CarpoolRequest {
   isMine: boolean
   /** Namnet på den som frågade, om hen fyllt i ett. Listan når bara de inblandade. */
   requesterName: string | null
+}
+
+/**
+ * En skjutsförfrågan så som API:t levererar den. Speglar `CarpoolRideRequestDto`.
+ *
+ * Spegelbilden av ett erbjudande: här är det en förälder som behöver skjuts, och förare som
+ * erbjuder plats (§KM.12, `#63`). De lagsynliga fälten (riktning, antal, notis) visas för alla
+ * medlemmar; platserbjudandena och svaren bor på {@link CarpoolRideOffer} och når bara de
+ * inblandade.
+ */
+export interface CarpoolRideRequest {
+  id: string
+  direction: CarpoolDirection
+  seats: number
+  /** Förälderns egen notis. Fritext som bara når lagets medlemmar. */
+  note: string | null
+  status: CarpoolRideRequestStatus
+  createdUtc: string
+  isMine: boolean
+  /** Namnet på den som frågade, om hen fyllt i ett. */
+  requesterName: string | null
+}
+
+/**
+ * Ett förares platserbjudande på en skjutsförfrågan. Speglar `CarpoolRideOfferDto`.
+ *
+ * Ingen publik variant: hälsningen och förälderns svar är fritext mellan två föräldrar (§KM.12).
+ * Servern filtrerar på läsaren — den som frågade ser alla, en förare bara sitt eget.
+ */
+export interface CarpoolRideOffer {
+  id: string
+  rideRequestId: string
+  seats: number
+  /** Förarens hälsning. Följer bara med till de inblandade. */
+  message: string | null
+  /** Förälderns svar vid ett nekande. Ett tyst nej får inte förekomma (§KM.12). */
+  responseMessage: string | null
+  status: CarpoolRequestStatus
+  createdUtc: string
+  isMine: boolean
+  /** Förarens namn, om hen fyllt i ett. */
+  driverName: string | null
+}
+
+/** Det en förälder fyller i för att be om skjuts. */
+export interface CarpoolRideRequestInput {
+  direction: CarpoolDirection
+  seats: number
+  note: string | null
+}
+
+/** Det en förare fyller i för att erbjuda plats på en förfrågan. */
+export interface CarpoolRideOfferInput {
+  seats: number
+  message: string | null
 }
 
 /**
@@ -170,6 +228,86 @@ export function acceptRequest(
  */
 export function denyRequest(matchId: string, requestId: string, message: string): Promise<void> {
   return postJson<void>(`${base(matchId)}/requests/${requestId}/deny`, { message })
+}
+
+/**
+ * Matchens öppna skjutsförfrågningar — föräldrar som behöver skjuts (§KM.12, `#63`).
+ *
+ * Kräver inloggning: notisen är fritext som bara får nå lagets medlemmar, så det finns ingen
+ * gäst-variant och svaret edge-cachas aldrig.
+ */
+export function listRideRequests(
+  matchId: string,
+  signal?: AbortSignal,
+): Promise<CarpoolRideRequest[]> {
+  return getAuthJson<CarpoolRideRequest[]>(`${base(matchId)}/ride-requests`, signal)
+}
+
+/** En förälder ber om skjuts. */
+export function createRideRequest(
+  matchId: string,
+  input: CarpoolRideRequestInput,
+): Promise<CarpoolRideRequest> {
+  return postJson<CarpoolRideRequest>(`${base(matchId)}/ride-requests`, input)
+}
+
+/**
+ * Drar tillbaka en egen skjutsförfrågan.
+ *
+ * Den raderas inte — en förare som hunnit erbjuda plats ska se vad som hände.
+ */
+export function withdrawRideRequest(matchId: string, rideRequestId: string): Promise<void> {
+  return postJson<void>(`${base(matchId)}/ride-requests/${rideRequestId}/withdraw`)
+}
+
+/**
+ * Platserbjudandena på en skjutsförfrågan.
+ *
+ * Den som frågade får alla — det är hen som ska svara. En förare får bara sitt eget, och den
+ * filtreringen sitter i servern, inte här (§KM.12).
+ */
+export function listRideOffers(
+  matchId: string,
+  rideRequestId: string,
+  signal?: AbortSignal,
+): Promise<CarpoolRideOffer[]> {
+  return getAuthJson<CarpoolRideOffer[]>(
+    `${base(matchId)}/ride-requests/${rideRequestId}/offers`,
+    signal,
+  )
+}
+
+/** En förare erbjuder plats på en förfrågan. */
+export function offerSeat(
+  matchId: string,
+  rideRequestId: string,
+  input: CarpoolRideOfferInput,
+): Promise<CarpoolRideOffer> {
+  return postJson<CarpoolRideOffer>(`${base(matchId)}/ride-requests/${rideRequestId}/offers`, input)
+}
+
+/** Den som frågade tackar ja. Meddelandet är valfritt — ett ja behöver inga ord. */
+export function acceptRideOffer(
+  matchId: string,
+  offerId: string,
+  message: string | null,
+): Promise<void> {
+  return postJson<void>(`${base(matchId)}/ride-offers/${offerId}/accept`, { message })
+}
+
+/**
+ * Den som frågade tackar nej.
+ *
+ * Meddelandet är obligatoriskt (§KM.12) och kravet finns även server-side. Formuläret håller
+ * det bara borta från en onödig vända dit.
+ */
+export function denyRideOffer(matchId: string, offerId: string, message: string): Promise<void> {
+  return postJson<void>(`${base(matchId)}/ride-offers/${offerId}/deny`, { message })
+}
+
+/** Föraren återtar sitt platserbjudande. */
+export function retractRideOffer(matchId: string, offerId: string): Promise<void> {
+  return postJson<void>(`${base(matchId)}/ride-offers/${offerId}/retract`)
 }
 
 /**

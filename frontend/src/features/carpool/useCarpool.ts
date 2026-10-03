@@ -3,9 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import {
   listOffers,
   listRequests,
+  listRideOffers,
+  listRideRequests,
   listTeamCarpool,
   type CarpoolOffer,
   type CarpoolRequest,
+  type CarpoolRideOffer,
+  type CarpoolRideRequest,
   type TeamCarpoolMatch,
 } from './carpoolApi'
 
@@ -13,6 +17,12 @@ export const carpoolOffersQueryKey = (matchId: string) => ['carpool', matchId] a
 
 export const carpoolRequestsQueryKey = (matchId: string, offerId: string) =>
   ['carpool', matchId, 'requests', offerId] as const
+
+export const carpoolRideRequestsQueryKey = (matchId: string) =>
+  ['carpool', matchId, 'ride-requests'] as const
+
+export const carpoolRideOffersQueryKey = (matchId: string, rideRequestId: string) =>
+  ['carpool', matchId, 'ride-requests', rideRequestId, 'offers'] as const
 
 export const teamCarpoolQueryKey = (slug: string) => ['carpool', 'team', slug] as const
 
@@ -49,6 +59,34 @@ export function useCarpoolRequests(matchId: string, offerId: string, enabled: bo
 }
 
 /**
+ * Matchens öppna skjutsförfrågningar (`#63`).
+ *
+ * Samma korta färskhet som erbjudandena: en förfrågan som redan blivit löst eller tillbakadragen
+ * ska inte ligga kvar och se öppen ut medan folk gör sig i ordning.
+ */
+export function useCarpoolRideRequests(matchId: string) {
+  return useQuery({
+    queryKey: carpoolRideRequestsQueryKey(matchId),
+    queryFn: ({ signal }) => listRideRequests(matchId, signal),
+    staleTime: 0,
+  })
+}
+
+/**
+ * Platserbjudandena på en skjutsförfrågan.
+ *
+ * Den som frågade ser alla, en förare bara sitt eget — filtreringen sker i servern (§KM.12).
+ */
+export function useCarpoolRideOffers(matchId: string, rideRequestId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: carpoolRideOffersQueryKey(matchId, rideRequestId),
+    queryFn: ({ signal }) => listRideOffers(matchId, rideRequestId, signal),
+    enabled,
+    staleTime: 0,
+  })
+}
+
+/**
  * Lagets samåkning för tränaren.
  *
  * Samma korta färskhet som matchens egen lista: överblicken läses inför en helg, och en
@@ -63,4 +101,4 @@ export function useTeamCarpool(slug: string, enabled: boolean) {
   })
 }
 
-export type { CarpoolOffer, CarpoolRequest, TeamCarpoolMatch }
+export type { CarpoolOffer, CarpoolRequest, CarpoolRideOffer, CarpoolRideRequest, TeamCarpoolMatch }
