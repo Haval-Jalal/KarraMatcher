@@ -49,7 +49,8 @@ public sealed partial class CarpoolRetentionService(
 
         if (result.RemovedAnything)
         {
-            LogPurged(logger, result.Requests, result.Offers, cutoff);
+            LogPurged(
+                logger, result.Requests, result.Offers, result.RideRequests, result.RideOffers, cutoff);
         }
 
         return result;
@@ -61,6 +62,12 @@ public sealed partial class CarpoolRetentionService(
     [LoggerMessage(
         EventId = 1101,
         Level = LogLevel.Information,
-        Message = "Gallrade samakning: {Requests} forfragningar och {Offers} erbjudanden for matcher fore {Cutoff:O}.")]
-    private static partial void LogPurged(ILogger logger, int requests, int offers, DateTime cutoff);
+        Message = "Gallrade samakning: {Requests} forfragningar, {Offers} erbjudanden, {RideRequests} skjutsforfragningar och {RideOffers} platserbjudanden for matcher fore {Cutoff:O}.")]
+    private static partial void LogPurged(
+        ILogger logger,
+        int requests,
+        int offers,
+        int rideRequests,
+        int rideOffers,
+        DateTime cutoff);
 }

@@ -47,6 +47,30 @@ internal static class CarpoolNotification
         "Ett erbjudande du var med på har dragits tillbaka. Öppna för att se.",
         Url(matchId));
 
+    /// <summary>Ny skjutsförfrågan (en förälder ber om skjuts) — till lagets prenumeranter.</summary>
+    public static PushMessage NewRideRequest(Guid matchId) => new(
+        "Någon behöver skjuts",
+        "En förälder frågar efter skjuts till en match. Öppna för att se.",
+        Url(matchId));
+
+    /// <summary>Nytt platserbjudande på en skjutsförfrågan — till den som frågade.</summary>
+    public static PushMessage NewRideOffer(Guid matchId) => new(
+        "Någon kan köra dig",
+        "En förare har erbjudit plats. Öppna för att svara.",
+        Url(matchId));
+
+    /// <summary>Svar på ett platserbjudande — till föraren som erbjöd plats.</summary>
+    public static PushMessage RideOfferAnswered(Guid matchId) => new(
+        "Svar på ditt platserbjudande",
+        "Föräldern har svarat. Öppna för att se.",
+        Url(matchId));
+
+    /// <summary>Tillbakadragen skjutsförfrågan — till förare med ett aktivt platserbjudande.</summary>
+    public static PushMessage RideRequestWithdrawn(Guid matchId) => new(
+        "En skjutsförfrågan drogs tillbaka",
+        "En förfrågan du erbjöd plats på har dragits tillbaka. Öppna för att se.",
+        Url(matchId));
+
     // Samåkningen bär internt `MatchId`, men det pekar på en händelse (§KM.12, `#198`), så
     // djuplänken är händelsesidan `/handelse/{id}` — inte den utgångna `/match/`-adressen.
     private static string Url(Guid matchId) => $"/handelse/{matchId}";

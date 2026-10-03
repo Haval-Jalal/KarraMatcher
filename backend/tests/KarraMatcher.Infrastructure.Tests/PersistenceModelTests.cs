@@ -145,7 +145,7 @@ public class PersistenceModelTests
             [
                 "Account", "AgeGroup", "AttendanceCall", "AttendanceInvitation", "AuditEntry",
                 "CalendarToken",
-                "CarpoolOffer", "CarpoolRequest", "ChatMessage", "ChatReaction", "ChatReport", "Child", "Club",
+                "CarpoolOffer", "CarpoolRequest", "CarpoolRideOffer", "CarpoolRideRequest", "ChatMessage", "ChatReaction", "ChatReport", "Child", "Club",
                 "CupTeam", "CupTeamMember", "Event",
                 "GuardianConsent",
                 "Guardianship", "Invitation",

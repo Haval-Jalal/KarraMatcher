@@ -48,17 +48,13 @@ internal sealed class CarpoolRetentionRepository(KarraMatcherDbContext context)
             return CarpoolPurgeResult.Nothing;
         }
 
+        // ---- Erbjudande + åkförfrågan (förarens erbjudande, passagerares frågor om plats) ----
         var offerIds = await context.CarpoolOffers
             .AsNoTracking()
             .Where(offer => expired.Contains(offer.MatchId))
             .Select(offer => offer.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-
-        if (offerIds.Count == 0)
-        {
-            return CarpoolPurgeResult.Nothing;
-        }
 
         var requestIds = await context.CarpoolRequests
             .AsNoTracking()
@@ -67,16 +63,40 @@ internal sealed class CarpoolRetentionRepository(KarraMatcherDbContext context)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Stubbar med bara nyckeln satt. De ovriga faltens varden spelar ingen roll for en
-        // radering, och tomma varden ar det narmaste vi kommer att inte rora innehallet.
+        // ---- Skjutsförfrågan + platserbjudande (passageraren ber, förare erbjuder) ----
+        // Skjutsförfrågan bär MatchId direkt, så den filtreras på matcherna — inte via erbjudandena.
+        var rideRequestIds = await context.CarpoolRideRequests
+            .AsNoTracking()
+            .Where(request => expired.Contains(request.MatchId))
+            .Select(request => request.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var rideOfferIds = await context.CarpoolRideOffers
+            .AsNoTracking()
+            .Where(offer => rideRequestIds.Contains(offer.RideRequestId))
+            .Select(offer => offer.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        /*
+         * Stubbar med bara nyckeln satt — fritexten hämtas aldrig hem. Ordningen följer främmande-
+         * nyckeln: det som pekar tas bort före det som pekas på. Åkförfrågan pekar på erbjudandet;
+         * platserbjudandet pekar på skjutsförfrågan.
+         */
         context.CarpoolRequests.RemoveRange(
             requestIds.Select(id => new CarpoolRequest { Id = id }));
-
         context.CarpoolOffers.RemoveRange(
             offerIds.Select(id => new CarpoolOffer { Id = id, DeparturePlace = string.Empty }));
 
+        context.CarpoolRideOffers.RemoveRange(
+            rideOfferIds.Select(id => new CarpoolRideOffer { Id = id }));
+        context.CarpoolRideRequests.RemoveRange(
+            rideRequestIds.Select(id => new CarpoolRideRequest { Id = id }));
+
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        return new CarpoolPurgeResult(requestIds.Count, offerIds.Count);
+        return new CarpoolPurgeResult(
+            requestIds.Count, offerIds.Count, rideRequestIds.Count, rideOfferIds.Count);
     }
 }

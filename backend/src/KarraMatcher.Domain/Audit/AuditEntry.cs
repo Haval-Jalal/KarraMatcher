@@ -123,4 +123,12 @@ public static class AuditActions
     public const string CarpoolRequestRetracted = "samakning.forfragan.atertagen";
     public const string CarpoolRequestAccepted = "samakning.forfragan.accepterad";
     public const string CarpoolRequestDenied = "samakning.forfragan.nekad";
+
+    // En förälder ber själv om skjuts, och förare erbjuder plats på det (`#63`-spegel).
+    public const string CarpoolRideRequestCreated = "samakning.skjutsforfragan.skapad";
+    public const string CarpoolRideRequestWithdrawn = "samakning.skjutsforfragan.tillbakadragen";
+    public const string CarpoolRideOfferCreated = "samakning.platserbjudande.skapat";
+    public const string CarpoolRideOfferRetracted = "samakning.platserbjudande.atertaget";
+    public const string CarpoolRideOfferAccepted = "samakning.platserbjudande.accepterat";
+    public const string CarpoolRideOfferDenied = "samakning.platserbjudande.nekat";
 }
