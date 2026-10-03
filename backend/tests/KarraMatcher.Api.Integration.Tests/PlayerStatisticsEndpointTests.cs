@@ -30,6 +30,8 @@ public class PlayerStatisticsEndpointTests(KarraMatcherApiFactory factory)
         "trophy", "trophies",
         "playercard", "player-card", "playercards", "player-cards",
         "spelarkort",
+        // Quiz och poäng hör till spelarkortet (§KM.2, `#611`). API-segment är ascii (§KM.9).
+        "quiz", "quizzes", "points", "medal", "medals",
     ];
 
     /// <summary>
@@ -86,6 +88,9 @@ public class PlayerStatisticsEndpointTests(KarraMatcherApiFactory factory)
     [InlineData("/api/v1/teams/{teamId}/goals")]
     [InlineData("/api/v1/badges")]
     [InlineData("/api/v1/spelarkort")]
+    [InlineData("/api/v1/quiz")]
+    [InlineData("/api/v1/children/{id}/points")]
+    [InlineData("/api/v1/medals")]
     public void LooksLikePlayerStatistics_Forbjudet_GerTrue(string pattern)
     {
         Assert.True(LooksLikePlayerStatistics(pattern), $"{pattern} borde ha fastnat");

@@ -55,6 +55,17 @@ if (testingEnabled)
 
     builder.Services.AddTestingSupport();
 }
+
+// Demo-kontona loggar in med en fast kod (424242) i stället för en mejlad — oumbärligt för test,
+// livsfarligt i drift. Som Testing ovan faller uppstarten med flit om på-flaggan når en miljö som
+// inte är utveckling, så en kvarglömd DemoSeed:Enabled aldrig kan öppna en fast-kod-inloggning i
+// Production (säkerhetsgranskning, `#611`).
+if (builder.Configuration.GetValue<bool>("DemoSeed:Enabled") && !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException(
+        "DemoSeed:Enabled får bara vara på i utvecklingsmiljö. Demokontona loggar in med en fast "
+            + "kod och får aldrig finnas i drift.");
+}
 // Correlation-id:t (satt av CorrelationIdMiddleware) görs läsbart för de HTTP-omedvetna
 // lagren, så att audit-loggen kan koppla en post till requestens loggrader (§KM.10, #204).
 // IHttpContextAccessor registreras redan i AddKarraAuthentication.

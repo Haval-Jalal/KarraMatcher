@@ -12,9 +12,13 @@ namespace KarraMatcher.Application.Features.Invitations;
 /// <param name="Valid">Sant om inbjudan går att acceptera (väntande och inte utgången).</param>
 /// <param name="TruppName">Truppens namn.</param>
 /// <param name="LagName">Lag-förslaget, om något.</param>
-/// <param name="Email">Adressen inbjudan gäller — så föräldern loggar in som rätt person.</param>
+/// <param name="Email">
+/// Adressen inbjudan gäller — så föräldern loggar in som rätt person. Fylls bara i för en väntande
+/// inbjudan: en utgången eller redan använd länk röjer inte längre vems adress den gällde (§KM.1,
+/// säkerhetsgranskning `#611`). Landningssidan använder adressen bara i de väntande vägarna.
+/// </param>
 public sealed record InvitationPreviewDto(
     bool Valid,
     string TruppName,
     string? LagName,
-    string Email);
+    string? Email);

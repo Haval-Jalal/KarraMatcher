@@ -205,6 +205,25 @@ public sealed class InvitationTests(KarraMatcherApiFactory factory)
     }
 
     [Fact]
+    public async Task Forhandsvisning_UtgangenInbjudan_RojerInteAdressen()
+    {
+        // En länk som inte längre går att acceptera ska inte röja vems adress den gällde
+        // (§KM.1, säkerhetsgranskning `#611`). Truppnamnet står kvar; adressen gör det inte.
+        var trupp = await SeedTruppAsync("preview-utgangen");
+        var token = await SeedInvitationAsync(
+            trupp.AgeGroupId, "hemlig@example.com", DateTime.UtcNow.AddDays(-1),
+            InvitationStatus.Pending);
+
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync($"/api/v1/invitations/{token}", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var dto = await response.Content.ReadFromJsonAsync<JsonElement>(CancellationToken.None);
+        Assert.False(dto.GetProperty("valid").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, dto.GetProperty("email").ValueKind);
+    }
+
+    [Fact]
     public async Task Forhandsvisning_OkantToken_Ger404()
     {
         using var client = factory.CreateClient();
