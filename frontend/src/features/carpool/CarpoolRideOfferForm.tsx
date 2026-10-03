@@ -108,7 +108,7 @@ export function CarpoolRideOfferForm({
         <button type="submit" className="button button--action" disabled={isSubmitting}>
           {isSubmitting ? 'Skickar…' : 'Erbjud plats'}
         </button>
-        <button type="button" className="button button--action" onClick={onCancel}>
+        <button type="button" className="button" onClick={onCancel}>
           Avbryt
         </button>
       </div>
