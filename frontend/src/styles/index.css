@@ -4009,12 +4009,22 @@ a.match-card:focus-visible .match-card__opponent {
 /* Barn-roster grupperad per färg-lag (§KM.1, #196). */
 .roster-group {
   margin-bottom: 16px;
+  /* En fieldset för kallelsens lag-grupp (#605): nollställ webbläsarens ram/marginal så den ser ut
+     som förr; grupperingen bärs av legend, inte av en ram. */
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
 }
 
-.roster-group > h4 {
+.roster-group > h4,
+.roster-group > legend {
   margin: 0 0 8px;
+  padding: 0;
   display: flex;
   align-items: center;
+  /* Legenden ska se ut som den tidigare h4:an: fet brödtext (inte webbläsarens legend-default). */
+  font: inherit;
+  font-weight: 700;
 }
 
 .roster-child {

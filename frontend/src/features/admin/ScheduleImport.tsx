@@ -149,9 +149,17 @@ export function ScheduleImport({ slug, onImported }: { slug: string; onImported:
 
       {result !== null && (
         <>
-          {result.imported > 0 && (
+          {result.imported > 0 ? (
             <p className="state" role="status">
               {`${String(result.imported)} matcher tillagda. Föräldrarnas kalendrar uppdateras.`}
+            </p>
+          ) : (
+            // Förhandsgranskningen bygger en ny tabell — annonsera utfallet för skärmläsare, annars
+            // vet de inte att något hände eller hur många rader som kan läggas till (#604).
+            <p className="state" role="status">
+              {ready === result.lines.length
+                ? `Granskat: alla ${String(result.lines.length)} rader kan läggas till.`
+                : `Granskat: ${String(ready)} av ${String(result.lines.length)} rader kan läggas till.`}
             </p>
           )}
 

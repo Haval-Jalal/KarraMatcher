@@ -161,8 +161,9 @@ export function CoachKallelse({
           </div>
 
           {groups.map((group) => (
-            <div key={group.key} className="roster-group">
-              <h4>
+            <fieldset key={group.key} className="roster-group">
+              {/* fieldset/legend så en skärmläsare hör vilket lag en kryssruta tillhör (#605). */}
+              <legend>
                 {group.colorHex !== null && (
                   <span
                     className="admin-color"
@@ -171,7 +172,7 @@ export function CoachKallelse({
                   />
                 )}
                 {group.name}
-              </h4>
+              </legend>
               <ul className="admin-list">
                 {group.children.length === 0 && <li className="state">Inga barn här.</li>}
                 {group.children.map((child) => (
@@ -189,7 +190,7 @@ export function CoachKallelse({
                   </li>
                 ))}
               </ul>
-            </div>
+            </fieldset>
           ))}
 
           {failure !== null && (

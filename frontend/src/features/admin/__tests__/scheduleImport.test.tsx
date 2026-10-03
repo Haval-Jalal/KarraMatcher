@@ -77,6 +77,9 @@ describe('inget sparas förrän tränaren godkänner', () => {
 
     expect(calls.some((call) => call.endsWith('/import/preview'))).toBe(true)
     expect(calls.some((call) => call.endsWith('/events/import'))).toBe(false)
+
+    // Förhandsgranskningens utfall annonseras i en role=status (#604): 1 av 4 rader är Ok.
+    expect(screen.getByText('Granskat: 1 av 4 rader kan läggas till.')).toBeInTheDocument()
   })
 
   it('visar knappen för import först efter granskningen', async () => {

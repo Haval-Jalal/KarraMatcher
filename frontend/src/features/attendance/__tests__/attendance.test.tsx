@@ -298,6 +298,10 @@ describe('adminen skickar kallelse', () => {
 
     renderRoute(`/handelse/${EVENT}`)
 
+    // Barnen grupperas per lag i en fieldset/legend, så en skärmläsare hör lagnamnet (#605).
+    const gulGroup = await screen.findByRole('group', { name: 'Gul' })
+    expect(within(gulGroup).getByLabelText('Nora K')).toBeInTheDocument()
+
     // Snabbval "Hela laget Svart" väljer Liam; sen kryssas en Gul-spelare in som fyllnad.
     await userEvent.click(await screen.findByRole('button', { name: 'Hela laget Svart' }))
     await userEvent.click(screen.getByLabelText('Nora K'))
