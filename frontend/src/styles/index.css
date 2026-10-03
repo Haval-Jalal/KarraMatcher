@@ -2027,6 +2027,14 @@ a.match-card:focus-visible .match-card__opponent {
   font-size: var(--text-sm);
 }
 
+/* Teckenräknare under en textruta (`#609`). Dämpad och högerställd — ett stöd, inte ett larm. */
+.form__count {
+  margin: 2px 0 0;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
 /* Kvitto efter sparat (`#257`). Blått, inte grönt: ingen egen success-token finns, och
    texten bär budskapet — färgen är bara ett stöd (WCAG 1.4.1). */
 .form__success {
