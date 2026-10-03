@@ -132,7 +132,7 @@ export function CarpoolRideRequestForm({
         <button type="submit" className="button button--action" disabled={isSubmitting}>
           {isSubmitting ? 'Frågar…' : 'Fråga om skjuts'}
         </button>
-        <button type="button" className="button button--action" onClick={onCancel}>
+        <button type="button" className="button" onClick={onCancel}>
           Avbryt
         </button>
       </div>
