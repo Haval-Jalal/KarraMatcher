@@ -47,6 +47,10 @@ public sealed class KarraMatcherDbContext(
 
     public DbSet<CarpoolRequest> CarpoolRequests => Set<CarpoolRequest>();
 
+    public DbSet<CarpoolRideRequest> CarpoolRideRequests => Set<CarpoolRideRequest>();
+
+    public DbSet<CarpoolRideOffer> CarpoolRideOffers => Set<CarpoolRideOffer>();
+
     public DbSet<AttendanceCall> AttendanceCalls => Set<AttendanceCall>();
 
     public DbSet<AttendanceInvitation> AttendanceInvitations => Set<AttendanceInvitation>();

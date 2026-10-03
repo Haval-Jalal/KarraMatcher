@@ -23,7 +23,14 @@ namespace KarraMatcher.Api.Integration.Tests;
 public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
     : IClassFixture<KarraMatcherApiFactory>
 {
-    private sealed record Seeded(Guid OldOfferId, Guid OldRequestId, Guid FreshOfferId, Guid FreshRequestId);
+    private sealed record Seeded(
+        Guid OldOfferId,
+        Guid OldRequestId,
+        Guid FreshOfferId,
+        Guid FreshRequestId,
+        Guid OldRideRequestId,
+        Guid OldRideOfferId,
+        Guid FreshRideRequestId);
 
     /// <summary>Två matcher: en långt bortom gränsen och en nyss spelad.</summary>
     private async Task<Seeded> SeedAsync(string suffix)
@@ -73,6 +80,11 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
         var oldRequest = Request(oldOffer.Id, asker.Id, now);
         var freshRequest = Request(freshOffer.Id, asker.Id, now);
 
+        // Skjutsförfrågan (`#63`-spegeln): en förälder bad om skjuts, en förare erbjöd plats.
+        var oldRide = RideRequest(expired.Id, asker.Id, now);
+        var freshRide = RideRequest(fresh.Id, asker.Id, now);
+        var oldRideOffer = RideOffer(oldRide.Id, driver.Id, now);
+
         context.Clubs.Add(club);
         context.AgeGroups.Add(ageGroup);
         context.Teams.Add(team);
@@ -81,11 +93,42 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
         context.Accounts.AddRange(driver, asker);
         context.CarpoolOffers.AddRange(oldOffer, freshOffer);
         context.CarpoolRequests.AddRange(oldRequest, freshRequest);
+        context.CarpoolRideRequests.AddRange(oldRide, freshRide);
+        context.CarpoolRideOffers.Add(oldRideOffer);
 
         await context.SaveChangesAsync(CancellationToken.None);
 
-        return new Seeded(oldOffer.Id, oldRequest.Id, freshOffer.Id, freshRequest.Id);
+        return new Seeded(
+            oldOffer.Id, oldRequest.Id, freshOffer.Id, freshRequest.Id,
+            oldRide.Id, oldRideOffer.Id, freshRide.Id);
     }
+
+    private static CarpoolRideRequest RideRequest(Guid matchId, Guid accountId, DateTime now) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            MatchId = matchId,
+            RequesterAccountId = accountId,
+            Direction = CarpoolDirection.Both,
+            Seats = 1,
+            Note = "Behover fran Skogomevagen",
+            Status = CarpoolRideRequestStatus.Open,
+            CreatedUtc = now,
+            UpdatedUtc = now,
+        };
+
+    private static CarpoolRideOffer RideOffer(Guid rideRequestId, Guid driverId, DateTime now) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            RideRequestId = rideRequestId,
+            DriverAccountId = driverId,
+            Seats = 1,
+            Message = "Jag kan kora",
+            Status = CarpoolRequestStatus.Pending,
+            CreatedUtc = now,
+            UpdatedUtc = now,
+        };
 
     private static Event Match(Guid teamId, Guid venueId, DateTime kickoffUtc) =>
         new()
@@ -153,6 +196,12 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
 
         Assert.Null(await context.CarpoolRequests.AsNoTracking()
             .SingleOrDefaultAsync(r => r.Id == seeded.OldRequestId, CancellationToken.None));
+
+        // Skjutsförfrågan och dess platserbjudande gallras på samma gräns (#63-spegeln).
+        Assert.Null(await context.CarpoolRideRequests.AsNoTracking()
+            .SingleOrDefaultAsync(r => r.Id == seeded.OldRideRequestId, CancellationToken.None));
+        Assert.Null(await context.CarpoolRideOffers.AsNoTracking()
+            .SingleOrDefaultAsync(o => o.Id == seeded.OldRideOfferId, CancellationToken.None));
     }
 
     [Fact]
@@ -171,6 +220,9 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
 
         Assert.NotNull(await context.CarpoolRequests.AsNoTracking()
             .SingleOrDefaultAsync(r => r.Id == seeded.FreshRequestId, CancellationToken.None));
+
+        Assert.NotNull(await context.CarpoolRideRequests.AsNoTracking()
+            .SingleOrDefaultAsync(r => r.Id == seeded.FreshRideRequestId, CancellationToken.None));
     }
 
     [Fact]
@@ -182,6 +234,8 @@ public sealed class CarpoolRetentionTests(KarraMatcherApiFactory factory)
 
         Assert.True(result.Requests >= 1);
         Assert.True(result.Offers >= 1);
+        Assert.True(result.RideRequests >= 1);
+        Assert.True(result.RideOffers >= 1);
         Assert.True(result.RemovedAnything);
         Assert.NotEqual(Guid.Empty, seeded.OldOfferId);
     }

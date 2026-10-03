@@ -25,10 +25,22 @@ public interface ICarpoolRetentionRepository
     public Task<CarpoolPurgeResult> PurgeAsync(DateTime cutoffUtc, CancellationToken cancellationToken);
 }
 
-/// <summary>Vad en gallring tog med sig. Bara siffror — aldrig innehåll (§KM.10).</summary>
-public sealed record CarpoolPurgeResult(int Requests, int Offers)
+/// <summary>
+/// Vad en gallring tog med sig. Bara siffror — aldrig innehåll (§KM.10).
+///
+/// <para>
+/// <see cref="RideRequests"/>/<see cref="RideOffers"/> räknar skjutsförfrågningarna och deras
+/// platserbjudanden (`#63`-spegeln). Positionellt sist med standardvärden så äldre anrop som bara
+/// bryr sig om erbjudande/åkförfrågan är oförändrade.
+/// </para>
+/// </summary>
+public sealed record CarpoolPurgeResult(
+    int Requests,
+    int Offers,
+    int RideRequests = 0,
+    int RideOffers = 0)
 {
     public static CarpoolPurgeResult Nothing { get; } = new(0, 0);
 
-    public bool RemovedAnything => Requests > 0 || Offers > 0;
+    public bool RemovedAnything => Requests > 0 || Offers > 0 || RideRequests > 0 || RideOffers > 0;
 }
