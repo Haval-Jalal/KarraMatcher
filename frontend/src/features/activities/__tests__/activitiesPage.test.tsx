@@ -173,7 +173,7 @@ describe('Aktivitet-fliken', () => {
 
     // Ställ in (ConfirmButton: klick + bekräfta) → POST .../events/m1/cancel.
     await user.click(await screen.findByRole('button', { name: 'Ställ in Borta mot Torslanda' }))
-    await user.click(screen.getByRole('button', { name: 'Ställ in' }))
+    await user.click(screen.getByRole('button', { name: 'Ja, ställ in' }))
 
     await waitFor(() => {
       expect(
