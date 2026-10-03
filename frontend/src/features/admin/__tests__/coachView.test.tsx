@@ -434,6 +434,26 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
     // Förr startade fältet tomt och sparade tillbaka null → den lagrade notisen försvann.
     expect(await screen.findByLabelText(/Notis till föräldrarna/)).toHaveValue('Ta med gula tröjan')
   })
+
+  it('notisen är en textruta med en teckenräknare som uppdateras (#609)', async () => {
+    const token = coachToken('gul')
+    seedStub(token, {})
+    setAccessToken(token)
+
+    const user = userEvent.setup()
+    renderRoute('/lag/gul/tranare')
+
+    await user.click(await screen.findByRole('button', { name: 'Ändra Hemma mot Torslanda' }))
+
+    const note = await screen.findByLabelText(/Notis till föräldrarna/)
+    // Flerradig i stället för en horisontellt skrollande enradsruta.
+    expect(note.tagName).toBe('TEXTAREA')
+    // Den förifyllda notisen ("Ta med gula tröjan" = 18 tecken) räknas direkt.
+    expect(screen.getByText('18/500 tecken')).toBeInTheDocument()
+
+    await user.type(note, '!')
+    expect(screen.getByText('19/500 tecken')).toBeInTheDocument()
+  })
 })
 
 describe('nät-/serverfel är inte samma sak som fel lag (#541)', () => {

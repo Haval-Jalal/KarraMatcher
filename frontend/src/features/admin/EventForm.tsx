@@ -30,6 +30,9 @@ import { useAddressSuggestions } from './useAddressSuggestions'
  * Omräkningen sker i `lib/time.ts`, frontendens enda ställe där UTC möter svensk tid (§KM.5).
  */
 
+/** Taket för notisen, delat mellan zod-schemat och textrutans räknare. Speglar backend. */
+const NOTE_MAX_LENGTH = 500
+
 const schema = z
   .object({
     type: z.enum(['Match', 'Training', 'Other', 'Cup']),
@@ -41,7 +44,7 @@ const schema = z
     isHome: z.boolean(),
     address: z.string().max(200, 'Adressen är för lång.'),
     title: z.string().max(120, 'Rubriken är för lång.'),
-    note: z.string().max(500, 'Notisen är för lång.'),
+    note: z.string().max(NOTE_MAX_LENGTH, 'Notisen är för lång.'),
   })
   .superRefine((values, ctx) => {
     if (values.type === 'Match') {
@@ -129,6 +132,11 @@ export function EventForm({
   )
   const addressField = register('address')
   const addressSuggestions = useAddressSuggestions(isHome ? '' : addressText)
+
+  // Teckenräknare för notisen (`#609`). Lokal längd i stället för watch(): en räknare behöver bara
+  // ett tal, och watch() kan inte memoiseras säkert av React Compiler (samma skäl som type/isHome).
+  const noteField = register('note')
+  const [noteLength, setNoteLength] = useState(existing?.note?.length ?? 0)
 
   // Fälls formuläret in i stället för en knapp flyttas fokus till dess första kontroll (#598).
   const formRef = useRef<HTMLFormElement>(null)
@@ -354,7 +362,20 @@ export function EventForm({
 
       <div className="form__field">
         <label htmlFor="notis">Notis till föräldrarna (valfritt)</label>
-        <input id="notis" type="text" autoComplete="off" {...register('note')} />
+        <textarea
+          id="notis"
+          rows={3}
+          maxLength={NOTE_MAX_LENGTH}
+          aria-describedby="notis-rakna"
+          {...noteField}
+          onChange={(event) => {
+            void noteField.onChange(event)
+            setNoteLength(event.target.value.length)
+          }}
+        />
+        <p className="form__count" id="notis-rakna" aria-live="polite">
+          {noteLength}/{NOTE_MAX_LENGTH} tecken
+        </p>
       </div>
 
       {targetSlot}
