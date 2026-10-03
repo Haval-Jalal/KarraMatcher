@@ -884,6 +884,13 @@ h2 {
   align-items: center;
 }
 
+/* Konsekvens-copy (`#606`): en rad som säger vad bekräftelsen gör. Egen rad ovanför knapparna. */
+.confirm-inline__hint {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 .button--action {
   display: inline-flex;
   align-items: center;

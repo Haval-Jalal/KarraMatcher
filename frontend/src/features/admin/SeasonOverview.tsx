@@ -93,7 +93,9 @@ export function SeasonOverview({
                         {event.status !== 'Cancelled' && (
                           <ConfirmButton
                             className="button"
-                            confirmLabel="Ställ in"
+                            confirmLabel="Ja, ställ in"
+                            confirmClassName="button button--danger"
+                            confirmHint="Laget meddelas direkt."
                             onConfirm={() => {
                               onCancel(event)
                             }}

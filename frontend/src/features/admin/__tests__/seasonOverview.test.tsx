@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { findClashes, SeasonOverview } from '@/features/admin'
@@ -116,5 +117,34 @@ describe('snabbknappar per rad', () => {
     ])
 
     expect(screen.queryByRole('button', { name: /Ställ in / })).not.toBeInTheDocument()
+  })
+
+  it('bekräftelsen för "Ställ in" byter etikett och säger vad som händer (#606)', async () => {
+    /*
+     * Vilande och bekräftad knapp hade samma text ("Ställ in"), så ett dubbeltryck på dålig
+     * uppkoppling kunde ställa in en match utan att något syntes ändras. Bekräftelsen har nu
+     * en egen etikett och en rad som säger att laget notifieras.
+     */
+    const onCancel = vi.fn()
+    const user = userEvent.setup()
+
+    render(
+      <SeasonOverview
+        events={[testEvent('a', '2026-09-20T12:00:00Z', { opponent: 'Torslanda' })]}
+        onEdit={vi.fn()}
+        onCancel={onCancel}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Ställ in Hemma mot Torslanda' }))
+
+    // Första klicket utför inget — det beväpnar bara, och nu med en distinkt etikett.
+    expect(onCancel).not.toHaveBeenCalled()
+    expect(screen.getByText('Laget meddelas direkt.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Ja, ställ in' }))
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
   })
 })

@@ -388,7 +388,7 @@ describe('fel vid ändring visas i stället för att sväljas (#393)', () => {
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
 
     await user.click(await screen.findByRole('button', { name: 'Ställ in Hemma mot Torslanda' }))
-    await user.click(await screen.findByRole('button', { name: 'Ställ in' }))
+    await user.click(await screen.findByRole('button', { name: 'Ja, ställ in' }))
 
     // Utan detta behåller en öppen händelsesida gammal tid/inställt-läge (#393).
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['event', 'ev1'] }))
