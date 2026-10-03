@@ -37,6 +37,10 @@ public partial class PlayerStatisticsTests
         "goal", "goals", "assist", "assists",
         "badge", "badges", "scorer", "scorers",
         "trophy", "trophies", "spelarkort",
+        // Spelarkortets quiz och poäng hör också till enheten (§KM.2, `#611`). "result" går inte
+        // att lägga till — Result-mönstret ger hundratals legitima typer — men ett spelarkorts-DTO
+        // heter QuizResult/Points/Medal, som fångas på "quiz"/"points"/"medal".
+        "quiz", "points", "medal", "medals",
     ];
 
     /// <summary>
@@ -200,6 +204,10 @@ public partial class PlayerStatisticsTests
     [InlineData("BadgeAwardedEvent")]
     [InlineData("TopScorerQuery")]
     [InlineData("SpelarkortDto")]
+    [InlineData("QuizResultDto")]
+    [InlineData("SportQuiz")]
+    [InlineData("PointsTally")]
+    [InlineData("MedalDto")]
     public void NamesPlayerStatistics_BeskriverBarnstatistik_GerTrue(string name)
     {
         Assert.True(NamesPlayerStatistics(name), $"{name} borde ha fastnat");
@@ -219,6 +227,12 @@ public partial class PlayerStatisticsTests
     [InlineData("HealthChecks")]
     [InlineData("RateLimiting")]
     [InlineData("StatusCode")]
+    // "result"/"point" (singular) är inte förbjudna ord — annars hade Result-mönstret och
+    // Endpoint fällt bygget. Bara de spelarkorts-specifika orden fastnar (`#611`).
+    [InlineData("CarpoolPurgeResult")]
+    [InlineData("ActionResult")]
+    [InlineData("EventSaveResult")]
+    [InlineData("EndpointDataSource")]
     public void NamesPlayerStatistics_LegitimtNamn_GerFalse(string name)
     {
         Assert.False(NamesPlayerStatistics(name), $"{name} är ett falskt alarm");

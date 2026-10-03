@@ -36,7 +36,8 @@ export interface InvitationPreview {
   valid: boolean
   truppName: string
   lagName: string | null
-  email: string
+  /** Adressen inbjudan gäller. Null när inbjudan inte längre är väntande (backend röjer den inte då). */
+  email: string | null
 }
 
 // ---- Admin -------------------------------------------------------------------------

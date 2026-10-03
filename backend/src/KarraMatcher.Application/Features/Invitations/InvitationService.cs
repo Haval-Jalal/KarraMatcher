@@ -114,12 +114,15 @@ public sealed partial class InvitationService(
         }
 
         var now = clock.GetUtcNow().UtcDateTime;
+        var pending = invitation.IsPending(now);
 
+        // Adressen följer bara med en väntande inbjudan. En anonym som har en utgången eller redan
+        // använd länk ska inte kunna läsa ut vems adress den gällde (§KM.1, `#611`).
         return new InvitationPreviewDto(
-            invitation.IsPending(now),
+            pending,
             invitation.AgeGroup?.Name ?? string.Empty,
             invitation.Team?.Name,
-            invitation.Email);
+            pending ? invitation.Email : null);
     }
 
     public async Task<InvitationAcceptResult> AcceptAsync(
