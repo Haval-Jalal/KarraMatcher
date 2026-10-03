@@ -917,6 +917,14 @@ h2 {
   color: var(--danger);
 }
 
+/* Dämpad upprepning av framflyttad-varningen nära carpool/attendance (`#610`). Mindre än
+   toppbannern — en påminnelse intill tiderna, inte ett andra larm. */
+.notice--compact {
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 .weather {
   display: flex;
   align-items: baseline;

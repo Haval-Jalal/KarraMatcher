@@ -232,6 +232,26 @@ describe('Matchdetaljsidan — status', () => {
     expect(screen.queryByText(/inställd/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/framflyttad/i)).not.toBeInTheDocument()
   })
+
+  it('upprepar framflyttad-varningen dämpat nära carpool och kallelse (#610)', async () => {
+    // Toppbannern hamnar ovanför både Ja/Nej-knapparna och carpool-formuläret, som visar den
+    // gamla tiden. En påminnelse står därför intill var och en av de två sektionerna.
+    stubApi({ match: detail({ status: 'Postponed' }) })
+
+    renderRoute(`/handelse/${MATCH_ID}`)
+
+    const reminders = await screen.findAllByText(/Framflyttad — nytt datum är inte satt/)
+    expect(reminders).toHaveLength(2)
+  })
+
+  it('upprepar ingen varning när matchen spelas som planerat (#610)', async () => {
+    stubApi({ match: detail() })
+
+    renderRoute(`/handelse/${MATCH_ID}`)
+
+    await screen.findByText('Hemmamatch')
+    expect(screen.queryByText(/Framflyttad — nytt datum är inte satt/)).not.toBeInTheDocument()
+  })
 })
 
 describe('Matchdetaljsidan — tillstånd', () => {

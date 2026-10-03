@@ -198,16 +198,29 @@ export function EventDetailPage() {
         Samåkning och spelarkort gäller matcher (§KM.12/§KM.2); kallelsen gäller match och
         träning (§KM.7). En övrig händelse visar ingen av dem.
       */}
-      {isMatch && !isCancelled && <CarpoolSection match={event} />}
+      {/*
+        Carpool och kallelse visar tider som hör till den gamla avsparken. Är händelsen framflyttad
+        upprepas varningen dämpat intill var och en (`#610`) — toppbannern hamnar annars ovanför
+        både Ja/Nej-knapparna och carpool-formuläret, utan att den som skrollat dit påminns.
+      */}
+      {isMatch && !isCancelled && (
+        <>
+          {isPostponed && <PostponedReminder />}
+          <CarpoolSection match={event} />
+        </>
+      )}
 
       {hasKallelse && !isCancelled && (
-        <AttendanceSection
-          eventId={event.id}
-          truppId={truppId}
-          teamName={team?.name ?? truppName}
-          teamSlug={team?.slug ?? ''}
-          kickoffUtc={event.kickoffUtc}
-        />
+        <>
+          {isPostponed && <PostponedReminder />}
+          <AttendanceSection
+            eventId={event.id}
+            truppId={truppId}
+            teamName={team?.name ?? truppName}
+            teamSlug={team?.slug ?? ''}
+            kickoffUtc={event.kickoffUtc}
+          />
+        </>
       )}
 
       {/* Cupen har öppen anmälan i stället för kallelse (§KM.12, `#295`/`#296`). */}
@@ -217,6 +230,19 @@ export function EventDetailPage() {
 
       {isMatch && <MatchReportCard match={event} children={childrenForMatch} />}
     </main>
+  )
+}
+
+/**
+ * Dämpad påminnelse om att händelsen är framflyttad, satt intill carpool och kallelse (`#610`).
+ * Tiderna där gäller den gamla avsparken, och den som skrollat förbi toppbannern ska inte agera på
+ * dem utan att veta det.
+ */
+function PostponedReminder() {
+  return (
+    <p className="notice notice--compact" role="status">
+      Framflyttad — nytt datum är inte satt. Tiderna nedan gällde det tidigare datumet.
+    </p>
   )
 }
 
