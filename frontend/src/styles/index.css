@@ -3167,6 +3167,12 @@ a.match-card:focus-visible .match-card__opponent {
   gap: 6px;
 }
 
+/* Felet för ett barns svar läggs under just den raden, i full bredd (#592). */
+.attendance__child-error {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+}
+
 /*
  * Det valda svaret måste synas för en seende förälder, inte bara för skärmläsaren via
  * aria-pressed (#532, WCAG 1.4.1). Fylld "intryckt" yta + fetstil skiljer det valda svaret från

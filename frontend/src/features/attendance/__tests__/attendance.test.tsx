@@ -58,6 +58,10 @@ interface Options {
   summary?: unknown
   /** Låter adminens summerings-GET hänga, så racet "roster klar före summering" kan prövas (#392). */
   summaryPending?: boolean
+  /** Låter vårdnadshavarens svar-PUT hänga, så per-barn-pending kan prövas (#592). */
+  respondHang?: boolean
+  /** Låter svar-PUT:en för just det här barnet svara 500, så per-barn-fel kan prövas (#592). */
+  respondFailChildId?: string
   roster?: unknown
   /** Gör händelse-detaljen trupp-övergripande (utan lag), för #477. */
   truppWide?: boolean
@@ -86,7 +90,15 @@ function stub(options: Options) {
       if (url.includes('/remind')) return Promise.resolve(jsonResponse({ reminded: 2 }))
 
       // Vårdnadshavarens svar för ett barn: PUT /events/{id}/kallelse/children/{childId}
-      if (url.includes('/kallelse/children/')) return Promise.resolve(emptyResponse(204))
+      if (url.includes('/kallelse/children/')) {
+        if (options.respondHang) return new Promise<Response>(() => {})
+        if (
+          options.respondFailChildId !== undefined &&
+          url.includes(`/children/${options.respondFailChildId}`)
+        )
+          return Promise.resolve(emptyResponse(500))
+        return Promise.resolve(emptyResponse(204))
+      }
 
       // Adminens kallelse (GET summering / PUT urval): /admin/.../kallelse
       if (url.includes('/admin/') && url.includes('/kallelse')) {
@@ -237,6 +249,61 @@ describe('vårdnadshavaren svarar per barn', () => {
       )
       expect(put?.body).toEqual({ reply: 'Coming' })
     })
+  })
+
+  it('fryser inte syskonens knappar medan ett barns svar är i flykt (#592)', async () => {
+    // Förr delade alla barn en enda mutation: ett tryck för ett barn disablade hela listan hela
+    // round-trippen (värst på kall backend). Nu är bara det svarande barnets knappar låsta.
+    setAccessToken(PARENT_TOKEN)
+    stub({
+      respondHang: true,
+      mine: {
+        callOpen: true,
+        kickoffUtc: FUTURE,
+        children: [
+          { childId: 'c1', displayName: 'Liam J', reply: null },
+          { childId: 'c2', displayName: 'Nora K', reply: null },
+        ],
+      },
+    })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    const groupA = await screen.findByRole('group', { name: 'Svar för Liam J' })
+    const groupB = await screen.findByRole('group', { name: 'Svar för Nora K' })
+    await userEvent.click(within(groupA).getByRole('button', { name: 'Ja' }))
+
+    // Liams svar hänger → hans knappar låses. Noras förblir klickbara.
+    await waitFor(() => expect(within(groupA).getByRole('button', { name: 'Ja' })).toBeDisabled())
+    expect(within(groupA).getByRole('button', { name: 'Nej' })).toBeDisabled()
+    expect(within(groupB).getByRole('button', { name: 'Ja' })).toBeEnabled()
+    expect(within(groupB).getByRole('button', { name: 'Nej' })).toBeEnabled()
+  })
+
+  it('namnger vilket barns svar som misslyckades vid delfel (#592)', async () => {
+    // Förr var felet en delad boolean: en förälder med flera barn såg inte vilket svar som föll.
+    setAccessToken(PARENT_TOKEN)
+    stub({
+      respondFailChildId: 'c1',
+      mine: {
+        callOpen: true,
+        kickoffUtc: FUTURE,
+        children: [
+          { childId: 'c1', displayName: 'Liam J', reply: null },
+          { childId: 'c2', displayName: 'Nora K', reply: null },
+        ],
+      },
+    })
+
+    renderRoute(`/handelse/${EVENT}`)
+
+    const groupA = await screen.findByRole('group', { name: 'Svar för Liam J' })
+    await userEvent.click(within(groupA).getByRole('button', { name: 'Ja' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Liam J')
+    // Syskonet drabbas inte: inget fel för Nora.
+    expect(screen.queryByText(/Nora K: svaret gick inte/)).not.toBeInTheDocument()
   })
 
   it('invaliderar Hem-sammanställningen när ett svar sparas (#476)', async () => {

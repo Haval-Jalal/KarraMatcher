@@ -141,11 +141,22 @@ function GuardianReplies({
   closed: boolean
 }) {
   const respond = useRespond(eventId)
-  const [failed, setFailed] = useState(false)
+  // Per barn, aldrig delat (#592). En delad pending/fel-flagga frös alla syskons knappar under
+  // hela round-trippen och dolde vilket barns svar som misslyckades. Nu bär varje barn sin egen
+  // markering: bara det barn vars svar är i flykt disablas, och felet namnger rätt barn.
+  const [pendingChildIds, setPendingChildIds] = useState<ReadonlySet<string>>(new Set())
+  const [failedChildIds, setFailedChildIds] = useState<ReadonlySet<string>>(new Set())
 
   function answer(childId: string, reply: AttendanceReply): void {
-    setFailed(false)
-    respond.mutate({ childId, reply }, { onError: () => setFailed(true) })
+    setPendingChildIds((prev) => withId(prev, childId))
+    setFailedChildIds((prev) => withoutId(prev, childId))
+    respond.mutate(
+      { childId, reply },
+      {
+        onError: () => setFailedChildIds((prev) => withId(prev, childId)),
+        onSettled: () => setPendingChildIds((prev) => withoutId(prev, childId)),
+      },
+    )
   }
 
   return (
@@ -157,48 +168,72 @@ function GuardianReplies({
       </p>
 
       <ul className="attendance__children">
-        {childInvitations.map((child) => (
-          <li key={child.childId} className="attendance__child">
-            <span className="attendance__child-name">{child.displayName}</span>
-            <span
-              className="attendance__reply"
-              role="group"
-              aria-label={`Svar för ${child.displayName}`}
-            >
-              <button
-                type="button"
-                className="button button--small"
-                aria-pressed={child.reply === 'Coming'}
-                disabled={closed || respond.isPending}
-                onClick={() => {
-                  answer(child.childId, 'Coming')
-                }}
+        {childInvitations.map((child) => {
+          const pending = pendingChildIds.has(child.childId)
+          const failed = failedChildIds.has(child.childId)
+          return (
+            <li key={child.childId} className="attendance__child">
+              <span className="attendance__child-name">{child.displayName}</span>
+              <span
+                className="attendance__reply"
+                role="group"
+                aria-label={`Svar för ${child.displayName}`}
               >
-                Ja
-              </button>
-              <button
-                type="button"
-                className="button button--small"
-                aria-pressed={child.reply === 'NotComing'}
-                disabled={closed || respond.isPending}
-                onClick={() => {
-                  answer(child.childId, 'NotComing')
-                }}
-              >
-                Nej
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
+                <button
+                  type="button"
+                  className="button button--small"
+                  aria-pressed={child.reply === 'Coming'}
+                  disabled={closed || pending}
+                  onClick={() => {
+                    answer(child.childId, 'Coming')
+                  }}
+                >
+                  Ja
+                </button>
+                <button
+                  type="button"
+                  className="button button--small"
+                  aria-pressed={child.reply === 'NotComing'}
+                  disabled={closed || pending}
+                  onClick={() => {
+                    answer(child.childId, 'NotComing')
+                  }}
+                >
+                  Nej
+                </button>
+              </span>
 
-      {failed && (
-        <p className="state state--error" role="alert">
-          Svaret gick inte att spara just nu. Försök igen om en stund.
-        </p>
-      )}
+              {failed && (
+                <p className="state state--error attendance__child-error" role="alert">
+                  {child.displayName}: svaret gick inte att spara. Försök igen.
+                </p>
+              )}
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
+}
+
+/** Returnerar en ny mängd med id tillagt (oförändrad om det redan fanns). */
+function withId(set: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  if (set.has(id)) {
+    return set
+  }
+  const next = new Set(set)
+  next.add(id)
+  return next
+}
+
+/** Returnerar en ny mängd utan id (oförändrad om det saknades). */
+function withoutId(set: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  if (!set.has(id)) {
+    return set
+  }
+  const next = new Set(set)
+  next.delete(id)
+  return next
 }
 
 function AdminKallelse({
