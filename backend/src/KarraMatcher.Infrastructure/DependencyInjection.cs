@@ -132,6 +132,7 @@ public static class DependencyInjection
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<IAdministrationRepository, AdministrationRepository>();
         services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<IInvitationRetentionRepository, InvitationRetentionRepository>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IConsentRepository, ConsentRepository>();
         services.AddScoped<IChildRepository, ChildRepository>();

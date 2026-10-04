@@ -28,5 +28,20 @@ public interface IInvitationRepository
     public Task<bool> TeamInTruppAsync(
         Guid teamId, Guid ageGroupId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Tar bort alla inbjudningar adresserade till <paramref name="email"/>, precis som
+    /// <see cref="ILoginCodeRepository.DeleteForEmailAsync"/> gör för koderna.
+    ///
+    /// <para>
+    /// En inbjudan är bunden till en adress, inte till ett konto: en <em>accepterad</em>
+    /// inbjudan kaskaderar bort med kontot via <c>AcceptedByAccountId</c>, men en väntande,
+    /// utgången eller återkallad gör det inte — dess <c>Email</c> ligger kvar i klartext
+    /// efter att personen raderat sitt konto (§KM.6). Den tas därför bort uttryckligen här.
+    /// Inbjudningar kontot <em>skapat</em> åt andra rörs inte: de bär bara ett id
+    /// (<c>CreatedByAccountId</c>, §KM.10), aldrig den raderades namn eller adress.
+    /// </para>
+    /// </summary>
+    public Task DeleteForEmailAsync(string email, CancellationToken cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken);
 }
