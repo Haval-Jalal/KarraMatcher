@@ -106,6 +106,10 @@ builder.Services.AddHostedService<KarraMatcher.Api.Features.Chat.ChatRetentionWo
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Chat.ChatReleaseWorker>();
 builder.Services.AddHostedService<KarraMatcher.Api.Features.Attendance.AttendanceRetentionWorker>();
 
+// Gallringen av doda inbjudningar (§KM.6, #585). Samma monster -- se InvitationRetentionWorker.
+// En utgangen eller aterkallad inbjudan bar kvar adressen den skickades till; den stadas har.
+builder.Services.AddHostedService<KarraMatcher.Api.Features.Invitations.InvitationRetentionWorker>();
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     /*

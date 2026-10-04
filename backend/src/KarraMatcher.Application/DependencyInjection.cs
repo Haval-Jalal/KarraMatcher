@@ -67,8 +67,9 @@ public static class DependencyInjection
         services.AddScoped<Features.Administration.AdminRoleService>();
         services.AddScoped<Features.Administration.CoachRoleService>();
 
-        // Inbjudningar (§KM.3, #193).
+        // Inbjudningar (§KM.3, #193). Gallringen av döda inbjudningar (§KM.6, #585).
         services.AddScoped<Features.Invitations.InvitationService>();
+        services.AddScoped<Features.Invitations.InvitationRetentionService>();
 
         // Ansökningar (§KM.3, #194).
         services.AddScoped<Features.Applications.ApplicationService>();

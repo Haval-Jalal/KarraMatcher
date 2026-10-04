@@ -230,9 +230,11 @@ egna siffror och skoj* och delas med ingen.
   är `SetNull` (#63), inte kaskad.
 - **Gallring — automatisk och tidsbestämd, körs i processen (inte cron):** samåkning för en match
   gallras **30 dagar** efter matchen (§KM.12), en kallelse med sina per-barn-svar **30 dagar** efter
-  händelsen (§KM.7/`#203`), och chattmeddelanden efter **90 dagar** (`#201`). Varje gallring har
-  ett eget arbetar-jobb med samma mönster (dygnsintervall, idempotent, loggar bara antal, ett fel
-  fäller aldrig API:t) och läser aldrig in fritexten den raderar. Det enda dygns-cronjobbet på
+  händelsen (§KM.7/`#203`), chattmeddelanden efter **90 dagar** (`#201`), och en **död inbjudan**
+  (utgången eller återkallad — bär kvar den adress den skickades till) **30 dagar** efter sin utgång
+  (`#585`; en *accepterad* inbjudan är ett medlemskap och kaskaderar i stället bort med sitt konto).
+  Varje gallring har ett eget arbetar-jobb med samma mönster (dygnsintervall, idempotent, loggar bara
+  antal, ett fel fäller aldrig API:t) och läser aldrig in fritexten eller adressen den raderar. Det enda dygns-cronjobbet på
   Vercel är reserverat åt kvällspåminnelsen (§KM.11) — gallringen får det inte.
 - Ingen tredjepartsspårning, ingen besöksanalys, inga externa skript i FE utöver väder (Open-Meteo)
   och utgående kartlänkar. Nya tredjeparter kräver beslut i handoff-filen.

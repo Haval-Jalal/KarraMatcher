@@ -15,9 +15,11 @@ namespace KarraMatcher.Application.Features.Auth.DeleteAccount;
 /// </para>
 ///
 /// <para>
-/// <b>Engångskoderna är det som är lätt att glömma.</b> De hänger på adressen och inte på
-/// kontot — kontot finns ju inte när koden skickas — så de följer inte med i kaskaden och
-/// måste tas bort uttryckligen. Ett test vaktar det.
+/// <b>Engångskoderna och inbjudningarna är det som är lätt att glömma.</b> Båda hänger på
+/// adressen och inte på kontot — kontot finns ju inte när de skapas — så de följer inte med
+/// i kaskaden och måste tas bort uttryckligen. (En <em>accepterad</em> inbjudan kaskaderar
+/// visserligen via <c>AcceptedByAccountId</c>, men en väntande, utgången eller återkallad
+/// skulle annars lämna adressen kvar i klartext, §KM.6.) Tester vaktar båda.
 /// </para>
 ///
 /// <para>
@@ -28,6 +30,7 @@ namespace KarraMatcher.Application.Features.Auth.DeleteAccount;
 internal sealed class DeleteAccountCommandHandler(
     IAccountRepository accounts,
     ILoginCodeRepository codes,
+    IInvitationRepository invitations,
     IAuditLog audit) : ICommandHandler<DeleteAccountCommand, Unit>
 {
     public async Task<Unit> HandleAsync(
@@ -50,6 +53,7 @@ internal sealed class DeleteAccountCommandHandler(
             .ConfigureAwait(false);
 
         await codes.DeleteForEmailAsync(account.Email, cancellationToken).ConfigureAwait(false);
+        await invitations.DeleteForEmailAsync(account.Email, cancellationToken).ConfigureAwait(false);
 
         // Refresh-tokens och roller kaskaderar bort med kontot. Att de gör det är inte en
         // vana utan konfigurerat, och ett test kontrollerar att varje tabell som pekar på

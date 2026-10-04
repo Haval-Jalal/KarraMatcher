@@ -6,6 +6,8 @@ using System.Text.Json;
 using KarraMatcher.Application.Features.Auth;
 using KarraMatcher.Domain.Accounts;
 using KarraMatcher.Domain.Audit;
+using KarraMatcher.Domain.Invitations;
+using KarraMatcher.Domain.Teams;
 using KarraMatcher.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -160,6 +162,86 @@ public sealed class DeleteAccountTests(KarraMatcherApiFactory factory)
         Assert.Empty(await context.LoginCodes
             .Where(c => c.Email == email)
             .ToListAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Radering_TarMedSig_VantandeInbjudningarTillAdressen()
+    {
+        /*
+         * Samma lucka som koderna, och av samma skal. En inbjudan ar bunden till en adress,
+         * inte till ett konto: en accepterad inbjudan kaskaderar bort via AcceptedByAccountId,
+         * men en vantande, utgangen eller aterkallad gor det inte -- dess Email skulle annars
+         * ligga kvar i klartext efter raderingen (§KM.6). Den tas bort uttryckligen.
+         */
+        var (_, email, session) = await CreateAccountAsync();
+
+        var toMe = await SeedInvitationAsync(email, InvitationStatus.Pending);
+
+        await DeleteAsync(session);
+
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        Assert.Null(await context.Invitations.FindAsync([toMe], CancellationToken.None));
+        Assert.Empty(await context.Invitations
+            .Where(i => i.Email == email)
+            .ToListAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Radering_LamnarKvar_InbjudanKontotSkapatAtNagonAnnan()
+    {
+        /*
+         * Granslinjen at andra hallet. En inbjudan som den raderade *skapade* at en annan
+         * adress hor till den andra personen -- den ska overleva. CreatedByAccountId ar en
+         * audit-not utan frammande nyckel (§KM.10, #583): den lever kvar som ett id utan namn
+         * eller adress, precis som §KM.6 tillater. Raderingen gar pa mottagaradressen, inte pa
+         * vem som skapade inbjudan.
+         */
+        var (accountId, _, session) = await CreateAccountAsync();
+
+        var someoneElse = $"{Guid.NewGuid():N}@example.com";
+        var theirs = await SeedInvitationAsync(someoneElse, InvitationStatus.Pending, createdBy: accountId);
+
+        await DeleteAsync(session);
+
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+
+        Assert.NotNull(await context.Invitations.FindAsync([theirs], CancellationToken.None));
+    }
+
+    /// <summary>Seedar en inbjudan till <paramref name="email"/> i en egen trupp, och ger dess id.</summary>
+    private async Task<Guid> SeedInvitationAsync(
+        string email,
+        InvitationStatus status,
+        Guid? createdBy = null)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<KarraMatcherDbContext>();
+        var now = DateTime.UtcNow;
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        var club = new Club { Id = Guid.NewGuid(), Name = "Kärra", Slug = $"klubb-inv-{suffix}" };
+        var trupp = new AgeGroup { Id = Guid.NewGuid(), ClubId = club.Id, Name = "P2016", Season = "2026" };
+        var invitation = new Invitation
+        {
+            Id = Guid.NewGuid(),
+            AgeGroupId = trupp.Id,
+            Email = email,
+            TokenHash = new string('b', 64),
+            CreatedByAccountId = createdBy ?? Guid.NewGuid(),
+            CreatedUtc = now,
+            ExpiresUtc = now.AddDays(7),
+            Status = status,
+        };
+
+        context.Clubs.Add(club);
+        context.AgeGroups.Add(trupp);
+        context.Invitations.Add(invitation);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        return invitation.Id;
     }
 
     [Fact]

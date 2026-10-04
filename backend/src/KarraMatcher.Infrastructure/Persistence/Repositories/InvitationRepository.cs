@@ -40,6 +40,16 @@ internal sealed class InvitationRepository(KarraMatcherDbContext context) : IInv
         context.Teams.AsNoTracking()
             .AnyAsync(t => t.Id == teamId && t.AgeGroupId == ageGroupId, cancellationToken);
 
+    public async Task DeleteForEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var invitations = await context.Invitations
+            .Where(i => i.Email == email)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        context.Invitations.RemoveRange(invitations);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         context.SaveChangesAsync(cancellationToken);
 }
