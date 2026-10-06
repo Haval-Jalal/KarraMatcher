@@ -102,3 +102,63 @@ services:
 
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+
+  # ----------------------------------------------------------------------------------------
+  # Staging: en isolerad sandlada for att prova en driftsatt andring utan att rora pilotens
+  # data (#645). Kor samma image som prod men i miljon Staging, mot en EGEN Neon-databas
+  # (en branch, aldrig prod-databasen). Dar far demon vara pa: demokontona loggar in med den
+  # fasta koden 424242 och demo-barnen seedas in -- ofarligt, eftersom ingen riktig familj
+  # finns har. Demo-grinden (DemoAccessGuard) slapper igenom Staging men aldrig Production.
+  #
+  # Autodeployar fran main, precis som prod. Vill man i stallet testa FORE en merge: peka
+  # branch pa en langlivad "staging"-gren och pusha dit forst.
+  - type: web
+    name: karramatcher-api-staging
+    runtime: docker
+    plan: free
+    region: frankfurt
+
+    branch: main
+    autoDeploy: true
+
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+
+    healthCheckPath: /health
+
+    envVars:
+      # EGEN databas. Maste vara en annan Neon-branch an prod -- staging far aldrig skriva i
+      # pilotens data. Satts manuellt i dashboarden.
+      - key: ConnectionStrings__Default
+        sync: false
+
+      # Egna hemligheter for staging. Auth-nyckeln MASTE skilja sig fran prod (en lackt
+      # staging-nyckel ska inte ge tokens som duger i prod). Email-nyckeln kravs eftersom
+      # AddEmail valideras utanfor utveckling; demon anvander 424242, sa mejl triggas sallan.
+      - key: Auth__SigningKey
+        sync: false
+      - key: Email__ApiKey
+        sync: false
+      - key: Chat__EncryptionKey
+        sync: false
+
+      # Demon PA -- hela poangen med staging. Grinden tillater det har (Staging != Production).
+      - key: DemoSeed__Enabled
+        value: "true"
+
+      # Demokontonas adresser. Inloggningen ar kodlos per mejl for sjalva kontot, men demon
+      # tillater aven den fasta koden -- peka dem anda pa adresser du nar (t.ex. plus-adresser).
+      - key: DemoSeed__AdminEmail
+        sync: false
+      - key: DemoSeed__GuardianEmail
+        sync: false
+
+      # Seeden kors har sa demo-barnen (och baslaget) finns att prova mot. Idempotent.
+      - key: Database__SeedOnStartup
+        value: "true"
+
+      - key: Database__ApplyMigrationsOnStartup
+        value: "true"
+
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Staging
