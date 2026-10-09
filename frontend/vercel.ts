@@ -1,4 +1,4 @@
-import { type VercelConfig } from '@vercel/config/v1'
+import { routes, type VercelConfig } from '@vercel/config/v1'
 
 /*
  * Vercel-config som kod (`#648`-serien → staging, §KM.11).
@@ -23,10 +23,11 @@ export const config: VercelConfig = {
   outputDirectory: 'dist',
   rewrites: [
     // Klienten ser en enda origin: /api proxas till backend (§KM.11). Forstaparts-cookien
-    // for refresh-token halls darfor forstaparts -- hela poangen med proxyn.
-    { source: '/api/:path*', destination: `${API_URL}/api/:path*` },
+    // for refresh-token halls darfor forstaparts -- hela poangen med proxyn. routes.rewrite med
+    // (.*)/$1 ar den dokumenterade formen for en extern destination i vercel.ts.
+    routes.rewrite('/api/(.*)', `${API_URL}/api/$1`),
     // SPA-fallback: alla ovriga vagar lamnas till klient-routern.
-    { source: '/(.*)', destination: '/index.html' },
+    routes.rewrite('/(.*)', '/index.html'),
   ],
   // Kvallspaminnelsen (Vercel Hobby tillater cron en gang per dygn, §KM.11).
   crons: [{ path: '/api/v1/jobs/match-reminders', schedule: '0 18 * * *' }],
