@@ -295,7 +295,7 @@ frontend/vercel.json:  /api/:path*  →  https://<render-url>/api/:path*
 - **Klienten ser en enda origin.** Det medför tre bindande regler:
   1. **CORS öppnas inte upp.** Blir något ett CORS-fel är det för att någon anropat Render-URL:en direkt — fixa anropet, inte CORS-policyn.
   2. **Refresh-token-cookien är en förstapartscookie** — `HttpOnly`, `Secure`, `SameSite=Lax`. Det är hela poängen med proxyn och får inte offras.
-  3. **Render-URL:en hårdkodas aldrig i frontend-koden.** Den finns på exakt ett ställe: `frontend/vercel.json`.
+  3. **Render-URL:en hårdkodas aldrig i frontend-koden.** Den bor på exakt ett ställe: Vercel-miljövariabeln `KARRA_API_URL`, som `frontend/vercel.ts` läser in i `/api`-rewriten (prod-URL som fallback). Så kan prod- och staging-Vercel peka på var sin backend utan att configen divergerar mellan grenarna (`#645`, staging-miljön). *(Före staging låg URL:en direkt i `frontend/vercel.json`; den ersattes av `vercel.ts` — se [`docs/STAGING-MILJO.md`](./docs/STAGING-MILJO.md).)*
 - **Kallstart är ett verkligt UX-problem.** Render free somnar efter ca 15 minuters tystnad och tar omkring 50 sekunder att vakna — och appen används mest lördag morgon, efter en tyst natt. Tre motåtgärder, alla obligatoriska:
   1. Publika GET-svar (lagets schema, matchdetalj, ICS-feeden) sätter `Cache-Control: public, s-maxage=…` så **Vercels edge svarar utan att väcka Render**. Det är den vanligaste sidvisningen i hela appen.
   2. Ett gratis uppetidsverktyg pingar `/health` med några minuters mellanrum.

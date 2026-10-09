@@ -110,15 +110,17 @@ services:
   # fasta koden 424242 och demo-barnen seedas in -- ofarligt, eftersom ingen riktig familj
   # finns har. Demo-grinden (DemoAccessGuard) slapper igenom Staging men aldrig Production.
   #
-  # Autodeployar fran main, precis som prod. Vill man i stallet testa FORE en merge: peka
-  # branch pa en langlivad "staging"-gren och pusha dit forst.
+  # Autodeployar fran den langlivade "staging"-grenen (#645-uppfoljning): sa testas en andring
+  # FORE prod. Flodet ar feature -> PR mot `staging` -> testa pa staging-URL -> PR `staging` ->
+  # `main` -> prod. Frontendens Vercel-config (vercel.ts) ar env-driven, sa staging/main har
+  # identiska filer och promotion-mergen blir ren. Se docs/STAGING-MILJO.md.
   - type: web
     name: karramatcher-api-staging
     runtime: docker
     plan: free
     region: frankfurt
 
-    branch: main
+    branch: staging
     autoDeploy: true
 
     dockerfilePath: ./backend/Dockerfile
