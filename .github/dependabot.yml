@@ -21,6 +21,16 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
+    # react och react-dom MÅSTE ha exakt samma version (annars "Incompatible React
+    # versions" → hela testsviten faller, #678). Gruppera dem så Dependabot bumpar dem
+    # i samma PR i stället för var för sig. Typerna följer med av samma skäl.
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
 
   - package-ecosystem: github-actions
     directory: /
