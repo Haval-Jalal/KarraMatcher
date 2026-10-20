@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { ApiError } from '@/lib/api'
 import { swedishLocalToUtc, utcToSwedishLocalInput } from '@/lib/time'
 
@@ -212,6 +213,8 @@ export function CarpoolOfferForm({
           Avbryt
         </button>
       </div>
+
+      <SlowRequestNotice isPending={isSubmitting} />
     </form>
   )
 }

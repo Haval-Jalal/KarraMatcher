@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { useSlowRequest } from '@/lib/useSlowRequest'
+import { SLOW_REQUEST_MESSAGE, useSlowRequest } from '@/lib/useSlowRequest'
 
 /**
  * Väntan, med en form att vänta mot.
@@ -32,11 +32,7 @@ export function LoadingState({
     <div className="loading">
       <p className="state" role="status">
         {label}
-        {isSlow && (
-          <span className="loading__slow">
-            Servern har sovit och startar igen. Det kan ta upp till en minut.
-          </span>
-        )}
+        {isSlow && <span className="loading__slow">{SLOW_REQUEST_MESSAGE}</span>}
       </p>
 
       {children && (
