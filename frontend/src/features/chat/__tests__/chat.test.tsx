@@ -111,6 +111,35 @@ describe('trupp-chatt', () => {
     expect(screen.getByText('[borttaget]')).toBeInTheDocument()
   })
 
+  it('pollar nya meddelanden medan chatten är öppen (#594)', async () => {
+    // Globala defaults har refetchOnWindowFocus av + staleTime 60 s, så utan refetchInterval såg
+    // en öppen chatt aldrig nya meddelanden förrän man postade eller remountade. 15 s senare ska
+    // en ny hämtning ha skett.
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const token = tokenWith({ email: 'm@example.com', sub: 'me' })
+      setAccessToken(token)
+      const sent = stub(token, false, (url) => {
+        if (url.includes('/chat/messages')) return MESSAGES
+        return []
+      })
+
+      renderRoute('/chatt/trupp-1')
+
+      await screen.findByText('Hej alla')
+
+      const fetchCount = () =>
+        sent.filter((r) => r.method === 'GET' && r.url.endsWith('/chat/messages')).length
+      const before = fetchCount()
+
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      await waitFor(() => expect(fetchCount()).toBeGreaterThan(before))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('en medlem kan skriva ett meddelande — anropet bär texten', async () => {
     const user = userEvent.setup()
     const token = tokenWith({ email: 'm@example.com', sub: 'me' })

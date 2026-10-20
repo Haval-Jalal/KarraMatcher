@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ConfirmButton } from '@/components/ConfirmButton'
 import { useAutoFocus } from '@/hooks/useAutoFocus'
@@ -105,6 +105,38 @@ export function ChatChannel({
   // Meddelandet man håller på att svara på (tråd-svar), eller null.
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
 
+  // Autoscroll till senaste (#594). Chatten öppnar på det nyaste meddelandet; ett nytt meddelande
+  // (inpollat eller eget) rullar ner. För ett inpollat meddelande sker det bara om man redan är
+  // nära botten — annars rycks den som bläddrar i historiken inte ner. Ett eget skickat meddelande
+  // rullar alltid ner, så man ser att det landade (forceScroll).
+  const listRef = useRef<HTMLUListElement | null>(null)
+  const didInitialScroll = useRef(false)
+  const forceScroll = useRef(false)
+
+  useEffect(() => {
+    const el = listRef.current
+    if (el === null || !messages.data) {
+      return
+    }
+
+    if (!didInitialScroll.current) {
+      el.scrollTop = el.scrollHeight
+      didInitialScroll.current = true
+      return
+    }
+
+    if (forceScroll.current) {
+      el.scrollTop = el.scrollHeight
+      forceScroll.current = false
+      return
+    }
+
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    if (nearBottom) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [messages.data])
+
   function clearPress(): void {
     if (pressTimer.current !== null) {
       window.clearTimeout(pressTimer.current)
@@ -209,6 +241,9 @@ export function ChatChannel({
           setWhen('')
           setScheduling(false)
           setReplyingTo(null)
+          // Rulla till botten när det egna meddelandet landar — även om man bläddrat uppåt (#594).
+          // Ett schemalagt meddelande dyker inte upp i tråden nu, så det rör inte scrollen.
+          forceScroll.current = publishAt === undefined
         },
         onError: (error: unknown) => setFailure(messageOf(error)),
       },
@@ -252,7 +287,7 @@ export function ChatChannel({
       )}
 
       {messages.data && (
-        <ul className="admin-list chat-messages">
+        <ul ref={listRef} className="admin-list chat-messages">
           {messages.data.length === 0 && <li className="state">Inga meddelanden än.</li>}
           {messages.data.map((message) => (
             <li
