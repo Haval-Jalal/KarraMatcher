@@ -4,6 +4,13 @@
 # Veckovis — en ensam utvecklare hinner inte med daglig brusnivå, och säsongsappen
 # har inte trafiken som gör en dags fördröjning till en risk. Säkerhetsuppdateringar
 # skickar Dependabot ändå så fort de finns, oavsett schema.
+#
+# GRUPPERING: utan den gör Dependabot en PR per paket OCH per projekt — en bump av
+# Microsoft.Extensions.Options (som finns i både Application och Application.Tests) blev
+# två PR:er som var för sig gav NU1605 "package downgrade" (#697/#700/#701). Grupperna nedan
+# buntar alla minor/patch-uppdateringar till EN PR per ekosystem, som uppdaterar alla projekt
+# konsekvent (ingen krock) och auto-mergas som en enda minor/patch (dependabot-auto-merge.yml).
+# Major-bumpar lämnas utanför grupperna → kommer var för sig för manuell granskning.
 version: 2
 updates:
   - package-ecosystem: nuget
@@ -13,6 +20,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      backend-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: npm
     directory: /frontend
@@ -21,16 +33,20 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
-    # react och react-dom MÅSTE ha exakt samma version (annars "Incompatible React
-    # versions" → hela testsviten faller, #678). Gruppera dem så Dependabot bumpar dem
-    # i samma PR i stället för var för sig. Typerna följer med av samma skäl.
     groups:
+      # react och react-dom MÅSTE ha exakt samma version (annars "Incompatible React
+      # versions" → hela testsviten faller, #678). Egen grupp, först, så den fångar dem i
+      # samma PR även för en major. Typerna följer med av samma skäl.
       react:
         patterns:
           - "react"
           - "react-dom"
           - "@types/react"
           - "@types/react-dom"
+      frontend-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: github-actions
     directory: /
@@ -38,3 +54,8 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(ci)"
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
