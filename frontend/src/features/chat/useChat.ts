@@ -59,6 +59,12 @@ export function useChatMessages(channel: ChatChannel) {
   return useQuery({
     queryKey: chatKeys.messages(channel),
     queryFn: ({ signal }) => getMessages(channel, signal),
+    // Pollar nya meddelanden medan chatten är öppen (#594). TanStack kör bara intervallet
+    // medan frågan är monterad (observern lever), så pollningen är scopad till den öppna
+    // chattvyn och tystnar av sig själv när man lämnar den. Globala defaults har
+    // refetchOnWindowFocus av + staleTime 60 s, så utan detta såg en öppen chatt aldrig nya
+    // meddelanden förrän man själv postade eller remountade.
+    refetchInterval: 15_000,
   })
 }
 

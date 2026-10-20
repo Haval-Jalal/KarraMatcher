@@ -2163,6 +2163,16 @@ a.match-card:focus-visible .match-card__opponent {
 
 .chat-messages {
   gap: 14px;
+  /*
+   * Egen scroll-ruta för tråden (#594). Utan max-height + overflow-y växer listan obegränsat och
+   * trycker skrivfältet långt under vikningen; nu skrollar meddelandena i sin egen ruta. overscroll
+   * håller kvar skrollen i tråden i stället för att kedja ut till sidan, och momentum ger mjuk
+   * touch-scroll på iOS.
+   */
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /*
