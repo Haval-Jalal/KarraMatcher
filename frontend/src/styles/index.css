@@ -1825,6 +1825,17 @@ a.match-card:focus-visible .match-card__opponent {
   margin: 0 0 6px;
 }
 
+/*
+ * Horisontell scroll-container för breda tabeller (#593). Säsongsöversikten och
+ * schema-importen wrappar sina tabeller i <div className="scroll">; utan den här regeln
+ * inneslöts ingenting, så en bred tabell tryckte hela sidan i sidled på en telefon — precis
+ * det responsiv-regeln förbjuder. Nu skrollar tabellen inom sin egen ruta, inte sidan.
+ */
+.scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .season__table {
   border-collapse: collapse;
   width: 100%;
