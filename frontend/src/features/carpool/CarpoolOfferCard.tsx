@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 import { formatDayAndMonth, formatKickoffTime } from '@/lib/time'
@@ -43,6 +44,9 @@ export function CarpoolOfferCard({
 }) {
   const [asking, setAsking] = useState(false)
   const [confirmWithdraw, setConfirmWithdraw] = useState(false)
+  // Håller "Dra tillbaka" upptagen och bär kallstarts-notisen (§KM.11, `#591`): att dra tillbaka
+  // ett erbjudande är en skrivning som kan hänga ~50 s medan Render vaknar.
+  const [withdrawing, setWithdrawing] = useState(false)
   // "Dra tillbaka"-knappen ersätts av bekräftelsen; flytta fokus dit (WCAG 2.4.3, #598).
   const withdrawRef = useAutoFocus<HTMLParagraphElement>(confirmWithdraw)
 
@@ -146,33 +150,44 @@ export function CarpoolOfferCard({
           )}
 
           {confirmWithdraw ? (
-            <div className="actions">
-              <p className="carpool__confirm" tabIndex={-1} ref={withdrawRef}>
-                Dra tillbaka erbjudandet?
-              </p>
-              <button
-                type="button"
-                className="button button--danger"
-                onClick={() => {
-                  void (async () => {
-                    await withdrawOffer(matchId, offer.id)
+            <>
+              <div className="actions">
+                <p className="carpool__confirm" tabIndex={-1} ref={withdrawRef}>
+                  Dra tillbaka erbjudandet?
+                </p>
+                <button
+                  type="button"
+                  className="button button--danger"
+                  disabled={withdrawing}
+                  onClick={() => {
+                    void (async () => {
+                      setWithdrawing(true)
+                      try {
+                        await withdrawOffer(matchId, offer.id)
+                        setConfirmWithdraw(false)
+                        await onChanged()
+                      } finally {
+                        setWithdrawing(false)
+                      }
+                    })()
+                  }}
+                >
+                  {withdrawing ? 'Drar tillbaka…' : 'Ja, dra tillbaka'}
+                </button>
+                <button
+                  type="button"
+                  className="button button--action"
+                  disabled={withdrawing}
+                  onClick={() => {
                     setConfirmWithdraw(false)
-                    await onChanged()
-                  })()
-                }}
-              >
-                Ja, dra tillbaka
-              </button>
-              <button
-                type="button"
-                className="button button--action"
-                onClick={() => {
-                  setConfirmWithdraw(false)
-                }}
-              >
-                Behåll
-              </button>
-            </div>
+                  }}
+                >
+                  Behåll
+                </button>
+              </div>
+
+              <SlowRequestNotice isPending={withdrawing} />
+            </>
           ) : (
             <div className="actions">
               <button
