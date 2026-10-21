@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { useClubVenue } from '@/features/clubs/useClubVenue'
 import { type TeamEvent, venueLine } from '@/features/events'
 import { ApiError } from '@/lib/api'
@@ -394,6 +395,8 @@ export function EventForm({
           Avbryt
         </button>
       </div>
+
+      <SlowRequestNotice isPending={isSubmitting} />
     </form>
   )
 }
