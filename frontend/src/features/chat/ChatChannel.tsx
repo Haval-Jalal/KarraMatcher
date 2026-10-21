@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { ConfirmButton } from '@/components/ConfirmButton'
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 import {
@@ -506,6 +507,8 @@ export function ChatChannel({
             {scheduling ? 'Schemalägg' : 'Skicka'}
           </button>
         </div>
+
+        <SlowRequestNotice isPending={post.isPending} />
       </form>
 
       {isLeader && scheduled.isError && (

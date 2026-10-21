@@ -15,6 +15,13 @@ import { useEffect, useState } from 'react'
  */
 export const SLOW_AFTER_MS = 2500
 
+/**
+ * Beskedet som visas när ett anrop dragit ut på tiden (§KM.11). Delas av sid-laddningen
+ * (LoadingState) och skrivningarna (SlowRequestNotice, `#591`) så copyn står på ett ställe.
+ */
+export const SLOW_REQUEST_MESSAGE =
+  'Servern har sovit och startar igen. Det kan ta upp till en minut.'
+
 export function useSlowRequest(isPending: boolean, delayMs: number = SLOW_AFTER_MS): boolean {
   const [isSlow, setIsSlow] = useState(false)
   const [trackedPending, setTrackedPending] = useState(isPending)

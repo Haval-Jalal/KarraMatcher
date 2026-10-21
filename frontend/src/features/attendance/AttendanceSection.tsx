@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { useAuth } from '@/features/auth'
 import { useRoster } from '@/features/children'
 import { useAutoFocus } from '@/hooks/useAutoFocus'
@@ -212,6 +213,8 @@ function GuardianReplies({
           )
         })}
       </ul>
+
+      <SlowRequestNotice isPending={respond.isPending} />
     </div>
   )
 }
@@ -476,6 +479,8 @@ function AdminKallelse({
             </div>
           )}
 
+          <SlowRequestNotice isPending={send.isPending} />
+
           {sentMsg !== null && (
             <p className="state" role="status">
               {sentMsg}
@@ -526,6 +531,8 @@ function AdminKallelse({
               </button>
             </div>
           )}
+
+          <SlowRequestNotice isPending={remind.isPending} />
 
           {remindMsg !== null && (
             <p className="attendance__note" role="status">
