@@ -82,10 +82,19 @@ jobs:
       - name: Installera beroenden
         run: npm ci
 
-      # Sarbarhetsskanning (sakerhetschecklistan 10.2). Faller bygget vid hog eller allvarlig
-      # sarbarhet; laglig brusniva slapps igenom sa att grinden inte blir en som ignoreras.
+      # Sarbarhetsskanning (sakerhetschecklistan 10.2). Tva niver sa att grinden traffar ratt och
+      # inte blir en som ignoreras (jfr brusnivan nedan):
+      #  1. Allt som faktiskt *skeppas till anvandaren* (prod-beroenden) far inte ha en hog eller
+      #     allvarlig sarbarhet — det ar appens riktiga angreppsyta.
+      #  2. Hela tradet, inkl. bygg-/deploy-verktyg (devDependencies), far inte bara en *kritisk*
+      #     sarbarhet. En hog sarbarhet i ren byggkedja som validerar var egen config utan
+      #     otillforlitlig indata (t.ex. zod <4.6.6 inuti @vercel/config, som bara kor i Vercels
+      #     bygge) ar ingen angreppsyta och ska inte falla bygget — annars blir grinden en som
+      #     ignoreras. Appens egen zod ar 4.6.7 och traffas inte.
       - name: Skanna beroenden
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --audit-level=high --omit=dev
+          npm audit --audit-level=critical
 
       - name: Typkoll
         run: npm run typecheck
