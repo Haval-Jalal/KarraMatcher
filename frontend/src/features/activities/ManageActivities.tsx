@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import type { EventInput } from '@/features/admin/adminApi'
 import { EventForm, SeasonOverview } from '@/features/admin'
 import { cupKeys } from '@/features/cup/useCup'
@@ -46,6 +47,9 @@ export function ManageActivities({
   const [editing, setEditing] = useState<TeamEvent | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<TeamEvent | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+  // Håller kallstarts-notisen (§KM.11, `#591`): att ställa in eller ta bort en aktivitet är en
+  // skrivning som kan hänga ~50 s medan Render vaknar.
+  const [busy, setBusy] = useState(false)
   // Kvitto efter en lyckad ställ-in/ta-bort. Nonce så samma text annonseras (och tar fokus) igen
   // vid upprepade åtgärder (#544, WCAG 4.1.3).
   const [notice, setNotice] = useState<{ text: string; seq: number } | null>(null)
@@ -94,17 +98,21 @@ export function ManageActivities({
 
   async function handleCancel(event: TeamEvent): Promise<void> {
     setFailure(null)
+    setBusy(true)
     try {
       await cancelTruppEvent(truppId, event.id)
       await refresh(event.id)
       announce('Aktiviteten ställdes in.')
     } catch (error) {
       setFailure(messageOf(error))
+    } finally {
+      setBusy(false)
     }
   }
 
   async function handleDelete(event: TeamEvent): Promise<void> {
     setFailure(null)
+    setBusy(true)
     try {
       await deleteTruppEvent(truppId, event.id)
       await refresh(event.id)
@@ -112,6 +120,8 @@ export function ManageActivities({
       announce('Aktiviteten togs bort.')
     } catch (error) {
       setFailure(messageOf(error))
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -145,6 +155,8 @@ export function ManageActivities({
           {notice.text}
         </p>
       )}
+
+      <SlowRequestNotice isPending={busy} />
 
       {/* En stabil, fokuserbar region att landa fokus på när bekräftelsen avbryts — annars faller
           fokus till <body> när Avbryt-knappen unmontas (WCAG 2.4.3, #544). */}

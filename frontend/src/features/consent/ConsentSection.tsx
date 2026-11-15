@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { ApiError } from '@/lib/api'
 import { formatFullDate } from '@/lib/time'
 
@@ -97,6 +98,8 @@ export function ConsentSection() {
               {grant.isPending ? 'Sparar…' : 'Jag samtycker'}
             </button>
           </div>
+
+          <SlowRequestNotice isPending={grant.isPending} />
         </>
       )}
     </section>

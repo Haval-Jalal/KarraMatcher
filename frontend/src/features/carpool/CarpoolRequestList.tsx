@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { ConfirmButton } from '@/components/ConfirmButton'
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { ApiError } from '@/lib/api'
 
 import type { CarpoolRequest } from './carpoolApi'
@@ -171,6 +172,10 @@ function RequestRow({
           />
         </div>
       )}
+
+      {/* Accept/återta kan hänga ~50 s medan Render vaknar (§KM.11, `#591`) — säg det. Nekandet
+          sköter CarpoolDenyForm sin egen notis för. */}
+      <SlowRequestNotice isPending={busy} />
     </>
   )
 }

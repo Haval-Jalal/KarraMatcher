@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { SlowRequestNotice } from '@/components/SlowRequestNotice'
 import { useAuth } from '@/features/auth'
 import { ApiError } from '@/lib/api'
 
@@ -171,6 +172,8 @@ export function CupSignupSection({
               {failure}
             </p>
           )}
+
+          <SlowRequestNotice isPending={open.isPending || signUp.isPending || withdraw.isPending} />
         </>
       )}
     </section>
