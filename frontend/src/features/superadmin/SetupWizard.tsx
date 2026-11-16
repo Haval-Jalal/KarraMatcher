@@ -140,6 +140,11 @@ export function SetupWizard() {
             singular="sport"
             items={sports.data ?? []}
             isLoading={sports.isLoading}
+            error={sports.error}
+            isFetching={sports.isFetching}
+            onRetry={() => {
+              void sports.refetch()
+            }}
             selectedId={sportId}
             onSelect={selectSport}
             onCreate={createSportAndSelect}
@@ -152,6 +157,11 @@ export function SetupWizard() {
             singular="klubb"
             items={clubs.data ?? []}
             isLoading={clubs.isLoading}
+            error={clubs.error}
+            isFetching={clubs.isFetching}
+            onRetry={() => {
+              void clubs.refetch()
+            }}
             selectedId={clubId}
             onSelect={selectClub}
             onCreate={createClubAndSelect}
@@ -166,6 +176,11 @@ export function SetupWizard() {
             sportName={selectedSport.name}
             trupper={(trupper.data ?? []).filter((t) => t.clubId === selectedClub.id)}
             isLoading={trupper.isLoading}
+            error={trupper.error}
+            isFetching={trupper.isFetching}
+            onRetry={() => {
+              void trupper.refetch()
+            }}
             selectedId={truppId}
             onSelect={setTruppId}
           />
@@ -332,6 +347,9 @@ function PickOrCreate({
   singular,
   items,
   isLoading,
+  error,
+  isFetching,
+  onRetry,
   selectedId,
   onSelect,
   onCreate,
@@ -340,6 +358,9 @@ function PickOrCreate({
   singular: string
   items: { id: string; name: string; slug: string }[]
   isLoading: boolean
+  error: unknown
+  isFetching: boolean
+  onRetry: () => void
   selectedId: string | null
   onSelect: (id: string) => void
   onCreate: (name: string, slug: string) => Promise<void>
@@ -375,6 +396,15 @@ function PickOrCreate({
       <p className="state">Välj en {singular} som redan finns, eller skapa en ny.</p>
 
       {isLoading && <p className="state">Hämtar…</p>}
+
+      {error !== null && (
+        <div className="state state--error" role="alert">
+          <p>{superadminError(error)}</p>
+          <button type="button" className="button" onClick={onRetry} disabled={isFetching}>
+            {isFetching ? 'Försöker…' : 'Försök igen'}
+          </button>
+        </div>
+      )}
 
       {items.length > 0 && (
         <WizardRadioGroup
@@ -503,6 +533,9 @@ function TruppStep({
   sportName,
   trupper,
   isLoading,
+  error,
+  isFetching,
+  onRetry,
   selectedId,
   onSelect,
 }: {
@@ -512,6 +545,9 @@ function TruppStep({
   sportName: string
   trupper: { id: string; name: string; season: string }[]
   isLoading: boolean
+  error: unknown
+  isFetching: boolean
+  onRetry: () => void
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
@@ -542,6 +578,15 @@ function TruppStep({
       <p className="state">Skapa en trupp under klubben, eller välj en som redan finns.</p>
 
       {isLoading && <p className="state">Hämtar…</p>}
+
+      {error !== null && (
+        <div className="state state--error" role="alert">
+          <p>{superadminError(error)}</p>
+          <button type="button" className="button" onClick={onRetry} disabled={isFetching}>
+            {isFetching ? 'Försöker…' : 'Försök igen'}
+          </button>
+        </div>
+      )}
 
       {trupper.length > 0 && (
         <WizardRadioGroup

@@ -9,9 +9,10 @@ export const teamsQueryKey = ['teams'] as const
 /**
  * Lagen för lagväljaren.
  *
- * Endpointen är publik och cachas på Vercels edge i en timme, så det här är ett billigt
- * anrop även när Render sover. Klienten håller den längre än standard eftersom lagen i
- * praktiken aldrig ändras under en säsong.
+ * Lagen ändras i praktiken aldrig under en säsong, så klienten håller dem länge (`staleTime` en
+ * timme) och hämtar inte om dem i onödan. Endpointen kräver medlemskap och svaras `private,
+ * no-store` som allt annat i v2 — ingen edge-cache (§KM.3/§KM.11); den långa färskheten ligger
+ * alltså helt i klienten.
  */
 export function useTeams() {
   return useQuery({

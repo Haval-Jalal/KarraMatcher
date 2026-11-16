@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { postJson, renewSession } from '@/lib/api'
-import { clearSession, getAccessToken, setAccessToken } from '@/lib/session'
+import { clearSession, getAccessToken, onSessionChange, setAccessToken } from '@/lib/session'
 import { jsonResponse } from '@/test/apiStub'
 
 /**
@@ -43,6 +43,39 @@ describe('access-token lämnar aldrig minnet', () => {
     clearSession()
 
     expect(getAccessToken()).toBeNull()
+  })
+})
+
+describe('onSessionChange stödjer flera lyssnare', () => {
+  // En tidigare variant höll bara en referens, så en andra lyssnare slog tyst ut den första.
+  it('ropar på alla registrerade lyssnare vid en ändring', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const offFirst = onSessionChange(first)
+    const offSecond = onSessionChange(second)
+
+    setAccessToken('en.access.token')
+
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenCalledTimes(1)
+
+    offFirst()
+    offSecond()
+  })
+
+  it('avregistrerar en lyssnare utan att röra de andra', () => {
+    const kept = vi.fn()
+    const removed = vi.fn()
+    const offKept = onSessionChange(kept)
+    const offRemoved = onSessionChange(removed)
+
+    offRemoved()
+    clearSession()
+
+    expect(kept).toHaveBeenCalledTimes(1)
+    expect(removed).not.toHaveBeenCalled()
+
+    offKept()
   })
 })
 

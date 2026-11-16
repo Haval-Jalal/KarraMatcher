@@ -84,6 +84,36 @@ describe('SetupWizard nollar nedströmsval när klubben byts (#540)', () => {
     expect(screen.queryByRole('radio', { name: /P2016/ })).not.toBeInTheDocument()
   })
 
+  it('visar fel + "Försök igen" när listan inte kunde hämtas, och lyckas vid nytt försök (#613)', async () => {
+    // Steg-listan hade bara ett isLoading-läge: ett misslyckat anrop lämnade en tom lista utan
+    // besked. Nu visas fel + en retry-knapp, och ett nytt försök hämtar sporten.
+    let sportsAttempts = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf')) return Promise.resolve(jsonResponse({ token: 'csrf' }))
+        if (url.includes('/admin/sports')) {
+          sportsAttempts++
+          return sportsAttempts === 1
+            ? Promise.reject(new TypeError('Failed to fetch'))
+            : Promise.resolve(jsonResponse(SPORTS))
+        }
+        return Promise.resolve(jsonResponse([]))
+      }),
+    )
+
+    const user = userEvent.setup()
+    await renderWithProviders(<SetupWizard />)
+
+    // Fel-läget syns med en retry-knapp i stället för en tyst tom lista.
+    const retry = await screen.findByRole('button', { name: 'Försök igen' })
+
+    // Nytt försök → sporten dyker upp.
+    await user.click(retry)
+    expect(await screen.findByRole('radio', { name: /Fotboll/ })).toBeInTheDocument()
+  })
+
   it('kopplar "skapa"-formulärets valideringsfel till fältet (#600)', async () => {
     const user = userEvent.setup()
     await renderWithProviders(<SetupWizard />)

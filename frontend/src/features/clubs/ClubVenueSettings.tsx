@@ -69,9 +69,23 @@ export function ClubVenueSettings({ truppId }: { truppId: string }) {
       )}
 
       {venue.isError && (
-        <p className="state state--error" role="alert">
-          Kunde inte hämta truppens hemmaplan.
-        </p>
+        <div className="state state--error" role="alert">
+          <p>
+            {venue.error instanceof ApiError && venue.error.offline
+              ? 'Ingen anslutning. Hemmaplanen kan inte hämtas just nu.'
+              : 'Kunde inte hämta truppens hemmaplan just nu.'}
+          </p>
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              void venue.refetch()
+            }}
+            disabled={venue.isFetching}
+          >
+            {venue.isFetching ? 'Försöker…' : 'Försök igen'}
+          </button>
+        </div>
       )}
 
       {venue.data && (
