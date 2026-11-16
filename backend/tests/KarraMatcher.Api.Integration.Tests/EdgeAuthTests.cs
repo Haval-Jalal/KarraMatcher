@@ -53,16 +53,31 @@ public sealed class EdgeAuthTests(KarraMatcherApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
-    public async Task NarHemlighetSatt_HealthNasUtanHeader()
+    [Theory]
+    [InlineData("/health")]
+    [InlineData("/health/ready")]
+    public async Task NarHemlighetSatt_HealthEndpointsNasUtanHeader(string path)
     {
-        // Uppetidspingen (§KM.11) nar Render direkt och bar ingen edge-header. /health maste
-        // darfor forbli oppen -- den rojer inga uppgifter.
+        // Uppetidspingen (§KM.11) nar Render direkt och bar ingen edge-header. Exakt /health och
+        // /health/ready maste darfor forbli oppna -- de rojer inga uppgifter.
         using var client = factory.WithEdgeSecret().CreateClient();
 
-        using var response = await client.GetAsync("/health", CancellationToken.None);
+        using var response = await client.GetAsync(path, CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NarHemlighetSatt_UndergrenUnderHealth_Avvisas()
+    {
+        // Undantaget ar en exakt allowlist, inte hela /health-tradet: en vag under /health som
+        // inte star pa listan gatas som standard (403), sa en framtida endpoint dar inte av
+        // misstag slinker forbi grinden. Vagen finns inte an -- grinden stoppar den fore routingen.
+        using var client = factory.WithEdgeSecret().CreateClient();
+
+        using var response = await client.GetAsync("/health/admin", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

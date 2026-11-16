@@ -42,8 +42,10 @@ namespace KarraMatcher.Api.Diagnostics;
 /// </para>
 ///
 /// <para>
-/// <c>/health</c> är undantaget: uppetidspingen (§KM.11) når Render direkt och bär ingen header.
-/// Den ytan röjer inga uppgifter och är ofarlig att lämna öppen.
+/// Exakt <c>/health</c> och <c>/health/ready</c> är undantagna: uppetidspingen (§KM.11) når Render
+/// direkt och bär ingen header. Undantaget är en uttrycklig allowlist, inte hela <c>/health</c>-
+/// trädet, så en framtida endpoint under <c>/health</c> gatas som standard i stället för att råka
+/// bli öppen.
 /// </para>
 /// </summary>
 public static class EdgeAuthentication
@@ -86,9 +88,13 @@ public static class EdgeAuthentication
 
         return app.Use(async (context, next) =>
         {
-            // Uppetidspingen når Render direkt (§KM.11) och bär ingen edge-header. /health och
-            // /health/ready måste därför förbli öppna — de röjer inga uppgifter.
-            if (context.Request.Path.StartsWithSegments("/health"))
+            // Uppetidspingen når Render direkt (§KM.11) och bär ingen edge-header. Exakt de två
+            // health-endpointsen undantas — INTE hela /health-trädet. Så blir en framtida endpoint
+            // under /health (t.ex. /health/admin) gatad som standard i stället för att av misstag
+            // slinka förbi grinden; lägg medvetet till en ny väg här om uppetidspingen behöver den.
+            var path = context.Request.Path;
+            if (path.Equals("/health", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/health/ready", StringComparison.OrdinalIgnoreCase))
             {
                 await next(context).ConfigureAwait(false);
                 return;
