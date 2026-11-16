@@ -76,7 +76,7 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
       </p>
 
       <div className="form__field">
-        <label htmlFor="radera-bekraftelse">
+        <label id="radera-bekraftelse-krav" htmlFor="radera-bekraftelse">
           Skriv <strong>RADERA</strong> för att bekräfta
         </label>
         <input
@@ -111,6 +111,9 @@ export function DeleteAccountSection({ onDeleted }: { onDeleted: () => void }) {
           type="button"
           className="button button--danger"
           disabled={working || !canDelete}
+          // Pekar på kravet ("Skriv RADERA"), så en skärmläsare i läsläge förstår varför knappen
+          // inte går att använda ännu (#615).
+          aria-describedby="radera-bekraftelse-krav"
           onClick={() => {
             void (async () => {
               setWorking(true)

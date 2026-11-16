@@ -74,7 +74,7 @@ export function ConsentSection() {
             </p>
           )}
 
-          <label className="consent-confirm">
+          <label id="consent-krav" className="consent-confirm">
             <input
               type="checkbox"
               checked={affirmed}
@@ -88,6 +88,8 @@ export function ConsentSection() {
               type="button"
               className="button"
               disabled={grant.isPending || !affirmed}
+              // Pekar på kryssrutans krav, så en skärmläsare förstår varför knappen är låst (#615).
+              aria-describedby="consent-krav"
               onClick={() => {
                 setFailure(null)
                 void grant

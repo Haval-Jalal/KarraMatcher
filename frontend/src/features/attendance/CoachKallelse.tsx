@@ -240,7 +240,7 @@ export function CoachKallelse({
 
       {summary.data && summary.data.callOpen && (
         <div className="attendance__summary">
-          <h4 className="attendance__subheading">Svar hittills</h4>
+          <h3 className="attendance__subheading">Svar hittills</h3>
           <p className="attendance__totals">
             <strong>{summary.data.coming}</strong> kommer, {summary.data.notComing} kan inte,{' '}
             {summary.data.notAnswered} har inte svarat

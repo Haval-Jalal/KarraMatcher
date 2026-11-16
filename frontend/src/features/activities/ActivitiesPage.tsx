@@ -94,6 +94,7 @@ export function ActivitiesPage() {
               type="button"
               className="add-fab"
               aria-expanded={creating}
+              aria-controls="skapa-aktivitet"
               onClick={() => setCreating((open) => !open)}
             >
               {creating ? (
@@ -109,7 +110,10 @@ export function ActivitiesPage() {
             </button>
           )}
 
-          {creating && canCreate && <CreateActivity truppId={truppId} />}
+          {/* Alltid renderad (tom när stängd) så togglens aria-controls aldrig pekar i tomma intet. */}
+          <div id="skapa-aktivitet">
+            {creating && canCreate && <CreateActivity truppId={truppId} />}
+          </div>
 
           {activities.isPending && (
             <p className="state" role="status">

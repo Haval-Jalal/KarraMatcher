@@ -44,4 +44,19 @@ describe('ErrorBoundary', () => {
     // Felet loggades (componentDidCatch → logClientError), inte svaldes.
     expect(console.error).toHaveBeenCalled()
   })
+
+  it('annonserar fallbacken och flyttar fokus till rubriken (#615)', () => {
+    render(
+      <ErrorBoundary>
+        <Boom />
+      </ErrorBoundary>,
+    )
+
+    // role="alert" läser upp beskedet; fokus står på rubriken, inte kvar i det som kraschade.
+    const alert = screen.getByRole('alert')
+    const heading = screen.getByRole('heading', { name: 'Något gick fel' })
+
+    expect(alert).toContainElement(heading)
+    expect(heading).toHaveFocus()
+  })
 })

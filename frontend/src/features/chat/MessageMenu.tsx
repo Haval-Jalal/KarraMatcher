@@ -101,6 +101,9 @@ export function MessageMenu({
 
   return (
     <>
+      {/* En modal dialog behöver sin egen keydown (fokusfälla + Escape, WCAG 2.4.3). Regeln
+          ser bara en <div> och missar role="dialog"; interaktionen hör hemma här. */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         role="dialog"
         aria-modal="true"
@@ -179,6 +182,10 @@ export function MessageMenu({
               type="button"
               className="msg-menu__item msg-menu__item--danger"
               disabled={deleting}
+              // Avsiktlig fokusflytt: bekräftelse-steget öppnas av ett klick, och fokus ska in på
+              // den destruktiva knappen så tangentbordet kan bekräfta/avbryta (WCAG 2.4.3). Inte
+              // autoFocus vid sidladd, som regeln varnar för.
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               onClick={() => {
                 onDelete()

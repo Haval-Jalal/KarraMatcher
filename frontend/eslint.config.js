@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import prettier from 'eslint-config-prettier'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
@@ -113,6 +114,22 @@ export default tseslint.config(
   {
     files: ['**/*.test.{ts,tsx}', 'src/test/**'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
+  },
+
+  // Tillgänglighets-regler (WCAG 2.1 AA, §KM.0 A3, #615). Automatiska vakter utöver det
+  // handskrivna kontrast-testet, så en a11y-regression fångas i lint i stället för av en
+  // användare. Plugin:en deklarerar ännu inte ESLint 10 som peer (bara upp till 9), därför den
+  // pinnade `overrides`-posten i package.json — den körs rent på 10.
+  {
+    files: ['**/*.tsx'],
+    ...jsxA11y.flatConfigs.recommended,
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      // EventForm m.fl. tar en egen `autoFocus`-prop (fokusera första fältet när formuläret öppnas
+      // av ett klick) — inte DOM-autoFocus vid sidladd. `ignoreNonDOM` låter regeln fortsatt vakta
+      // riktig DOM-autoFocus men inte en custom-komponents prop med samma namn.
+      'jsx-a11y/no-autofocus': ['error', { ignoreNonDOM: true }],
+    },
   },
 
   // Måste ligga sist: stänger av regler som krockar med Prettier.
