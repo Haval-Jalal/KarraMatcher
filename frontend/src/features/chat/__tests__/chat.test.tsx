@@ -111,6 +111,21 @@ describe('trupp-chatt', () => {
     expect(screen.getByText('[borttaget]')).toBeInTheDocument()
   })
 
+  it('skrivfältet visar teckenräknare och 90-dagars gallring (#614)', async () => {
+    setAccessToken(tokenWith({ email: 'm@example.com', sub: 'me' }))
+    stub(tokenWith({ email: 'm@example.com', sub: 'me' }), false, (url) => {
+      if (url.includes('/chat/messages')) return MESSAGES
+      return []
+    })
+
+    renderRoute('/chatt/trupp-1')
+
+    await screen.findByLabelText('Skriv ett meddelande')
+    // 2000-teckensgränsen och 90-dagars gallringen var förr tysta (§KM.1/§KM.6).
+    expect(screen.getByText(/0\/2000 tecken/)).toBeInTheDocument()
+    expect(screen.getByText(/raderas efter 90 dagar/)).toBeInTheDocument()
+  })
+
   it('pollar nya meddelanden medan chatten är öppen (#594)', async () => {
     // Globala defaults har refetchOnWindowFocus av + staleTime 60 s, så utan refetchInterval såg
     // en öppen chatt aldrig nya meddelanden förrän man postade eller remountade. 15 s senare ska
@@ -234,7 +249,7 @@ describe('trupp-chatt', () => {
 
     await user.type(await screen.findByLabelText('Skriv ett meddelande'), 'Kom ihåg matchen')
     await user.click(screen.getByLabelText(/Schemalägg/))
-    fireEvent.change(screen.getByLabelText('Skicka vid'), {
+    fireEvent.change(screen.getByLabelText(/Skicka vid/), {
       target: { value: '2030-01-01T12:00' },
     })
     await user.click(screen.getByRole('button', { name: 'Schemalägg' }))
@@ -287,7 +302,7 @@ describe('trupp-chatt', () => {
 
     await user.type(await screen.findByLabelText('Skriv ett meddelande'), 'Kom ihåg matchen')
     await user.click(screen.getByLabelText(/Schemalägg/))
-    fireEvent.change(screen.getByLabelText('Skicka vid'), {
+    fireEvent.change(screen.getByLabelText(/Skicka vid/), {
       target: { value: '2030-01-01T12:00' },
     })
     await user.click(screen.getByRole('button', { name: 'Schemalägg' }))

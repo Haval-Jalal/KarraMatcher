@@ -9,6 +9,7 @@ import { hasKickedOff } from '@/lib/time'
 
 import { answeredChildrenBeingDropped } from './attendanceApi'
 import type { AttendanceReply, MyChildInvitation } from './attendanceApi'
+import { replyLabel } from './replyLabel'
 import { CoachKallelse } from './CoachKallelse'
 import {
   useKallelseSummary,
@@ -543,15 +544,4 @@ function AdminKallelse({
       )}
     </div>
   )
-}
-
-function replyLabel(reply: AttendanceReply | null): string {
-  switch (reply) {
-    case 'Coming':
-      return 'Ja'
-    case 'NotComing':
-      return 'Nej'
-    default:
-      return '–'
-  }
 }

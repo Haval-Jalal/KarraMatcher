@@ -59,6 +59,9 @@
    */
   --accent: #12905a;
   --accent-strong: #0d7a4a;
+  /* Semantisk grön för "sparat"-kvitton (#614). Egen token, inte --accent: ett kvitto är inte
+     en interaktiv accent, och mörk nog för 4.5:1 som text på de ljusa ytorna (WCAG 1.4.3). */
+  --success: #0b6e42;
   --accent-ink: #ffffff;
   /*
    * Accent som TEXT på en accent-tonad yta (piller m.m.). I ljust läge är det den djupa gröna;
@@ -150,6 +153,8 @@
 
   --accent: #37d98a;
   --accent-strong: #21a869;
+  /* Klar grön för "sparat"-kvitton mot de mörka ytorna (#614). */
+  --success: #37d98a;
   --accent-ink: #05130c;
   /* Klar grön som text på tint i mörkt läge (den djupa blir för svag mot den mörka tinten). */
   --accent-text: var(--accent);
@@ -177,6 +182,7 @@
 
     --accent: #37d98a;
     --accent-strong: #21a869;
+    --success: #37d98a;
     --accent-ink: #05130c;
     --accent-text: var(--accent);
 
@@ -891,15 +897,6 @@ h2 {
   color: var(--text-muted);
 }
 
-.button--action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  border-color: var(--team-accent);
-  font-weight: 600;
-}
-
 /* ---- Matchdetalj ---------------------------------------------------------- */
 
 /*
@@ -1151,6 +1148,17 @@ a.match-card:focus-visible .match-card__opponent {
 
 .storage-notice__lead {
   margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
+  max-width: 60ch;
+}
+
+/* Stärkt varning när lagringen inte är beständig (#614). En vänster-list i danger-färg bär
+   budskapet som form också, inte bara i färg (WCAG 1.4.1); texten säger det rakt ut. */
+.storage-notice__fragile {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--danger);
   font-size: var(--text-sm);
   color: var(--text);
   max-width: 60ch;
@@ -2054,11 +2062,11 @@ a.match-card:focus-visible .match-card__opponent {
   font-size: var(--text-sm);
 }
 
-/* Kvitto efter sparat (`#257`). Blått, inte grönt: ingen egen success-token finns, och
-   texten bär budskapet — färgen är bara ett stöd (WCAG 1.4.1). */
+/* Kvitto efter sparat (`#257`, grönt via --success sedan `#614`). Texten bär budskapet —
+   färgen är bara ett stöd (WCAG 1.4.1). */
 .form__success {
   margin: 0;
-  color: var(--focus);
+  color: var(--success);
   font-size: var(--text-sm);
   font-weight: 600;
 }
@@ -2066,6 +2074,14 @@ a.match-card:focus-visible .match-card__opponent {
 /* ---- Chatt: meddelanden (#281) -------------------------------------------- */
 
 /* Krypterings-notisen: en diskret, centrerad rad överst i chatten (§KM.10). */
+/* Räknare + gallringsnotis under chattens skrivfält (#614): surfar 2000-teckensgränsen och att
+   meddelanden raderas efter 90 dagar (§KM.1/§KM.6), som annars var tysta. */
+.chat-hint {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 .chat-encryption-note {
   display: flex;
   align-items: center;
@@ -4477,6 +4493,10 @@ select.input {
 }
 /* Primärknappen (accent) blir fylld i stället för bara ramad. */
 .button--action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   /* accent-strong, inte accent: vit/mörk text på den ljusa accenten når inte 4.5:1 (WCAG 1.4.3). */
   background: var(--accent-strong);
   border-color: var(--accent-strong);
