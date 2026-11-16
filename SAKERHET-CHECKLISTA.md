@@ -74,6 +74,7 @@
 | 4.1 | All trafik över HTTPS — inga klartext-anrop, HTTP redirectas *(TLS + HTTP→HTTPS vid Vercels och Renders edge)* | ✅ |
 | 4.2 | HSTS påtvingat med tillräcklig max-age *(SecurityHeadersMiddleware + `vercel.json`, `#69`)* | ✅ |
 | 4.3 | CORS låst till kända origins — aldrig `AllowAnyOrigin` i prod *(ingen CORS-policy alls: en origin via rewrite, §KM.11)* | ✅ |
+| 4.3b | **Host-header-filtrering på:** `AllowedHosts` pinnad till Render-hostarna (prod + staging), aldrig `*` i drift — en främmande Host avvisas med `400` *(`#611`; Development tillåter alla via launchSettings/testfabrik)* | ✅ |
 | 4.4 | **§KM.11** Klienten anropar bara `/api/*` via Vercel-rewriten — Render-URL:en finns inte i frontend-koden | ✅ |
 | 4.5 | **§KM.11** Refresh-cookien är förstapart: `HttpOnly`, `Secure`, `SameSite=Lax` | ✅ |
 | 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin — edge-skyddet finns i koden (`#584`): `middleware.ts` sätter en delad hemlig header på varje `/api`-request, `EdgeAuthentication` kräver den och avvisar allt annat med `403`. **⚠️ EXTERN kvar: aktivera genom att sätta samma hemlighet som `KARRA_EDGE_AUTH` i Vercel och `EdgeAuth__SharedSecret` i Render** | 🟡 |

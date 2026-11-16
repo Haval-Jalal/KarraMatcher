@@ -59,6 +59,11 @@ public sealed class KarraMatcherApiFactory : WebApplicationFactory<Program>
         // integrationstest prövar rate-limitern; den prövas i egna enhetstester.
         builder.UseSetting("RateLimiting:PermitPerMinute", "100000");
 
+        // Host-header-filtrering (#611) är pinnad till Render-hostarna i appsettings. TestServern
+        // anropar som "localhost", så utan detta skulle varje test få 400. HostFilteringTests sätter
+        // ett eget värde per test för att pröva själva filtreringen.
+        builder.UseSetting("AllowedHosts", "*");
+
         builder.UseSetting(DatabaseInitializer.MigrateKey, "false");
         builder.UseSetting(DatabaseInitializer.SeedKey, "false");
 
