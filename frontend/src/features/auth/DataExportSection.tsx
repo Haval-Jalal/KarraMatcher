@@ -140,8 +140,8 @@ function ExportView({ data }: { data: AccountExport }) {
         <p className="state">Du har inte lagt upp någon skjuts.</p>
       ) : (
         <ul>
-          {data.carpoolOffers.map((offer, index) => (
-            <li key={index}>
+          {data.carpoolOffers.map((offer) => (
+            <li key={`${offer.matchKickoffUtc}:${offer.createdUtc}`}>
               {matchLabel(offer.matchOpponent, offer.matchKickoffUtc)} —{' '}
               {direction(offer.direction)}, från {offer.departurePlace}{' '}
               {formatKickoffTime(offer.departureUtc)}, {offer.seats} platser.{' '}
@@ -157,8 +157,8 @@ function ExportView({ data }: { data: AccountExport }) {
         <p className="state">Du har inte skickat någon åkförfrågan.</p>
       ) : (
         <ul>
-          {data.carpoolRequests.map((request, index) => (
-            <li key={index}>
+          {data.carpoolRequests.map((request) => (
+            <li key={`${request.matchKickoffUtc}:${request.createdUtc}`}>
               {matchLabel(request.matchOpponent, request.matchKickoffUtc)} — {request.seats}{' '}
               platser. {requestStatus(request.status)}.
               {request.message !== null && request.message !== ''
@@ -177,8 +177,8 @@ function ExportView({ data }: { data: AccountExport }) {
         <p className="state">Du har inte svarat på någon kallelse.</p>
       ) : (
         <ul>
-          {data.attendanceResponses.map((response, index) => (
-            <li key={index}>
+          {data.attendanceResponses.map((response) => (
+            <li key={`${response.eventKickoffUtc}:${response.childName}:${response.respondedUtc}`}>
               {matchLabel(response.eventLabel, response.eventKickoffUtc)} — {response.childName}:{' '}
               {attendanceReply(response.reply)}.
             </li>
@@ -191,8 +191,8 @@ function ExportView({ data }: { data: AccountExport }) {
         <p className="state">Du har inga notisprenumerationer.</p>
       ) : (
         <ul>
-          {data.pushSubscriptions.map((subscription, index) => (
-            <li key={index}>
+          {data.pushSubscriptions.map((subscription) => (
+            <li key={`${subscription.teamName}:${subscription.createdUtc}`}>
               {subscription.teamName} — sedan {formatFullDate(subscription.createdUtc)}. Vi sparar
               ingen adress som pekar ut dig, bara en teknisk kanal till din webbläsare.
             </li>

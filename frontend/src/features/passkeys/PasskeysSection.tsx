@@ -85,6 +85,12 @@ export function PasskeysSection() {
         E-postkoden fungerar fortfarande.
       </p>
 
+      {list.isPending && (
+        <p className="state" role="status">
+          Hämtar…
+        </p>
+      )}
+
       {list.isError && (
         <p className="state state--error" role="alert">
           {list.error instanceof ApiError && list.error.offline

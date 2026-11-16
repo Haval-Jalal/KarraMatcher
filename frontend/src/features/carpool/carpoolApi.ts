@@ -164,8 +164,8 @@ const base = (matchId: string) => `/api/v1/matches/${encodeURIComponent(matchId)
 /**
  * Matchens öppna erbjudanden.
  *
- * Öppen för alla (§KM.3), men aldrig edge-cachad: en inloggad ser förarens notis och en
- * gäst gör det inte, så svaret skiljer sig åt mellan läsare.
+ * Kräver inloggning (§KM.3): bara lagets medlemmar ser dem. Svaret edge-cachas aldrig
+ * (`private, no-store`, §KM.11) — det bär förarens notis, som bara får nå de inblandade.
  */
 export function listOffers(matchId: string, signal?: AbortSignal): Promise<CarpoolOffer[]> {
   return getAuthJson<CarpoolOffer[]>(`${base(matchId)}/offers`, signal)

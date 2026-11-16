@@ -37,10 +37,25 @@ let accessToken: string | null = null
  * Bindningen är avsiktlig och bra: den gör en stulen CSRF-token oanvändbar för någon
  * annans session. Det är klienten som måste hänga med.
  */
-let sessionChanged: (() => void) | null = null
+const sessionListeners = new Set<() => void>()
 
-export function onSessionChange(listener: () => void): void {
-  sessionChanged = listener
+/**
+ * Registrerar en lyssnare och returnerar en avregistrering. Flera lyssnare stöds — en tidigare
+ * variant höll bara *en* referens, så en andra `onSessionChange` tyst slog ut den första. Latent
+ * så länge bara en kallare finns, men en bugg som väntade på en till.
+ */
+export function onSessionChange(listener: () => void): () => void {
+  sessionListeners.add(listener)
+
+  return () => {
+    sessionListeners.delete(listener)
+  }
+}
+
+function notifySessionChanged(): void {
+  for (const listener of sessionListeners) {
+    listener()
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -49,11 +64,11 @@ export function getAccessToken(): string | null {
 
 export function setAccessToken(token: string | null): void {
   accessToken = token
-  sessionChanged?.()
+  notifySessionChanged()
 }
 
 /** Rensar allt appen håller om sessionen. Cookien rensas av servern. */
 export function clearSession(): void {
   accessToken = null
-  sessionChanged?.()
+  notifySessionChanged()
 }

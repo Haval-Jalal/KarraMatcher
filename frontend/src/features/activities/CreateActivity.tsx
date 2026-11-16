@@ -5,9 +5,12 @@ import type { EventInput } from '@/features/admin/adminApi'
 import { EventForm } from '@/features/admin/EventForm'
 import { setKallelse } from '@/features/attendance/attendanceApi'
 import { useRoster } from '@/features/children'
+import { cupKeys } from '@/features/cup/useCup'
+import { homeSummaryQueryKey } from '@/features/home/useHomeSummary'
 import { ApiError } from '@/lib/api'
 
 import { createTruppEvent } from './activitiesApi'
+import { activitiesKeys } from './useActivities'
 import { TargetGroupPicker } from './TargetGroupPicker'
 import { defaultTargetFor, type KallelseTarget, resolveTarget, typeHasTarget } from './target'
 
@@ -35,6 +38,16 @@ export function CreateActivity({ truppId }: { truppId: string }) {
   const [target, setTarget] = useState<KallelseTarget>(() => defaultTargetFor('Match'))
   const [done, setDone] = useState<{ called: number } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
+
+  // Riktad invalidering i stället för att släcka hela cachen: samma uppsättning som
+  // ManageActivities (#537/#476) — truppens aktivitetslista, hem-vyns nästa händelse, lag-schemat
+  // för en lag-riktad händelse, och trupp-cuplistan för en cup. En ny aktivitet rör inte resten.
+  async function refreshAfterCreate(): Promise<void> {
+    await queryClient.invalidateQueries({ queryKey: activitiesKeys.list(truppId) })
+    await queryClient.invalidateQueries({ queryKey: homeSummaryQueryKey })
+    await queryClient.invalidateQueries({ queryKey: ['team-events'] })
+    await queryClient.invalidateQueries({ queryKey: cupKeys.truppCups(truppId) })
+  }
 
   async function handleSubmit(input: EventInput): Promise<void> {
     setFailure(null)
@@ -93,13 +106,13 @@ export function CreateActivity({ truppId }: { truppId: string }) {
             : 'Aktiviteten skapades, men kallelsen gick inte att skicka. Kontrollera nätet och sätt den från händelsen.',
         )
 
-        await queryClient.invalidateQueries()
+        await refreshAfterCreate()
 
         return
       }
     }
 
-    await queryClient.invalidateQueries()
+    await refreshAfterCreate()
     setDone({ called: typeHasTarget(input.type) ? childIds.length : 0 })
   }
 

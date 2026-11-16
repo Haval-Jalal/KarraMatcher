@@ -78,10 +78,25 @@ export function BarnOchLag({ truppId }: { truppId: string }) {
   }
 
   if (roster.isError || !roster.data) {
+    const apiError = roster.error instanceof ApiError ? roster.error : null
     return (
-      <p className="state state--error" role="alert">
-        Kunde inte hämta barnen.
-      </p>
+      <div className="state state--error" role="alert">
+        <p>
+          {apiError?.offline
+            ? 'Ingen anslutning. Barnen kan inte hämtas just nu.'
+            : 'Kunde inte hämta barnen just nu.'}
+        </p>
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            void roster.refetch()
+          }}
+          disabled={roster.isFetching}
+        >
+          {roster.isFetching ? 'Försöker…' : 'Försök igen'}
+        </button>
+      </div>
     )
   }
 
