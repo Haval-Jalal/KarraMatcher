@@ -31,6 +31,7 @@
 | 1.3 | JWT validerar issuer, audience, lifetime och signing key | ✅ |
 | 1.4 | Access-token kortlivad (15 min); refresh-token i `httpOnly`-cookie med `Secure` + `SameSite=Lax` | ✅ |
 | 1.5 | Refresh tokens roteras + återanvändning detekteras (hela familjen ogiltigförklaras) | ✅ |
+| 1.5b | Rotationen är skyddad mot samtidig dubbel-fire: optimistisk concurrency (Postgres `xmin`) gör att bara en av två racande förnyelser lyckas; den andra svarar `null` utan att splittra familjen *(`#611`)* | ✅ |
 | 1.6 | Token-revocation vid utloggning och vid kontoradering | ✅ |
 | 1.7 | Spärr efter 5 felgissningar per kod, plus egen rate limit på inloggningens endpoints | ✅ |
 | 1.8 | Ingen sessionsfixering — varje inloggning startar en ny token-familj | ✅ |

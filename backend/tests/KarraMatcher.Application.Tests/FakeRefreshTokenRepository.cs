@@ -20,6 +20,12 @@ internal sealed class FakeRefreshTokenRepository : IRefreshTokenRepository
 
     public int SaveCount { get; private set; }
 
+    /// <summary>
+    /// När den är satt låter nästa <see cref="TrySaveChangesAsync"/> som om en samtidig förnyelse
+    /// hann före (optimistisk concurrency): den svarar <c>false</c> en gång och nollställs sedan.
+    /// </summary>
+    public bool NextSaveLosesRace { get; set; }
+
     public Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken cancellationToken) =>
         Task.FromResult(_tokens.FirstOrDefault(t => t.TokenHash == tokenHash));
 
@@ -45,5 +51,19 @@ internal sealed class FakeRefreshTokenRepository : IRefreshTokenRepository
         SaveCount++;
 
         return Task.CompletedTask;
+    }
+
+    public Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken)
+    {
+        if (NextSaveLosesRace)
+        {
+            NextSaveLosesRace = false;
+
+            return Task.FromResult(false);
+        }
+
+        SaveCount++;
+
+        return Task.FromResult(true);
     }
 }

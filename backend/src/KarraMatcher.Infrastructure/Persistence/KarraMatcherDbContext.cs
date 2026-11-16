@@ -97,6 +97,17 @@ public sealed class KarraMatcherDbContext(
             .Property(r => r.Reason)
             .HasConversion(value => chatCipher.Encrypt(value), value => chatCipher.Decrypt(value));
 
+        // Optimistisk concurrency på refresh-token (§KM.11, `#611`): två samtidiga förnyelser med
+        // samma token ska inte båda kunna markera den ersatt och splittra familjen. Postgres `xmin`
+        // är radens systemversion — en `uint`-egenskap som heter "xmin" och är rowversion mappas av
+        // Npgsql till just den systemkolumnen, så det blir ingen egen kolumn och ingen migration.
+        // Bara för Npgsql: in-memory-providern (integrationstesterna) saknar xmin, och rotationens
+        // concurrency-logik prövas i stället som enhetstest mot ett fake-repo.
+        if (Database.IsNpgsql())
+        {
+            modelBuilder.Entity<RefreshToken>().Property<uint>("xmin").IsRowVersion();
+        }
+
         base.OnModelCreating(modelBuilder);
     }
 }
