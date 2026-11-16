@@ -25,6 +25,12 @@ import {
   useScheduled,
 } from './useChat'
 
+/** Chattmeddelandets maxlängd — speglar serverns gräns (§KM.1). Surfas med en räknare. */
+const MESSAGE_MAX_LENGTH = 2000
+
+/** Chatten gallras efter så här länge (§KM.6). Surfas i UI så ingen tror den är permanent. */
+const CHAT_RETENTION_DAYS = 90
+
 function messageOf(error: unknown): string {
   if (error instanceof ApiError) {
     return error.offline ? 'Ingen anslutning. Försök igen.' : error.message
@@ -451,10 +457,15 @@ export function ChatChannel({
           <textarea
             id="chatt-meddelande"
             rows={3}
-            maxLength={2000}
+            maxLength={MESSAGE_MAX_LENGTH}
             value={body}
             onChange={(event) => setBody(event.target.value)}
+            aria-describedby="chatt-meddelande-hint"
           />
+          <p id="chatt-meddelande-hint" className="chat-hint">
+            {body.length}/{MESSAGE_MAX_LENGTH} tecken · meddelanden raderas efter{' '}
+            {CHAT_RETENTION_DAYS} dagar
+          </p>
         </div>
 
         {isLeader && (
@@ -473,7 +484,7 @@ export function ChatChannel({
 
             {scheduling && (
               <div className="form__field">
-                <label htmlFor="chatt-tid">Skicka vid</label>
+                <label htmlFor="chatt-tid">Skicka vid (svensk tid)</label>
                 <input
                   id="chatt-tid"
                   type="datetime-local"

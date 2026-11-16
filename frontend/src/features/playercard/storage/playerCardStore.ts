@@ -172,6 +172,9 @@ function askForPersistenceOnce(data: PlayerCardData): void {
 
   persistenceAsked = true
 
+  // Returen används med flit inte här: begäran är poängen (be webbläsaren behålla lagringen), och
+  // det faktiska läget läses i stället av gränssnittet via isStoragePersisted, som stärker
+  // varningen om beständighet nekades eller saknas (§KM.2, `#614`).
   void requestPersistentStorage()
 }
 

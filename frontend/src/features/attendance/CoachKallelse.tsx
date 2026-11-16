@@ -4,7 +4,7 @@ import { useAutoFocus } from '@/hooks/useAutoFocus'
 import { ApiError } from '@/lib/api'
 
 import { answeredChildrenBeingDropped } from './attendanceApi'
-import type { AttendanceReply } from './attendanceApi'
+import { replyLabel } from './replyLabel'
 import {
   useCoachKallelseRoster,
   useRemindTeam,
@@ -290,15 +290,4 @@ export function CoachKallelse({
       )}
     </div>
   )
-}
-
-function replyLabel(reply: AttendanceReply | null): string {
-  switch (reply) {
-    case 'Coming':
-      return 'Ja'
-    case 'NotComing':
-      return 'Nej'
-    default:
-      return 'Inget svar'
-  }
 }

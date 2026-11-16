@@ -16,6 +16,28 @@
  * <b>Ett nej får aldrig gå ut över något.</b> Appen fungerar likadant utan beständig
  * lagring — den är bara mer utsatt.
  */
+/**
+ * Läser av om lagringen redan är beständig — <b>utan att fråga</b> (inget webbläsar-prompt).
+ *
+ * Används av gränssnittet för att stärka varningen när datan inte är skyddad: `requestPersistent-
+ * Storage` ber om beständighet men dess svar kastas (begäran är poängen, inte returen), så den
+ * här läser i stället det faktiska läget så att <c>StorageNotice</c> kan säga det rakt ut (`#614`).
+ */
+export async function isStoragePersisted(): Promise<'beständig' | 'ej-beständig' | 'saknas'> {
+  const storage = globalThis.navigator?.storage as
+    { persisted?: () => Promise<boolean> } | undefined
+
+  if (storage?.persisted === undefined) {
+    return 'saknas'
+  }
+
+  try {
+    return (await storage.persisted()) ? 'beständig' : 'ej-beständig'
+  } catch {
+    return 'saknas'
+  }
+}
+
 export async function requestPersistentStorage(): Promise<'beviljad' | 'nekad' | 'saknas'> {
   const storage = globalThis.navigator?.storage as
     { persisted?: () => Promise<boolean>; persist?: () => Promise<boolean> } | undefined

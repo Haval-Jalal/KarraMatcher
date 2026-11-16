@@ -1,3 +1,7 @@
+import { useEffect, useState } from 'react'
+
+import { isStoragePersisted } from './persistentStorage'
+
 /**
  * Var spelarkortet finns, sagt rakt ut.
  *
@@ -17,12 +21,43 @@
  * informerat beslut om att säkerhetskopiera — inte bli skrämd till det.
  */
 export function StorageNotice() {
+  // Läser det faktiska beständighetsläget (ingen fråga, inget prompt) så varningen kan stärkas när
+  // webbläsaren inte lovar att behålla datan (#614). Förr kastades `requestPersistentStorage`-svaret
+  // och gränssnittet sa aldrig till när begäran nekats eller saknades.
+  const [persistence, setPersistence] = useState<'beständig' | 'ej-beständig' | 'saknas' | 'okänd'>(
+    'okänd',
+  )
+
+  useEffect(() => {
+    let active = true
+
+    void isStoragePersisted().then((status) => {
+      if (active) {
+        setPersistence(status)
+      }
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const notDurable = persistence === 'ej-beständig' || persistence === 'saknas'
+
   return (
     <section className="storage-notice">
       <p className="storage-notice__lead">
         <strong>Allt här sparas bara på den här telefonen.</strong> Du behöver inget konto, och
         ingen annan kan se det — men statistiken följer med telefonen, inte med dig.
       </p>
+
+      {notDurable && (
+        <p className="storage-notice__fragile" role="status">
+          <strong>Den här webbläsaren har inte lovat att behålla datan</strong>
+          {persistence === 'saknas' ? ' (särskilt i ett privat fönster)' : ''} — den kan rensa den
+          om utrymmet tryter. Då är säkerhetskopian längre ner det enda som får tillbaka säsongen.
+        </p>
+      )}
 
       <details className="storage-notice__more">
         <summary>Vad betyder det?</summary>

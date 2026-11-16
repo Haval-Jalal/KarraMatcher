@@ -69,6 +69,8 @@ describe('textkontrast är minst 4.5:1', () => {
     ['text-muted', 'surface-raised'],
     ['danger', 'surface'],
     ['danger', 'surface-raised'],
+    ['success', 'surface'],
+    ['success', 'surface-raised'],
   ]
 
   for (const scope of SCOPES) {
