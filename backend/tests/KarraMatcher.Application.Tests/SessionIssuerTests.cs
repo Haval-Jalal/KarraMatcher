@@ -131,6 +131,22 @@ public sealed class SessionIssuerTests
         Assert.Null(await issuer.RefreshAsync(session.RefreshToken, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Refresh_SamtidigFornyelse_ForlorarLoppet_GerNull_UtanAttFallaFamiljen()
+    {
+        // Två förnyelser med samma token racar (två flikar, dubbel-fire). Optimistisk concurrency
+        // (xmin i drift) låter bara en markera token ersatt; den andra får false från den vaktade
+        // sparningen. Det är ingen stöld — så inget familjeåterkallande, bara null (`#611`).
+        var issuer = CreateIssuer();
+        var first = await issuer.IssueAsync(_account, CancellationToken.None);
+
+        _tokens.NextSaveLosesRace = true;
+        var lost = await issuer.RefreshAsync(first.RefreshToken, CancellationToken.None);
+
+        Assert.Null(lost);
+        Assert.All(_tokens.Tokens, token => Assert.Null(token.RevokedUtc));
+    }
+
     // ---- Stöldskyddet ----------------------------------------------------------------
 
     [Fact]

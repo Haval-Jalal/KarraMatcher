@@ -61,8 +61,13 @@ public sealed partial class SessionIssuer(
     {
         ArgumentNullException.ThrowIfNull(account);
 
-        return await IssueInFamilyAsync(account, Guid.NewGuid(), cancellationToken)
+        // En ny inloggning startar en egen familj — ingen samtidig förnyelse kan race:a den, så
+        // en vanlig sparning räcker.
+        var pending = await AddTokenToFamilyAsync(account, Guid.NewGuid(), cancellationToken)
             .ConfigureAwait(false);
+        await tokens.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return await BuildSessionAsync(account, pending, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -117,8 +122,19 @@ public sealed partial class SessionIssuer(
 
         stored.ReplacedUtc = now;
 
-        return await IssueInFamilyAsync(stored.Account, stored.FamilyId, cancellationToken)
+        var pending = await AddTokenToFamilyAsync(stored.Account, stored.FamilyId, cancellationToken)
             .ConfigureAwait(false);
+
+        // Optimistisk concurrency: om två förnyelser med samma token racar hinner bara en markera
+        // den ersatt (xmin-token på RefreshToken). Den som förlorar loppet får false — det är ingen
+        // stöld, så ingen familjeåterkallning: bara null, och klienten gör om förnyelsen med den nya
+        // token (`#611`). Skilt från återanvändnings-grenen ovan, som fäller familjen med flit.
+        if (!await tokens.TrySaveChangesAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await BuildSessionAsync(stored.Account, pending, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -160,7 +176,11 @@ public sealed partial class SessionIssuer(
         Message = "Aterandvand refresh-token upptackt. Familjen {FamilyId} for konto {AccountId} aterkallas.")]
     private static partial void LogTokenReuse(ILogger logger, Guid familyId, Guid accountId);
 
-    private async Task<SessionTokens> IssueInFamilyAsync(
+    /// <summary>
+    /// Skapar och spårar en ny refresh-token i familjen — men sparar inte. Anroparen väljer
+    /// sparningen: en vanlig vid utfärdande, en concurrency-vaktad vid rotation.
+    /// </summary>
+    private async Task<PendingToken> AddTokenToFamilyAsync(
         Account account,
         Guid familyId,
         CancellationToken cancellationToken)
@@ -191,16 +211,27 @@ public sealed partial class SessionIssuer(
             },
             cancellationToken).ConfigureAwait(false);
 
-        await tokens.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return new PendingToken(raw, refreshExpires);
+    }
 
-        // Rollerna lases vid varje utfardande, alltsa aven vid fornyelse. Det ar dar en
-        // andrad behorighet slar igenom.
+    /// <summary>
+    /// Bygger svaret efter att token sparats: läser rollerna (så en ändrad behörighet slår
+    /// igenom vid varje utfärdande, även vid förnyelse) och utfärdar access-token.
+    /// </summary>
+    private async Task<SessionTokens> BuildSessionAsync(
+        Account account,
+        PendingToken pending,
+        CancellationToken cancellationToken)
+    {
         var accountRoles = await roles.GetRolesAsync(account.Id, cancellationToken)
             .ConfigureAwait(false);
 
         var (accessToken, accessExpires) = accessTokens.Issue(
             account.Id, account.Email, accountRoles);
 
-        return new SessionTokens(accessToken, accessExpires, raw, refreshExpires);
+        return new SessionTokens(accessToken, accessExpires, pending.Raw, pending.RefreshExpires);
     }
+
+    /// <summary>En nyss skapad, ännu inte sparad refresh-token: klartexten och dess utgång.</summary>
+    private readonly record struct PendingToken(string Raw, DateTime RefreshExpires);
 }

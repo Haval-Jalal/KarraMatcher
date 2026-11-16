@@ -220,6 +220,26 @@ public class PersistenceModelTests
     }
 
     [Fact]
+    public void RefreshToken_HarXminSomConcurrencyToken()
+    {
+        // Optimistisk concurrency mot samtidig dubbel-fire-rotation (`#611`): Postgres `xmin`,
+        // radens systemversion, som concurrency-token. Kontrolleras mot Npgsql-modellen med flit —
+        // InMemory-providern (integrationstesterna) saknar xmin, så bara det här testet fångar om
+        // mappningen glider bort i en framtida refaktor. Att kolumnen heter "xmin" bekräftar att
+        // det är systemkolumnen, inte en egen kolumn (som hade krävt — och misslyckats med — DDL).
+        var entity = Model().FindEntityType(typeof(Domain.Accounts.RefreshToken))!;
+
+        var xmin = entity.FindProperty("xmin");
+
+        Assert.NotNull(xmin);
+        Assert.True(
+            xmin!.IsConcurrencyToken,
+            "xmin ska vara concurrency-token — annars är rotationens dubbel-fire-skydd borta.");
+        Assert.Equal(ValueGenerated.OnAddOrUpdate, xmin.ValueGenerated);
+        Assert.Equal("xmin", xmin.GetColumnName());
+    }
+
+    [Fact]
     public void Pushprenumeration_TapparKontokopplingenNarKontotRaderas()
     {
         // §KM.6, beslut 2026-09-14: SetNull, inte Cascade. En prenumeration hor till enheten,

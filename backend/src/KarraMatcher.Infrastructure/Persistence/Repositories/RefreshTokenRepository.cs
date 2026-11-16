@@ -44,4 +44,20 @@ internal sealed class RefreshTokenRepository(KarraMatcherDbContext context) : IR
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         context.SaveChangesAsync(cancellationToken);
+
+    public async Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // En samtidig förnyelse hann markera samma token ersatt först — xmin-tokenen på
+            // RefreshToken gör att den här uppdateringen inte träffar någon rad. Ingen skada:
+            // requesten förlorade bara kapplöpningen och svarar null uppåt (`#611`).
+            return false;
+        }
+    }
 }
