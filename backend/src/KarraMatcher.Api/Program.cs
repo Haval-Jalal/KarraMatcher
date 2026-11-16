@@ -71,6 +71,7 @@ builder.Services.AddScoped<
 
 builder.Services.AddKarraHealthChecks();
 builder.Services.AddKarraRateLimiting(builder.Configuration);
+builder.Services.AddKarraEdgeAuth(builder.Configuration);
 builder.Services.AddKarraAuthentication(builder.Environment);
 
 // Passkeys (WebAuthn). Relying-party-domänen och origins sätts per miljö och måste stämma med
@@ -151,6 +152,11 @@ app.UseSerilogRequestLogging(RequestLogRedaction.Configure);
 // Cache-headers före rate limitern, så att även ett 429-svar får no-store i stället
 // för att bli liggande på edge (§KM.11).
 app.UseKarraEdgeCache();
+
+// Edge-skyddet före rate-limitern: en request som gick förbi Vercels proxy avvisas med 403
+// innan den hinner få en egen rate-limit-hink via en förfalskad X-Forwarded-For (§KM.11,
+// checklista 4.6, #584). Inert tills EdgeAuth__SharedSecret konfigureras i drift.
+app.UseKarraEdgeAuth();
 
 app.UseRateLimiter();
 

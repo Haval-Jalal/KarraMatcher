@@ -76,7 +76,7 @@
 | 4.3 | CORS låst till kända origins — aldrig `AllowAnyOrigin` i prod *(ingen CORS-policy alls: en origin via rewrite, §KM.11)* | ✅ |
 | 4.4 | **§KM.11** Klienten anropar bara `/api/*` via Vercel-rewriten — Render-URL:en finns inte i frontend-koden | ✅ |
 | 4.5 | **§KM.11** Refresh-cookien är förstapart: `HttpOnly`, `Secure`, `SameSite=Lax` | ✅ |
-| 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin — **⚠️ EXTERN: kräver att direktåtkomst till Render-URL:en stängs i drift** | 🟡 |
+| 4.6 | **§KM.11** Backend på Render tar inte emot trafik som kringgår proxyn med annan origin — edge-skyddet finns i koden (`#584`): `middleware.ts` sätter en delad hemlig header på varje `/api`-request, `EdgeAuthentication` kräver den och avvisar allt annat med `403`. **⚠️ EXTERN kvar: aktivera genom att sätta samma hemlighet som `KARRA_EDGE_AUTH` i Vercel och `EdgeAuth__SharedSecret` i Render** | 🟡 |
 | 4.6b | Rate limiting partitioneras på klientens IP från `X-Forwarded-For`, med en opartitionerad skyddsgräns som inte går att kringgå genom att förfalska adressen | ✅ |
 | 4.7 | **§KM.3** Inget svar returnerar barn-PII, och ingen publik yta finns kvar — allt innehåll kräver medlemskap (`#191`) | ✅ |
 | 4.8 | SSRF-skydd: väder-API anropas med koordinater från egen databas, aldrig från användarindata | ✅ |
@@ -190,7 +190,7 @@
 > Uppdatera statusen i **samma PR** som åtgärden.
 >
 > **Kvar före lansering (`#69`-revision, 2026-09-15):**
-> - **Externa åtgärder (du):** 7.7 rotera JSONBin-nyckeln · 9.14 biträdesavtal med Resend · 9.12 bekräfta Neon/Render-regioner · 4.6 stäng direktåtkomst till Render-URL:en.
+> - **Externa åtgärder (du):** 7.7 rotera JSONBin-nyckeln · 9.14 biträdesavtal med Resend · 9.12 bekräfta Neon/Render-regioner · 4.6 aktivera edge-skyddet: sätt samma slumpade hemlighet som `KARRA_EDGE_AUTH` i Vercel och `EdgeAuth__SharedSecret` i Render (koden finns, `#584`; verifiera i en preview att `/api` svarar innan du sätter Render-värdet).
 > - **Beroende av senare issues:** 12.8 (`#72` enhetstester).
 > - **Verifiering:** 5.1 bekräfta CSP i en Vercel-preview · 12.7 kör DAST-workflowen (ZAP) mot staging och bedöm fynden · granska CodeQL-fynd under fliken Security.
 > - **Mindre kvar:** 8.4 correlation-ID i audit-raden · 8.5/8.6 larm & felrapportering (efter lansering) · 10.5 NuGet-lockfiler · 11.5 egen maintenance-sida.

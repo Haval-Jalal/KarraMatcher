@@ -23,4 +23,11 @@ public interface ISecurityEventSink
     /// spik av dem mot samma sökväg är en attacksignal värd ett larm.
     /// </summary>
     public void RateLimitRejected(string method, string path);
+
+    /// <summary>
+    /// En request nådde backend utan giltig edge-header — alltså förbi Vercels proxy (§KM.11,
+    /// checklista 4.6). Normal trafik bär alltid headern, så varje sådant avslag är ett försök
+    /// att kringgå edge-skyddet och i sig en attacksignal.
+    /// </summary>
+    public void DirectAccessRejected(string method, string path);
 }

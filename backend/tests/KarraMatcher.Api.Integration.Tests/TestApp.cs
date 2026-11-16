@@ -16,6 +16,18 @@ namespace KarraMatcher.Api.Integration.Tests;
 /// </summary>
 public static class TestApp
 {
+    /// <summary>Den delade hemligheten testerna aktiverar edge-skyddet med (#584).</summary>
+    public const string EdgeSecret = "test-edge-secret-0123456789";
+
+    /// <summary>
+    /// Aktiverar edge-skyddet (§KM.11, checklista 4.6, #584) genom att sätta den delade
+    /// hemligheten. <c>UseSetting</c> och inte <c>ConfigureAppConfiguration</c>: grinden läser
+    /// värdet när pipelinen byggs, alltså innan det senare hinner köra (samma skäl som i fabriken).
+    /// </summary>
+    public static WebApplicationFactory<Program> WithEdgeSecret(
+        this WebApplicationFactory<Program> factory, string secret = EdgeSecret) =>
+        factory.WithWebHostBuilder(builder => builder.UseSetting("EdgeAuth:SharedSecret", secret));
+
     /// <summary>Lägger till en readiness-kontroll som alltid misslyckas.</summary>
     public static WebApplicationFactory<Program> WithFailingReadinessCheck(
         this WebApplicationFactory<Program> factory) =>

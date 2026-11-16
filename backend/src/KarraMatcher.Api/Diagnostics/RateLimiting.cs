@@ -70,8 +70,10 @@ public static class RateLimiting
                 : LoginPermitPerMinute;
 
         // Vercel och Render sätter X-Forwarded-For. Utan det här ser vi bara proxyns
-        // adress. Att rensa KnownProxies krävs eftersom proxyns IP inte är känd i
-        // förväg — se den ärliga begränsningen i klassdokumentationen nedan.
+        // adress. KnownProxies rensas eftersom Vercels edge inte har någon fast utgående IP att
+        // pinna på gratisstacken — förtroendeankaret är i stället edge-skyddet (se
+        // EdgeAuthentication, #584): bara trafik via Vercel når hit, så X-Forwarded-For härnedan
+        // kommer från proxyn, inte från en direktuppkopplad angripare.
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -86,13 +88,11 @@ public static class RateLimiting
 
             // Två gränser i kedja. Den första per klient, den andra som skyddsnät.
             //
-            // Skyddsnätet behövs eftersom X-Forwarded-For går att förfalska: Render-URL:en
-            // är publikt nåbar, så en angripare som kringgår Vercel kan hitta på en ny
-            // klientadress för varje anrop och därmed få en egen hink varje gång. Den
-            // opartitionerade gränsen går inte att komma runt på det sättet.
-            //
-            // Den riktiga lösningen är att stänga direktåtkomsten till Render
-            // (SAKERHET-CHECKLISTA rad 4.6, ännu öppen).
+            // Direktåtkomsten till Render är nu stängd av edge-skyddet (EdgeAuthentication,
+            // checklista 4.6, #584), så en angripare kan inte längre nå hit förbi Vercel och
+            // förfalska en ny klientadress per anrop. Skyddsnätet behålls ändå som andra
+            // försvarslinje: den opartitionerade gränsen håller även om edge-skyddet skulle vara
+            // avstängt (tom hemlighet) eller kringgås.
             options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
                 PartitionedRateLimiter.Create<HttpContext, string>(
                     context => RateLimitPartition.GetFixedWindowLimiter(

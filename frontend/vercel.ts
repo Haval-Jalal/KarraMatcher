@@ -25,6 +25,11 @@ export const config: VercelConfig = {
     // Klienten ser en enda origin: /api proxas till backend (§KM.11). Forstaparts-cookien
     // for refresh-token halls darfor forstaparts -- hela poangen med proxyn. routes.rewrite med
     // (.*)/$1 ar den dokumenterade formen for en extern destination i vercel.ts.
+    //
+    // Edge-skyddet (§KM.11, checklista 4.6, #584) ror INTE den har rewriten: middleware.ts satter
+    // den delade hemliga headern (KARRA_EDGE_AUTH) pa /api-requesten och kallar next(), varpa den
+    // har rewriten proxar till Render med headern pa plats. Backend kraver headern och avvisar allt
+    // som gick forbi Vercel direkt -- sa en spoofad X-Forwarded-For inte kan ge en egen hink.
     routes.rewrite('/api/(.*)', `${API_URL}/api/$1`),
     // SPA-fallback: alla ovriga vagar lamnas till klient-routern.
     routes.rewrite('/(.*)', '/index.html'),
