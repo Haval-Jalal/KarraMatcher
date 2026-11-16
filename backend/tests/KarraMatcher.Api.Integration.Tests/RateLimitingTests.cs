@@ -170,5 +170,7 @@ public class RateLimitingTests(KarraMatcherApiFactory factory)
         public List<(string Method, string Path)> Rejections { get; } = [];
 
         public void RateLimitRejected(string method, string path) => Rejections.Add((method, path));
+
+        public void DirectAccessRejected(string method, string path) => Rejections.Add((method, path));
     }
 }

@@ -12,8 +12,16 @@ internal sealed partial class SecurityEventLog(ILogger<SecurityEventLog> logger)
     public void RateLimitRejected(string method, string path) =>
         LogRateLimitRejected(logger, method, path);
 
+    public void DirectAccessRejected(string method, string path) =>
+        LogDirectAccessRejected(logger, method, path);
+
     [LoggerMessage(
         Level = LogLevel.Warning,
         Message = "Rate limit avvisade {Method} {Path}. Upprepade avslag är en attacksignal (§KM.0 A1).")]
     private static partial void LogRateLimitRejected(ILogger logger, string method, string path);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Edge-skyddet avvisade {Method} {Path}: en request utan giltig edge-header nådde backend förbi Vercel (checklista 4.6).")]
+    private static partial void LogDirectAccessRejected(ILogger logger, string method, string path);
 }
