@@ -72,6 +72,9 @@ export function ConfirmButton({
         type="button"
         className={confirmClassName}
         disabled={disabled}
+        // Avsiktlig fokusflytt: bekräftelse-knappen visas efter ett klick, och fokus ska in på den
+        // så tangentbordet kan bekräfta eller backa (WCAG 2.4.3) — inte autoFocus vid sidladd.
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
         aria-describedby={confirmHint !== undefined ? hintId : undefined}
         onClick={() => {

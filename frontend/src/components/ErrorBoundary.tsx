@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, createRef, type ErrorInfo, type ReactNode } from 'react'
 
 import { logClientError } from '@/lib/logError'
 
@@ -27,6 +27,10 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   public override state: State = { hasError: false }
 
+  // Fallbacken sitter ovanför RootLayout, så `#innehall`-fokuseffekten kör inte här. Utan en egen
+  // fokusflytt lämnas en skärmläsar-användare kvar i den trasiga vyn utan att få veta något.
+  private readonly headingRef = createRef<HTMLHeadingElement>()
+
   public static getDerivedStateFromError(): State {
     return { hasError: true }
   }
@@ -36,11 +40,29 @@ export class ErrorBoundary extends Component<Props, State> {
     logClientError('ErrorBoundary', info.componentStack ?? '')
   }
 
+  public override componentDidMount(): void {
+    // Ett kast redan under första renderingen gör fallbacken till gränsens första commit — det är
+    // ett mount, inte en update. Fokusera rubriken även då.
+    if (this.state.hasError) {
+      this.headingRef.current?.focus()
+    }
+  }
+
+  public override componentDidUpdate(_prevProps: Props, prevState: State): void {
+    // Ett kast efter att gränsen monterats: flytta fokus till rubriken så den annonseras och
+    // tangentbordet står i fallbacken, inte kvar i det som kraschade (WCAG 2.4.3).
+    if (this.state.hasError && !prevState.hasError) {
+      this.headingRef.current?.focus()
+    }
+  }
+
   public override render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <main className="error-fallback">
-          <h1>Något gick fel</h1>
+        <main className="error-fallback" role="alert">
+          <h1 ref={this.headingRef} tabIndex={-1}>
+            Något gick fel
+          </h1>
           <p>
             Appen råkade ut för ett oväntat fel. Prova att ladda om sidan — hjälper det inte, försök
             igen om en liten stund.

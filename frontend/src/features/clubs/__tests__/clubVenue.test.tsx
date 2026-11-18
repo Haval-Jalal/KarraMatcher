@@ -86,6 +86,21 @@ describe('truppens hemmaplan', () => {
     expect(await screen.findByText(/Sparat/)).toBeInTheDocument()
   })
 
+  it('markerar och fokuserar det tomma fältet vid submit (#615)', async () => {
+    const user = userEvent.setup()
+    stub({ name: null, address: null, latitude: null, longitude: null, configured: false })
+
+    await renderWithProviders(<ClubVenueSettings truppId="trupp-1" />)
+
+    // Submit med tomma fält: förr bara en lös felrad, nu markeras + fokuseras det första tomma.
+    await user.click(await screen.findByRole('button', { name: /Spara/ }))
+
+    const nameInput = screen.getByLabelText('Namn på planen')
+    expect(nameInput).toHaveAttribute('aria-invalid', 'true')
+    expect(nameInput).toHaveFocus()
+    expect(screen.getByText('Fyll i både namn och adress.')).toBeInTheDocument()
+  })
+
   it('förfyller fälten med den redan sparade planen', async () => {
     stub({
       name: 'Karra IP',

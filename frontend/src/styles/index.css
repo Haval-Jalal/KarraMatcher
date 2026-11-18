@@ -3560,8 +3560,10 @@ a.match-card:focus-visible .match-card__opponent {
 }
 
 .schedule-filter__tab {
-  min-height: 36px;
-  padding: 2px 12px;
+  /* Minst 44px hög träffyta (WCAG 2.5.5, #615) — filter-pillren låg förr på 36px, under appens
+     egen konvention. Padding höjd i takt så texten står centrerad i den större ytan. */
+  min-height: 44px;
+  padding: 6px 12px;
   font-size: var(--text-sm);
   color: var(--ink-soft);
   background: var(--sunk);
