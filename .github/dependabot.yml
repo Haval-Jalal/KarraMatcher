@@ -25,6 +25,21 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # Projektet riktar net10.0 (global.json SDK 10.0.100) och följer "senaste LTS" = .NET 10.
+      # Major-bumpar av .NET-ramverkspaketen är .NET 11-linjen (STS, 18 mån) och hör till en
+      # medveten ramverksmigrering av hela trädet på en gång — inte veckovisa Dependabot-PR:er,
+      # som dessutom ger NU1605 "package downgrade" när de bumpas styckvis per projekt (#728–#735).
+      # Minor/patch på 10.x-tåget släpps fortfarande igenom via gruppen ovan. Lyft den här
+      # listan den dag vi aktivt byter TFM till net11.0.
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Npgsql.EntityFrameworkCore.PostgreSQL"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
